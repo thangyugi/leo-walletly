@@ -1,0 +1,77 @@
+import { clsx, type ClassValue } from 'clsx'
+import { twMerge } from 'tailwind-merge'
+import type { Category, TransactionType } from '@/types'
+
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs))
+}
+
+export function formatCurrency(amount: number, currency = 'JPY'): string {
+  return new Intl.NumberFormat('ja-JP', {
+    style: 'currency',
+    currency,
+    minimumFractionDigits: 0,
+  }).format(amount)
+}
+
+export function formatDate(dateStr: string): string {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)
+}
+
+export function formatDateRelative(dateStr: string): string {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  const now = new Date()
+  const diff = now.getTime() - d.getTime()
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24))
+  if (days === 0) return '今日'
+  if (days === 1) return '昨日'
+  if (days < 7) return `${days}日前`
+  return formatDate(dateStr)
+}
+
+export function normalizeDate(raw: string): string {
+  // Handles YYYY/MM/DD, YYYY-MM-DD, YYYY年MM月DD日
+  const cleaned = raw
+    .replace(/年/g, '-')
+    .replace(/月/g, '-')
+    .replace(/日/g, '')
+    .replace(/\//g, '-')
+    .trim()
+  const d = new Date(cleaned)
+  if (isNaN(d.getTime())) return raw
+  return d.toISOString().split('T')[0]
+}
+
+export function generateId(): string {
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
+}
+
+export function getCategoryLabel(cat: Category): string {
+  const map: Record<Category, string> = {
+    food: '食費',
+    transport: '交通',
+    shopping: '買い物',
+    entertainment: '娯楽',
+    health: '医療・健康',
+    utilities: '光熱費',
+    other: 'その他',
+  }
+  return map[cat] ?? 'その他'
+}
+
+export function getTypeLabel(type: TransactionType): string {
+  const map: Record<TransactionType, string> = {
+    payment: '支払い',
+    refund: '返金',
+    income: '入金',
+    transfer: '振込',
+  }
+  return map[type] ?? type
+}
