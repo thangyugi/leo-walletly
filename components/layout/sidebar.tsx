@@ -8,19 +8,27 @@ import {
   Upload,
   BarChart3,
   Wallet,
+  CalendarDays,
+  Tag,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
-
-const NAV_ITEMS = [
-  { href: '/', label: 'ダッシュボード', icon: LayoutDashboard },
-  { href: '/transactions', label: '明細一覧', icon: ArrowDownUp },
-  { href: '/import', label: 'インポート', icon: Upload },
-  { href: '/analytics', label: '分析', icon: BarChart3 },
-]
+import { useSettingsStore } from '@/stores/settings'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export function Sidebar() {
   const pathname = usePathname()
+  const { t } = useTranslation()
+  const { lang, setLang } = useSettingsStore()
+
+  const NAV_ITEMS = [
+    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
+    { href: '/transactions', label: t.nav.transactions, icon: ArrowDownUp },
+    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
+    { href: '/groups', label: t.nav.groups, icon: Tag },
+    { href: '/analytics', label: t.nav.analytics, icon: BarChart3 },
+    { href: '/import', label: t.nav.import, icon: Upload },
+  ]
 
   return (
     <aside className="hidden md:flex flex-col w-60 min-h-screen bg-white border-r border-border shrink-0">
@@ -47,18 +55,40 @@ export function Sidebar() {
                   : 'text-text-secondary hover:bg-surface-alt hover:text-text-primary'
               )}
             >
-              <Icon
-                className={cn('w-4 h-4 shrink-0', active ? 'text-brand-600' : 'text-text-muted')}
-              />
+              <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-brand-600' : 'text-text-muted')} />
               {label}
             </Link>
           )
         })}
       </nav>
 
-      {/* Footer */}
-      <div className="px-5 py-4 border-t border-border">
-        <p className="text-xs text-text-muted">v0.1.0 · Leo Walletly</p>
+      {/* Footer: language switcher */}
+      <div className="px-4 py-4 border-t border-border space-y-3">
+        <div className="flex items-center gap-1.5 p-1 bg-surface rounded-[var(--radius-md)]">
+          <button
+            onClick={() => setLang('ja')}
+            className={cn(
+              'flex-1 py-1.5 text-xs font-semibold rounded-[var(--radius-sm)] transition-all',
+              lang === 'ja'
+                ? 'bg-white shadow-sm text-text-primary'
+                : 'text-text-muted hover:text-text-secondary'
+            )}
+          >
+            🇯🇵 日本語
+          </button>
+          <button
+            onClick={() => setLang('vi')}
+            className={cn(
+              'flex-1 py-1.5 text-xs font-semibold rounded-[var(--radius-sm)] transition-all',
+              lang === 'vi'
+                ? 'bg-white shadow-sm text-text-primary'
+                : 'text-text-muted hover:text-text-secondary'
+            )}
+          >
+            🇻🇳 Tiếng Việt
+          </button>
+        </div>
+        <p className="text-xs text-text-muted">v0.2.0 · Leo Walletly</p>
       </div>
     </aside>
   )

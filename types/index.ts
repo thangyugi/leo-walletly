@@ -11,6 +11,14 @@ export type Category =
   | 'utilities'
   | 'other'
 
+export interface CustomGroup {
+  id: string
+  name: string
+  color: string
+  emoji: string
+  keywords: string[]
+}
+
 export interface Transaction {
   id: string
   date: string
