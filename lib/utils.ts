@@ -45,7 +45,7 @@ export function normalizeDate(raw: string): string {
     .replace(/\//g, '-')
     .trim()
   const d = new Date(cleaned)
-  if (isNaN(d.getTime())) return raw
+  if (isNaN(d.getTime())) return ''
   return d.toISOString().split('T')[0]
 }
 

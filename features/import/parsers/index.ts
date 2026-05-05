@@ -46,14 +46,19 @@ export async function parseFile(
 
     // CSV path
     const buffer = await file.arrayBuffer()
+    const bytes = new Uint8Array(buffer)
     let text: string
-    try {
-      const decoded = new TextDecoder('shift-jis').decode(buffer)
-      text = decoded.includes('�') ? new TextDecoder('utf-8').decode(buffer) : decoded
-    } catch {
+
+    // Detect encoding: UTF-8 BOM (EF BB BF) → UTF-8; else try Shift-JIS
+    const hasUtf8Bom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+    if (hasUtf8Bom) {
       text = new TextDecoder('utf-8').decode(buffer)
+    } else {
+      // Try Shift-JIS; fall back to UTF-8 if it produces replacement chars
+      const sjis = new TextDecoder('shift-jis').decode(buffer)
+      text = sjis.includes('�') ? new TextDecoder('utf-8').decode(buffer) : sjis
     }
-    text = text.replace(/^﻿/, '')
+    text = text.replace(/^﻿/, '') // strip BOM
 
     if (provider === 'rakuten-pay') {
       const { transactions, errors } = parseRakutenPayCSV(text)

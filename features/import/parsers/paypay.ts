@@ -7,7 +7,7 @@ import { generateId, normalizeDate } from '@/lib/utils'
  * Multiple header variants across different export versions.
  */
 const DATE_KEYS = ['取引日時', '取引日', '日付', '決済日時', '決済日']
-const DESC_KEYS = ['取引名', '店舗名', '支払先', '内容', '摘要', '利用先']
+const DESC_KEYS = ['取引名/加盟店名', '取引名', '加盟店名', '店舗名', '支払先', '内容', '摘要', '利用先']
 const AMOUNT_KEYS = ['金額（円）', '金額(円)', '金額', '決済金額', '利用金額']
 const TYPE_KEYS = ['取引種別', '種別', '取引区分']
 const BALANCE_KEYS = ['残高（円）', '残高(円)', '残高']
@@ -108,6 +108,14 @@ export function parsePayPayCSV(text: string): {
       provider: 'paypay',
       rawData: row,
     })
+  }
+
+  if (transactions.length === 0) {
+    const headers = result.meta.fields ?? []
+    errors.push(`⚠️ 取引が見つかりませんでした。検出されたヘッダー: [${headers.join(', ')}]`)
+    for (const row of result.data.slice(0, 3)) {
+      errors.push(`  › ${JSON.stringify(row).slice(0, 120)}`)
+    }
   }
 
   return { transactions, errors }
