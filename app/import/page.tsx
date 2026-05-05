@@ -4,6 +4,7 @@ import { useState, useCallback, useRef } from 'react'
 import {
   Upload,
   FileText,
+  FileSpreadsheet,
   CheckCircle2,
   AlertCircle,
   X,
@@ -86,7 +87,7 @@ function DropZone({
       <input
         ref={inputRef}
         type="file"
-        accept=".csv"
+        accept=".csv,.pdf"
         multiple
         className="hidden"
         onChange={(e) => e.target.files && onFiles(e.target.files)}
@@ -96,10 +97,13 @@ function DropZone({
           <Upload className={cn('w-6 h-6', isDragging ? 'text-brand-600' : 'text-text-muted')} />
         </div>
         <div>
-          <p className="font-medium text-text-primary text-sm">CSVファイルをドラッグ＆ドロップ</p>
+          <p className="font-medium text-text-primary text-sm">ファイルをドラッグ＆ドロップ</p>
           <p className="text-xs text-text-muted mt-1">または クリックしてファイルを選択</p>
         </div>
-        <Badge variant="neutral">CSV形式のみ対応</Badge>
+        <div className="flex gap-2">
+          <Badge variant="neutral">PDF</Badge>
+          <Badge variant="neutral">CSV</Badge>
+        </div>
       </div>
     </div>
   )
@@ -148,6 +152,11 @@ function ImportResultCard({
             <CheckCircle2 className="w-4 h-4 text-brand-600" />
           ) : (
             <AlertCircle className="w-4 h-4 text-red-500" />
+          )}
+          {result.fileName.toLowerCase().endsWith('.pdf') ? (
+            <FileText className="w-4 h-4 text-red-400 shrink-0" />
+          ) : (
+            <FileSpreadsheet className="w-4 h-4 text-green-500 shrink-0" />
           )}
           <CardTitle className="flex-1 truncate">{result.fileName}</CardTitle>
           <Badge variant={result.transactions.length > 0 ? 'default' : 'danger'}>
@@ -214,7 +223,8 @@ export default function ImportPage() {
       setLoading(true)
       const parsed: ImportResult[] = []
       for (const file of Array.from(files)) {
-        if (!file.name.toLowerCase().endsWith('.csv')) continue
+        const ext = file.name.split('.').pop()?.toLowerCase()
+        if (ext !== 'csv' && ext !== 'pdf') continue
         const result = await parseFile(file, provider)
         parsed.push(result)
       }
@@ -293,25 +303,37 @@ export default function ImportPage() {
         <CardHeader>
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-brand-600" />
-            <CardTitle className="text-brand-800">CSVエクスポート方法</CardTitle>
+            <CardTitle className="text-brand-800">明細のダウンロード方法</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-4 text-sm text-brand-900">
             <div>
-              <p className="font-semibold mb-1">Rakuten Pay（楽天ペイ）</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold">Rakuten Card（楽天カード）</p>
+                <div className="flex gap-1">
+                  <Badge variant="default" className="text-[10px] py-0 px-1.5">PDF</Badge>
+                  <Badge variant="neutral" className="text-[10px] py-0 px-1.5">CSV</Badge>
+                </div>
+              </div>
               <ol className="list-decimal list-inside space-y-0.5 text-xs text-brand-700">
-                <li>楽天ペイアプリ → 利用履歴</li>
-                <li>右上メニュー →「CSVダウンロード」</li>
-                <li>期間を選択してダウンロード</li>
+                <li>楽天e-NAVIにログイン</li>
+                <li>「ご利用明細」→「明細PDF」ダウンロード</li>
+                <li>またはCSV形式も選択可能</li>
               </ol>
             </div>
             <div>
-              <p className="font-semibold mb-1">PayPay</p>
+              <div className="flex items-center gap-2 mb-1">
+                <p className="font-semibold">PayPay</p>
+                <div className="flex gap-1">
+                  <Badge variant="default" className="text-[10px] py-0 px-1.5">PDF</Badge>
+                  <Badge variant="neutral" className="text-[10px] py-0 px-1.5">CSV</Badge>
+                </div>
+              </div>
               <ol className="list-decimal list-inside space-y-0.5 text-xs text-brand-700">
                 <li>PayPayアプリ → 残高・履歴</li>
                 <li>「取引履歴」→ 右上のメニュー</li>
-                <li>「CSVでダウンロード」を選択</li>
+                <li>「PDFでダウンロード」または「CSVでダウンロード」</li>
               </ol>
             </div>
           </div>
