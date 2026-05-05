@@ -15,6 +15,7 @@ export const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
 export const PROVIDERS: { value: PaymentProvider; label: string; color: string }[] = [
   { value: 'rakuten-pay', label: 'Rakuten Pay', color: '#BF0000' },
   { value: 'paypay', label: 'PayPay', color: '#FF0033' },
+  { value: 'paypay-card', label: 'PayPayカード', color: '#8B1AFF' },
   { value: 'manual', label: '手動入力', color: '#0d9159' },
 ]
 

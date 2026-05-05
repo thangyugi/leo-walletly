@@ -1,6 +1,7 @@
 import type { ImportResult, PaymentProvider } from '@/types'
 import { parseRakutenPayCSV, decodeShiftJIS } from './rakuten-pay'
 import { parsePayPayCSV } from './paypay'
+import { parsePayPayCardCSV } from './paypay-card'
 import { parseRakutenPayPDF } from './rakuten-pay-pdf'
 import { parsePayPayPDF } from './paypay-pdf'
 
@@ -66,6 +67,10 @@ export async function parseFile(
     }
     if (provider === 'paypay') {
       const { transactions, errors } = parsePayPayCSV(text)
+      return { success: errors.length === 0, transactions, errors, fileName: file.name, provider }
+    }
+    if (provider === 'paypay-card') {
+      const { transactions, errors } = parsePayPayCardCSV(text)
       return { success: errors.length === 0, transactions, errors, fileName: file.name, provider }
     }
 

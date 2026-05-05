@@ -1,6 +1,6 @@
 export type TransactionType = 'payment' | 'refund' | 'income' | 'transfer'
 
-export type PaymentProvider = 'rakuten-pay' | 'paypay' | 'manual'
+export type PaymentProvider = 'rakuten-pay' | 'paypay' | 'paypay-card' | 'manual'
 
 export type Category =
   | 'food'

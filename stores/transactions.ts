@@ -11,7 +11,7 @@ export interface TransactionFilters {
   category: Category | 'all'
   dateFrom: string
   dateTo: string
-  type: 'expense' | 'income' | 'all'
+  type: 'expense' | 'income' | 'transfer' | 'all'
 }
 
 interface TransactionsState {
@@ -82,8 +82,9 @@ export const useTransactionsStore = create<TransactionsState>()(
             if (filters.category !== 'all' && t.category !== filters.category) return false
             if (filters.dateFrom && t.date < filters.dateFrom) return false
             if (filters.dateTo && t.date > filters.dateTo) return false
-            if (filters.type === 'expense' && t.amount >= 0) return false
-            if (filters.type === 'income' && t.amount < 0) return false
+            if (filters.type === 'expense' && (t.amount >= 0 || t.type === 'transfer')) return false
+            if (filters.type === 'income' && (t.amount < 0 || t.type === 'transfer')) return false
+            if (filters.type === 'transfer' && t.type !== 'transfer') return false
             return true
           })
           .sort((a, b) => b.date.localeCompare(a.date))

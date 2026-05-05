@@ -55,7 +55,9 @@ function guessCategory(desc: string): Category {
 
 function resolveType(typeStr: string, amount: number): TransactionType {
   const t = typeStr.toLowerCase()
-  if (/チャージ|入金|受取|charge|top.?up|incoming|received/.test(t)) return 'income'
+  // チャージ = loading money from bank/card into PayPay balance = internal transfer, not income
+  if (/チャージ|charge|top.?up/.test(t)) return 'transfer'
+  if (/受取|incoming|received/.test(t)) return 'income'
   if (/返金|キャンセル|払戻|refund|cancel/.test(t)) return 'refund'
   if (/送金|振込|transfer|send/.test(t)) return 'transfer'
   return amount >= 0 ? 'income' : 'payment'

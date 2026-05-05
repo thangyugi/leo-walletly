@@ -22,8 +22,9 @@ import type { ImportResult, PaymentProvider, Transaction } from '@/types'
 
 const PROVIDER_OPTIONS: { value: PaymentProvider; label: string; desc: string; color: string }[] =
   [
-    { value: 'rakuten-pay', label: 'Rakuten Pay', desc: '楽天ペイの利用明細CSV', color: '#BF0000' },
-    { value: 'paypay', label: 'PayPay', desc: 'PayPayの取引履歴CSV', color: '#FF0033' },
+    { value: 'rakuten-pay', label: 'Rakuten Pay', desc: '楽天カード明細 CSV / PDF', color: '#BF0000' },
+    { value: 'paypay', label: 'PayPay（残高）', desc: 'PayPay取引履歴 CSV / PDF', color: '#FF0033' },
+    { value: 'paypay-card', label: 'PayPayカード', desc: 'PayPayクレジット明細 CSV', color: '#8B1AFF' },
   ]
 
 function ProviderSelector({
@@ -34,7 +35,7 @@ function ProviderSelector({
   onChange: (v: PaymentProvider) => void
 }) {
   return (
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
       {PROVIDER_OPTIONS.map((p) => (
         <button
           key={p.value}

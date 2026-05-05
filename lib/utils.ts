@@ -37,13 +37,16 @@ export function formatDateRelative(dateStr: string): string {
 }
 
 export function normalizeDate(raw: string): string {
-  // Handles YYYY/MM/DD, YYYY-MM-DD, YYYY年MM月DD日
+  // Handles YYYY/MM/DD, YYYY-MM-DD, YYYY/M/D, YYYY年MM月DD日
   const cleaned = raw
-    .replace(/年/g, '-')
-    .replace(/月/g, '-')
-    .replace(/日/g, '')
-    .replace(/\//g, '-')
-    .trim()
+    .replace(/年/g, '-').replace(/月/g, '-').replace(/日/g, '')
+    .replace(/\//g, '-').trim()
+  // Pad single-digit month/day: "2026-3-2" → "2026-03-02"
+  const parts = cleaned.split('-')
+  if (parts.length === 3) {
+    const padded = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
+    if (!/Invalid/.test(new Date(padded).toString())) return padded
+  }
   const d = new Date(cleaned)
   if (isNaN(d.getTime())) return ''
   return d.toISOString().split('T')[0]
