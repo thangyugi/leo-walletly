@@ -223,19 +223,72 @@ function GroupListView({ t, onSelect }: {
   t: ReturnType<typeof useTranslation>['t']
   onSelect: (id: string) => void
 }) {
-  const { groups, assignments, addGroup, resolveGroup } = useGroupsStore()
+  const { groups, addGroup, resolveGroup } = useGroupsStore()
   const { transactions } = useTransactionsStore()
+  const { lang } = useTranslation()
   const [showForm, setShowForm] = useState(false)
 
   function summary(groupId: string) {
     let count = 0, expense = 0
     for (const tx of transactions) {
-      if (resolveGroup(tx.id, tx.description) === groupId) {
+      if (resolveGroup(tx.id, tx.description, tx.category) === groupId) {
         count++
         if (tx.amount < 0) expense += Math.abs(tx.amount)
       }
     }
     return { count, expense }
+  }
+
+  const customGroups = groups.filter((g) => !g.isDefault)
+  const defaultGroups = groups.filter((g) => g.isDefault)
+
+  function groupDisplayName(g: CustomGroup) {
+    if (g.isDefault && g.categoryKey) {
+      return (t.categories as Record<string, string>)[g.categoryKey] ?? g.name
+    }
+    return g.name
+  }
+
+  function renderGroupCard(group: CustomGroup) {
+    const { count, expense } = summary(group.id)
+    return (
+      <button key={group.id} onClick={() => onSelect(group.id)} className="w-full text-left">
+        <Card className="hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer">
+          <div className="h-1 w-full rounded-t-[var(--radius-lg)]" style={{ background: group.color }} />
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
+                style={{ background: `${group.color}18` }}>
+                {group.emoji}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-text-primary">{groupDisplayName(group)}</p>
+                  {group.isDefault && (
+                    <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wide">
+                      {lang === 'vi' ? 'Mặc định' : 'デフォルト'}
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-text-muted mt-0.5">
+                  {count} {t.groups.txnCount}
+                  {group.keywords.length > 0 && (
+                    <span className="ml-1 text-[10px] text-text-muted/60">· {group.keywords.length} kw</span>
+                  )}
+                </p>
+              </div>
+              <div className="text-right shrink-0 flex items-center gap-2">
+                <div>
+                  <p className="text-base font-bold text-red-500">{formatCurrency(-expense)}</p>
+                  <p className="text-[10px] text-text-muted">{t.groups.total}</p>
+                </div>
+                <ChevronRight className="w-4 h-4 text-text-muted" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </button>
+    )
   }
 
   return (
@@ -261,57 +314,23 @@ function GroupListView({ t, onSelect }: {
         </Card>
       )}
 
-      {groups.length === 0 && !showForm ? (
-        <Card className="text-center py-16">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-14 h-14 rounded-full bg-brand-50 flex items-center justify-center">
-              <Tag className="w-6 h-6 text-brand-500" />
-            </div>
-            <h3 className="font-semibold text-text-primary">{t.groups.noGroups}</h3>
-            <p className="text-sm text-text-muted">{t.groups.noGroupsSub}</p>
-            <Button variant="primary" size="sm" onClick={() => setShowForm(true)}>
-              <Plus className="w-4 h-4" />{t.groups.add}
-            </Button>
-          </div>
-        </Card>
-      ) : (
+      {/* Custom groups */}
+      {customGroups.length > 0 && (
         <div className="space-y-2">
-          {groups.map((group) => {
-            const { count, expense } = summary(group.id)
-            return (
-              <button key={group.id} onClick={() => onSelect(group.id)} className="w-full text-left">
-                <Card className="hover:border-brand-300 hover:shadow-sm transition-all cursor-pointer">
-                  <div className="h-1 w-full rounded-t-[var(--radius-lg)]" style={{ background: group.color }} />
-                  <CardContent className="pt-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0"
-                        style={{ background: `${group.color}18` }}>
-                        {group.emoji}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-text-primary">{group.name}</p>
-                        <p className="text-xs text-text-muted mt-0.5">
-                          {count} {t.groups.txnCount}
-                          {group.keywords.length > 0 && (
-                            <span className="ml-1 text-[10px] text-text-muted/60">· {group.keywords.length} kw</span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0 flex items-center gap-2">
-                        <div>
-                          <p className="text-base font-bold text-red-500">{formatCurrency(-expense)}</p>
-                          <p className="text-[10px] text-text-muted">{t.groups.total}</p>
-                        </div>
-                        <ChevronRight className="w-4 h-4 text-text-muted" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </button>
-            )
-          })}
+          <p className="text-xs font-semibold text-text-muted uppercase tracking-wide px-1">
+            {lang === 'vi' ? 'Nhóm tùy chỉnh' : 'カスタムグループ'}
+          </p>
+          {customGroups.map(renderGroupCard)}
         </div>
       )}
+
+      {/* Default category groups */}
+      <div className="space-y-2">
+        <p className="text-xs font-semibold text-text-muted uppercase tracking-wide px-1">
+          {lang === 'vi' ? 'Nhóm mặc định' : 'デフォルトグループ'}
+        </p>
+        {defaultGroups.map(renderGroupCard)}
+      </div>
     </div>
   )
 }
@@ -326,13 +345,18 @@ function GroupDetailView({ group, t, onBack }: {
   const { groups, assignments, updateGroup, removeGroup, removeKeyword,
     assignByDescription, unassignByDescription, resolveGroup } = useGroupsStore()
   const { transactions } = useTransactionsStore()
+  const { lang } = useTranslation()
   const [editing, setEditing] = useState(false)
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
   const [search, setSearch] = useState('')
 
+  const displayName = group.isDefault && group.categoryKey
+    ? (t.categories as Record<string, string>)[group.categoryKey] ?? group.name
+    : group.name
+
   // All transactions in this group
   const groupTxns = useMemo(() => {
-    return transactions.filter((tx) => resolveGroup(tx.id, tx.description) === group.id)
+    return transactions.filter((tx) => resolveGroup(tx.id, tx.description, tx.category) === group.id)
   }, [transactions, group.id, resolveGroup])
 
   // Grouped by description (unique names)
@@ -341,7 +365,7 @@ function GroupDetailView({ group, t, onBack }: {
     [groupTxns, assignments]
   )
 
-  // Unique descriptions NOT in this group (for add search)
+  // Unique descriptions NOT already resolved to this group (for add search)
   const addCandidates = useMemo(() => {
     const q = search.trim().toLowerCase()
     const inGroup = new Set(groupTxns.map((tx) => tx.description))
@@ -381,19 +405,30 @@ function GroupDetailView({ group, t, onBack }: {
             {group.emoji}
           </div>
           <div>
-            <h1 className="text-lg font-bold text-text-primary">{group.name}</h1>
+            <div className="flex items-center gap-1.5">
+              <h1 className="text-lg font-bold text-text-primary">{displayName}</h1>
+              {group.isDefault && (
+                <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-slate-100 text-slate-500 uppercase tracking-wide">
+                  {lang === 'vi' ? 'Mặc định' : 'デフォルト'}
+                </span>
+              )}
+            </div>
             <p className="text-xs text-text-muted">{groupTxns.length} {t.groups.txnCount}</p>
           </div>
         </div>
         <div className="flex gap-1">
-          <button onClick={() => setEditing(!editing)}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-alt text-text-muted hover:text-text-primary transition-colors">
-            <Pencil className="w-4 h-4" />
-          </button>
-          <button onClick={handleDelete}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {!group.isDefault && (
+            <button onClick={() => setEditing(!editing)}
+              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-surface-alt text-text-muted hover:text-text-primary transition-colors">
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {!group.isDefault && (
+            <button onClick={handleDelete}
+              className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-red-50 text-text-muted hover:text-red-500 transition-colors">
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </div>
 
@@ -493,7 +528,10 @@ function GroupDetailView({ group, t, onBack }: {
       <Card>
         <CardHeader>
           <CardTitle className="text-sm">
-            {t.groups.assignedTxn} ({descGroups.length} 種類 / {groupTxns.length} {t.groups.txnCount})
+            {t.groups.assignedTxn}
+            <span className="font-normal text-text-muted ml-1">
+              ({descGroups.length} {lang === 'vi' ? 'loại' : '種類'} / {groupTxns.length} {t.groups.txnCount})
+            </span>
           </CardTitle>
         </CardHeader>
         <CardContent>

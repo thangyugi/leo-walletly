@@ -2,7 +2,8 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CustomGroup, Transaction } from '@/types'
+import type { Category, CustomGroup, Transaction } from '@/types'
+import { DEFAULT_GROUPS } from '@/lib/constants'
 import { generateId } from '@/lib/utils'
 
 /** Normalize for keyword matching: fullwidth ASCII → halfwidth, lowercase */
@@ -37,19 +38,16 @@ interface GroupsState {
   removeGroup: (id: string) => void
 
   assignTransaction: (txnId: string, groupId: string, description: string) => void
-  /** Assign ALL transactions with the given description to a group */
   assignByDescription: (description: string, groupId: string, allTxns: Transaction[]) => void
   unassignTransaction: (txnId: string) => void
-  /** Remove all assignments for transactions matching a description */
   unassignByDescription: (description: string, allTxns: Transaction[]) => void
 
   addKeyword: (groupId: string, keyword: string) => void
   removeKeyword: (groupId: string, keyword: string) => void
 
-  /** Returns groupId for description via keyword matching, or null */
   findGroupForDescription: (description: string) => string | null
-  /** Resolve effective groupId for a transaction (explicit > auto-match) */
-  resolveGroup: (txnId: string, description: string) => string | null
+  /** Resolve effective groupId: explicit assignment > keyword match > category default group */
+  resolveGroup: (txnId: string, description: string, category?: Category) => string | null
 
   getAssignment: (txnId: string) => Assignment | null
 }
@@ -57,7 +55,7 @@ interface GroupsState {
 export const useGroupsStore = create<GroupsState>()(
   persist(
     (set, get) => ({
-      groups: [],
+      groups: DEFAULT_GROUPS,
       assignments: {},
 
       addGroup: (g) => {
@@ -158,15 +156,36 @@ export const useGroupsStore = create<GroupsState>()(
         return null
       },
 
-      resolveGroup: (txnId, description) => {
-        const { assignments, findGroupForDescription } = get()
+      resolveGroup: (txnId, description, category?) => {
+        const { assignments, findGroupForDescription, groups } = get()
         const explicit = assignments[txnId]
         if (explicit) return explicit.groupId
-        return findGroupForDescription(description)
+        const fromKeyword = findGroupForDescription(description)
+        if (fromKeyword) return fromKeyword
+        if (category) {
+          const defaultGroup = groups.find((g) => g.isDefault && g.categoryKey === category)
+          if (defaultGroup) return defaultGroup.id
+        }
+        return null
       },
 
       getAssignment: (txnId) => get().assignments[txnId] ?? null,
     }),
-    { name: 'leo-walletly-groups' }
+    {
+      name: 'leo-walletly-groups',
+      version: 2,
+      migrate: (persistedState: unknown, version: number) => {
+        const state = persistedState as {
+          groups: CustomGroup[]
+          assignments: Record<string, Assignment>
+        }
+        if (version < 2) {
+          const existingIds = new Set((state.groups ?? []).map((g) => g.id))
+          const missingDefaults = DEFAULT_GROUPS.filter((g) => !existingIds.has(g.id))
+          return { ...state, groups: [...missingDefaults, ...(state.groups ?? [])] }
+        }
+        return state
+      },
+    }
   )
 )

@@ -11,7 +11,7 @@ import { useTransactionsStore } from '@/stores/transactions'
 import { useUIStore } from '@/stores/ui'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useGroupsStore } from '@/stores/groups'
-import { PROVIDERS, CATEGORY_COLORS } from '@/lib/constants'
+import { PROVIDERS } from '@/lib/constants'
 import { formatCurrency, formatDate, cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
@@ -289,21 +289,27 @@ export default function CalendarPage() {
 }
 
 function DayDetailRow({ txn, onEdit }: { txn: Transaction; onEdit: () => void }) {
-  const { groups, assignments, findGroupForDescription } = useGroupsStore()
+  const { groups, resolveGroup } = useGroupsStore()
+  const { t } = useTranslation()
   const isExpense = txn.amount < 0
   const isTransfer = txn.type === 'transfer'
   const provider = PROVIDERS.find((p) => p.value === txn.provider)
-  const catColor = isTransfer ? '#94a3b8' : CATEGORY_COLORS[txn.category]
 
-  const assignment = assignments[txn.id]
-  const autoGroupId = !assignment ? findGroupForDescription(txn.description) : null
-  const group = groups.find((g) => g.id === (assignment?.groupId ?? autoGroupId))
+  const groupId = resolveGroup(txn.id, txn.description, txn.category)
+  const group = groupId ? groups.find((g) => g.id === groupId) : null
+  const groupColor = group?.color ?? (isTransfer ? '#94a3b8' : '#94a3b8')
+
+  const groupDisplayName = group
+    ? (group.isDefault && group.categoryKey
+        ? (t.categories as Record<string, string>)[group.categoryKey] ?? group.name
+        : group.name)
+    : null
 
   return (
     <div className="flex items-center gap-3 py-3 border-b border-border last:border-0 group">
       <div
         className="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
-        style={{ background: `${catColor}18`, color: catColor }}
+        style={{ background: `${groupColor}18`, color: groupColor }}
       >
         {isTransfer ? <ArrowLeftRight className="w-4 h-4" /> : txn.description.slice(0, 1)}
       </div>
@@ -313,10 +319,10 @@ function DayDetailRow({ txn, onEdit }: { txn: Transaction; onEdit: () => void })
           <span className="text-xs font-medium" style={{ color: provider?.color ?? '#64748b' }}>
             {provider?.label}
           </span>
-          {group && (
+          {group && groupDisplayName && (
             <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full"
               style={{ background: `${group.color}18`, color: group.color }}>
-              {group.emoji} {group.name}
+              {group.emoji} {groupDisplayName}
             </span>
           )}
           {txn.note && (

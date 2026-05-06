@@ -5,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatCurrency, cn } from '@/lib/utils'
-import { CATEGORY_COLORS, CATEGORIES } from '@/lib/constants'
+import { formatCurrency } from '@/lib/utils'
+import { CATEGORIES } from '@/lib/constants'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, PieChart, Pie, Cell,
 } from 'recharts'
 import Link from 'next/link'
-import { Upload, Tag } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 function ChartTooltip({ active, payload, label }: {
@@ -79,49 +79,54 @@ export default function AnalyticsPage() {
     [transactions]
   )
 
-  // ─── Group-based breakdown ────────────────────────────────────────────────
+  // All groups (default + custom) as buckets — custom first, then defaults, sorted by value
   const groupBuckets = useMemo(() => {
     return groups
-      .map((g) => ({
-        id: g.id,
-        name: g.name,
-        emoji: g.emoji,
-        color: g.color,
-        value: expenses
-          .filter((tx) => resolveGroup(tx.id, tx.description) === g.id)
-          .reduce((s, tx) => s + Math.abs(tx.amount), 0),
-      }))
+      .map((g) => {
+        const displayName = g.isDefault && g.categoryKey
+          ? (t.categories as Record<string, string>)[g.categoryKey] ?? g.name
+          : g.name
+        return {
+          id: g.id,
+          name: displayName,
+          emoji: g.emoji,
+          color: g.color,
+          isDefault: g.isDefault ?? false,
+          value: expenses
+            .filter((tx) => resolveGroup(tx.id, tx.description, tx.category) === g.id)
+            .reduce((s, tx) => s + Math.abs(tx.amount), 0),
+        }
+      })
       .filter((b) => b.value > 0)
-      .sort((a, b) => b.value - a.value)
-  }, [expenses, groups, resolveGroup])
+      .sort((a, b) => {
+        if (a.isDefault !== b.isDefault) return a.isDefault ? 1 : -1
+        return b.value - a.value
+      })
+  }, [expenses, groups, resolveGroup, t])
 
-  // ─── Unassigned breakdown by built-in category ───────────────────────────
-  const unassignedExpenses = useMemo(
-    () => expenses.filter((tx) => !resolveGroup(tx.id, tx.description)),
+  // Truly unmatched: no group match at all
+  const unmatchedExpenses = useMemo(
+    () => expenses.filter((tx) => !resolveGroup(tx.id, tx.description, tx.category)),
     [expenses, resolveGroup]
   )
 
-  const categoryBuckets = useMemo(() => {
+  const unmatchedBuckets = useMemo(() => {
     return CATEGORIES.map((cat) => ({
       name: (t.categories as Record<string, string>)[cat.value] ?? cat.label,
       emoji: cat.emoji,
-      value: unassignedExpenses
+      value: unmatchedExpenses
         .filter((tx) => tx.category === cat.value)
         .reduce((s, tx) => s + Math.abs(tx.amount), 0),
-      color: CATEGORY_COLORS[cat.value],
-    }))
-      .filter((b) => b.value > 0)
-      .sort((a, b) => b.value - a.value)
-  }, [unassignedExpenses, t])
+      color: '#cbd5e1',
+    })).filter((b) => b.value > 0)
+  }, [unmatchedExpenses, t])
 
-  // ─── Combined for pie chart ───────────────────────────────────────────────
-  const allBuckets = useMemo(
-    () => [...groupBuckets, ...categoryBuckets],
-    [groupBuckets, categoryBuckets]
-  )
-  const totalExpense = allBuckets.reduce((s, b) => s + b.value, 0)
+  const totalExpense = groupBuckets.reduce((s, b) => s + b.value, 0)
+    + unmatchedBuckets.reduce((s, b) => s + b.value, 0)
 
-  // ─── Monthly chart data ───────────────────────────────────────────────────
+  const allPieData = [...groupBuckets, ...unmatchedBuckets]
+
+  // Monthly bar chart
   const monthly = useMemo(() => {
     const map: Record<string, { expense: number; income: number }> = {}
     for (const tx of transactions) {
@@ -184,26 +189,21 @@ export default function AnalyticsPage() {
 
       {/* Expense breakdown */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {/* Pie chart */}
         <Card>
           <CardHeader>
-            <CardTitle>
-              {groups.length > 0
-                ? (lang === 'vi' ? 'Phân tích theo nhóm' : 'グループ別支出')
-                : t.analytics.byCategory}
-            </CardTitle>
+            <CardTitle>{t.analytics.byCategory}</CardTitle>
           </CardHeader>
           <CardContent>
-            {allBuckets.length === 0 ? (
+            {allPieData.length === 0 ? (
               <p className="text-sm text-text-muted text-center py-8">
                 {lang === 'vi' ? 'Không có dữ liệu' : 'データなし'}
               </p>
             ) : (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
-                  <Pie data={allBuckets} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
+                  <Pie data={allPieData} cx="50%" cy="50%" innerRadius={55} outerRadius={80}
                     paddingAngle={2} dataKey="value">
-                    {allBuckets.map((b, i) => <Cell key={i} fill={b.color} />)}
+                    {allPieData.map((b, i) => <Cell key={i} fill={b.color} />)}
                   </Pie>
                   <Tooltip formatter={(v) => formatCurrency(Number(v))} />
                 </PieChart>
@@ -212,60 +212,37 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Breakdown list */}
         <Card>
           <CardHeader>
             <CardTitle>{lang === 'vi' ? 'Chi tiết' : '内訳'}</CardTitle>
           </CardHeader>
           <CardContent>
-            {/* Custom groups section */}
             {groupBuckets.length > 0 && (
-              <>
-                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide flex items-center gap-1 mb-2">
-                  <Tag className="w-3 h-3" />
-                  {lang === 'vi' ? 'Nhóm chi tiêu' : 'カスタムグループ'}
+              <BreakdownList items={groupBuckets} total={totalExpense} />
+            )}
+            {unmatchedBuckets.length > 0 && (
+              <div className="mt-3 pt-3 border-t border-border">
+                <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-2">
+                  {lang === 'vi' ? 'Chưa phân loại' : '未分類'}
                 </p>
-                <BreakdownList items={groupBuckets} total={totalExpense} />
-              </>
-            )}
-
-            {/* Unassigned category section */}
-            {categoryBuckets.length > 0 && (
-              <>
-                {groupBuckets.length > 0 && (
-                  <div className="my-3 border-t border-border pt-3">
-                    <p className="text-[10px] font-semibold text-text-muted uppercase tracking-wide mb-2">
-                      {lang === 'vi' ? 'Chưa phân nhóm' : '未分類'}
-                    </p>
-                  </div>
-                )}
-                <BreakdownList items={categoryBuckets} total={totalExpense} />
-              </>
-            )}
-
-            {/* Hint to create groups */}
-            {groups.length === 0 && (
-              <div className="mt-4 pt-3 border-t border-border">
-                <Link href="/groups">
-                  <button className="w-full flex items-center gap-2 text-xs text-brand-600 hover:text-brand-700 font-medium">
-                    <Tag className="w-3.5 h-3.5" />
-                    {lang === 'vi'
-                      ? 'Tạo nhóm chi tiêu để phân tích chi tiết hơn →'
-                      : 'グループを作成してより詳細に分析 →'}
-                  </button>
-                </Link>
+                <BreakdownList items={unmatchedBuckets} total={totalExpense} />
               </div>
+            )}
+            {allPieData.length === 0 && (
+              <p className="text-sm text-text-muted text-center py-8">
+                {lang === 'vi' ? 'Không có dữ liệu' : 'データなし'}
+              </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Per-group monthly chart (if groups exist) */}
-      {groups.length > 0 && groupBuckets.length > 0 && (
+      {/* Custom-group monthly stacked chart */}
+      {groups.some((g) => !g.isDefault) && (
         <Card>
           <CardHeader>
             <CardTitle>
-              {lang === 'vi' ? 'Chi tiêu theo nhóm (6 tháng gần nhất)' : 'グループ別月別支出（直近6ヶ月）'}
+              {lang === 'vi' ? 'Chi tiêu theo nhóm tùy chỉnh (6 tháng)' : 'カスタムグループ別月別支出（直近6ヶ月）'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -282,13 +259,16 @@ function GroupMonthlyChart() {
   const { groups, resolveGroup } = useGroupsStore()
   const { lang } = useTranslation()
 
+  const customGroups = useMemo(() => groups.filter((g) => !g.isDefault), [groups])
+
   const data = useMemo(() => {
     const months: Record<string, Record<string, number>> = {}
     for (const tx of transactions) {
       if (tx.amount >= 0 || tx.type === 'transfer') continue
       const month = tx.date.slice(0, 7)
       if (!months[month]) months[month] = {}
-      const gId = resolveGroup(tx.id, tx.description) ?? 'other'
+      const gId = resolveGroup(tx.id, tx.description, tx.category)
+      if (!gId || !customGroups.find((g) => g.id === gId)) continue
       months[month][gId] = (months[month][gId] ?? 0) + Math.abs(tx.amount)
     }
     return Object.entries(months)
@@ -298,10 +278,16 @@ function GroupMonthlyChart() {
         month: lang === 'vi' ? `Th.${month.slice(5)}` : month.slice(5) + '月',
         ...vals,
       }))
-  }, [transactions, resolveGroup, lang])
+  }, [transactions, resolveGroup, lang, customGroups])
 
-  const activeGroups = groups.filter((g) =>
+  const activeGroups = customGroups.filter((g) =>
     data.some((d) => (d as Record<string, number | string>)[g.id])
+  )
+
+  if (activeGroups.length === 0) return (
+    <p className="text-sm text-text-muted text-center py-8">
+      {lang === 'vi' ? 'Chưa có dữ liệu nhóm tùy chỉnh' : 'カスタムグループのデータなし'}
+    </p>
   )
 
   return (

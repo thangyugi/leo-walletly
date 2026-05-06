@@ -104,13 +104,12 @@ function GroupDropdown({
   txn: Transaction
   onClose: () => void
 }) {
-  const { groups, assignments, assignTransaction, unassignTransaction, findGroupForDescription } = useGroupsStore()
+  const { groups, assignments, assignTransaction, unassignTransaction, resolveGroup } = useGroupsStore()
   const { t } = useTranslation()
   const ref = useRef<HTMLDivElement>(null)
 
-  const currentAssignment = assignments[txn.id]
-  const autoGroupId = !currentAssignment ? findGroupForDescription(txn.description) : null
-  const activeGroupId = currentAssignment?.groupId ?? autoGroupId ?? null
+  const activeGroupId = resolveGroup(txn.id, txn.description, txn.category)
+  const hasExplicitAssignment = !!assignments[txn.id]
 
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -148,7 +147,7 @@ function GroupDropdown({
           </button>
         ))
       )}
-      {activeGroupId && (
+      {hasExplicitAssignment && (
         <>
           <div className="mx-3 my-1 border-t border-border" />
           <button
@@ -176,7 +175,7 @@ function ProviderBadge({ provider }: { provider: PaymentProvider }) {
 }
 
 function TransactionRow({ txn, onDelete }: { txn: Transaction; onDelete: (id: string) => void }) {
-  const { groups, assignments, findGroupForDescription } = useGroupsStore()
+  const { groups, resolveGroup } = useGroupsStore()
   const { t } = useTranslation()
   const [showGroup, setShowGroup] = useState(false)
 
@@ -184,9 +183,7 @@ function TransactionRow({ txn, onDelete }: { txn: Transaction; onDelete: (id: st
   const isTransfer = txn.type === 'transfer'
   const catColor = isTransfer ? '#94a3b8' : CATEGORY_COLORS[txn.category]
 
-  const assignment = assignments[txn.id]
-  const autoGroupId = !assignment ? findGroupForDescription(txn.description) : null
-  const activeGroupId = assignment?.groupId ?? autoGroupId ?? null
+  const activeGroupId = resolveGroup(txn.id, txn.description, txn.category)
   const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) : null
 
   return (
@@ -202,7 +199,9 @@ function TransactionRow({ txn, onDelete }: { txn: Transaction; onDelete: (id: st
           <span className="text-text-muted text-xs">·</span>
           {isTransfer
             ? <Badge variant="neutral" className="text-[10px] py-0 px-1.5">{t.transactions.transferBadge}</Badge>
-            : <Badge variant="neutral" className="text-[10px] py-0 px-1.5">{getCategoryLabel(txn.category)}</Badge>
+            : activeGroup
+              ? null
+              : <Badge variant="neutral" className="text-[10px] py-0 px-1.5">{getCategoryLabel(txn.category)}</Badge>
           }
           <ProviderBadge provider={txn.provider} />
           {activeGroup && (

@@ -17,6 +17,8 @@ export interface CustomGroup {
   color: string
   emoji: string
   keywords: string[]
+  isDefault?: boolean
+  categoryKey?: Category
 }
 
 export interface Transaction {
