@@ -2,11 +2,10 @@
 
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import type { CustomGroup } from '@/types'
+import type { CustomGroup, Transaction } from '@/types'
 import { generateId } from '@/lib/utils'
 
-/** Normalize description for keyword matching.
- * Converts fullwidth ASCII → halfwidth, lowercase */
+/** Normalize for keyword matching: fullwidth ASCII → halfwidth, lowercase */
 export function normalizeText(s: string): string {
   return s
     .replace(/[Ａ-Ｚ]/g, (c) => String.fromCharCode(c.charCodeAt(0) - 0xfee0))
@@ -18,32 +17,40 @@ export function normalizeText(s: string): string {
     .trim()
 }
 
-/** Extract a short keyword from a description for auto-matching */
 function extractKeyword(description: string): string {
   const norm = normalizeText(description)
-  // Split by separators, take first segment with 3+ chars
   const parts = norm.split(/[\/\s・｜|,，]+/)
-  const sig = parts.find((p) => p.length >= 3) ?? norm.slice(0, 12)
-  return sig.trim()
+  return (parts.find((p) => p.length >= 3) ?? norm.slice(0, 12)).trim()
 }
 
-interface Assignment {
+export interface Assignment {
   groupId: string
-  auto: boolean // true = auto-matched by keyword, false = manually assigned
+  auto: boolean
 }
 
 interface GroupsState {
   groups: CustomGroup[]
-  assignments: Record<string, Assignment> // txnId → assignment
+  assignments: Record<string, Assignment>
+
   addGroup: (g: Omit<CustomGroup, 'id'>) => CustomGroup
   updateGroup: (id: string, update: Partial<Omit<CustomGroup, 'id'>>) => void
   removeGroup: (id: string) => void
+
   assignTransaction: (txnId: string, groupId: string, description: string) => void
+  /** Assign ALL transactions with the given description to a group */
+  assignByDescription: (description: string, groupId: string, allTxns: Transaction[]) => void
   unassignTransaction: (txnId: string) => void
+  /** Remove all assignments for transactions matching a description */
+  unassignByDescription: (description: string, allTxns: Transaction[]) => void
+
   addKeyword: (groupId: string, keyword: string) => void
   removeKeyword: (groupId: string, keyword: string) => void
-  /** Auto-match: find group by keywords. Returns groupId or null. */
+
+  /** Returns groupId for description via keyword matching, or null */
   findGroupForDescription: (description: string) => string | null
+  /** Resolve effective groupId for a transaction (explicit > auto-match) */
+  resolveGroup: (txnId: string, description: string) => string | null
+
   getAssignment: (txnId: string) => Assignment | null
 }
 
@@ -75,7 +82,6 @@ export const useGroupsStore = create<GroupsState>()(
 
       assignTransaction: (txnId, groupId, description) => {
         const keyword = extractKeyword(description)
-        // Learn keyword for this group
         set((s) => {
           const group = s.groups.find((g) => g.id === groupId)
           let updatedGroups = s.groups
@@ -91,10 +97,39 @@ export const useGroupsStore = create<GroupsState>()(
         })
       },
 
+      assignByDescription: (description, groupId, allTxns) => {
+        const keyword = extractKeyword(description)
+        set((s) => {
+          const next = { ...s.assignments }
+          for (const txn of allTxns) {
+            if (txn.description === description) {
+              next[txn.id] = { groupId, auto: false }
+            }
+          }
+          const group = s.groups.find((g) => g.id === groupId)
+          let updatedGroups = s.groups
+          if (group && keyword && !group.keywords.includes(keyword)) {
+            updatedGroups = s.groups.map((g) =>
+              g.id === groupId ? { ...g, keywords: [...g.keywords, keyword] } : g
+            )
+          }
+          return { groups: updatedGroups, assignments: next }
+        })
+      },
+
       unassignTransaction: (txnId) =>
         set((s) => {
           const next = { ...s.assignments }
           delete next[txnId]
+          return { assignments: next }
+        }),
+
+      unassignByDescription: (description, allTxns) =>
+        set((s) => {
+          const next = { ...s.assignments }
+          for (const txn of allTxns) {
+            if (txn.description === description) delete next[txn.id]
+          }
           return { assignments: next }
         }),
 
@@ -110,9 +145,7 @@ export const useGroupsStore = create<GroupsState>()(
       removeKeyword: (groupId, keyword) =>
         set((s) => ({
           groups: s.groups.map((g) =>
-            g.id === groupId
-              ? { ...g, keywords: g.keywords.filter((k) => k !== keyword) }
-              : g
+            g.id === groupId ? { ...g, keywords: g.keywords.filter((k) => k !== keyword) } : g
           ),
         })),
 
@@ -123,6 +156,13 @@ export const useGroupsStore = create<GroupsState>()(
           if (g.keywords.some((kw) => norm.includes(kw))) return g.id
         }
         return null
+      },
+
+      resolveGroup: (txnId, description) => {
+        const { assignments, findGroupForDescription } = get()
+        const explicit = assignments[txnId]
+        if (explicit) return explicit.groupId
+        return findGroupForDescription(description)
       },
 
       getAssignment: (txnId) => get().assignments[txnId] ?? null,
