@@ -1,260 +1,263 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useMemo } from 'react'
 import Link from 'next/link'
-import { 
-  TrendingDown, TrendingUp, Wallet, Upload, ArrowRight, 
-  History, Plus, ArrowUpRight, Activity, PieChart, 
-  ArrowDownLeft, Sparkles, Receipt
+import {
+  TrendingDown, TrendingUp, Wallet, Upload,
+  ArrowUpRight, Activity, PieChart, Sparkles, Inbox,
 } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
+import { TransactionRow } from '@/components/financial/transaction-row'
+import { LedgerBalance } from '@/components/financial/money-value'
+import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatCurrency, formatDate, getCategoryLabel, cn } from '@/lib/utils'
-import { CATEGORY_COLORS, PROVIDERS } from '@/lib/constants'
+import { formatMoney, formatCurrencyCompact, formatRatio } from '@/lib/money'
+import { cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
-// ─── Geist Components ────────────────────────────────────────────────────────
-
-function StatCard({
-  label,
-  value,
-  icon: Icon,
-  trend,
-  color,
-  sublabel
-}: {
-  label: string
-  value: string
-  icon: React.ElementType
-  trend?: string
-  color: string
+// ------------------------------------------------------------------
+// Stat Card
+// ------------------------------------------------------------------
+interface StatCardProps {
+  label:    string
+  value:    string
+  icon:     React.ElementType
+  trend?:   string
+  trendVariant?: 'gain' | 'loss' | 'neutral'
   sublabel?: string
-}) {
+  accent:   string  // CSS var or hex
+}
+
+function StatCard({ label, value, icon: Icon, trend, trendVariant = 'neutral', sublabel, accent }: StatCardProps) {
   return (
-    <div className="group relative bg-white border border-slate-200 rounded-2xl p-6 transition-all hover:border-black hover:-translate-y-1">
-      <div className="flex justify-between items-start mb-6">
-        <div className={cn("w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110", color.replace('text-', 'bg-').concat('10'))}>
-          <Icon className={cn("w-6 h-6", color)} />
+    <div className="card-base p-5 flex flex-col gap-4">
+      <div className="flex items-start justify-between">
+        <div
+          className="w-9 h-9 rounded-lg flex items-center justify-center"
+          style={{ background: `${accent}16` }}
+        >
+          <Icon className="w-4.5 h-4.5" style={{ color: accent, width: 18, height: 18 }} />
         </div>
         {trend && (
-          <div className="flex items-center gap-1 px-2 py-1 rounded-full bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-500 uppercase tracking-tight">
-            {trend}
-          </div>
+          <Badge variant={trendVariant} size="sm">{trend}</Badge>
         )}
       </div>
       <div>
-        <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mb-1">{label}</p>
-        <p className={cn("text-2xl font-black tracking-tighter", color)}>{value}</p>
-        {sublabel && <p className="text-[10px] font-bold text-slate-500 mt-2">{sublabel}</p>}
-      </div>
-    </div>
-  )
-}
-
-function TransactionRow({ txn }: { txn: Transaction }) {
-  const { groups, resolveGroup } = useGroupsStore()
-  const provider = PROVIDERS.find((p) => p.value === txn.provider)
-  const isExpense = txn.amount < 0
-  const isTransfer = txn.type === 'transfer'
-
-  const activeGroupId = resolveGroup(txn.id, txn.description, txn.category, txn)
-  const activeGroup = activeGroupId ? groups.find((g) => g.id === activeGroupId) : null
-  const parentGroup = activeGroup?.parentId ? groups.find(g => g.id === activeGroup.parentId) : null
-  const catColor = isTransfer ? '#94a3b8' : (activeGroup?.color || CATEGORY_COLORS[txn.category] || '#000')
-
-  return (
-    <div className="flex items-center gap-4 py-4 group/row hover:bg-slate-50/50 -mx-4 px-4 rounded-2xl transition-colors">
-      <div
-        className="w-10 h-10 rounded-2xl flex items-center justify-center text-sm font-black shrink-0"
-        style={{ background: `${catColor}15`, color: catColor }}
-      >
-        {activeGroup?.emoji || txn.description.slice(0, 1).toUpperCase()}
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-black text-slate-900 truncate tracking-tight">{txn.description}</p>
-        <div className="flex items-center gap-2 mt-1">
-          <span className="text-[10px] font-bold text-slate-600">{formatDate(txn.date)}</span>
-          <div className="w-1 h-1 rounded-full bg-slate-200" />
-          {activeGroup ? (
-            <span className="text-[10px] font-black uppercase tracking-tight" style={{ color: activeGroup.color }}>
-              {parentGroup && <span className="opacity-60 mr-1">{parentGroup.name} /</span>}
-              {activeGroup.name}
-            </span>
-          ) : (
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-tight">Chưa phân loại</span>
-          )}
-        </div>
-      </div>
-      <div className="text-right shrink-0">
-        <p className={cn('text-sm font-black tracking-tight', isExpense ? 'text-red-500' : 'text-emerald-600')}>
-          {isExpense ? '' : '+'}
-          {formatCurrency(txn.amount)}
-        </p>
-        {provider && (
-          <span className="text-[9px] font-black uppercase tracking-widest opacity-40">{provider.label}</span>
+        <p className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1">{label}</p>
+        <p className="text-xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)]">{value}</p>
+        {sublabel && (
+          <p className="text-xs text-[var(--color-text-quaternary)] mt-1">{sublabel}</p>
         )}
       </div>
     </div>
   )
 }
 
-// ─── Dashboard Page ──────────────────────────────────────────────────────────
+// ------------------------------------------------------------------
+// Quick Stats (dark card)
+// ------------------------------------------------------------------
+function QuickStats({ stats, txnCount }: {
+  stats: { expense: number; income: number; net: number; count: number }
+  txnCount: { expense: number; income: number }
+}) {
+  const { t } = useTranslation()
 
+  const rows = [
+    { label: t.dashboard.totalSuffix, value: String(stats.count), mono: false },
+    { label: t.dashboard.avgDaily,    value: formatMoney(stats.expense / Math.max(30, 1)), mono: true },
+    { label: t.dashboard.ratio,       value: `${formatRatio(stats.income, stats.expense)}×`, mono: true },
+  ]
+
+  return (
+    <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-gray-900)] p-5 text-white relative overflow-hidden">
+      <div className="absolute top-0 right-0 p-4 opacity-[0.06]">
+        <PieChart className="w-28 h-28" />
+      </div>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-gray-500)] mb-4">
+        {t.dashboard.quickStats}
+      </p>
+      <div className="space-y-3 relative z-10">
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between py-2.5 border-b border-white/10 last:border-0">
+            <span className="text-xs text-[var(--color-gray-400)]">{r.label}</span>
+            <span className={cn('text-sm font-semibold', r.mono && 'font-tabular')}>{r.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
+// Dashboard Page
+// ------------------------------------------------------------------
 export default function DashboardPage() {
   const { transactions } = useTransactionsStore()
+  const { groups, resolveGroup } = useGroupsStore()
   const { t } = useTranslation()
 
   const stats = useMemo(() => {
-    const expense = transactions.reduce((sum, t) => (t.amount < 0 ? sum + Math.abs(t.amount) : sum), 0)
-    const income = transactions.reduce((sum, t) => (t.amount >= 0 ? sum + t.amount : sum), 0)
-    const net = income - expense
-    return { expense, income, net, count: transactions.length }
+    const expense = transactions.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0)
+    const income  = transactions.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0)
+    return {
+      expense,
+      income,
+      net:   income - expense,
+      count: transactions.length,
+    }
   }, [transactions])
 
-  const recent = useMemo(() => 
-    [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8)
-  , [transactions])
+  const txnCount = useMemo(() => ({
+    expense: transactions.filter((t) => t.amount < 0).length,
+    income:  transactions.filter((t) => t.amount > 0).length,
+  }), [transactions])
+
+  const recent = useMemo(
+    () => [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 10),
+    [transactions]
+  )
 
   const hasData = transactions.length > 0
 
-  return (
-    <div className="w-full max-w-[1400px] mx-auto min-h-screen animate-in fade-in duration-500">
-      {/* Header Section */}
-      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-layout-gap">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center">
-              <Activity className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">Tổng quan</h1>
-          </div>
-          <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">Theo dõi dòng tiền & quản lý chi tiêu thông minh</p>
-        </div>
-        <div className="flex gap-3">
-          <Link href="/import">
-            <Button className="h-12 px-6 rounded-2xl bg-black text-white hover:bg-slate-800 transition-all font-black uppercase text-[10px] tracking-widest">
-              <Upload className="w-4 h-4 mr-2" /> Nhập dữ liệu
-            </Button>
-          </Link>
-          <Link href="/transactions">
-            <Button variant="ghost" className="h-12 px-6 rounded-2xl border border-slate-200 font-black uppercase text-[10px] tracking-widest">
-              Lịch sử <History className="w-4 h-4 ml-2" />
-            </Button>
-          </Link>
-        </div>
-      </header>
+  function getRowProps(txn: Transaction) {
+    const gid      = resolveGroup(txn.id, txn.description, txn.category, txn)
+    const group    = gid ? groups.find((g) => g.id === gid) : null
+    const parent   = group?.parentId ? groups.find((g) => g.id === group.parentId) : null
+    return {
+      groupName:       group?.name,
+      groupColor:      group?.color,
+      groupEmoji:      group?.emoji,
+      parentGroupName: parent?.name,
+    }
+  }
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-layout-gap mb-12">
+  return (
+    <div className="animate-fade-in space-y-6">
+      <PageHeader
+        title={t.dashboard.title}
+        subtitle={t.dashboard.subtitle}
+        actions={
+          <>
+            <Link href="/import">
+              <Button variant="primary" size="sm" icon={<Upload />}>
+                {t.dashboard.importData}
+              </Button>
+            </Link>
+            <Link href="/transactions">
+              <Button variant="secondary" size="sm" iconRight={<ArrowUpRight />}>
+                {t.dashboard.history}
+              </Button>
+            </Link>
+          </>
+        }
+      />
+
+      {/* KPI Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
-          label="Tổng Chi tiêu"
-          value={formatCurrency(-stats.expense)}
+          label={t.dashboard.totalExpense}
+          value={formatCurrencyCompact(stats.expense)}
           icon={TrendingDown}
-          color="text-red-500"
-          trend={`${transactions.filter(t => t.amount < 0).length} giao dịch`}
-          sublabel="Dựa trên toàn bộ dữ liệu đã nhập"
+          accent="var(--color-loss-500)"
+          trend={`${txnCount.expense} ${t.dashboard.payments}`}
+          trendVariant="neutral"
+          sublabel={t.dashboard.noData}
         />
         <StatCard
-          label="Tổng Thu nhập"
-          value={formatCurrency(stats.income)}
+          label={t.dashboard.totalIncome}
+          value={formatCurrencyCompact(stats.income)}
           icon={TrendingUp}
-          color="text-emerald-600"
-          trend={`${transactions.filter(t => t.amount >= 0).length} giao dịch`}
-          sublabel="Tổng cộng thu nhập từ mọi nguồn"
+          accent="var(--color-gain-500)"
+          trend={`${txnCount.income} ${t.dashboard.deposits}`}
+          trendVariant="gain"
         />
         <StatCard
-          label="Số dư hiện tại"
-          value={formatCurrency(stats.net)}
+          label={t.dashboard.balance}
+          value={formatCurrencyCompact(stats.net)}
           icon={Wallet}
-          color="text-black"
-          trend="Số dư ròng"
-          sublabel="Tình trạng tài chính tổng thể"
+          accent={stats.net >= 0 ? 'var(--color-gain-600)' : 'var(--color-loss-500)'}
+          trendVariant={stats.net >= 0 ? 'gain' : 'loss'}
         />
       </div>
 
-      {/* Bento Content */}
+      {/* Main content */}
       {!hasData ? (
-        <div className="relative overflow-hidden bg-white border border-slate-200 rounded-2xl p-20 flex flex-col items-center text-center">
-          <div className="absolute inset-0 bg-slate-50/50 -z-10" />
-          <div className="w-24 h-24 rounded-2xl bg-black flex items-center justify-center mb-8 rotate-3">
-            <Receipt className="w-10 h-10 text-white" />
+        /* Empty state */
+        <div className="card-base p-16 flex flex-col items-center text-center">
+          <div className="w-14 h-14 rounded-xl bg-[var(--color-bg-sunken)] flex items-center justify-center mb-5">
+            <Inbox className="w-7 h-7 text-[var(--color-text-quaternary)]" />
           </div>
-          <h2 className="text-3xl font-black tracking-tighter text-slate-900 mb-4">Bắt đầu hành trình tài chính</h2>
-          <p className="max-w-md text-slate-600 font-bold text-sm mb-10 leading-relaxed">
-            Bạn chưa có giao dịch nào. Hãy nhập file CSV từ ứng dụng ngân hàng hoặc quét biên lai để bắt đầu phân tích.
+          <h2 className="text-base font-semibold text-[var(--color-text-primary)] mb-2">
+            {t.dashboard.startJourney}
+          </h2>
+          <p className="text-sm text-[var(--color-text-tertiary)] max-w-sm leading-relaxed mb-6">
+            {t.dashboard.startSub}
           </p>
           <Link href="/import">
-            <Button className="h-16 px-10 rounded-2xl bg-black text-white hover:bg-slate-800 transition-all font-black uppercase text-xs tracking-[0.2em]">
-              Nhập dữ liệu ngay <Sparkles className="w-4 h-4 ml-3" />
+            <Button size="lg" icon={<Sparkles />}>
+              {t.dashboard.importNow}
             </Button>
           </Link>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-layout-gap items-start">
-          {/* Recent Transactions Bento Block */}
-          <Card className="lg:col-span-2 bg-white border border-slate-200 rounded-2xl overflow-hidden transition-all duration-300">
-            <div className="p-8 border-b border-slate-100 flex items-center justify-between">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+          {/* Recent Transactions */}
+          <Card padding="none" className="lg:col-span-2">
+            <CardHeader className="flex items-center justify-between">
               <div>
-                <h3 className="text-xl font-black tracking-tight text-slate-900">Giao dịch gần đây</h3>
-                <p className="text-[10px] font-black text-slate-600 uppercase tracking-widest mt-1">Các hoạt động chi tiêu mới nhất</p>
+                <CardTitle>{t.dashboard.recentTxn}</CardTitle>
               </div>
               <Link href="/transactions">
-                <button className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-slate-500 hover:text-black transition-colors">
-                  Xem tất cả <ArrowUpRight className="w-4 h-4" />
+                <button className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors">
+                  {t.dashboard.viewAll}
+                  <ArrowUpRight className="w-3.5 h-3.5" />
                 </button>
               </Link>
-            </div>
-            <div className="p-8">
-              <div className="space-y-1">
-                {recent.map((txn) => (
-                  <TransactionRow key={txn.id} txn={txn} />
-                ))}
-              </div>
+            </CardHeader>
+            <div className="px-2 py-1">
+              {recent.map((txn) => (
+                <TransactionRow key={txn.id} txn={txn} {...getRowProps(txn)} />
+              ))}
             </div>
           </Card>
 
-          {/* Side Info Bento Block */}
-          <div className="space-y-8">
-            <Card className="bg-slate-900 border border-slate-800 rounded-2xl p-8 text-white relative overflow-hidden group transition-all duration-300">
-              <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-                <PieChart className="w-32 h-32" />
-              </div>
-              <div className="relative z-10">
-                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-6">Thống kê nhanh</h4>
-                <div className="space-y-6">
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                    <span className="text-xs font-bold text-slate-500">Số lượng giao dịch</span>
-                    <span className="text-lg font-black">{stats.count}</span>
-                  </div>
-                  <div className="flex items-center justify-between border-b border-white/10 pb-4">
-                    <span className="text-xs font-bold text-slate-500">Trung bình chi</span>
-                    <span className="text-lg font-black text-red-400">
-                      {formatCurrency(stats.expense / (transactions.filter(t => t.amount < 0).length || 1))}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-bold text-slate-500">Tỷ lệ Thu/Chi</span>
-                    <span className="text-lg font-black text-emerald-400">
-                      {stats.expense > 0 ? (stats.income / stats.expense).toFixed(1) : '∞'}x
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </Card>
+          {/* Side panel */}
+          <div className="space-y-4">
+            <QuickStats stats={stats} txnCount={txnCount} />
 
-            <div className="bg-emerald-50/50 border border-emerald-100 rounded-2xl p-8 transition-all duration-300">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-emerald-500 rounded-2xl flex items-center justify-center">
-                  <Sparkles className="w-5 h-5 text-white" />
+            {/* Balance indicator */}
+            <div className="card-base p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-50)] flex items-center justify-center">
+                  <Activity className="w-4 h-4 text-[var(--color-brand-600)]" />
                 </div>
-                <h4 className="text-sm font-black text-emerald-900 tracking-tight uppercase">Mẹo tài chính</h4>
+                <span className="text-sm font-semibold text-[var(--color-text-primary)]">
+                  {t.dashboard.balance}
+                </span>
               </div>
-              <p className="text-xs font-medium text-emerald-700 leading-relaxed italic">
-                "Việc phân loại đúng các Nhóm chi tiêu sẽ giúp hệ thống tự động nhận diện chính xác đến 95% các giao dịch trong tương lai."
+              <LedgerBalance balance={stats.net} size="lg" />
+              <p className="text-xs text-[var(--color-text-tertiary)] mt-2">
+                {t.dashboard.subtitle}
               </p>
+            </div>
+
+            {/* Financial Tip */}
+            <div className="rounded-xl border border-[var(--color-brand-100)] bg-[var(--color-brand-25)] p-4">
+              <div className="flex items-start gap-2.5">
+                <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-xs font-semibold text-[var(--color-brand-800)] mb-1">
+                    {t.dashboard.financialTip}
+                  </p>
+                  <p className="text-xs text-[var(--color-brand-700)] leading-relaxed">
+                    {t.dashboard.tipContent}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>

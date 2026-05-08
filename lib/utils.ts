@@ -6,18 +6,23 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export function formatCurrency(amount: number, currency = 'JPY'): string {
-  return new Intl.NumberFormat('ja-JP', {
-    style: 'currency',
-    currency,
-    minimumFractionDigits: 0,
-  }).format(amount)
-}
+// Re-export money formatters for convenience
+export { formatCurrency, formatMoney, getAmountSign } from '@/lib/money'
 
 export function formatDate(dateStr: string): string {
   const d = new Date(dateStr)
   if (isNaN(d.getTime())) return dateStr
   return new Intl.DateTimeFormat('ja-JP', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d)
+}
+
+export function formatDateLocale(dateStr: string, locale = 'ja-JP'): string {
+  const d = new Date(dateStr)
+  if (isNaN(d.getTime())) return dateStr
+  return new Intl.DateTimeFormat(locale, {
     year: 'numeric',
     month: '2-digit',
     day: '2-digit',
@@ -37,11 +42,9 @@ export function formatDateRelative(dateStr: string): string {
 }
 
 export function normalizeDate(raw: string): string {
-  // Handles YYYY/MM/DD, YYYY-MM-DD, YYYY/M/D, YYYY年MM月DD日
   const cleaned = raw
     .replace(/年/g, '-').replace(/月/g, '-').replace(/日/g, '')
     .replace(/\//g, '-').trim()
-  // Pad single-digit month/day: "2026-3-2" → "2026-03-02"
   const parts = cleaned.split('-')
   if (parts.length === 3) {
     const padded = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`
@@ -65,23 +68,28 @@ export function generateId(): string {
 
 export function getCategoryLabel(cat: Category): string {
   const map: Record<Category, string> = {
-    food: '食費',
-    transport: '交通',
-    shopping: '買い物',
+    food:          '食費',
+    transport:     '交通',
+    shopping:      '買い物',
     entertainment: '娯楽',
-    health: '医療・健康',
-    utilities: '光熱費',
-    other: 'その他',
+    health:        '医療・健康',
+    utilities:     '光熱費',
+    other:         'その他',
   }
   return map[cat] ?? 'その他'
 }
 
 export function getTypeLabel(type: TransactionType): string {
   const map: Record<TransactionType, string> = {
-    payment: '支払い',
-    refund: '返金',
-    income: '入金',
+    payment:  '支払い',
+    refund:   '返金',
+    income:   '入金',
     transfer: '振込',
   }
   return map[type] ?? type
+}
+
+export function clampPercent(value: number, total: number): number {
+  if (total === 0) return 0
+  return Math.min(100, Math.max(0, (value / total) * 100))
 }

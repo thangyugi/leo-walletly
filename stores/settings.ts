@@ -12,7 +12,7 @@ interface SettingsState {
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
-      lang: 'ja',
+      lang: 'ja' as Lang,
       setLang: (lang) => set({ lang }),
     }),
     { name: 'leo-walletly-settings' }

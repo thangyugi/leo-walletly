@@ -13,88 +13,119 @@ import {
   ScanLine,
   RefreshCw,
   FileText,
+  Globe,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
+import type { Lang } from '@/lib/i18n'
+
+const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
+  { value: 'ja', label: '日本語', flag: '🇯🇵' },
+  { value: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
+  { value: 'en', label: 'English', flag: '🇺🇸' },
+]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { t } = useTranslation()
+  const { t }   = useTranslation()
   const { lang, setLang } = useSettingsStore()
 
-  const NAV_ITEMS = [
-    { href: '/', label: t.nav.dashboard, icon: LayoutDashboard },
-    { href: '/transactions', label: t.nav.transactions, icon: ArrowDownUp },
-    { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
-    { href: '/groups', label: t.nav.groups, icon: Tag },
-    { href: '/analytics', label: t.nav.analytics, icon: BarChart3 },
-    { href: '/recurring', label: lang === 'vi' ? 'Định kỳ' : '定期支出', icon: RefreshCw },
-    { href: '/monthly-report', label: lang === 'vi' ? 'Báo cáo Tháng' : '月次レポート', icon: FileText },
-    { href: '/scan', label: lang === 'vi' ? 'Quét Hóa Đơn' : 'レシート読取', icon: ScanLine },
-    { href: '/import', label: t.nav.import, icon: Upload },
+  const navItems = [
+    { href: '/',               label: t.nav.dashboard,    icon: LayoutDashboard, group: 'main' },
+    { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp,     group: 'main' },
+    { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays,    group: 'main' },
+    { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3,       group: 'main' },
+    { href: '/groups',         label: t.nav.groups,       icon: Tag,             group: 'manage' },
+    { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw,       group: 'manage' },
+    { href: '/monthly-report', label: t.nav.report,       icon: FileText,        group: 'manage' },
+    { href: '/scan',           label: t.nav.scan,         icon: ScanLine,        group: 'tools' },
+    { href: '/import',         label: t.nav.import,       icon: Upload,          group: 'tools' },
+  ]
+
+  const groups = [
+    { key: 'main',   label: null },
+    { key: 'manage', label: 'MANAGE' },
+    { key: 'tools',  label: 'TOOLS' },
   ]
 
   return (
-    <aside className="hidden md:flex flex-col w-60 min-h-screen bg-white border-r border-border shrink-0">
+    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border">
-        <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
+      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-[var(--color-sidebar-border)]">
+        <div className="w-7 h-7 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />
         </div>
-        <span className="font-bold text-text-primary tracking-tight">{APP_NAME}</span>
+        <span className="font-semibold text-sm text-[var(--color-text-primary)] tracking-tight">{APP_NAME}</span>
       </div>
 
-      {/* Nav */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+      {/* Navigation */}
+      <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
+        {groups.map(({ key, label }) => {
+          const items = navItems.filter((n) => n.group === key)
           return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
-                active
-                  ? 'bg-brand-50 text-brand-700'
-                  : 'text-text-secondary hover:bg-surface-alt hover:text-text-primary'
+            <div key={key} className={cn(key !== 'main' && 'mt-5')}>
+              {label && (
+                <p className="px-2.5 mb-1 text-[10px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-widest">
+                  {label}
+                </p>
               )}
-            >
-              <Icon className={cn('w-4 h-4 shrink-0', active ? 'text-brand-600' : 'text-text-muted')} />
-              {label}
-            </Link>
+              <div className="space-y-0.5">
+                {items.map(({ href, label, icon: Icon }) => {
+                  const active = pathname === href || (href !== '/' && pathname.startsWith(href))
+                  return (
+                    <Link
+                      key={href}
+                      href={href}
+                      className={cn(
+                        'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors duration-100',
+                        active
+                          ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)] font-medium'
+                          : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-primary)]'
+                      )}
+                    >
+                      <Icon
+                        className={cn(
+                          'w-4 h-4 shrink-0',
+                          active ? 'text-[var(--color-sidebar-item-active-text)]' : 'text-[var(--color-text-quaternary)]'
+                        )}
+                        strokeWidth={active ? 2 : 1.75}
+                      />
+                      {label}
+                    </Link>
+                  )
+                })}
+              </div>
+            </div>
           )
         })}
       </nav>
 
-      {/* Footer: language switcher */}
-      <div className="px-4 py-4 border-t border-border space-y-3">
-        <div className="flex items-center gap-1.5 p-1 bg-surface rounded-xl">
-          <button
-            onClick={() => setLang('ja')}
-            className={cn(
-              'flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all',
-              lang === 'ja'
-                ? 'bg-white text-text-primary'
-                : 'text-text-muted hover:text-text-secondary'
-            )}
-          >
-            🇯🇵 日本語
-          </button>
-          <button
-            onClick={() => setLang('vi')}
-            className={cn(
-              'flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all',
-              lang === 'vi'
-                ? 'bg-white text-text-primary'
-                : 'text-text-muted hover:text-text-secondary'
-            )}
-          >
-            🇻🇳 Tiếng Việt
-          </button>
+      {/* Footer: language + version */}
+      <div className="px-2.5 py-3 border-t border-[var(--color-sidebar-border)]">
+        <div className="flex items-center gap-1 px-2.5 mb-2 text-xs text-[var(--color-text-quaternary)]">
+          <Globe className="w-3 h-3" />
+          <span className="uppercase tracking-wide text-[10px] font-semibold">Language</span>
         </div>
-        <p className="text-xs text-text-muted">v0.2.0 · Leo Walletly</p>
+        <div className="flex gap-1">
+          {LANG_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => setLang(opt.value)}
+              title={opt.label}
+              className={cn(
+                'flex-1 py-1.5 text-xs rounded-md transition-all duration-100',
+                lang === opt.value
+                  ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)] font-medium'
+                  : 'text-[var(--color-text-quaternary)] hover:text-[var(--color-text-tertiary)]'
+              )}
+            >
+              {opt.flag}
+            </button>
+          ))}
+        </div>
+        <p className="mt-2 px-2.5 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · Leo Walletly</p>
       </div>
     </aside>
   )
