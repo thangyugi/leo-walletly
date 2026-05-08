@@ -4,9 +4,9 @@ import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import {
   Search, Filter, Trash2, Upload, X, ArrowUpDown,
-  ArrowUp, ArrowDown, ChevronDown, ArrowUpRight,
+  ArrowUp, ArrowDown, ChevronDown, Edit2,
 } from 'lucide-react'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input, Select } from '@/components/ui/input'
@@ -17,7 +17,8 @@ import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore, type SortOption } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, getAmountColor, getAmountSign, formatCurrencyCompact } from '@/lib/money'
+import { formatDate } from '@/lib/utils'
 import { cn } from '@/lib/utils'
 import { CATEGORIES, PROVIDERS } from '@/lib/constants'
 import type { Transaction } from '@/types'
@@ -25,20 +26,18 @@ import type { Transaction } from '@/types'
 // ------------------------------------------------------------------
 // Sort options
 // ------------------------------------------------------------------
-type SortDir = 'asc' | 'desc'
-
 const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
-  { value: 'dateDesc',   label: 'Date (newest first)',   icon: ArrowDown  },
-  { value: 'dateAsc',    label: 'Date (oldest first)',   icon: ArrowUp    },
-  { value: 'amountDesc', label: 'Amount (highest)',      icon: ArrowDown  },
-  { value: 'amountAsc',  label: 'Amount (lowest)',       icon: ArrowUp    },
-  { value: 'nameAsc',    label: 'Name (A–Z)',            icon: ArrowUp    },
-  { value: 'category',   label: 'Category',                               },
-  { value: 'group',      label: 'Group',                                  },
+  { value: 'dateDesc',   label: 'Mới nhất',       icon: ArrowDown  },
+  { value: 'dateAsc',    label: 'Cũ nhất',         icon: ArrowUp    },
+  { value: 'amountDesc', label: 'Số tiền cao nhất', icon: ArrowDown  },
+  { value: 'amountAsc',  label: 'Số tiền thấp nhất',icon: ArrowUp    },
+  { value: 'nameAsc',    label: 'Tên (A–Z)',        icon: ArrowUp    },
+  { value: 'category',   label: 'Danh mục',                          },
+  { value: 'group',      label: 'Nhóm',                              },
 ]
 
 // ------------------------------------------------------------------
-// Sort dropdown (with click-outside)
+// Sort dropdown
 // ------------------------------------------------------------------
 function SortDropdown({
   value, onChange,
@@ -64,8 +63,8 @@ function SortDropdown({
         className="gap-1.5"
       >
         <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
-        <span className="hidden sm:inline">Sort:</span>
-        <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? 'Date'}</span>
+        <span className="hidden sm:inline text-[var(--color-text-tertiary)]">Sắp xếp:</span>
+        <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? 'Ngày'}</span>
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
 
@@ -82,8 +81,11 @@ function SortDropdown({
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] hover:text-[var(--color-text-primary)]'
               )}
             >
-              {opt.icon && <opt.icon className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)]" />}
-              {!opt.icon && <span className="w-3.5 shrink-0" />}
+              {opt.icon ? (
+                <opt.icon className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)]" />
+              ) : (
+                <span className="w-3.5 shrink-0" />
+              )}
               {opt.label}
               {value === opt.value && (
                 <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-interactive-primary)]" />
@@ -119,7 +121,6 @@ function FilterBar() {
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        {/* Search */}
         <div className="flex-1 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
           <input
@@ -138,7 +139,6 @@ function FilterBar() {
           />
         </div>
 
-        {/* Filter toggle */}
         <Button
           variant={expanded ? 'secondary' : 'outline'}
           size="sm"
@@ -216,47 +216,31 @@ function FilterBar() {
 }
 
 // ------------------------------------------------------------------
-// Summary bar
+// Date Group Header
 // ------------------------------------------------------------------
-function SummaryBar({
-  count, total, expense, income,
-}: { count: number; total: number; expense: number; income: number }) {
-  const { t } = useTranslation()
-  const isFiltered = count < total
+function DateGroupHeader({ date, expense, income }: { date: string; expense: number; income: number }) {
+  const net = income - expense
+
+  // Format date: YYYY-MM-DD → localized
+  const d = new Date(date + 'T00:00:00')
+  const weekday = d.toLocaleDateString('ja-JP', { weekday: 'short' })
+  const label = `${d.getMonth() + 1}/${d.getDate()}（${weekday}）`
 
   return (
-    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
-      <span className="text-xs text-[var(--color-text-tertiary)]">
-        {isFiltered ? (
-          <><span className="font-semibold text-[var(--color-text-primary)]">{count}</span> of {total} transactions</>
-        ) : (
-          <><span className="font-semibold text-[var(--color-text-primary)]">{count}</span> {t.transactions.shown}</>
+    <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
+      <span className="text-xs font-semibold text-[var(--color-text-tertiary)]">{label}</span>
+      <div className="flex items-center gap-3">
+        {income > 0 && (
+          <span className="text-xs font-tabular text-[var(--color-text-gain)]">+{formatMoney(income)}</span>
         )}
-      </span>
-
-      <span className="h-3 w-px bg-[var(--color-border-default)] hidden sm:block" />
-
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-[var(--color-text-quaternary)]">Expense</span>
-        <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
-          −{formatMoney(expense)}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-[var(--color-text-quaternary)]">Income</span>
-        <span className="text-xs font-semibold font-tabular text-[var(--color-text-gain)]">
-          +{formatMoney(income)}
-        </span>
-      </div>
-
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-[var(--color-text-quaternary)]">Net</span>
+        {expense > 0 && (
+          <span className="text-xs font-tabular text-[var(--color-text-loss)]">−{formatMoney(expense)}</span>
+        )}
         <span className={cn(
           'text-xs font-semibold font-tabular',
-          income - expense >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]'
+          net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
         )}>
-          {income - expense >= 0 ? '+' : ''}{formatMoney(income - expense)}
+          {net >= 0 ? '+' : ''}{formatMoney(net)}
         </span>
       </div>
     </div>
@@ -273,7 +257,7 @@ export default function TransactionsPage() {
 
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
 
-  const filtered = useMemo(() => {
+  const sorted = useMemo(() => {
     const list = getFiltered()
     return list.sort((a, b) => {
       switch (sortOption) {
@@ -288,10 +272,33 @@ export default function TransactionsPage() {
     })
   }, [getFiltered, sortOption])
 
+  // Group by date (only for date sorts)
+  const groupedByDate = useMemo(() => {
+    if (!['dateDesc', 'dateAsc'].includes(sortOption)) return null
+
+    const groups: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
+    for (const tx of sorted) {
+      const last = groups[groups.length - 1]
+      if (last && last.date === tx.date) {
+        last.txns.push(tx)
+        if (tx.amount > 0) last.income  += tx.amount
+        else               last.expense += Math.abs(tx.amount)
+      } else {
+        groups.push({
+          date:    tx.date,
+          txns:    [tx],
+          income:  tx.amount > 0 ? tx.amount : 0,
+          expense: tx.amount < 0 ? Math.abs(tx.amount) : 0,
+        })
+      }
+    }
+    return groups
+  }, [sorted, sortOption])
+
   const totals = useMemo(() => ({
-    expense: filtered.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0),
-    income:  filtered.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0),
-  }), [filtered])
+    expense: sorted.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0),
+    income:  sorted.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0),
+  }), [sorted])
 
   function getRowProps(txn: Transaction) {
     const gid    = resolveGroup(txn.id, txn.description, txn.category, txn)
@@ -309,7 +316,7 @@ export default function TransactionsPage() {
     <div className="animate-fade-in space-y-4">
       <PageHeader
         title={t.transactions.title}
-        subtitle={`${transactions.length} transactions total`}
+        subtitle={`${transactions.length} ${t.dashboard.recentCount}`}
         actions={
           <>
             <SortDropdown value={sortOption} onChange={setSortOption} />
@@ -331,19 +338,33 @@ export default function TransactionsPage() {
 
       <FilterBar />
 
-      {/* Summary */}
-      {filtered.length > 0 && (
-        <SummaryBar
-          count={filtered.length}
-          total={transactions.length}
-          expense={totals.expense}
-          income={totals.income}
-        />
+      {/* Summary chips */}
+      {sorted.length > 0 && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
+          <span className="text-xs text-[var(--color-text-tertiary)]">
+            <span className="font-semibold text-[var(--color-text-primary)]">{sorted.length}</span>
+            {sorted.length < transactions.length && ` / ${transactions.length}`}{' '}
+            {t.transactions.shown}
+          </span>
+          <span className="h-3 w-px bg-[var(--color-border-default)] hidden sm:block" />
+          <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
+            −{formatMoney(totals.expense)}
+          </span>
+          <span className="text-xs font-semibold font-tabular text-[var(--color-text-gain)]">
+            +{formatMoney(totals.income)}
+          </span>
+          <span className={cn(
+            'text-xs font-semibold font-tabular',
+            totals.income - totals.expense >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
+          )}>
+            {totals.income - totals.expense >= 0 ? '+' : ''}{formatMoney(totals.income - totals.expense)}
+          </span>
+        </div>
       )}
 
       {/* Transaction list */}
       <Card padding="none">
-        {filtered.length === 0 ? (
+        {sorted.length === 0 ? (
           <EmptyState
             title={transactions.length === 0 ? t.transactions.noData : t.transactions.noResult}
             description={transactions.length === 0 ? t.transactions.noDataSub : undefined}
@@ -355,22 +376,57 @@ export default function TransactionsPage() {
               ) : undefined
             }
           />
+        ) : groupedByDate ? (
+          /* Date-grouped view */
+          <>
+            {groupedByDate.map((group) => (
+              <div key={group.date}>
+                <DateGroupHeader date={group.date} income={group.income} expense={group.expense} />
+                <div className="divide-y divide-[var(--color-border-subtle)]">
+                  {group.txns.map((txn) => (
+                    <TransactionRow
+                      key={txn.id}
+                      txn={txn}
+                      {...getRowProps(txn)}
+                      onClick={() => setEditingTxn(txn)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Footer totals */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+              <span className="text-xs text-[var(--color-text-quaternary)]">
+                {sorted.length} {t.transactions.shown}
+              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
+                  −{formatMoney(totals.expense)}
+                </span>
+                <span className="text-xs font-semibold font-tabular text-[var(--color-text-gain)]">
+                  +{formatMoney(totals.income)}
+                </span>
+              </div>
+            </div>
+          </>
         ) : (
+          /* Flat sorted view (non-date sorts) */
           <>
             {/* Column header */}
             <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
               <div className="w-8" />
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-                Description / Category
+                {t.transactions.title} / {t.transactions.labelCategory}
               </p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">
-                Amount
+                {t.dashboard.totalBalance}
               </p>
               <div className="w-4" />
             </div>
 
             <div className="divide-y divide-[var(--color-border-subtle)]">
-              {filtered.map((txn) => (
+              {sorted.map((txn) => (
                 <TransactionRow
                   key={txn.id}
                   txn={txn}
@@ -380,10 +436,9 @@ export default function TransactionsPage() {
               ))}
             </div>
 
-            {/* Footer totals */}
             <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
               <span className="text-xs text-[var(--color-text-quaternary)]">
-                {filtered.length} transactions
+                {sorted.length} {t.transactions.shown}
               </span>
               <div className="flex items-center gap-4">
                 <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
