@@ -218,7 +218,7 @@ export function TransactionEditModal({ txn, onClose }: Props) {
             >
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {c.emoji} {(t.categories as Record<string, string>)[c.value] ?? c.label}
+                  {c.emoji} {c.label}
                 </option>
               ))}
             </select>
