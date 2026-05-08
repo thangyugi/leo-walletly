@@ -41,7 +41,7 @@ function ProviderSelector({
           key={p.value}
           onClick={() => onChange(p.value)}
           className={cn(
-            'flex flex-col items-start gap-1 p-4 rounded-[var(--radius-lg)] border-2 text-left transition-all',
+            'flex flex-col items-start gap-1 p-4 rounded-2xl border-2 text-left transition-all',
             value === p.value
               ? 'border-brand-600 bg-brand-50'
               : 'border-border bg-white hover:border-brand-300 hover:bg-brand-50/30'
@@ -75,7 +75,7 @@ function DropZone({
   return (
     <div
       className={cn(
-        'border-2 border-dashed rounded-[var(--radius-lg)] p-10 text-center transition-all cursor-pointer',
+        'border-2 border-dashed rounded-2xl p-10 text-center transition-all cursor-pointer',
         isDragging
           ? 'border-brand-500 bg-brand-50'
           : 'border-border hover:border-brand-400 hover:bg-brand-50/30 bg-surface'
@@ -136,14 +136,30 @@ function ImportResultCard({
   result,
   onConfirm,
   onDiscard,
+  existingTransactions,
 }: {
   result: ImportResult
-  onConfirm: () => void
+  onConfirm: (newOnly: Transaction[]) => void
   onDiscard: () => void
+  existingTransactions: Transaction[]
 }) {
   const [expanded, setExpanded] = useState(true)
+  const [skipDupes, setSkipDupes] = useState(true)
   const provider = PROVIDERS.find((p) => p.value === result.provider)
   const totalAmount = result.transactions.reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  // Detect duplicates: same date + same amount + same description (trimmed)
+  const existingKeys = new Set(
+    existingTransactions.map(t => `${t.date}|${t.amount}|${t.description.trim().toLowerCase()}`)
+  )
+  const duplicates = result.transactions.filter(t =>
+    existingKeys.has(`${t.date}|${t.amount}|${t.description.trim().toLowerCase()}`)
+  )
+  const newTransactions = result.transactions.filter(t =>
+    !existingKeys.has(`${t.date}|${t.amount}|${t.description.trim().toLowerCase()}`)
+  )
+  const hasDupes = duplicates.length > 0
+  const toImport = skipDupes ? newTransactions : result.transactions
 
   return (
     <Card className={cn(result.transactions.length === 0 ? 'border-red-200' : '')}>
@@ -174,6 +190,52 @@ function ImportResultCard({
         </div>
       </CardHeader>
 
+      {/* Duplicate warning */}
+      {hasDupes && (
+        <div className="mb-3 bg-amber-50 border border-amber-200 rounded-[var(--radius-md)] p-3">
+          <div className="flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="text-xs font-bold text-amber-800">
+                Phát hiện {duplicates.length} giao dịch trùng lặp
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                Các giao dịch này đã có trong hệ thống (cùng ngày, số tiền, mô tả)
+              </p>
+              <div className="mt-2 max-h-24 overflow-y-auto space-y-1">
+                {duplicates.slice(0, 5).map((t, i) => (
+                  <div key={i} className="flex items-center gap-2 text-[10px] text-amber-700 bg-amber-100/60 rounded px-2 py-1">
+                    <span className="font-mono">{t.date}</span>
+                    <span className="flex-1 truncate">{t.description}</span>
+                    <span className="font-bold shrink-0">{formatCurrency(t.amount)}</span>
+                  </div>
+                ))}
+                {duplicates.length > 5 && (
+                  <p className="text-[10px] text-amber-500 text-center">... và {duplicates.length - 5} giao dịch khác</p>
+                )}
+              </div>
+              <div className="mt-2.5 flex items-center gap-2">
+                <button
+                  onClick={() => setSkipDupes(v => !v)}
+                  className={cn(
+                    'relative w-9 h-5 rounded-full transition-colors shrink-0',
+                    skipDupes ? 'bg-brand-600' : 'bg-slate-300'
+                  )}
+                >
+                  <span className={cn(
+                    'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform',
+                    skipDupes ? 'translate-x-4' : 'translate-x-0.5'
+                  )} />
+                </button>
+                <span className="text-xs text-amber-800 font-medium">
+                  {skipDupes ? `Bỏ qua trùng lặp — chỉ nhập ${newTransactions.length} giao dịch mới` : `Nhập tất cả (kể cả trùng lặp)`}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {result.errors.length > 0 && (
         <div className="mb-3 bg-amber-50 border border-amber-200 rounded-[var(--radius-md)] p-3">
           <p className="text-xs font-semibold text-amber-700 mb-1">{result.errors.length}件の警告</p>
@@ -198,9 +260,9 @@ function ImportResultCard({
       )}
 
       <div className="flex gap-2 mt-4">
-        <Button variant="primary" size="sm" onClick={onConfirm} disabled={result.transactions.length === 0}>
+        <Button variant="primary" size="sm" onClick={() => onConfirm(toImport)} disabled={toImport.length === 0}>
           <CheckCircle2 className="w-4 h-4" />
-          {result.transactions.length}件をインポート
+          {toImport.length}件をインポート
         </Button>
         <Button variant="ghost" size="sm" onClick={onDiscard}>
           <X className="w-4 h-4" />
@@ -217,7 +279,7 @@ export default function ImportPage() {
   const [loading, setLoading] = useState(false)
   const [results, setResults] = useState<ImportResult[]>([])
   const [imported, setImported] = useState<string[]>([])
-  const { addTransactions } = useTransactionsStore()
+  const { addTransactions, transactions: existingTransactions } = useTransactionsStore()
 
   const handleFiles = useCallback(
     async (files: FileList) => {
@@ -235,10 +297,11 @@ export default function ImportPage() {
     [provider]
   )
 
-  const handleConfirm = (result: ImportResult) => {
-    addTransactions(result.transactions)
-    setImported((prev) => [...prev, result.fileName])
-    setResults((prev) => prev.filter((r) => r.fileName !== result.fileName))
+  const handleConfirm = (newTxns: Transaction[]) => {
+    if (newTxns.length === 0) return
+    addTransactions(newTxns)
+    setImported((prev) => [...prev, results.find(r => r.transactions.some(t => newTxns.includes(t)))?.fileName ?? ''])
+    setResults((prev) => prev.filter((r) => !r.transactions.some(t => newTxns.includes(t))))
   }
 
   const handleDiscard = (result: ImportResult) => {
@@ -246,21 +309,30 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl mx-auto">
-      <div>
-        <h1 className="text-xl font-bold text-text-primary">CSVインポート</h1>
-        <p className="text-sm text-text-muted mt-0.5">Rakuten Pay・PayPay の明細ファイルを読み込みます</p>
-      </div>
+    <div className="w-full p-0 max-w-[1400px] mx-auto min-h-screen animate-in fade-in duration-500">
+      <header className="mb-12 flex flex-col md:flex-row md:items-end justify-between gap-layout-gap">
+        <div>
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-10 h-10 bg-slate-900 rounded-2xl flex items-center justify-center">
+              <Upload className="w-5 h-5 text-white" />
+            </div>
+            <h1 className="text-4xl font-black tracking-tighter text-slate-900 uppercase">Nhập dữ liệu</h1>
+          </div>
+          <p className="text-sm font-bold text-slate-600 uppercase tracking-widest">Đồng bộ hóa từ CSV/PDF của Rakuten Pay & PayPay</p>
+        </div>
+      </header>
 
-      <Card>
-        <CardHeader><CardTitle>1. サービスを選択</CardTitle></CardHeader>
+      <div className="max-w-2xl mx-auto space-y-6">
+
+      <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden bg-white">
+        <CardHeader className="pb-4"><CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">1. Chọn dịch vụ</CardTitle></CardHeader>
         <CardContent>
           <ProviderSelector value={provider} onChange={setProvider} />
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader><CardTitle>2. ファイルをアップロード</CardTitle></CardHeader>
+      <Card className="border border-slate-200 rounded-2xl shadow-sm overflow-hidden bg-white">
+        <CardHeader className="pb-4"><CardTitle className="text-[10px] font-black text-slate-400 uppercase tracking-widest">2. Tải tệp lên</CardTitle></CardHeader>
         <CardContent>
           <DropZone
             onFiles={handleFiles}
@@ -269,22 +341,22 @@ export default function ImportPage() {
             onDragLeave={() => setIsDragging(false)}
           />
           {loading && (
-            <div className="flex items-center gap-2 mt-3 text-sm text-text-secondary">
-              <div className="w-4 h-4 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
-              解析中...
+            <div className="flex items-center gap-3 mt-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+              <div className="w-4 h-4 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
+              Đang phân tích dữ liệu...
             </div>
           )}
         </CardContent>
       </Card>
 
       {imported.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {imported.map((name) => (
-            <div key={name} className="flex items-center gap-2 px-4 py-3 bg-brand-50 border border-brand-200 rounded-[var(--radius-md)] text-sm">
-              <CheckCircle2 className="w-4 h-4 text-brand-600 shrink-0" />
-              <span className="text-brand-800 font-medium">{name} をインポートしました</span>
-              <button onClick={() => setImported((p) => p.filter((n) => n !== name))} className="ml-auto text-brand-400 hover:text-brand-600">
-                <X className="w-4 h-4" />
+            <div key={name} className="flex items-center gap-3 px-5 py-4 bg-emerald-50 border border-emerald-100 rounded-2xl shadow-sm animate-in slide-in-from-top-4">
+              <CheckCircle2 className="w-5 h-5 text-emerald-500 shrink-0" />
+              <span className="text-emerald-900 font-bold text-sm">Đã nhập thành công: {name}</span>
+              <button onClick={() => setImported((p) => p.filter((n) => n !== name))} className="ml-auto text-emerald-300 hover:text-emerald-600 transition-colors">
+                <X className="w-5 h-5" />
               </button>
             </div>
           ))}
@@ -295,16 +367,23 @@ export default function ImportPage() {
         <ImportResultCard
           key={result.fileName}
           result={result}
-          onConfirm={() => handleConfirm(result)}
+          existingTransactions={existingTransactions}
+          onConfirm={(newTxns) => {
+            addTransactions(newTxns)
+            setImported(prev => [...prev, result.fileName])
+            setResults(prev => prev.filter(r => r.fileName !== result.fileName))
+          }}
           onDiscard={() => handleDiscard(result)}
         />
       ))}
 
-      <Card className="bg-brand-50 border-brand-100">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <FileText className="w-4 h-4 text-brand-600" />
-            <CardTitle className="text-brand-800">明細のダウンロード方法</CardTitle>
+      <Card className="bg-slate-50 border border-slate-200 rounded-2xl shadow-sm opacity-80 hover:opacity-100 transition-opacity">
+        <CardHeader className="pb-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <FileText className="w-4 h-4 text-slate-900" />
+            </div>
+            <CardTitle className="text-[10px] font-black text-slate-600 uppercase tracking-widest">Hướng dẫn tải tệp</CardTitle>
           </div>
         </CardHeader>
         <CardContent>
@@ -340,6 +419,7 @@ export default function ImportPage() {
           </div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

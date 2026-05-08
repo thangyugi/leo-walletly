@@ -17,11 +17,12 @@ export const PROVIDERS: { value: PaymentProvider; label: string; color: string }
   { value: 'paypay', label: 'PayPay', color: '#FF0033' },
   { value: 'paypay-card', label: 'PayPayカード', color: '#8B1AFF' },
   { value: 'manual', label: '手動入力', color: '#0d9159' },
+  { value: 'ai-scan', label: 'AI Scan', color: '#3b82f6' },
 ]
 
 export const DEFAULT_GROUPS: CustomGroup[] = [
   {
-    id: 'default-food',
+    id: 'f0000000-0000-4000-a000-000000000001',
     name: '食費',
     emoji: '🍜',
     color: '#f97316',
@@ -37,7 +38,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-transport',
+    id: 'f0000000-0000-4000-a000-000000000002',
     name: '交通費',
     emoji: '🚃',
     color: '#3b82f6',
@@ -51,7 +52,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-shopping',
+    id: 'f0000000-0000-4000-a000-000000000003',
     name: '買い物',
     emoji: '🛍️',
     color: '#a855f7',
@@ -67,7 +68,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-entertainment',
+    id: 'f0000000-0000-4000-a000-000000000004',
     name: '娯楽',
     emoji: '🎮',
     color: '#ec4899',
@@ -84,7 +85,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-health',
+    id: 'f0000000-0000-4000-a000-000000000005',
     name: '医療・健康',
     emoji: '💊',
     color: '#14b8a6',
@@ -100,7 +101,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-utilities',
+    id: 'f0000000-0000-4000-a000-000000000006',
     name: '光熱費・通信',
     emoji: '💡',
     color: '#eab308',
@@ -116,7 +117,7 @@ export const DEFAULT_GROUPS: CustomGroup[] = [
     ],
   },
   {
-    id: 'default-other',
+    id: 'f0000000-0000-4000-a000-000000000007',
     name: 'その他',
     emoji: '📦',
     color: '#94a3b8',
@@ -135,3 +136,13 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   utilities: '#eab308',
   other: '#94a3b8',
 }
+
+export const PRESET_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#0d9159', '#64748b',
+]
+
+export const PRESET_EMOJIS = [
+  '🍜', '🛍️', '🚃', '💊', '🎮', '💡', '☕', '🍺', '🏠', '✈️',
+  '📱', '🛒', '🎵', '💪', '📚', '🐾', '🎁', '💰', '🏥', '⚡',
+]

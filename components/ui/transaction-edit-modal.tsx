@@ -15,34 +15,61 @@ interface Props {
   onClose: () => void
 }
 
+function formatWithCommas(val: string): string {
+  const num = val.replace(/,/g, '')
+  if (!num || isNaN(Number(num))) return val
+  return Number(num).toLocaleString()
+}
+
 export function TransactionEditModal({ txn, onClose }: Props) {
   const { updateTransaction } = useTransactionsStore()
-  const { groups, assignments, assignTransaction, unassignTransaction } = useGroupsStore()
+  const { groups, assignments, descAssignments, assignTransaction, unassignTransaction, resolveGroup } = useGroupsStore()
   const { t, lang } = useTranslation()
 
   const [date, setDate] = useState(txn.date)
   const [description, setDescription] = useState(txn.description)
-  const [amount, setAmount] = useState(Math.abs(txn.amount).toString())
+  const [amountDisplay, setAmountDisplay] = useState(Math.abs(txn.amount).toLocaleString())
   const [isExpense, setIsExpense] = useState(txn.amount <= 0)
   const [category, setCategory] = useState<Category>(txn.category)
   const [note, setNote] = useState(txn.note ?? '')
-  const [groupId, setGroupId] = useState(assignments[txn.id]?.groupId ?? '')
+  const [groupId, setGroupId] = useState(resolveGroup(txn.id, txn.description, txn.category) ?? '')
+
+  const amountNum = parseFloat(amountDisplay.replace(/,/g, '')) || 0
+
+  function handleAmountChange(raw: string) {
+    const digits = raw.replace(/[^0-9]/g, '')
+    setAmountDisplay(digits ? Number(digits).toLocaleString() : '')
+  }
 
   function handleSave() {
-    const num = parseFloat(amount) || 0
+    const finalDesc = description.trim() || txn.description
+    const finalAmount = isExpense ? -Math.abs(amountNum) : Math.abs(amountNum)
+    
     updateTransaction(txn.id, {
       date,
-      description: description.trim() || txn.description,
-      amount: isExpense ? -Math.abs(num) : Math.abs(num),
+      description: finalDesc,
+      amount: finalAmount,
       category,
       note: note.trim() || undefined,
+      groupId: groupId || undefined, // Sync to transactions table
     })
+
     if (groupId) {
-      assignTransaction(txn.id, groupId, description)
+      assignTransaction(txn.id, groupId, finalDesc)
     } else {
       unassignTransaction(txn.id)
     }
     onClose()
+  }
+
+  // Auto-reflect group when category changes (if not already set manually)
+  function handleCategoryChange(cat: Category) {
+    setCategory(cat)
+    // If no group is selected, try to find a default one for this category
+    if (!groupId) {
+      const defGroup = groups.find(g => g.isDefault && g.categoryKey === cat)
+      if (defGroup) setGroupId(defGroup.id)
+    }
   }
 
   const labels = {
@@ -59,6 +86,9 @@ export function TransactionEditModal({ txn, onClose }: Props) {
     notePlaceholder: lang === 'vi' ? 'Thêm ghi chú...' : 'メモを入力...',
     save: lang === 'vi' ? 'Lưu' : '保存',
   }
+
+  const rootGroups = groups.filter(g => !g.parentId)
+  const childGroups = groups.filter(g => g.parentId)
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
@@ -99,17 +129,17 @@ export function TransactionEditModal({ txn, onClose }: Props) {
                 </button>
               </div>
               <input
-                type="number"
-                min="0"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
+                type="text"
+                inputMode="numeric"
+                value={amountDisplay}
+                onChange={(e) => handleAmountChange(e.target.value)}
                 className="flex-1 h-10 px-3 text-sm font-mono border border-border rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-brand-500"
                 placeholder="0"
               />
             </div>
             {/* Live preview */}
             <p className={cn('text-right text-xl font-bold mt-1.5', isExpense ? 'text-red-500' : 'text-brand-600')}>
-              {isExpense ? '-' : '+'} ¥{Number(amount || 0).toLocaleString()}
+              {isExpense ? '-' : '+'} ¥{amountNum.toLocaleString()}
             </p>
           </div>
 
@@ -135,47 +165,64 @@ export function TransactionEditModal({ txn, onClose }: Props) {
             />
           </div>
 
-          {/* Category grid */}
-          <div>
-            <label className="text-xs font-semibold text-text-muted block mb-2">{labels.category}</label>
-            <div className="grid grid-cols-4 gap-1.5">
-              {CATEGORIES.map((c) => {
-                const catLabel = (t.categories as Record<string, string>)[c.value] ?? c.label
-                return (
-                  <button
-                    key={c.value}
-                    onClick={() => setCategory(c.value)}
-                    className={cn(
-                      'flex flex-col items-center gap-1 p-2 rounded-[var(--radius-md)] border text-xs font-medium transition-all',
-                      category === c.value
-                        ? 'border-brand-500 bg-brand-50 text-brand-700'
-                        : 'border-border bg-white text-text-muted hover:border-brand-300 hover:text-text-primary'
-                    )}
-                  >
-                    <span className="text-base">{c.emoji}</span>
-                    <span className="leading-tight text-center">{catLabel}</span>
-                  </button>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Group */}
+          {/* Group Grid Selector */}
           {groups.length > 0 && (
             <div>
-              <label className="text-xs font-semibold text-text-muted block mb-1.5">{labels.group}</label>
-              <select
-                value={groupId}
-                onChange={(e) => setGroupId(e.target.value)}
-                className="w-full h-10 px-3 text-sm border border-border rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
-              >
-                <option value="">{labels.none}</option>
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>
-                ))}
-              </select>
+              <label className="text-xs font-semibold text-text-muted block mb-2">{labels.group}</label>
+              <div className="grid grid-cols-4 gap-1.5 max-h-[160px] overflow-y-auto pr-1 custom-scrollbar">
+                <button
+                  onClick={() => setGroupId('')}
+                  className={cn(
+                    'flex flex-col items-center gap-1 p-2 rounded-[var(--radius-md)] border text-xs font-medium transition-all',
+                    groupId === ''
+                      ? 'border-brand-500 bg-brand-50 text-brand-700'
+                      : 'border-border bg-white text-text-muted hover:border-brand-300'
+                  )}
+                >
+                  <span className="text-base">✖</span>
+                  <span className="leading-tight text-center">{labels.none}</span>
+                </button>
+                {groups.filter(g => !g.parentId).map((g) => {
+                  const isSelected = groupId === g.id
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => {
+                        setGroupId(g.id)
+                        if (g.categoryKey) setCategory(g.categoryKey)
+                      }}
+                      className={cn(
+                        'flex flex-col items-center gap-1 p-2 rounded-[var(--radius-md)] border text-xs font-medium transition-all',
+                        isSelected
+                          ? 'border-brand-500 bg-brand-50 text-brand-700 shadow-sm'
+                          : 'border-border bg-white text-text-muted hover:border-brand-300'
+                      )}
+                      style={isSelected ? { borderColor: g.color, color: g.color, backgroundColor: `${g.color}10` } : {}}
+                    >
+                      <span className="text-base">{g.emoji}</span>
+                      <span className="leading-tight text-center truncate w-full">{g.name}</span>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
           )}
+
+          {/* Category Dropdown */}
+          <div>
+            <label className="text-xs font-semibold text-text-muted block mb-1.5">{labels.category}</label>
+            <select
+              value={category}
+              onChange={(e) => handleCategoryChange(e.target.value as Category)}
+              className="w-full h-10 px-3 text-sm border border-border rounded-[var(--radius-md)] focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.emoji} {(t.categories as Record<string, string>)[c.value] ?? c.label}
+                </option>
+              ))}
+            </select>
+          </div>
 
           {/* Note */}
           <div>

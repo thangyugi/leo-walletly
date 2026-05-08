@@ -10,6 +10,9 @@ import {
   Wallet,
   CalendarDays,
   Tag,
+  ScanLine,
+  RefreshCw,
+  FileText,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
@@ -27,6 +30,9 @@ export function Sidebar() {
     { href: '/calendar', label: t.nav.calendar, icon: CalendarDays },
     { href: '/groups', label: t.nav.groups, icon: Tag },
     { href: '/analytics', label: t.nav.analytics, icon: BarChart3 },
+    { href: '/recurring', label: lang === 'vi' ? 'Định kỳ' : '定期支出', icon: RefreshCw },
+    { href: '/monthly-report', label: lang === 'vi' ? 'Báo cáo Tháng' : '月次レポート', icon: FileText },
+    { href: '/scan', label: lang === 'vi' ? 'Quét Hóa Đơn' : 'レシート読取', icon: ScanLine },
     { href: '/import', label: t.nav.import, icon: Upload },
   ]
 
@@ -34,7 +40,7 @@ export function Sidebar() {
     <aside className="hidden md:flex flex-col w-60 min-h-screen bg-white border-r border-border shrink-0">
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 border-b border-border">
-        <div className="w-8 h-8 rounded-[var(--radius-md)] bg-brand-600 flex items-center justify-center">
+        <div className="w-8 h-8 rounded-xl bg-brand-600 flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />
         </div>
         <span className="font-bold text-text-primary tracking-tight">{APP_NAME}</span>
@@ -49,7 +55,7 @@ export function Sidebar() {
               key={href}
               href={href}
               className={cn(
-                'flex items-center gap-3 px-3 py-2.5 rounded-[var(--radius-md)] text-sm font-medium transition-colors',
+                'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                 active
                   ? 'bg-brand-50 text-brand-700'
                   : 'text-text-secondary hover:bg-surface-alt hover:text-text-primary'
@@ -64,13 +70,13 @@ export function Sidebar() {
 
       {/* Footer: language switcher */}
       <div className="px-4 py-4 border-t border-border space-y-3">
-        <div className="flex items-center gap-1.5 p-1 bg-surface rounded-[var(--radius-md)]">
+        <div className="flex items-center gap-1.5 p-1 bg-surface rounded-xl">
           <button
             onClick={() => setLang('ja')}
             className={cn(
-              'flex-1 py-1.5 text-xs font-semibold rounded-[var(--radius-sm)] transition-all',
+              'flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all',
               lang === 'ja'
-                ? 'bg-white shadow-sm text-text-primary'
+                ? 'bg-white text-text-primary'
                 : 'text-text-muted hover:text-text-secondary'
             )}
           >
@@ -79,9 +85,9 @@ export function Sidebar() {
           <button
             onClick={() => setLang('vi')}
             className={cn(
-              'flex-1 py-1.5 text-xs font-semibold rounded-[var(--radius-sm)] transition-all',
+              'flex-1 py-1.5 text-xs font-semibold rounded-lg transition-all',
               lang === 'vi'
-                ? 'bg-white shadow-sm text-text-primary'
+                ? 'bg-white text-text-primary'
                 : 'text-text-muted hover:text-text-secondary'
             )}
           >

@@ -34,8 +34,8 @@ export function MobileHeader() {
           <button
             onClick={() => setLang('ja')}
             className={cn(
-              'px-2 py-1 text-[10px] font-semibold rounded-md transition-all',
-              lang === 'ja' ? 'bg-white shadow-sm text-text-primary' : 'text-text-muted'
+              'px-2 py-1 text-[10px] font-semibold rounded-lg transition-all',
+              lang === 'ja' ? 'bg-white text-text-primary' : 'text-text-muted'
             )}
           >
             🇯🇵 JP
@@ -43,8 +43,8 @@ export function MobileHeader() {
           <button
             onClick={() => setLang('vi')}
             className={cn(
-              'px-2 py-1 text-[10px] font-semibold rounded-md transition-all',
-              lang === 'vi' ? 'bg-white shadow-sm text-text-primary' : 'text-text-muted'
+              'px-2 py-1 text-[10px] font-semibold rounded-lg transition-all',
+              lang === 'vi' ? 'bg-white text-text-primary' : 'text-text-muted'
             )}
           >
             🇻🇳 VI

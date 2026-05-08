@@ -37,6 +37,10 @@
   --radius-lg: 14px;
   --radius-xl: 20px;
 
+  /* Spacing / Gaps */
+  --spacing-layout-gap: 1.5rem;
+  --spacing-inner-gap: 1rem;
+
   /* Background / Foreground */
   --color-background: #ffffff;
   --color-foreground: #0f172a;

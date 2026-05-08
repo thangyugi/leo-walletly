@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import './globals.css'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileHeader } from '@/components/layout/header'
+import { AuthProvider } from '@/components/auth/auth-provider'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
@@ -16,13 +17,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-surface">
-        <div className="flex min-h-screen bg-surface">
-          <Sidebar />
-          <div className="flex flex-col flex-1 min-w-0">
-            <MobileHeader />
-            <main className="flex-1 px-4 py-6 md:px-8 md:py-8 pb-24 md:pb-8">{children}</main>
+        <AuthProvider>
+          <div className="flex min-h-screen bg-surface">
+            <Sidebar />
+            <div className="flex flex-col flex-1 min-w-0">
+              <MobileHeader />
+              <main className="flex-1 p-4">{children}</main>
+            </div>
           </div>
-        </div>
+        </AuthProvider>
       </body>
     </html>
   )

@@ -28,8 +28,14 @@ function CardTitle({ className, ...props }: HTMLAttributes<HTMLHeadingElement>) 
   )
 }
 
+function CardDescription({ className, ...props }: HTMLAttributes<HTMLParagraphElement>) {
+  return (
+    <p className={cn('text-xs text-text-muted mt-1', className)} {...props} />
+  )
+}
+
 function CardContent({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
   return <div className={cn('', className)} {...props} />
 }
 
-export { Card, CardHeader, CardTitle, CardContent }
+export { Card, CardHeader, CardTitle, CardDescription, CardContent }
