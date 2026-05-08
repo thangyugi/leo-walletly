@@ -79,16 +79,21 @@ export function Sidebar() {
                       key={href}
                       href={href}
                       className={cn(
-                        'flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-colors duration-100',
+                        'group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-100',
                         active
                           ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)] font-medium'
-                          : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-primary)]'
+                          : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-secondary)]'
                       )}
                     >
+                      {active && (
+                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-[var(--color-interactive-primary)]" />
+                      )}
                       <Icon
                         className={cn(
-                          'w-4 h-4 shrink-0',
-                          active ? 'text-[var(--color-sidebar-item-active-text)]' : 'text-[var(--color-text-quaternary)]'
+                          'w-4 h-4 shrink-0 transition-colors duration-100',
+                          active
+                            ? 'text-[var(--color-sidebar-item-active-text)]'
+                            : 'text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-secondary)]'
                         )}
                         strokeWidth={active ? 2 : 1.75}
                       />
@@ -104,28 +109,33 @@ export function Sidebar() {
 
       {/* Footer: language + version */}
       <div className="px-2.5 py-3 border-t border-[var(--color-sidebar-border)]">
-        <div className="flex items-center gap-1 px-2.5 mb-2 text-xs text-[var(--color-text-quaternary)]">
+        <p className="flex items-center gap-1.5 px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">
           <Globe className="w-3 h-3" />
-          <span className="uppercase tracking-wide text-[10px] font-semibold">Language</span>
-        </div>
-        <div className="flex gap-1">
+          Language
+        </p>
+        <div className="grid grid-cols-3 gap-1">
           {LANG_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               onClick={() => setLang(opt.value)}
               title={opt.label}
               className={cn(
-                'flex-1 py-1.5 text-xs rounded-md transition-all duration-100',
+                'flex flex-col items-center gap-0.5 py-1.5 rounded-md transition-all duration-100',
                 lang === opt.value
-                  ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)] font-medium'
-                  : 'text-[var(--color-text-quaternary)] hover:text-[var(--color-text-tertiary)]'
+                  ? 'bg-[var(--color-interactive-primary)] text-white shadow-sm'
+                  : 'text-[var(--color-text-quaternary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-tertiary)]'
               )}
             >
-              {opt.flag}
+              <span className="text-sm leading-none">{opt.flag}</span>
+              <span className={cn('text-[9px] font-bold uppercase tracking-wide leading-none',
+                lang === opt.value ? 'text-white/80' : 'text-[var(--color-text-quaternary)]'
+              )}>
+                {opt.value}
+              </span>
             </button>
           ))}
         </div>
-        <p className="mt-2 px-2.5 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · Leo Walletly</p>
+        <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · Leo Walletly</p>
       </div>
     </aside>
   )

@@ -22,25 +22,32 @@ import type { Transaction } from '@/types'
 // ------------------------------------------------------------------
 // Stat Card
 // ------------------------------------------------------------------
-interface StatCardProps {
-  label:    string
-  value:    string
-  icon:     React.ElementType
-  trend?:   string
-  trendVariant?: 'gain' | 'loss' | 'neutral'
-  sublabel?: string
-  accent:   string  // CSS var or hex
+type StatCardVariant = 'loss' | 'gain' | 'neutral' | 'brand'
+
+const STAT_VARIANT: Record<StatCardVariant, { iconBg: string; iconColor: string }> = {
+  loss:    { iconBg: 'bg-[var(--color-status-loss-bg)]',    iconColor: 'text-[var(--color-text-loss)]'     },
+  gain:    { iconBg: 'bg-[var(--color-status-gain-bg)]',    iconColor: 'text-[var(--color-text-gain)]'     },
+  neutral: { iconBg: 'bg-[var(--color-bg-sunken)]',          iconColor: 'text-[var(--color-text-secondary)]'},
+  brand:   { iconBg: 'bg-[var(--color-brand-50)]',           iconColor: 'text-[var(--color-brand-600)]'    },
 }
 
-function StatCard({ label, value, icon: Icon, trend, trendVariant = 'neutral', sublabel, accent }: StatCardProps) {
+interface StatCardProps {
+  label:         string
+  value:         string
+  icon:          React.ElementType
+  trend?:        string
+  trendVariant?: 'gain' | 'loss' | 'neutral'
+  sublabel?:     string
+  variant:       StatCardVariant
+}
+
+function StatCard({ label, value, icon: Icon, trend, trendVariant = 'neutral', sublabel, variant }: StatCardProps) {
+  const { iconBg, iconColor } = STAT_VARIANT[variant]
   return (
     <div className="card-base p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between">
-        <div
-          className="w-9 h-9 rounded-lg flex items-center justify-center"
-          style={{ background: `${accent}16` }}
-        >
-          <Icon className="w-4.5 h-4.5" style={{ color: accent, width: 18, height: 18 }} />
+        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', iconBg)}>
+          <Icon className={cn('shrink-0', iconColor)} style={{ width: 18, height: 18 }} />
         </div>
         {trend && (
           <Badge variant={trendVariant} size="sm">{trend}</Badge>
@@ -48,9 +55,9 @@ function StatCard({ label, value, icon: Icon, trend, trendVariant = 'neutral', s
       </div>
       <div>
         <p className="text-xs font-medium text-[var(--color-text-tertiary)] uppercase tracking-wide mb-1">{label}</p>
-        <p className="text-xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)]">{value}</p>
+        <p className="text-2xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)] leading-none">{value}</p>
         {sublabel && (
-          <p className="text-xs text-[var(--color-text-quaternary)] mt-1">{sublabel}</p>
+          <p className="text-xs text-[var(--color-text-quaternary)] mt-1.5">{sublabel}</p>
         )}
       </div>
     </div>
@@ -60,33 +67,38 @@ function StatCard({ label, value, icon: Icon, trend, trendVariant = 'neutral', s
 // ------------------------------------------------------------------
 // Quick Stats (dark card)
 // ------------------------------------------------------------------
-function QuickStats({ stats, txnCount }: {
+function QuickStats({ stats }: {
   stats: { expense: number; income: number; net: number; count: number }
-  txnCount: { expense: number; income: number }
 }) {
   const { t } = useTranslation()
 
   const rows = [
-    { label: t.dashboard.totalSuffix, value: String(stats.count), mono: false },
-    { label: t.dashboard.avgDaily,    value: formatMoney(stats.expense / Math.max(30, 1)), mono: true },
-    { label: t.dashboard.ratio,       value: `${formatRatio(stats.income, stats.expense)}×`, mono: true },
+    { label: t.dashboard.totalSuffix, value: String(stats.count),                              mono: false },
+    { label: t.dashboard.avgDaily,    value: formatMoney(stats.expense / Math.max(30, 1)),      mono: true  },
+    { label: t.dashboard.ratio,       value: `${formatRatio(stats.income, stats.expense)}×`,    mono: true  },
   ]
 
   return (
-    <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-gray-900)] p-5 text-white relative overflow-hidden">
-      <div className="absolute top-0 right-0 p-4 opacity-[0.06]">
-        <PieChart className="w-28 h-28" />
+    <div className="rounded-xl bg-[var(--color-gray-900)] p-5 relative overflow-hidden">
+      <div className="absolute -top-6 -right-6 opacity-[0.04]">
+        <PieChart style={{ width: 120, height: 120 }} />
       </div>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-[var(--color-gray-500)] mb-4">
         {t.dashboard.quickStats}
       </p>
-      <div className="space-y-3 relative z-10">
+      <div className="relative z-10 divide-y divide-white/[0.07]">
         {rows.map((r) => (
-          <div key={r.label} className="flex items-center justify-between py-2.5 border-b border-white/10 last:border-0">
+          <div key={r.label} className="flex items-center justify-between py-2.5">
             <span className="text-xs text-[var(--color-gray-400)]">{r.label}</span>
-            <span className={cn('text-sm font-semibold', r.mono && 'font-tabular')}>{r.value}</span>
+            <span className={cn('text-sm font-semibold text-white', r.mono && 'font-tabular')}>{r.value}</span>
           </div>
         ))}
+      </div>
+      <div className="mt-4 pt-3 border-t border-white/[0.07] flex items-center justify-between">
+        <span className="text-xs text-[var(--color-gray-500)]">Net</span>
+        <span className={cn('text-sm font-semibold font-tabular', stats.net >= 0 ? 'text-[var(--color-gain-400)]' : 'text-[var(--color-loss-400)]')}>
+          {stats.net >= 0 ? '+' : ''}{formatMoney(stats.net)}
+        </span>
       </div>
     </div>
   )
@@ -162,16 +174,15 @@ export default function DashboardPage() {
           label={t.dashboard.totalExpense}
           value={formatCurrencyCompact(stats.expense)}
           icon={TrendingDown}
-          accent="var(--color-loss-500)"
+          variant="loss"
           trend={`${txnCount.expense} ${t.dashboard.payments}`}
           trendVariant="neutral"
-          sublabel={t.dashboard.noData}
         />
         <StatCard
           label={t.dashboard.totalIncome}
           value={formatCurrencyCompact(stats.income)}
           icon={TrendingUp}
-          accent="var(--color-gain-500)"
+          variant="gain"
           trend={`${txnCount.income} ${t.dashboard.deposits}`}
           trendVariant="gain"
         />
@@ -179,7 +190,7 @@ export default function DashboardPage() {
           label={t.dashboard.balance}
           value={formatCurrencyCompact(stats.net)}
           icon={Wallet}
-          accent={stats.net >= 0 ? 'var(--color-gain-600)' : 'var(--color-loss-500)'}
+          variant={stats.net >= 0 ? 'gain' : 'loss'}
           trendVariant={stats.net >= 0 ? 'gain' : 'loss'}
         />
       </div>
@@ -227,7 +238,7 @@ export default function DashboardPage() {
 
           {/* Side panel */}
           <div className="space-y-4">
-            <QuickStats stats={stats} txnCount={txnCount} />
+            <QuickStats stats={stats} />
 
             {/* Balance indicator */}
             <div className="card-base p-5">

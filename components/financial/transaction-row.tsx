@@ -28,12 +28,13 @@ export function TransactionRow({
   selected,
   compact,
 }: TransactionRowProps) {
-  const sign      = getAmountSign(txn.amount, txn.type)
-  const amtColor  = getAmountColor(sign)
+  const sign       = getAmountSign(txn.amount, txn.type)
+  const amtColor   = getAmountColor(sign)
   const isTransfer = txn.type === 'transfer'
-  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
-  const iconBg    = isTransfer ? '#94a3b8' : (groupColor ?? '#94a3b8')
-  const initials  = (groupEmoji ?? txn.description.slice(0, 1)).toUpperCase()
+  const provider   = PROVIDERS.find((p) => p.value === txn.provider)
+  const accentHex  = isTransfer ? '#94a3b8' : (groupColor ?? '#6b7280')
+  const hasEmoji   = !!groupEmoji
+  const initials   = hasEmoji ? groupEmoji! : txn.description.slice(0, 1).toUpperCase()
 
   return (
     <div
@@ -54,8 +55,11 @@ export function TransactionRow({
     >
       {/* Category icon */}
       <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-medium"
-        style={{ background: `${iconBg}18`, color: iconBg }}
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-medium select-none"
+        style={{
+          background: hasEmoji ? 'var(--color-bg-sunken)' : `color-mix(in srgb, ${accentHex} 12%, transparent)`,
+          color: accentHex,
+        }}
       >
         {initials}
       </div>

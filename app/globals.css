@@ -48,6 +48,7 @@
   /* Gain / Income / Positive */
   --color-gain-50:  #ecfdf5;
   --color-gain-100: #d1fae5;
+  --color-gain-400: #34d399;
   --color-gain-500: #10b981;
   --color-gain-600: #059669;
   --color-gain-700: #047857;
@@ -55,6 +56,7 @@
   /* Loss / Expense / Negative */
   --color-loss-50:  #fef2f2;
   --color-loss-100: #fee2e2;
+  --color-loss-400: #f87171;
   --color-loss-500: #ef4444;
   --color-loss-600: #dc2626;
   --color-loss-700: #b91c1c;
@@ -84,10 +86,10 @@
   --color-bg-canvas:    #eaecf0;
 
   /* Sidebar */
-  --color-sidebar-bg:      #ffffff;
-  --color-sidebar-border:  #e5e7eb;
-  --color-sidebar-item-hover: #f3f4f6;
-  --color-sidebar-item-active-bg: #ecfdf5;
+  --color-sidebar-bg:               #fafafa;
+  --color-sidebar-border:           #ebebeb;
+  --color-sidebar-item-hover:       #f3f4f5;
+  --color-sidebar-item-active-bg:   #edfbf4;
   --color-sidebar-item-active-text: #047857;
 
   /* Surface (cards, panels) */
@@ -226,13 +228,13 @@
      SHADOWS
      ---------------------------------------------------------- */
   --shadow-none: none;
-  --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.04);
-  --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.07), 0 1px 2px -1px rgb(0 0 0 / 0.04);
-  --shadow-md:   0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.04);
-  --shadow-lg:   0 10px 15px -3px rgb(0 0 0 / 0.07), 0 4px 6px -4px rgb(0 0 0 / 0.04);
-  --shadow-xl:   0 20px 25px -5px rgb(0 0 0 / 0.07), 0 8px 10px -6px rgb(0 0 0 / 0.04);
-  --shadow-focus:0 0 0 3px rgb(5 150 105 / 0.15);
-  --shadow-card: 0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-xs:   0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-sm:   0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.04);
+  --shadow-md:   0 4px 8px -2px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.04);
+  --shadow-lg:   0 12px 20px -4px rgb(0 0 0 / 0.08), 0 4px 8px -4px rgb(0 0 0 / 0.04);
+  --shadow-xl:   0 24px 32px -6px rgb(0 0 0 / 0.08), 0 8px 12px -6px rgb(0 0 0 / 0.04);
+  --shadow-focus:0 0 0 3px rgb(5 150 105 / 0.18);
+  --shadow-card: 0 1px 2px 0 rgb(0 0 0 / 0.05), 0 1px 4px 0 rgb(0 0 0 / 0.03);
 
   /* ----------------------------------------------------------
      Z-INDEX SCALE
@@ -478,12 +480,17 @@ body {
   border: 1px solid var(--color-border-default);
   border-radius: var(--radius-xl);
   box-shadow: var(--shadow-card);
+  cursor: pointer;
   transition: box-shadow var(--duration-base) var(--ease-default),
-              border-color var(--duration-base) var(--ease-default);
+              border-color var(--duration-base) var(--ease-default),
+              transform var(--duration-fast) var(--ease-out);
 }
 .card-interactive:hover {
   box-shadow: var(--shadow-md);
   border-color: var(--color-border-strong);
+}
+.card-interactive:active {
+  transform: scale(0.995);
 }
 
 /* ============================================================

@@ -9,6 +9,7 @@ import { AlertCircle, TrendingUp, TrendingDown, Target, Upload } from 'lucide-re
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { SegmentedControl } from '@/components/ui/tabs'
 import { BudgetProgress } from '@/components/financial/budget-progress'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
@@ -18,7 +19,6 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { formatMoney } from '@/lib/money'
 import { CATEGORIES } from '@/lib/constants'
 import { CHART_COLORS, CHART_AXIS, CHART_TOOLTIP, CHART_MARGINS } from '@/components/charts/chart-theme'
-import { cn } from '@/lib/utils'
 
 // ------------------------------------------------------------------
 // Custom Tooltip
@@ -156,22 +156,14 @@ export default function AnalyticsPage() {
             <CardTitle>
               {view === 'category' ? t.analytics.byCategory : t.analytics.byGroup}
             </CardTitle>
-            <div className="flex items-center gap-1 p-0.5 bg-[var(--color-bg-sunken)] rounded-lg">
-              {(['category', 'group'] as const).map((v) => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-md transition-all',
-                    view === v
-                      ? 'bg-[var(--color-surface-default)] text-[var(--color-text-primary)] shadow-xs'
-                      : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
-                  )}
-                >
-                  {v === 'category' ? t.analytics.byCategory : t.analytics.byGroup}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              value={view}
+              onChange={setView}
+              items={[
+                { value: 'category', label: t.analytics.byCategory },
+                { value: 'group',    label: t.analytics.byGroup    },
+              ]}
+            />
           </CardHeader>
           <CardContent className="flex gap-4">
             <div className="h-48 w-48 shrink-0">
