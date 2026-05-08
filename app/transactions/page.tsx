@@ -1,10 +1,10 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import Link from 'next/link'
 import {
-  Search, Filter, Trash2, Upload, X, ArrowDownUp,
-  ArrowUpRight, ChevronDown,
+  Search, Filter, Trash2, Upload, X, ArrowUpDown,
+  ArrowUp, ArrowDown, ChevronDown, ArrowUpRight,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,6 +13,7 @@ import { Input, Select } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/async-state'
 import { TransactionRow } from '@/components/financial/transaction-row'
 import { PageHeader } from '@/components/layout/page-header'
+import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore, type SortOption } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -22,22 +23,78 @@ import { CATEGORIES, PROVIDERS } from '@/lib/constants'
 import type { Transaction } from '@/types'
 
 // ------------------------------------------------------------------
-// Edit Modal (inline, lightweight)
-// ------------------------------------------------------------------
-import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
-
-// ------------------------------------------------------------------
 // Sort options
 // ------------------------------------------------------------------
-const SORT_OPTIONS: { value: SortOption; label: string }[] = [
-  { value: 'dateDesc',   label: 'Date (newest)' },
-  { value: 'dateAsc',    label: 'Date (oldest)' },
-  { value: 'amountDesc', label: 'Amount (highest)' },
-  { value: 'amountAsc',  label: 'Amount (lowest)' },
-  { value: 'nameAsc',    label: 'Name (A–Z)' },
-  { value: 'category',   label: 'Category' },
-  { value: 'group',      label: 'Group' },
+type SortDir = 'asc' | 'desc'
+
+const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
+  { value: 'dateDesc',   label: 'Date (newest first)',   icon: ArrowDown  },
+  { value: 'dateAsc',    label: 'Date (oldest first)',   icon: ArrowUp    },
+  { value: 'amountDesc', label: 'Amount (highest)',      icon: ArrowDown  },
+  { value: 'amountAsc',  label: 'Amount (lowest)',       icon: ArrowUp    },
+  { value: 'nameAsc',    label: 'Name (A–Z)',            icon: ArrowUp    },
+  { value: 'category',   label: 'Category',                               },
+  { value: 'group',      label: 'Group',                                  },
 ]
+
+// ------------------------------------------------------------------
+// Sort dropdown (with click-outside)
+// ------------------------------------------------------------------
+function SortDropdown({
+  value, onChange,
+}: { value: SortOption; onChange: (v: SortOption) => void }) {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const current = SORT_OPTIONS.find((o) => o.value === value)
+
+  useEffect(() => {
+    function onMouseDown(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    if (open) document.addEventListener('mousedown', onMouseDown)
+    return () => document.removeEventListener('mousedown', onMouseDown)
+  }, [open])
+
+  return (
+    <div className="relative" ref={ref}>
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => setOpen((v) => !v)}
+        className="gap-1.5"
+      >
+        <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
+        <span className="hidden sm:inline">Sort:</span>
+        <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? 'Date'}</span>
+        <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
+      </Button>
+
+      {open && (
+        <div className="absolute right-0 top-full mt-1.5 w-52 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg z-50 py-1 overflow-hidden animate-slide-in-up">
+          {SORT_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => { onChange(opt.value); setOpen(false) }}
+              className={cn(
+                'w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors',
+                value === opt.value
+                  ? 'bg-[var(--color-status-gain-bg)] text-[var(--color-interactive-primary)] font-medium'
+                  : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] hover:text-[var(--color-text-primary)]'
+              )}
+            >
+              {opt.icon && <opt.icon className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)]" />}
+              {!opt.icon && <span className="w-3.5 shrink-0" />}
+              {opt.label}
+              {value === opt.value && (
+                <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[var(--color-interactive-primary)]" />
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 // ------------------------------------------------------------------
 // Filter Bar
@@ -51,11 +108,20 @@ function FilterBar() {
     filters.search || filters.provider !== 'all' || filters.category !== 'all' ||
     filters.dateFrom || filters.dateTo || filters.type !== 'all'
 
+  const activeCount = [
+    filters.provider !== 'all',
+    filters.category !== 'all',
+    filters.dateFrom,
+    filters.dateTo,
+    filters.type !== 'all',
+  ].filter(Boolean).length
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex gap-2">
+        {/* Search */}
         <div className="flex-1 relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-quaternary)] pointer-events-none" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
           <input
             type="text"
             placeholder={t.transactions.search}
@@ -66,32 +132,37 @@ function FilterBar() {
               'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
               'placeholder:text-[var(--color-text-placeholder)]',
               'border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]',
-              'focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-3 focus:ring-[var(--color-brand-100)]',
+              'focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-2 focus:ring-[var(--color-brand-100)]',
               'transition-colors'
             )}
           />
         </div>
 
+        {/* Filter toggle */}
         <Button
           variant={expanded ? 'secondary' : 'outline'}
           size="sm"
           icon={<Filter />}
           onClick={() => setExpanded((v) => !v)}
-          className={cn(hasActive && 'border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]')}
+          className={cn(hasActive && !expanded && 'border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]')}
         >
           {t.transactions.filter}
-          {hasActive && <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-interactive-primary)] ml-1" />}
+          {activeCount > 0 && (
+            <span className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-[var(--color-interactive-primary)] text-[9px] font-bold text-white">
+              {activeCount}
+            </span>
+          )}
         </Button>
 
         {hasActive && (
-          <Button variant="ghost" size="sm" onClick={resetFilters} icon={<X />}>
+          <Button variant="ghost" size="sm" icon={<X />} onClick={resetFilters}>
             {t.transactions.clear}
           </Button>
         )}
       </div>
 
       {expanded && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 p-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] animate-slide-in-up">
           <Select
             label={t.transactions.labelType}
             value={filters.type}
@@ -145,6 +216,54 @@ function FilterBar() {
 }
 
 // ------------------------------------------------------------------
+// Summary bar
+// ------------------------------------------------------------------
+function SummaryBar({
+  count, total, expense, income,
+}: { count: number; total: number; expense: number; income: number }) {
+  const { t } = useTranslation()
+  const isFiltered = count < total
+
+  return (
+    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 px-1">
+      <span className="text-xs text-[var(--color-text-tertiary)]">
+        {isFiltered ? (
+          <><span className="font-semibold text-[var(--color-text-primary)]">{count}</span> of {total} transactions</>
+        ) : (
+          <><span className="font-semibold text-[var(--color-text-primary)]">{count}</span> {t.transactions.shown}</>
+        )}
+      </span>
+
+      <span className="h-3 w-px bg-[var(--color-border-default)] hidden sm:block" />
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-[var(--color-text-quaternary)]">Expense</span>
+        <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
+          −{formatMoney(expense)}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-[var(--color-text-quaternary)]">Income</span>
+        <span className="text-xs font-semibold font-tabular text-[var(--color-text-gain)]">
+          +{formatMoney(income)}
+        </span>
+      </div>
+
+      <div className="flex items-center gap-1">
+        <span className="text-xs text-[var(--color-text-quaternary)]">Net</span>
+        <span className={cn(
+          'text-xs font-semibold font-tabular',
+          income - expense >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]'
+        )}>
+          {income - expense >= 0 ? '+' : ''}{formatMoney(income - expense)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
 // Transactions Page
 // ------------------------------------------------------------------
 export default function TransactionsPage() {
@@ -153,7 +272,6 @@ export default function TransactionsPage() {
   const { t } = useTranslation()
 
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
-  const [showSortMenu, setShowSortMenu] = useState(false)
 
   const filtered = useMemo(() => {
     const list = getFiltered()
@@ -170,11 +288,10 @@ export default function TransactionsPage() {
     })
   }, [getFiltered, sortOption])
 
-  const totals = useMemo(() => {
-    const expense = filtered.reduce((s, t) => (t.amount < 0 ? s + Math.abs(t.amount) : s), 0)
-    const income  = filtered.reduce((s, t) => (t.amount > 0 ? s + t.amount : s), 0)
-    return { expense, income }
-  }, [filtered])
+  const totals = useMemo(() => ({
+    expense: filtered.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0),
+    income:  filtered.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0),
+  }), [filtered])
 
   function getRowProps(txn: Transaction) {
     const gid    = resolveGroup(txn.id, txn.description, txn.category, txn)
@@ -189,19 +306,15 @@ export default function TransactionsPage() {
   }
 
   return (
-    <div className="animate-fade-in space-y-5">
+    <div className="animate-fade-in space-y-4">
       <PageHeader
         title={t.transactions.title}
-        subtitle={`${t.transactions.total} ${transactions.length}`}
+        subtitle={`${transactions.length} transactions total`}
         actions={
           <>
-            <Button variant="outline" size="sm" icon={<ArrowDownUp />} onClick={() => setShowSortMenu(!showSortMenu)}>
-              {t.transactions.sort}
-            </Button>
+            <SortDropdown value={sortOption} onChange={setSortOption} />
             <Link href="/import">
-              <Button size="sm" icon={<Upload />}>
-                {t.transactions.import}
-              </Button>
+              <Button size="sm" icon={<Upload />}>{t.transactions.import}</Button>
             </Link>
             {transactions.length > 0 && (
               <Button
@@ -209,53 +322,23 @@ export default function TransactionsPage() {
                 size="sm"
                 icon={<Trash2 />}
                 onClick={() => { if (confirm(t.transactions.deleteConfirm)) clearAll() }}
-                className="text-[var(--color-text-loss)] hover:text-[var(--color-text-loss)]"
+                className="text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)] hover:text-[var(--color-text-loss)]"
               />
             )}
           </>
         }
       />
 
-      {/* Sort dropdown */}
-      {showSortMenu && (
-        <div className="relative">
-          <div
-            className="absolute top-0 right-0 z-50 w-52 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg py-1"
-          >
-            {SORT_OPTIONS.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => { setSortOption(opt.value); setShowSortMenu(false) }}
-                className={cn(
-                  'w-full text-left px-4 py-2 text-sm transition-colors',
-                  sortOption === opt.value
-                    ? 'text-[var(--color-interactive-primary)] bg-[var(--color-status-gain-bg)] font-medium'
-                    : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]'
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
-
       <FilterBar />
 
-      {/* Summary row */}
+      {/* Summary */}
       {filtered.length > 0 && (
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="text-xs text-[var(--color-text-tertiary)]">
-            {filtered.length} {t.transactions.shown}
-          </span>
-          <span className="h-3 w-px bg-[var(--color-border-default)]" />
-          <span className="text-xs font-medium font-tabular text-[var(--color-text-loss)]">
-            −{formatMoney(totals.expense)}
-          </span>
-          <span className="text-xs font-medium font-tabular text-[var(--color-text-gain)]">
-            +{formatMoney(totals.income)}
-          </span>
-        </div>
+        <SummaryBar
+          count={filtered.length}
+          total={transactions.length}
+          expense={totals.expense}
+          income={totals.income}
+        />
       )}
 
       {/* Transaction list */}
@@ -273,24 +356,50 @@ export default function TransactionsPage() {
             }
           />
         ) : (
-          <div className="divide-y divide-[var(--color-border-subtle)]">
-            {filtered.map((txn) => (
-              <TransactionRow
-                key={txn.id}
-                txn={txn}
-                {...getRowProps(txn)}
-                onClick={() => setEditingTxn(txn)}
-              />
-            ))}
-          </div>
+          <>
+            {/* Column header */}
+            <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto] items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+              <div className="w-8" />
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">
+                Description / Category
+              </p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">
+                Amount
+              </p>
+              <div className="w-4" />
+            </div>
+
+            <div className="divide-y divide-[var(--color-border-subtle)]">
+              {filtered.map((txn) => (
+                <TransactionRow
+                  key={txn.id}
+                  txn={txn}
+                  {...getRowProps(txn)}
+                  onClick={() => setEditingTxn(txn)}
+                />
+              ))}
+            </div>
+
+            {/* Footer totals */}
+            <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+              <span className="text-xs text-[var(--color-text-quaternary)]">
+                {filtered.length} transactions
+              </span>
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-semibold font-tabular text-[var(--color-text-loss)]">
+                  −{formatMoney(totals.expense)}
+                </span>
+                <span className="text-xs font-semibold font-tabular text-[var(--color-text-gain)]">
+                  +{formatMoney(totals.income)}
+                </span>
+              </div>
+            </div>
+          </>
         )}
       </Card>
 
       {editingTxn && (
-        <TransactionEditModal
-          txn={editingTxn}
-          onClose={() => setEditingTxn(null)}
-        />
+        <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />
       )}
     </div>
   )
