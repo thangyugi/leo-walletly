@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { Lang } from '@/lib/i18n'
+import { useTranslation } from '@/hooks/useTranslation'
 
 // ------------------------------------------------------------------
 // Types
@@ -101,72 +102,6 @@ const MODE_TAB: Record<Lang, Record<DatePickerMode, string>> = {
 }
 
 // ------------------------------------------------------------------
-// Presets
-// ------------------------------------------------------------------
-function makePresets(lang: Lang) {
-  const L = (ja: string, vi: string, en: string) =>
-    lang === 'ja' ? ja : lang === 'vi' ? vi : en
-  const now = new Date()
-  const y = now.getFullYear()
-  const m = now.getMonth()
-  const q = Math.floor(m / 3)
-  const t = todayStr()
-
-  return [
-    {
-      label: L('今日', 'Hôm nay', 'Today'),
-      get: (): PickerValue => ({ start: t, end: t, mode: 'day', label: buildLabel(t, t, 'day', lang) }),
-    },
-    {
-      label: L('今週', 'Tuần này', 'This week'),
-      get: (): PickerValue => {
-        const sun = new Date(now); sun.setDate(now.getDate() - now.getDay())
-        const sat = new Date(sun); sat.setDate(sun.getDate() + 6)
-        const s = sun.toISOString().split('T')[0]
-        const e = sat.toISOString().split('T')[0]
-        return { start: s, end: e, mode: 'day', label: buildLabel(s, e, 'day', lang) }
-      },
-    },
-    {
-      label: L('今月', 'Tháng này', 'This month'),
-      get: (): PickerValue => {
-        const s = firstOfMonth(y, m); const e = lastOfMonth(y, m)
-        return { start: s, end: e, mode: 'month', label: buildLabel(s, e, 'month', lang) }
-      },
-    },
-    {
-      label: L('先月', 'Tháng trước', 'Last month'),
-      get: (): PickerValue => {
-        const pm = m === 0 ? 11 : m - 1; const py = m === 0 ? y - 1 : y
-        const s = firstOfMonth(py, pm); const e = lastOfMonth(py, pm)
-        return { start: s, end: e, mode: 'month', label: buildLabel(s, e, 'month', lang) }
-      },
-    },
-    {
-      label: L('今四半期', 'Quý này', 'This quarter'),
-      get: (): PickerValue => {
-        const s = firstOfMonth(y, q * 3); const e = lastOfMonth(y, q * 3 + 2)
-        return { start: s, end: e, mode: 'quarter', label: buildLabel(s, e, 'quarter', lang) }
-      },
-    },
-    {
-      label: L('今年', 'Năm này', 'This year'),
-      get: (): PickerValue => {
-        const s = `${y}-01-01`; const e = `${y}-12-31`
-        return { start: s, end: e, mode: 'year', label: buildLabel(s, e, 'year', lang) }
-      },
-    },
-    {
-      label: L('昨年', 'Năm ngoái', 'Last year'),
-      get: (): PickerValue => {
-        const s = `${y - 1}-01-01`; const e = `${y - 1}-12-31`
-        return { start: s, end: e, mode: 'year', label: buildLabel(s, e, 'year', lang) }
-      },
-    },
-  ]
-}
-
-// ------------------------------------------------------------------
 // Day-mode calendar grid
 // ------------------------------------------------------------------
 function DayCalendar({
@@ -243,6 +178,7 @@ export function DateRangePicker({
   onClose: () => void
   lang?: Lang
 }) {
+  const { t } = useTranslation()
   const { y: initY, m: initM } = parseDate(value.start)
   const [mode,       setMode]       = useState<DatePickerMode>(value.mode)
   const [navYear,    setNavYear]    = useState(initY)
@@ -252,11 +188,18 @@ export function DateRangePicker({
   const [hoverDate,  setHoverDate]  = useState<string | null>(null)
   const [step,       setStep]       = useState<0 | 1>(0) // 0=pick start, 1=pick end
 
-  const presets    = makePresets(lang)
+  const presets = [
+    { label: t.datepicker.today,       get: () => { const t_ = todayStr(); return { start: t_, end: t_, mode: 'day' as const, label: buildLabel(t_, t_, 'day', lang) } } },
+    { label: t.datepicker.thisWeek,    get: () => { const now = new Date(); const sun = new Date(now); sun.setDate(now.getDate() - now.getDay()); const sat = new Date(sun); sat.setDate(sun.getDate() + 6); const s = sun.toISOString().split('T')[0]; const e = sat.toISOString().split('T')[0]; return { start: s, end: e, mode: 'day' as const, label: buildLabel(s, e, 'day', lang) } } },
+    { label: t.datepicker.thisMonth,   get: () => { const now = new Date(); const s = firstOfMonth(now.getFullYear(), now.getMonth()); const e = lastOfMonth(now.getFullYear(), now.getMonth()); return { start: s, end: e, mode: 'month' as const, label: buildLabel(s, e, 'month', lang) } } },
+    { label: t.datepicker.lastMonth,   get: () => { const now = new Date(); let m = now.getMonth(), y = now.getFullYear(); if (m === 0) { m = 11; y--; } else m--; const s = firstOfMonth(y, m); const e = lastOfMonth(y, m); return { start: s, end: e, mode: 'month' as const, label: buildLabel(s, e, 'month', lang) } } },
+    { label: t.datepicker.thisQuarter, get: () => { const now = new Date(); const q = Math.floor(now.getMonth() / 3); const s = firstOfMonth(now.getFullYear(), q * 3); const e = lastOfMonth(now.getFullYear(), q * 3 + 2); return { start: s, end: e, mode: 'quarter' as const, label: buildLabel(s, e, 'quarter', lang) } } },
+    { label: t.datepicker.thisYear,    get: () => { const y = new Date().getFullYear(); const s = `${y}-01-01`; const e = `${y}-12-31`; return { start: s, end: e, mode: 'year' as const, label: buildLabel(s, e, 'year', lang) } } },
+    { label: t.datepicker.lastYear,    get: () => { const y = new Date().getFullYear() - 1; const s = `${y}-01-01`; const e = `${y}-12-31`; return { start: s, end: e, mode: 'year' as const, label: buildLabel(s, e, 'year', lang) } } },
+  ]
+
   const modeLabels = MODE_TAB[lang]
   const months     = MONTHS_LONG[lang]
-  const L = (ja: string, vi: string, en: string) =>
-    lang === 'ja' ? ja : lang === 'vi' ? vi : en
 
   function handleDayClick(d: string) {
     if (step === 0) { setRangeStart(d); setRangeEnd(null); setStep(1) }
@@ -275,7 +218,7 @@ export function DateRangePicker({
     onClose()
   }
 
-  function handlePreset(p: ReturnType<typeof makePresets>[number]) {
+  function handlePreset(p: typeof presets[0]) {
     const v = p.get(); onChange(v); onClose()
   }
 
@@ -300,7 +243,7 @@ export function DateRangePicker({
       {/* Presets sidebar */}
       <div className="w-36 border-r border-[var(--color-border-subtle)] py-2 shrink-0 bg-[var(--color-bg-sunken)]">
         <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">
-          {L('クイック', 'Nhanh', 'Quick')}
+          {t.datepicker.quick}
         </p>
         {presets.map((p) => (
           <button
@@ -355,19 +298,19 @@ export function DateRangePicker({
             />
             {step === 1 && (
               <p className="text-[10px] text-[var(--color-text-tertiary)] mt-2 text-center animate-fade-in">
-                {L('終了日を選択', 'Chọn ngày kết thúc', 'Select end date')}
+                {t.datepicker.selectEndDate}
               </p>
             )}
             <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
               <button onClick={onClose} className="flex-1 py-1.5 text-xs border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
-                {L('キャンセル', 'Hủy', 'Cancel')}
+                {t.datepicker.cancel}
               </button>
               <button
                 onClick={handleApply}
                 disabled={!rangeStart}
                 className="flex-1 py-1.5 text-xs font-semibold bg-[var(--color-interactive-primary)] text-white rounded-lg hover:bg-[var(--color-interactive-primary-hover)] transition-colors disabled:opacity-40"
               >
-                {L('適用', 'Áp dụng', 'Apply')}
+                {t.datepicker.apply}
               </button>
             </div>
           </>
@@ -408,7 +351,7 @@ export function DateRangePicker({
               const qs  = firstOfMonth(navYear, q * 3)
               const qe  = lastOfMonth(navYear, q * 3 + 2)
               const sel = value.start >= qs && value.start <= qe
-              const qLabel   = lang === 'vi' ? `Quý ${q + 1}` : `Q${q + 1}`
+              const qLabel   = t.datepicker.quarterLabel.replace('{{q}}', String(q + 1))
               const subLabel = `${MONTHS_LONG[lang][q * 3]} – ${MONTHS_LONG[lang][q * 3 + 2]}`
               return (
                 <button

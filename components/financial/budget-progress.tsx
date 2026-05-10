@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
 import { formatMoney } from '@/lib/money'
 import type { CurrencyCode } from '@/types'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 
 export interface BudgetProgressProps {
   spent: number
@@ -15,12 +16,15 @@ export interface BudgetProgressProps {
 export function BudgetProgress({
   spent,
   limit,
-  currency = 'JPY',
+  currency,
   label,
   warningThreshold = 80,
   showAmounts = true,
   className,
 }: BudgetProgressProps) {
+  const { currentLedger } = useLedgerStore()
+  const activeCurrency = currency || (currentLedger?.base_currency as CurrencyCode) || 'JPY'
+
   if (!limit) return null
 
   const pct     = Math.min(100, (Math.abs(spent) / limit) * 100)
@@ -48,7 +52,7 @@ export function BudgetProgress({
           )}
           {showAmounts && (
             <span className="text-xs font-medium font-tabular" style={{ color: textColor }}>
-              {formatMoney(Math.abs(spent), currency)} / {formatMoney(limit, currency)}
+              {formatMoney(Math.abs(spent), activeCurrency)} / {formatMoney(limit, activeCurrency)}
             </span>
           )}
         </div>
@@ -61,7 +65,7 @@ export function BudgetProgress({
       </div>
       {isOver && (
         <p className="text-xs" style={{ color: textColor }}>
-          Over budget by {formatMoney(Math.abs(spent) - limit, currency)}
+          Over budget by {formatMoney(Math.abs(spent) - limit, activeCurrency)}
         </p>
       )}
     </div>
