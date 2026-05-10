@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
 // ------------------------------------------------------------------
-// Previous period helper
+// Helpers
 // ------------------------------------------------------------------
 function getPrevPeriod(picker: PickerValue): { start: string; end: string } {
   const startMs = new Date(picker.start + 'T00:00:00').getTime()
@@ -41,6 +41,26 @@ function getPrevPeriod(picker: PickerValue): { start: string; end: string } {
 function trendPct(curr: number, prev: number): number | null {
   if (prev === 0) return null
   return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10
+}
+
+function getTrendVsLabel(picker: PickerValue): string {
+  if (picker.mode === 'day' && picker.start === picker.end) return 'vs ngày hôm qua'
+  if (picker.mode === 'day')     return 'vs cùng khoảng trước'
+  if (picker.mode === 'month')   return 'vs tháng trước'
+  if (picker.mode === 'quarter') return 'vs quý trước'
+  if (picker.mode === 'year')    return 'vs năm trước'
+  return 'vs cùng khoảng trước'
+}
+
+function getInitials(text: string): string {
+  const words = text.trim().split(/\s+/)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return text.slice(0, 2).toUpperCase()
+}
+
+function fmtDateDMY(d: string): string {
+  const [y, m, dd] = d.split('-')
+  return `${dd}/${m}/${y}`
 }
 
 // ------------------------------------------------------------------
@@ -86,14 +106,16 @@ function KpiCard({
         )}
       </p>
       {trendLabel && (
-        <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1.5">{trendLabel}</p>
+        <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1.5">
+          {trend != null ? `${up ? '↑' : '↓'} ${Math.abs(trend)}% ` : ''}{trendLabel}
+        </p>
       )}
     </div>
   )
 }
 
 // ------------------------------------------------------------------
-// Users panel (placeholder — DB + multi-user to come later)
+// Users panel
 // ------------------------------------------------------------------
 const MOCK_USERS = [
   { id: '1', name: 'Leo Thang',    email: 'leo@example.com',    role: 'Chủ sở hữu', color: '#059669', initials: 'LT' },
@@ -245,23 +267,24 @@ function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
 }
 
 // ------------------------------------------------------------------
-// Recent transaction table row (6 columns)
+// Recent transaction table row
+// Columns: icon | Nội dung | Ngày | Nhóm | Danh mục | Tài khoản | Số tiền
 // ------------------------------------------------------------------
-function RecentTxnRow({ txn, groupName, groupColor, groupEmoji }: {
+function RecentTxnRow({ txn, groupName, groupColor }: {
   txn: Transaction
   groupName?: string; groupColor?: string; groupEmoji?: string
 }) {
-  const provider = PROVIDERS.find((p) => p.value === txn.provider)
-  const cat      = CATEGORIES.find((c) => c.value === txn.category)
+  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
+  const cat       = CATEGORIES.find((c) => c.value === txn.category)
   const isExpense = txn.amount < 0
-  const initials  = groupEmoji ?? txn.description.slice(0, 1).toUpperCase()
   const accentHex = groupColor ?? '#6b7280'
+  const initials  = getInitials(txn.description)
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto_auto_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
-      {/* Icon */}
+    <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
+      {/* Icon — 2-char initials */}
       <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-semibold select-none"
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold select-none"
         style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
       >
         {initials}
@@ -270,23 +293,19 @@ function RecentTxnRow({ txn, groupName, groupColor, groupEmoji }: {
       {/* Description */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="text-xs text-[var(--color-text-quaternary)]">{txn.date}</p>
+        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.date)}</p>
       </div>
 
-      {/* Category — hidden on mobile */}
+      {/* Date — separate column, hidden on mobile */}
       <div className="hidden sm:block">
-        {cat && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">
-            {cat.emoji} {cat.label}
-          </span>
-        )}
+        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.date)}</span>
       </div>
 
       {/* Group */}
       <div className="hidden sm:block">
         {groupName ? (
           <span
-            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
             style={{ background: `color-mix(in srgb, ${accentHex} 10%, transparent)`, color: accentHex }}
           >
             {groupName}
@@ -296,11 +315,20 @@ function RecentTxnRow({ txn, groupName, groupColor, groupEmoji }: {
         )}
       </div>
 
+      {/* Category */}
+      <div className="hidden sm:block">
+        {cat && (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
+            {cat.emoji} {cat.label}
+          </span>
+        )}
+      </div>
+
       {/* Account */}
       <div className="hidden sm:block">
         {provider && (
           <span
-            className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+            className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
             style={{ background: `color-mix(in srgb, ${provider.color} 10%, transparent)`, color: provider.color }}
           >
             {provider.label}
@@ -310,7 +338,7 @@ function RecentTxnRow({ txn, groupName, groupColor, groupEmoji }: {
 
       {/* Amount */}
       <span className={cn(
-        'text-sm font-semibold font-tabular shrink-0',
+        'text-sm font-semibold font-tabular shrink-0 text-right',
         isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]',
       )}>
         {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount))}
@@ -356,7 +384,6 @@ export default function DashboardPage() {
 
   const allTimeNet = useMemo(() => transactions.reduce((s, tx) => s + tx.amount, 0), [transactions])
   const prevAllTimeNet = useMemo(() => {
-    // approximate prev 30d reserve comparison
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
     const cutoffStr = cutoff.toISOString().split('T')[0]
     return transactions.filter((tx) => tx.date < cutoffStr).reduce((s, tx) => s + tx.amount, 0)
@@ -375,15 +402,8 @@ export default function DashboardPage() {
     return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji }
   }
 
-  // Trend label
-  const periodLabel = picker.label
-  const prevLabel   = (() => {
-    if (picker.mode === 'month') {
-      const d = new Date(prev.start + 'T00:00:00')
-      return `Th.${d.getMonth() + 1}`
-    }
-    return 'kỳ trước'
-  })()
+  const trendVsLabel = getTrendVsLabel(picker)
+  const periodLabel  = picker.label
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -402,7 +422,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards — DS style */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Tổng số dư"
@@ -412,27 +432,27 @@ export default function DashboardPage() {
           iconBg={stats.net >= 0 ? 'bg-[var(--color-status-gain-bg)]' : 'bg-[var(--color-status-loss-bg)]'}
           iconColor={stats.net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]'}
           trend={trendPct(stats.net, prevStats.net)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={trendVsLabel}
         />
         <KpiCard
-          label={`Tiền vào · ${periodLabel}`}
+          label="Tiền vào"
           value={formatMoney(stats.income)}
           currency="JPY"
           icon={TrendingUp}
           iconBg="bg-[var(--color-status-gain-bg)]"
           iconColor="text-[var(--color-text-gain)]"
           trend={trendPct(stats.income, prevStats.income)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={trendVsLabel}
         />
         <KpiCard
-          label={`Tiền ra · ${periodLabel}`}
+          label="Tiền ra"
           value={formatMoney(stats.expense)}
           currency="JPY"
           icon={TrendingDown}
           iconBg="bg-[var(--color-status-loss-bg)]"
           iconColor="text-[var(--color-text-loss)]"
           trend={trendPct(stats.expense, prevStats.expense)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={trendVsLabel}
         />
         <KpiCard
           label="Dự phòng · JPY"
@@ -442,7 +462,7 @@ export default function DashboardPage() {
           iconBg={allTimeNet >= 0 ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-status-loss-bg)]'}
           iconColor={allTimeNet >= 0 ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-loss)]'}
           trend={trendPct(allTimeNet, prevAllTimeNet)}
-          trendLabel="so với 30 ngày trước"
+          trendLabel="vs 30 ngày trước"
         />
       </div>
 
@@ -463,7 +483,6 @@ export default function DashboardPage() {
 
           {/* Left: Cash Flow → Recent Transactions */}
           <div className="lg:col-span-2 space-y-4">
-            {/* Cash Flow (above recent transactions) */}
             <CashFlowChart transactions={transactions} />
 
             {/* Recent Transactions */}
@@ -486,12 +505,13 @@ export default function DashboardPage() {
                 </Link>
               </CardHeader>
 
-              {/* Column header */}
-              <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+              {/* Column header — Nội dung | Ngày | Nhóm | Danh mục | Tài khoản | Số tiền */}
+              <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
                 <div className="w-8" />
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nội dung</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Ngày</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Tài khoản</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">Số tiền</p>
               </div>
@@ -516,17 +536,15 @@ export default function DashboardPage() {
 
           {/* Right sidebar */}
           <div className="space-y-4">
-            {/* Users (placeholder) */}
             <UsersPanel />
-
-            {/* Accounts */}
             <AccountsPanel transactions={transactions} />
 
             {/* Balance summary */}
             <div className="card-base p-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-3">
-                Tóm tắt · {periodLabel}
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1 truncate">
+                Tóm tắt
               </p>
+              <p className="text-[11px] text-[var(--color-text-quaternary)] mb-3 truncate">{periodLabel}</p>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-[var(--color-text-quaternary)]">Tiền vào</span>
