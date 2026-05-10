@@ -22,13 +22,9 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { formatMoney } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { CATEGORIES, PROVIDERS } from '@/lib/constants'
-import type { Transaction } from '@/types'
 
 const PAGE_SIZE = 30
 
-// ------------------------------------------------------------------
-// Previous-period helper
-// ------------------------------------------------------------------
 function getPrevPeriod(picker: PickerValue) {
   const startMs = new Date(picker.start + 'T00:00:00').getTime()
   const endMs   = new Date(picker.end   + 'T00:00:00').getTime()
@@ -43,22 +39,21 @@ function pct(curr: number, prev: number) {
   return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10
 }
 
-// ------------------------------------------------------------------
-// Sort dropdown
-// ------------------------------------------------------------------
-const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
-  { value: 'dateDesc',   label: 'Mới nhất',        icon: ArrowDown  },
-  { value: 'dateAsc',    label: 'Cũ nhất',          icon: ArrowUp    },
-  { value: 'amountDesc', label: 'Số tiền cao nhất', icon: ArrowDown  },
-  { value: 'amountAsc',  label: 'Số tiền thấp nhất',icon: ArrowUp    },
-  { value: 'nameAsc',    label: 'Tên (A–Z)',         icon: ArrowUp    },
-  { value: 'category',   label: 'Danh mục',                           },
-  { value: 'group',      label: 'Nhóm',                               },
-]
-
 function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: SortOption) => void }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const { t, lang } = useTranslation()
+
+  const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
+    { value: 'dateDesc',   label: t.transactions.sortNewest, icon: ArrowDown  },
+    { value: 'dateAsc',    label: t.transactions.sortOldest, icon: ArrowUp    },
+    { value: 'amountDesc', label: t.transactions.sortAmountDesc, icon: ArrowDown  },
+    { value: 'amountAsc',  label: t.transactions.sortAmountAsc, icon: ArrowUp    },
+    { value: 'nameAsc',    label: t.transactions.sortNameAsc, icon: ArrowUp    },
+    { value: 'category',   label: t.transactions.labelCategory, },
+    { value: 'group',      label: t.transactions.sortGroup, },
+  ]
+
   const current = SORT_OPTIONS.find((o) => o.value === value)
 
   useEffect(() => {
@@ -73,7 +68,6 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
     <div className="relative" ref={ref}>
       <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1.5">
         <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
-        <span className="hidden sm:inline text-[var(--color-text-tertiary)]">Sắp xếp:</span>
         <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? 'Ngày'}</span>
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
@@ -101,9 +95,6 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
   )
 }
 
-// ------------------------------------------------------------------
-// Filter Bar
-// ------------------------------------------------------------------
 function FilterBar() {
   const { filters, setFilters, resetFilters } = useTransactionsStore()
   const { t } = useTranslation()
@@ -173,9 +164,6 @@ function FilterBar() {
   )
 }
 
-// ------------------------------------------------------------------
-// Stat Card
-// ------------------------------------------------------------------
 function StatCard({ label, main, sub, trend, trendLabel, isLoss }: {
   label: string; main: string; sub?: string
   trend?: number | null; trendLabel?: string; isLoss?: boolean
@@ -198,9 +186,6 @@ function StatCard({ label, main, sub, trend, trendLabel, isLoss }: {
   )
 }
 
-// ------------------------------------------------------------------
-// Transaction Detail Panel
-// ------------------------------------------------------------------
 function DetailPanel({
   txn, groupName, groupColor, groupEmoji,
   onClose, onEdit,
@@ -210,6 +195,7 @@ function DetailPanel({
   onClose: () => void
   onEdit: () => void
 }) {
+  const { t, lang } = useTranslation()
   const provider = PROVIDERS.find((p) => p.value === txn.provider)
   const cat      = CATEGORIES.find((c) => c.value === txn.category)
   const isExpense = txn.amount < 0
@@ -218,25 +204,21 @@ function DetailPanel({
 
   return (
     <div className="fixed inset-0 z-40 flex items-end sm:items-start sm:justify-end pointer-events-none">
-      {/* Overlay */}
       <div className="absolute inset-0 bg-black/20 pointer-events-auto" onClick={onClose} />
-
-      {/* Panel */}
       <div className="relative pointer-events-auto w-full sm:w-96 sm:max-w-full bg-[var(--color-surface-default)] border-l border-[var(--color-border-default)] shadow-2xl rounded-t-2xl sm:rounded-none sm:h-full flex flex-col animate-slide-in-up sm:animate-none">
-        {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)]">
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">Chi tiết giao dịch</span>
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t.transactions.details}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={onEdit}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
-              title="Chỉnh sửa"
+              title={t.transactions.edit}
             >
               <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             </button>
             <button
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors opacity-50 cursor-not-allowed"
-              title="Phóng to (coming soon)"
+              title={t.placeholders.devTitle}
               disabled
             >
               <Maximize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
@@ -249,10 +231,7 @@ function DetailPanel({
             </button>
           </div>
         </div>
-
-        {/* Content */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Amount hero */}
           <div className="text-center py-4">
             <div
               className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-3"
@@ -265,16 +244,14 @@ function DetailPanel({
             </p>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1 font-medium">{txn.description}</p>
           </div>
-
-          {/* Fields */}
           <div className="space-y-3">
             {[
-              { label: 'Ngày',      value: txn.date },
-              { label: 'Danh mục', value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
-              { label: 'Tài khoản',value: provider?.label ?? txn.provider },
-              { label: 'Loại',     value: txn.type === 'expense' ? 'Chi tiêu' : txn.type === 'income' ? 'Thu nhập' : 'Chuyển khoản' },
-              ...(groupName ? [{ label: 'Nhóm', value: groupName }] : []),
-              ...(txn.note   ? [{ label: 'Ghi chú', value: txn.note }] : []),
+              { label: t.transactions.date,      value: txn.date },
+              { label: t.transactions.labelCategory, value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
+              { label: t.transactions.labelProvider,value: provider?.label ?? txn.provider },
+              { label: t.transactions.labelType,     value: txn.type === 'expense' ? t.transactions.typeExpense : txn.type === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },
+              ...(groupName ? [{ label: t.transactions.sortGroup, value: groupName }] : []),
+              ...(txn.note   ? [{ label: t.common.note, value: txn.note }] : []),
             ].map(({ label, value }) => (
               <div key={label} className="flex items-start gap-3 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
                 <span className="text-xs text-[var(--color-text-quaternary)] w-24 shrink-0 pt-0.5">{label}</span>
@@ -282,24 +259,23 @@ function DetailPanel({
               </div>
             ))}
           </div>
-
           {txn.rawData && (
             <div>
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-2">Dữ liệu gốc</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-2">
+                {t.transactions.rawData}
+              </p>
               <div className="rounded-lg bg-[var(--color-bg-sunken)] p-3 text-[11px] font-mono text-[var(--color-text-tertiary)] space-y-0.5 max-h-32 overflow-y-auto">
                 {Object.entries(txn.rawData).map(([k, v]) => (
-                  <div key={k}><span className="text-[var(--color-text-quaternary)]">{k}:</span> {v}</div>
+                  <div key={k}><span className="text-[var(--color-text-quaternary)]">{k}:</span> {String(v)}</div>
                 ))}
               </div>
             </div>
           )}
         </div>
-
-        {/* Footer */}
         <div className="px-5 py-4 border-t border-[var(--color-border-default)]">
           <Button variant="primary" size="sm" className="w-full" onClick={onEdit}>
             <Edit2 className="w-3.5 h-3.5" />
-            Chỉnh sửa giao dịch
+            {t.transactions.edit}
           </Button>
         </div>
       </div>
@@ -307,36 +283,21 @@ function DetailPanel({
   )
 }
 
-// ------------------------------------------------------------------
-// Bulk action bar
-// ------------------------------------------------------------------
 function BulkBar({
   count, total, onClear, onDelete,
 }: { count: number; total: number; onClear: () => void; onDelete: () => void }) {
+  const { t, lang } = useTranslation()
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-interactive-primary)] rounded-xl text-white animate-slide-in-up">
       <span className="text-sm font-semibold shrink-0">
-        {count} đã chọn · Tổng {count}/{total}
+        {count} {t.transactions.selected} · {t.common.total} {count}/{total}
       </span>
       <div className="flex items-center gap-1 ml-auto flex-wrap">
-        {[
-          { label: 'Đổi tài khoản', disabled: true },
-          { label: 'Đổi danh mục', disabled: true },
-          { label: 'Đổi nhóm',     disabled: true },
-        ].map(({ label }) => (
-          <button
-            key={label}
-            disabled
-            className="px-3 py-1.5 text-xs font-medium rounded-lg bg-white/10 opacity-60 cursor-not-allowed"
-          >
-            {label}
-          </button>
-        ))}
         <button
           onClick={onDelete}
           className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
         >
-          Xóa
+          {t.common.delete}
         </button>
         <button onClick={onClear} className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
           <X className="w-3.5 h-3.5" />
@@ -346,9 +307,6 @@ function BulkBar({
   )
 }
 
-// ------------------------------------------------------------------
-// Table row
-// ------------------------------------------------------------------
 function TxnTableRow({
   txn, groupName, groupColor, groupEmoji,
   checked, onCheck, onView,
@@ -375,29 +333,22 @@ function TxnTableRow({
       )}
       onClick={() => onView(txn)}
     >
-      {/* Checkbox */}
       <div onClick={(e) => { e.stopPropagation(); onCheck(txn.id) }} className="w-5 h-5 flex items-center justify-center cursor-pointer">
         {checked
           ? <CheckSquare className="w-4 h-4 text-[var(--color-interactive-primary)]" />
           : <Square className="w-4 h-4 text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-tertiary)] transition-colors" />
         }
       </div>
-
-      {/* Icon */}
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-semibold select-none"
         style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
       >
         {initials}
       </div>
-
-      {/* Description */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
         <p className="text-xs text-[var(--color-text-quaternary)]">{txn.date}</p>
       </div>
-
-      {/* Category */}
       <div className="hidden sm:block">
         {cat ? (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">
@@ -405,8 +356,6 @@ function TxnTableRow({
           </span>
         ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
       </div>
-
-      {/* Group */}
       <div className="hidden md:block">
         {groupName ? (
           <span
@@ -417,8 +366,6 @@ function TxnTableRow({
           </span>
         ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
       </div>
-
-      {/* Account */}
       <div className="hidden lg:block">
         {provider ? (
           <span
@@ -429,8 +376,6 @@ function TxnTableRow({
           </span>
         ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
       </div>
-
-      {/* Amount */}
       <span className={cn('text-sm font-semibold font-tabular shrink-0 text-right', isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]')}>
         {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount))}
       </span>
@@ -438,13 +383,11 @@ function TxnTableRow({
   )
 }
 
-// ------------------------------------------------------------------
-// Date Group Header
-// ------------------------------------------------------------------
 function DateGroupHeader({ date, expense, income }: { date: string; expense: number; income: number }) {
+  const { lang } = useTranslation()
   const d = new Date(date + 'T00:00:00')
-  const wd = d.toLocaleDateString('ja-JP', { weekday: 'short' })
-  const label = `${d.getMonth() + 1}/${d.getDate()}（${wd}）`
+  const wd = d.toLocaleDateString(lang === 'ja' ? 'ja-JP' : (lang === 'vi' ? 'vi-VN' : 'en-US'), { weekday: 'short' })
+  const label = lang === 'ja' ? `${d.getMonth() + 1}/${d.getDate()}（${wd}）` : `${d.getDate()}/${d.getMonth() + 1} (${wd})`
   const net = income - expense
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
@@ -460,9 +403,6 @@ function DateGroupHeader({ date, expense, income }: { date: string; expense: num
   )
 }
 
-// ------------------------------------------------------------------
-// Transactions Page
-// ------------------------------------------------------------------
 export default function TransactionsPage() {
   const { transactions, sortOption, setSortOption, clearAll, getFiltered, removeTransaction } = useTransactionsStore()
   const { groups, resolveGroup } = useGroupsStore()
@@ -475,7 +415,6 @@ export default function TransactionsPage() {
   const [selected,   setSelected]   = useState<Set<string>>(new Set())
   const [page,       setPage]       = useState(1)
 
-  // Apply picker filter on top of store filters
   const sorted = useMemo(() => {
     const base = getFiltered().filter((tx) => tx.date >= picker.start && tx.date <= picker.end)
     return base.sort((a, b) => {
@@ -491,7 +430,6 @@ export default function TransactionsPage() {
     })
   }, [getFiltered, sortOption, picker])
 
-  // Previous period stats
   const prev = useMemo(() => getPrevPeriod(picker), [picker])
   const prevSorted = useMemo(() =>
     transactions.filter((tx) => tx.date >= prev.start && tx.date <= prev.end),
@@ -513,14 +451,12 @@ export default function TransactionsPage() {
     : 0
 
   const prevLabel = picker.mode === 'month'
-    ? (() => { const d = new Date(prev.start + 'T00:00:00'); return `Th.${d.getMonth() + 1}` })()
-    : 'kỳ trước'
+    ? (() => { const d = new Date(prev.start + 'T00:00:00'); return lang === 'vi' ? `Th.${d.getMonth() + 1}` : (lang === 'ja' ? `${d.getMonth() + 1}月` : `M${d.getMonth() + 1}`) })()
+    : t.dashboard.prevPeriod
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const paginated  = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // Group by date (date sorts only)
   const groupedByDate = useMemo(() => {
     if (!['dateDesc', 'dateAsc'].includes(sortOption)) return null
     const groups: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
@@ -537,17 +473,14 @@ export default function TransactionsPage() {
     return groups
   }, [paginated, sortOption])
 
-  // Reset page when filters change
   useEffect(() => { setPage(1) }, [sorted.length, picker])
 
   function getGroupProps(txn: Transaction) {
     const gid   = resolveGroup(txn.id, txn.description, txn.category, txn)
     const group = gid ? groups.find((g) => g.id === gid) : null
-    const parent = group?.parentId ? groups.find((g) => g.id === group.parentId) : null
-    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji, parentGroupName: parent?.name }
+    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji }
   }
 
-  // Checkbox logic
   const allPageIds  = paginated.map((tx) => tx.id)
   const allChecked  = allPageIds.length > 0 && allPageIds.every((id) => selected.has(id))
   const someChecked = allPageIds.some((id) => selected.has(id)) && !allChecked
@@ -571,7 +504,7 @@ export default function TransactionsPage() {
   }
 
   function deleteSelected() {
-    if (!confirm(`Xóa ${selected.size} giao dịch đã chọn?`)) return
+    if (!confirm(t.transactions.deleteConfirm)) return
     selected.forEach((id) => removeTransaction(id))
     setSelected(new Set())
   }
@@ -580,9 +513,8 @@ export default function TransactionsPage() {
     return sorted.filter((tx) => selected.has(tx.id)).reduce((s, tx) => s + tx.amount, 0)
   }, [sorted, selected])
 
-  // Period label for stat card titles
   const periodTitle = picker.mode === 'month'
-    ? (() => { const d = new Date(picker.start + 'T00:00:00'); return `Th.${d.getMonth() + 1}` })()
+    ? (() => { const d = new Date(picker.start + 'T00:00:00'); return lang === 'vi' ? `Th.${d.getMonth() + 1}` : (lang === 'ja' ? `${d.getMonth() + 1}月` : `M${d.getMonth() + 1}`) })()
     : picker.label
 
   return (
@@ -608,37 +540,35 @@ export default function TransactionsPage() {
         }
       />
 
-      {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label={`Tổng tiền vào · ${periodTitle}`}
+          label={`${t.dashboard.inflow} · ${periodTitle}`}
           main={`+${formatMoney(totals.income)}`}
           trend={pct(totals.income, prevTotals.income)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={t.dashboard.vsPrev.replace('{{label}}', prevLabel)}
         />
         <StatCard
-          label={`Tổng tiền ra · ${periodTitle}`}
+          label={`${t.dashboard.outflow} · ${periodTitle}`}
           main={`−${formatMoney(totals.expense)}`}
           trend={pct(totals.expense, prevTotals.expense)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={t.dashboard.vsPrev.replace('{{label}}', prevLabel)}
           isLoss
         />
         <StatCard
-          label={`Số giao dịch · ${periodTitle}`}
+          label={`${t.transactions.txnTotal} · ${periodTitle}`}
           main={String(sorted.length)}
-          sub={`${sorted.filter((tx) => tx.amount < 0).length} chi · ${sorted.filter((tx) => tx.amount > 0).length} thu`}
+          sub={`${sorted.filter((tx) => tx.amount < 0).length} ${t.transactions.typeExpense} · ${sorted.filter((tx) => tx.amount > 0).length} ${t.transactions.typeIncome}`}
         />
         <StatCard
-          label="Trung bình · giao dịch ra"
+          label={`${t.common.average} · ${t.transactions.typeExpense}`}
           main={avgExpense ? `−${formatMoney(avgExpense)}` : '—'}
-          sub={totals.expense > 0 ? `Tổng ${sorted.filter((tx) => tx.amount < 0).length} khoản` : undefined}
+          sub={totals.expense > 0 ? `${t.common.total} ${sorted.filter((tx) => tx.amount < 0).length} ${t.common.items}` : undefined}
           isLoss={avgExpense > 0}
         />
       </div>
 
       <FilterBar />
 
-      {/* Bulk bar */}
       {selected.size > 0 && (
         <BulkBar
           count={selected.size}
@@ -648,7 +578,6 @@ export default function TransactionsPage() {
         />
       )}
 
-      {/* Transaction list */}
       <Card padding="none">
         {sorted.length === 0 ? (
           <EmptyState
@@ -660,9 +589,7 @@ export default function TransactionsPage() {
           />
         ) : (
           <>
-            {/* Column header with select-all */}
             <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
-              {/* Select all checkbox */}
               <div onClick={toggleAll} className="w-5 h-5 flex items-center justify-center cursor-pointer">
                 {someChecked
                   ? <Minus className="w-4 h-4 text-[var(--color-interactive-primary)]" />
@@ -672,14 +599,13 @@ export default function TransactionsPage() {
                 }
               </div>
               <div className="w-8" />
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nội dung</p>
-              <p className="hidden sm:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
-              <p className="hidden md:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
-              <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Tài khoản</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">Số tiền</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
+              <p className="hidden sm:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
+              <p className="hidden md:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.sortGroup}</p>
+              <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
             </div>
 
-            {/* Rows */}
             {groupedByDate ? (
               groupedByDate.map((group) => (
                 <div key={group.date}>
@@ -713,13 +639,12 @@ export default function TransactionsPage() {
               </div>
             )}
 
-            {/* Footer totals */}
             <div className="flex items-center justify-between px-4 py-3 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
               <span className="text-xs text-[var(--color-text-quaternary)]">
                 {sorted.length} {t.transactions.shown}
                 {selected.size > 0 && (
                   <span className="ml-2 text-[var(--color-interactive-primary)] font-semibold">
-                    · {selected.size} đã chọn · {selectedTotal >= 0 ? '+' : ''}{formatMoney(selectedTotal)}
+                    · {selected.size} {t.transactions.selected} · {selectedTotal >= 0 ? '+' : ''}{formatMoney(selectedTotal)}
                   </span>
                 )}
               </span>
@@ -732,11 +657,10 @@ export default function TransactionsPage() {
         )}
       </Card>
 
-      {/* Pagination */}
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-[var(--color-text-quaternary)]">
-            Trang {page} / {totalPages} · {sorted.length} giao dịch
+            {t.transactions.pageInfo.replace('{{current}}', String(page)).replace('{{total}}', String(totalPages)).replace('{{count}}', String(sorted.length))}
           </span>
           <div className="flex items-center gap-1">
             <button
@@ -775,7 +699,6 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Detail panel */}
       {detailTxn && !editingTxn && (
         <DetailPanel
           txn={detailTxn}
@@ -785,7 +708,6 @@ export default function TransactionsPage() {
         />
       )}
 
-      {/* Edit modal */}
       {editingTxn && (
         <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />
       )}

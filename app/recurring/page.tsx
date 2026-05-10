@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, Trash2, Pencil, Power, RefreshCw, Calendar, X } from 'lucide-react'
+import { Plus, Trash2, Pencil, Power, RefreshCw, X } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -11,14 +11,10 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useRecurringStore, type RecurringTransaction } from '@/stores/recurring'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatMoney } from '@/lib/money'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn } from '@/lib/utils'
 import { CATEGORIES, PROVIDERS } from '@/lib/constants'
 import type { Category, PaymentProvider } from '@/types'
-
-const FREQ_LABELS: Record<string, string> = {
-  daily: 'Daily', weekly: 'Weekly', monthly: 'Monthly', yearly: 'Yearly',
-}
 
 interface FormState {
   description: string; amount: string; category: Category
@@ -35,7 +31,7 @@ function RecurringForm({ initial, onSave, onCancel }: {
   onSave:  (data: FormState) => void
   onCancel:() => void
 }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const { groups } = useGroupsStore()
   const [form, setForm] = useState<FormState>({ ...DEFAULT_FORM, ...initial })
 
@@ -48,30 +44,32 @@ function RecurringForm({ initial, onSave, onCancel }: {
       <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
       <div className="relative bg-[var(--color-surface-default)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl border border-[var(--color-border-default)] max-h-[90vh] overflow-y-auto">
         <div className="sticky top-0 bg-[var(--color-surface-default)] border-b border-[var(--color-border-subtle)] px-5 py-4 flex items-center justify-between z-10">
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{t.recurring.add}</h2>
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
+            {initial ? (lang === 'vi' ? 'Chỉnh sửa định kỳ' : (lang === 'ja' ? '定期支払を編集' : 'Edit recurring')) : t.recurring.add}
+          </h2>
           <button onClick={onCancel} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors">
             <X className="w-4 h-4" />
           </button>
         </div>
         <div className="p-5 space-y-4">
-          <Input label="Description" value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder="e.g. Netflix, Gym" />
-          <Input label="Amount (¥)" type="number" value={form.amount} onChange={(e) => setField('amount', e.target.value)} placeholder="0" />
+          <Input label={lang === 'vi' ? 'Mô tả' : (lang === 'ja' ? '内容' : 'Description')} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder={lang === 'vi' ? 'Ví dụ: Netflix, Gym' : (lang === 'ja' ? '例: Netflix, ジム' : 'e.g. Netflix, Gym')} />
+          <Input label={lang === 'vi' ? 'Số tiền' : (lang === 'ja' ? '金額' : 'Amount')} type="number" value={form.amount} onChange={(e) => setField('amount', e.target.value)} placeholder="0" />
           <div className="grid grid-cols-2 gap-3">
-            <Select label="Category" value={form.category} onChange={(e) => setField('category', e.target.value as Category)}>
+            <Select label={t.transactions.labelCategory} value={form.category} onChange={(e) => setField('category', e.target.value as Category)}>
               {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
             </Select>
-            <Input label="Day of month" type="number" min="1" max="28" value={form.dayOfMonth} onChange={(e) => setField('dayOfMonth', e.target.value)} />
+            <Input label={lang === 'vi' ? 'Ngày trong tháng' : (lang === 'ja' ? '毎月の日' : 'Day of month')} type="number" min="1" max="28" value={form.dayOfMonth} onChange={(e) => setField('dayOfMonth', e.target.value)} />
           </div>
-          <Select label="Provider" value={form.provider} onChange={(e) => setField('provider', e.target.value as PaymentProvider)}>
+          <Select label={t.transactions.labelProvider} value={form.provider} onChange={(e) => setField('provider', e.target.value as PaymentProvider)}>
             {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </Select>
           {groups.length > 0 && (
-            <Select label="Group" value={form.groupId} onChange={(e) => setField('groupId', e.target.value)}>
-              <option value="">None</option>
+            <Select label={lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group')} value={form.groupId} onChange={(e) => setField('groupId', e.target.value)}>
+              <option value="">{lang === 'vi' ? 'Không có' : (lang === 'ja' ? 'なし' : 'None')}</option>
               {groups.map((g) => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
             </Select>
           )}
-          <Input label="Note" value={form.note} onChange={(e) => setField('note', e.target.value)} placeholder="Optional note..." />
+          <Input label={lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note')} value={form.note} onChange={(e) => setField('note', e.target.value)} placeholder={lang === 'vi' ? 'Ghi chú thêm (tùy chọn)...' : (lang === 'ja' ? 'オプションのメモ...' : 'Optional note...')} />
           <Button className="w-full" onClick={() => form.description && form.amount && onSave(form)}>
             {t.common.save}
           </Button>
@@ -83,7 +81,8 @@ function RecurringForm({ initial, onSave, onCancel }: {
 
 export default function RecurringPage() {
   const { items, add, update, remove } = useRecurringStore()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
+  const { format }  = useMoney()
   const [formOpen,  setFormOpen]  = useState(false)
   const [editItem,  setEditItem]  = useState<RecurringTransaction | null>(null)
 
@@ -121,16 +120,19 @@ export default function RecurringPage() {
         }
       />
 
-      {/* Summary */}
       {items.length > 0 && (
         <div className="grid grid-cols-2 gap-3">
           <div className="card-base p-4">
-            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">Active items</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
+              {lang === 'vi' ? 'Đang hoạt động' : (lang === 'ja' ? '有効な項目' : 'Active items')}
+            </p>
             <p className="text-lg font-semibold text-[var(--color-text-primary)]">{items.filter((i) => i.isActive).length}</p>
           </div>
           <div className="card-base p-4">
-            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">Monthly total</p>
-            <p className="text-lg font-semibold font-tabular text-[var(--color-text-loss)]">{formatMoney(totalMonthly)}</p>
+            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
+              {lang === 'vi' ? 'Tổng hàng tháng' : (lang === 'ja' ? '月間合計' : 'Monthly total')}
+            </p>
+            <p className="text-lg font-semibold font-tabular text-[var(--color-text-loss)]">{format(totalMonthly)}</p>
           </div>
         </div>
       )}
@@ -159,14 +161,16 @@ export default function RecurringPage() {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{item.description}</p>
                   <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-[var(--color-text-tertiary)]">Day {item.dayOfMonth} each month</span>
+                    <span className="text-xs text-[var(--color-text-tertiary)]">
+                      {lang === 'vi' ? `Ngày ${item.dayOfMonth} mỗi tháng` : (lang === 'ja' ? `毎月${item.dayOfMonth}日` : `Day ${item.dayOfMonth} each month`)}
+                    </span>
                     <Badge variant={item.isActive ? 'gain' : 'neutral'} size="sm" dot>
-                      {item.isActive ? 'Active' : 'Inactive'}
+                      {item.isActive ? (lang === 'vi' ? 'Hoạt động' : (lang === 'ja' ? '有効' : 'Active')) : (lang === 'vi' ? 'Tạm dừng' : (lang === 'ja' ? '無効' : 'Inactive'))}
                     </Badge>
                   </div>
                 </div>
                 <p className="text-sm font-medium font-tabular text-[var(--color-text-loss)] shrink-0">
-                  −{formatMoney(item.amount)}
+                  −{format(item.amount)}
                 </p>
                 <div className="flex items-center gap-1 shrink-0">
                   <button onClick={() => update(item.id, { isActive: !item.isActive })}

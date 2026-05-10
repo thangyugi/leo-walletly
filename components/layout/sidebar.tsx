@@ -13,12 +13,17 @@ import {
   ScanLine,
   RefreshCw,
   FileText,
+  Users,
+  Settings,
   Globe,
+  User,
+  Building2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
+import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
 import type { Lang } from '@/lib/i18n'
 
 const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
@@ -37,28 +42,34 @@ export function Sidebar() {
     { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp,     group: 'main' },
     { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays,    group: 'main' },
     { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3,       group: 'main' },
+    { href: '/users',          label: t.nav.users,        icon: Users,           group: 'manage' },
     { href: '/groups',         label: t.nav.groups,       icon: Tag,             group: 'manage' },
     { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw,       group: 'manage' },
+    { href: '/settings/ledger',  label: t.ledger_settings.title, icon: Settings,        group: 'settings' },
+    { href: '/settings/profile', label: t.settings.sidebar.profile, icon: User,            group: 'settings' },
     { href: '/monthly-report', label: t.nav.report,       icon: FileText,        group: 'manage' },
     { href: '/scan',           label: t.nav.scan,         icon: ScanLine,        group: 'tools' },
     { href: '/import',         label: t.nav.import,       icon: Upload,          group: 'tools' },
   ]
 
   const groups = [
-    { key: 'main',   label: null },
-    { key: 'manage', label: 'MANAGE' },
-    { key: 'tools',  label: 'TOOLS' },
+    { key: 'main',     label: null },
+    { key: 'manage',   label: t.common.manage },
+    { key: 'tools',    label: t.common.tools },
+    { key: 'settings', label: t.common.system },
   ]
 
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
       {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-14 border-b border-[var(--color-sidebar-border)]">
+      <div className="flex items-center gap-2.5 px-4 h-14">
         <div className="w-7 h-7 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />
         </div>
         <span className="font-semibold text-sm text-[var(--color-text-primary)] tracking-tight">{APP_NAME}</span>
       </div>
+
+      <LedgerSwitcher />
 
       {/* Navigation */}
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
@@ -111,7 +122,7 @@ export function Sidebar() {
       <div className="px-2.5 py-3 border-t border-[var(--color-sidebar-border)]">
         <p className="flex items-center gap-1.5 px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">
           <Globe className="w-3 h-3" />
-          Language
+          {t.common.language}
         </p>
         <div className="grid grid-cols-3 gap-1">
           {LANG_OPTIONS.map((opt) => (

@@ -8,7 +8,7 @@ import type { CurrencyCode } from '@/types'
 // ----------------------------------------------------------
 // Currency metadata
 // ----------------------------------------------------------
-const CURRENCY_META: Record<CurrencyCode, { precision: number; locale: string; symbol: string }> = {
+export const CURRENCY_META: Record<CurrencyCode, { precision: number; locale: string; symbol: string }> = {
   JPY: { precision: 0, locale: 'ja-JP', symbol: '¥' },
   USD: { precision: 2, locale: 'en-US', symbol: '$' },
   EUR: { precision: 2, locale: 'de-DE', symbol: '€' },
@@ -62,10 +62,19 @@ export function formatMoney(
     currency,
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,
-  }).format(amount)
+    currencyDisplay: 'symbol',
+  }).format(Math.abs(amount))
 
-  if (options.sign && amount > 0) return `+${formatted}`
-  return formatted
+  let result = formatted
+  if (options.accounting && amount < 0) {
+    result = `(${formatted})`
+  } else if (amount < 0) {
+    result = `-${formatted}`
+  } else if (options.sign && amount > 0) {
+    result = `+${formatted}`
+  }
+
+  return result
 }
 
 // ----------------------------------------------------------

@@ -1,17 +1,16 @@
 'use client'
 
-import { useState, useCallback } from 'react'
-import { Upload, FileText, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp } from 'lucide-react'
+import { useState } from 'react'
+import { Upload, CheckCircle2, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { parseFile } from '@/features/import/parsers'
-import { formatMoney } from '@/lib/money'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 import { formatDate, cn } from '@/lib/utils'
-import { PROVIDERS } from '@/lib/constants'
-import type { ImportResult, PaymentProvider, Transaction } from '@/types'
+import { useTranslation } from '@/hooks/useTranslation'
+import type { ImportResult, PaymentProvider } from '@/types'
 
 const PROVIDER_OPTIONS: { value: PaymentProvider; label: string; desc: string; color: string }[] = [
   { value: 'rakuten-pay',  label: 'Rakuten Pay',   desc: '楽天カード明細 CSV / PDF', color: '#BF0000' },
@@ -21,6 +20,8 @@ const PROVIDER_OPTIONS: { value: PaymentProvider; label: string; desc: string; c
 
 export default function ImportPage() {
   const { addTransactions } = useTransactionsStore()
+  const { t, lang } = useTranslation()
+  const { format } = useMoney()
   const [provider,    setProvider]    = useState<PaymentProvider>('rakuten-pay')
   const [result,      setResult]      = useState<ImportResult | null>(null)
   const [loading,     setLoading]     = useState(false)
@@ -38,7 +39,7 @@ export default function ImportPage() {
       const res = await parseFile(file, provider)
       setResult(res)
       if (!res.success || res.transactions.length === 0) {
-        setError(res.errors.join(' / ') || 'No transactions found')
+        setError(res.errors.join(' / ') || t.import.noTxnFound)
       }
     } catch (e: any) {
       setError(e.message)
@@ -62,11 +63,10 @@ export default function ImportPage() {
 
   return (
     <div className="animate-fade-in space-y-5">
-      <PageHeader title="Import Data" subtitle="Import transactions from CSV or PDF files" />
+      <PageHeader title={t.import.title} subtitle={t.import.subtitle} />
 
-      {/* Provider selector */}
       <Card padding="none">
-        <CardHeader><CardTitle>Select data source</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t.import.selectSource}</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {PROVIDER_OPTIONS.map((p) => (
@@ -91,7 +91,6 @@ export default function ImportPage() {
         </CardContent>
       </Card>
 
-      {/* Drop zone */}
       <div
         onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
         onDragLeave={() => setDragging(false)}
@@ -110,18 +109,17 @@ export default function ImportPage() {
           }
         </div>
         <p className="text-sm font-medium text-[var(--color-text-primary)] mb-1">
-          {loading ? 'Parsing file...' : 'Drag & drop file here'}
+          {loading ? t.import.parsing : t.import.dropHint}
         </p>
-        <p className="text-xs text-[var(--color-text-tertiary)] mb-4">Supports CSV and PDF files</p>
+        <p className="text-xs text-[var(--color-text-tertiary)] mb-4">{t.import.supports}</p>
         <label>
           <input type="file" accept=".csv,.pdf" onChange={(e) => { const f = e.target.files?.[0]; if (f) handleFile(f) }} className="sr-only" />
-          <Button variant="secondary" size="sm" disabled={loading} className="cursor-pointer" onClick={() => {}}>
-            Browse files
+          <Button variant="secondary" size="sm" disabled={loading} className="cursor-pointer">
+            <span>{t.import.browse}</span>
           </Button>
         </label>
       </div>
 
-      {/* Error */}
       {error && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-[var(--color-border-error)] bg-[var(--color-status-loss-bg)] text-sm text-[var(--color-text-loss)]">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -129,29 +127,27 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* Success confirmation */}
       {confirmed && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-[var(--color-gain-200)] bg-[var(--color-status-gain-bg)] text-sm text-[var(--color-text-gain)]">
           <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
-          <span>{result?.transactions.length} transactions added successfully.</span>
+          <span>{t.import.success.replace('{{count}}', String(result?.transactions.length || 0))}</span>
         </div>
       )}
 
-      {/* Preview */}
       {result && result.transactions.length > 0 && !confirmed && (
         <Card padding="none">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-[var(--color-text-gain)]" />
-              {result.transactions.length} transactions found
+              {t.import.found.replace('{{count}}', String(result.transactions.length))}
             </CardTitle>
             <div className="flex items-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => setShowPreview((v) => !v)}
                 iconRight={showPreview ? <ChevronUp /> : <ChevronDown />}>
-                Preview
+                {t.import.preview}
               </Button>
               <Button size="sm" onClick={handleConfirm}>
-                Confirm import
+                {t.import.confirm}
               </Button>
             </div>
           </CardHeader>
@@ -161,9 +157,9 @@ export default function ImportPage() {
               <table className="w-full text-sm table-financial">
                 <thead className="sticky top-0 bg-[var(--color-surface-default)]">
                   <tr>
-                    <th className="text-left">Date</th>
-                    <th className="text-left">Description</th>
-                    <th className="text-right">Amount</th>
+                    <th className="text-left">{t.common.date}</th>
+                    <th className="text-left">{t.common.details}</th>
+                    <th className="text-right">{t.common.amount}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,7 +168,7 @@ export default function ImportPage() {
                       <td className="text-[var(--color-text-tertiary)] whitespace-nowrap">{formatDate(tx.date)}</td>
                       <td className="max-w-[200px] truncate">{tx.description}</td>
                       <td className={cn('cell-amount', tx.amount >= 0 ? 'gain' : 'loss')}>
-                        {tx.amount >= 0 ? '+' : ''}{formatMoney(tx.amount)}
+                        {format(tx.amount, { sign: true })}
                       </td>
                     </tr>
                   ))}

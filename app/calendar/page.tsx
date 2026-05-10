@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, ArrowLeftRight } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TransactionRow } from '@/components/financial/transaction-row'
 import { PageHeader } from '@/components/layout/page-header'
@@ -10,7 +10,7 @@ import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatMoney } from '@/lib/money'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn } from '@/lib/utils'
 import type { Transaction } from '@/types'
 
@@ -21,7 +21,8 @@ function monthKey(year: number, month: number) {
 export default function CalendarPage() {
   const { transactions } = useTransactionsStore()
   const { groups, resolveGroup } = useGroupsStore()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
+  const { format } = useMoney()
   const today  = new Date()
   const [year, setYear]      = useState(today.getFullYear())
   const [month, setMonth]    = useState(today.getMonth())
@@ -54,8 +55,7 @@ export default function CalendarPage() {
   function getRowProps(txn: Transaction) {
     const gid    = resolveGroup(txn.id, txn.description, txn.category, txn)
     const group  = gid ? groups.find((g) => g.id === gid) : null
-    const parent = group?.parentId ? groups.find((g) => g.id === group.parentId) : null
-    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji, parentGroupName: parent?.name }
+    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji }
   }
 
   const firstDay = new Date(year, month, 1).getDay()
@@ -74,16 +74,17 @@ export default function CalendarPage() {
     income:  monthTxns.reduce((s, t) => t.amount > 0 ? s + t.amount : s, 0),
   }), [monthTxns])
 
+  const monthLabel = lang === 'ja' ? `${year}年 ${month + 1}月` : (lang === 'vi' ? `Tháng ${month + 1}/${year}` : `Month ${month + 1}/${year}`)
+
   return (
     <div className="animate-fade-in space-y-5">
       <PageHeader title={t.calendar.title} />
 
-      {/* Month summary */}
       <div className="grid grid-cols-3 gap-3">
         {[
-          { label: t.analytics.expense, value: formatMoney(monthSummary.expense), color: 'var(--color-text-loss)' },
-          { label: t.analytics.income,  value: formatMoney(monthSummary.income),  color: 'var(--color-text-gain)' },
-          { label: t.analytics.net,     value: formatMoney(monthSummary.income - monthSummary.expense),
+          { label: t.analytics.expense, value: format(monthSummary.expense), color: 'var(--color-text-loss)' },
+          { label: t.analytics.income,  value: format(monthSummary.income),  color: 'var(--color-text-gain)' },
+          { label: t.analytics.net,     value: format(monthSummary.income - monthSummary.expense),
             color: monthSummary.income >= monthSummary.expense ? 'var(--color-text-gain)' : 'var(--color-text-loss)' },
         ].map((s) => (
           <div key={s.label} className="card-base p-4 text-center">
@@ -94,11 +95,9 @@ export default function CalendarPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
-        {/* Calendar grid */}
         <Card padding="none" className="lg:col-span-2">
-          {/* Month nav */}
           <CardHeader>
-            <CardTitle>{year}年 {month + 1}月</CardTitle>
+            <CardTitle>{monthLabel}</CardTitle>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="xs" onClick={prevMonth} icon={<ChevronLeft />} />
               <Button variant="ghost" size="xs" onClick={nextMonth} icon={<ChevronRight />} />
@@ -106,7 +105,6 @@ export default function CalendarPage() {
           </CardHeader>
 
           <div className="px-4 pb-4">
-            {/* Weekday headers */}
             <div className="grid grid-cols-7 mb-2">
               {t.calendar.days.map((d) => (
                 <div key={d} className="text-center text-[10px] font-semibold text-[var(--color-text-quaternary)] py-1">
@@ -115,7 +113,6 @@ export default function CalendarPage() {
               ))}
             </div>
 
-            {/* Day cells */}
             <div className="grid grid-cols-7 gap-0.5">
               {cells.map((day, i) => {
                 if (!day) return <div key={`empty-${i}`} />
@@ -147,12 +144,12 @@ export default function CalendarPage() {
                       <div className="space-y-0.5">
                         {info.expense > 0 && (
                           <p className="text-[10px] font-medium font-tabular text-[var(--color-text-loss)] leading-none truncate">
-                            −{formatMoney(info.expense, 'JPY', { compact: true })}
+                            −{format(info.expense, { compact: true })}
                           </p>
                         )}
                         {info.income > 0 && (
                           <p className="text-[10px] font-medium font-tabular text-[var(--color-text-gain)] leading-none truncate">
-                            +{formatMoney(info.income, 'JPY', { compact: true })}
+                            +{format(info.income, { compact: true })}
                           </p>
                         )}
                       </div>
@@ -164,13 +161,12 @@ export default function CalendarPage() {
           </div>
         </Card>
 
-        {/* Day detail */}
         <div className="space-y-3">
           {selected ? (
             <Card padding="none">
               <CardHeader>
                 <CardTitle>
-                  {selected.replace(/-/g, '/')} · {selectedTxns.length}件
+                  {selected.replace(/-/g, '/')} · {selectedTxns.length} {lang === 'vi' ? 'giao dịch' : (lang === 'ja' ? '件' : 'items')}
                 </CardTitle>
               </CardHeader>
               <div className="px-2 py-1">

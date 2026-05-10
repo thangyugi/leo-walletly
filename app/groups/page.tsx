@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import { Plus, Pencil, Trash2, X, Hash, ChevronRight, AlertCircle } from 'lucide-react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -13,13 +13,10 @@ import { useGroupsStore } from '@/stores/groups'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatMoney } from '@/lib/money'
-import { generateId, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { PRESET_COLORS, PRESET_EMOJIS } from '@/lib/constants'
-import type { CustomGroup, Category } from '@/types'
+import type { CustomGroup } from '@/types'
 
-// ------------------------------------------------------------------
-// Group Form Modal
-// ------------------------------------------------------------------
 interface GroupFormProps {
   initial?: CustomGroup
   onSave:  (g: Omit<CustomGroup, 'id'> & { id?: string }) => void
@@ -28,7 +25,7 @@ interface GroupFormProps {
 }
 
 function GroupForm({ initial, onSave, onClose, parentOptions }: GroupFormProps) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [name,    setName]    = useState(initial?.name    ?? '')
   const [emoji,   setEmoji]   = useState(initial?.emoji   ?? '📦')
   const [color,   setColor]   = useState(initial?.color   ?? '#10b981')
@@ -63,14 +60,16 @@ function GroupForm({ initial, onSave, onClose, parentOptions }: GroupFormProps) 
               {emoji}
             </div>
             <div>
-              <p className="text-sm font-medium text-[var(--color-text-primary)]">{name || 'Group name'}</p>
+              <p className="text-sm font-medium text-[var(--color-text-primary)]">{name || (lang === 'vi' ? 'Tên nhóm' : (lang === 'ja' ? 'グループ名' : 'Group name'))}</p>
               {budget && Number(budget) > 0 && (
-                <p className="text-xs text-[var(--color-text-tertiary)]">Budget: {formatMoney(Number(budget))}</p>
+                <p className="text-xs text-[var(--color-text-tertiary)]">
+                  {lang === 'vi' ? 'Ngân sách' : (lang === 'ja' ? '予算' : 'Budget')}: {formatMoney(Number(budget))}
+                </p>
               )}
             </div>
           </div>
 
-          <Input label={t.groups.name} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Food & Drink" />
+          <Input label={t.groups.name} value={name} onChange={(e) => setName(e.target.value)} placeholder={lang === 'vi' ? 'Ví dụ: Ăn uống' : (lang === 'ja' ? '例: 食費' : 'e.g. Food & Drink')} />
 
           {/* Emoji picker */}
           <div>
@@ -128,7 +127,9 @@ function GroupForm({ initial, onSave, onClose, parentOptions }: GroupFormProps) 
                 placeholder={t.groups.keywordsHint}
                 className="flex-1 h-9 px-3 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] focus:outline-none focus:border-[var(--color-border-focus)]"
               />
-              <Button variant="secondary" size="sm" onClick={addKeyword}>Add</Button>
+              <Button variant="secondary" size="sm" onClick={addKeyword}>
+                {lang === 'vi' ? 'Thêm' : (lang === 'ja' ? '追加' : 'Add')}
+              </Button>
             </div>
             {keywords.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-2">
@@ -192,9 +193,6 @@ function GroupForm({ initial, onSave, onClose, parentOptions }: GroupFormProps) 
   )
 }
 
-// ------------------------------------------------------------------
-// Group Card
-// ------------------------------------------------------------------
 function GroupCard({
   group,
   childGroups,
@@ -210,7 +208,7 @@ function GroupCard({
   onEdit:  () => void
   onDelete:() => void
 }) {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -242,7 +240,6 @@ function GroupCard({
           </div>
         </div>
 
-        {/* Budget progress */}
         {group.budgetLimit && group.budgetLimit > 0 && (
           <div className="mt-3">
             <BudgetProgress
@@ -253,7 +250,6 @@ function GroupCard({
           </div>
         )}
 
-        {/* Keywords */}
         {group.keywords.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1">
             {group.keywords.slice(0, 4).map((kw) => (
@@ -268,14 +264,13 @@ function GroupCard({
         )}
       </div>
 
-      {/* Sub-groups */}
       {childGroups.length > 0 && (
         <div className="border-t border-[var(--color-border-subtle)]">
           <button
             onClick={() => setExpanded((v) => !v)}
             className="w-full flex items-center justify-between px-4 py-2 text-xs text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors"
           >
-            <span>{childGroups.length} sub-groups</span>
+            <span>{childGroups.length} {lang === 'vi' ? 'nhóm con' : (lang === 'ja' ? 'サブグループ' : 'sub-groups')}</span>
             <ChevronRight className={cn('w-3.5 h-3.5 transition-transform', expanded && 'rotate-90')} />
           </button>
           {expanded && (
@@ -295,9 +290,6 @@ function GroupCard({
   )
 }
 
-// ------------------------------------------------------------------
-// Page
-// ------------------------------------------------------------------
 export default function GroupsPage() {
   const { groups, addGroup, updateGroup, removeGroup, resolveGroup } = useGroupsStore()
   const { transactions } = useTransactionsStore()
@@ -310,7 +302,6 @@ export default function GroupsPage() {
   const rootGroups  = useMemo(() => groups.filter((g) => !g.parentId), [groups])
   const parentOpts  = useMemo(() => rootGroups, [rootGroups])
 
-  /* Spending per group */
   const groupSpend = useMemo(() => {
     const map: Record<string, { amount: number; count: number }> = {}
     transactions.filter((tx) => tx.amount < 0).forEach((tx) => {
@@ -375,7 +366,6 @@ export default function GroupsPage() {
         </div>
       )}
 
-      {/* Delete confirmation */}
       {deleteId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={() => setDeleteId(null)} />

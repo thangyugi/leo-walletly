@@ -5,7 +5,7 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { AlertCircle, TrendingUp, TrendingDown, Target, Upload } from 'lucide-react'
+import { Target, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -16,45 +16,48 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatMoney } from '@/lib/money'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 import { CATEGORIES } from '@/lib/constants'
 import { CHART_COLORS, CHART_AXIS, CHART_TOOLTIP, CHART_MARGINS } from '@/components/charts/chart-theme'
 
-// ------------------------------------------------------------------
-// Custom Tooltip
-// ------------------------------------------------------------------
 function ChartTooltip({ active, payload, label }: any) {
+  const { format } = useMoney()
+  const { t } = useTranslation()
   if (!active || !payload?.length) return null
   return (
     <div style={CHART_TOOLTIP.contentStyle}>
       <p style={CHART_TOOLTIP.labelStyle}>{label}</p>
-      {payload.map((p: any, i: number) => (
-        <p key={i} style={{ ...CHART_TOOLTIP.itemStyle, color: p.color || p.fill }}>
-          {p.name}: {formatMoney(Math.abs(p.value))}
-        </p>
-      ))}
+      {payload.map((p: any, i: number) => {
+        let name = p.name
+        if (name === 'income')  name = t.analytics.income
+        if (name === 'expense') name = t.analytics.expense
+        if (name === 'net')     name = t.analytics.net
+        return (
+          <p key={i} style={{ ...CHART_TOOLTIP.itemStyle, color: p.color || p.fill }}>
+            {name}: {format(Math.abs(p.value))}
+          </p>
+        )
+      })}
     </div>
   )
 }
 
-// ------------------------------------------------------------------
-// Analytics Page
-// ------------------------------------------------------------------
 export default function AnalyticsPage() {
   const { transactions } = useTransactionsStore()
   const { groups, resolveGroup } = useGroupsStore()
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
+  const { format } = useMoney()
   const [view, setView] = useState<'category' | 'group'>('category')
 
   const hasData = transactions.length > 0
 
-  /* Monthly trend — last 6 months */
   const monthlyData = useMemo(() => {
     const map: Record<string, { label: string; expense: number; income: number }> = {}
     transactions.forEach((tx) => {
       const [y, m] = tx.date.split('-')
       const key    = `${y}-${m}`
-      if (!map[key]) map[key] = { label: `${y}/${m}`, expense: 0, income: 0 }
+      const label = lang === 'ja' ? `${y}/${m}` : (lang === 'vi' ? `${m}/${y}` : `${m}/${y}`)
+      if (!map[key]) map[key] = { label, expense: 0, income: 0 }
       if (tx.amount < 0) map[key].expense += Math.abs(tx.amount)
       else               map[key].income  += tx.amount
     })
@@ -62,9 +65,8 @@ export default function AnalyticsPage() {
       .sort(([a], [b]) => a.localeCompare(b))
       .slice(-6)
       .map(([, v]) => v)
-  }, [transactions])
+  }, [transactions, lang])
 
-  /* Category breakdown */
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {}
     transactions.filter((tx) => tx.amount < 0).forEach((tx) => {
@@ -76,20 +78,18 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.value - a.value)
   }, [transactions])
 
-  /* Group breakdown */
   const groupData = useMemo(() => {
     const map: Record<string, { name: string; value: number; color: string }> = {}
     transactions.filter((tx) => tx.amount < 0).forEach((tx) => {
       const gid   = resolveGroup(tx.id, tx.description, tx.category, tx)
       const group = gid ? groups.find((g) => g.id === gid) : null
       const key   = group?.id ?? '__none'
-      if (!map[key]) map[key] = { name: group?.name ?? 'Uncategorized', value: 0, color: group?.color ?? CHART_COLORS.neutral }
+      if (!map[key]) map[key] = { name: group?.name ?? (lang === 'vi' ? 'Chưa phân loại' : (lang === 'ja' ? '未分類' : 'Uncategorized')), value: 0, color: group?.color ?? CHART_COLORS.neutral }
       map[key].value += Math.abs(tx.amount)
     })
     return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 8)
-  }, [transactions, groups, resolveGroup])
+  }, [transactions, groups, resolveGroup, lang])
 
-  /* Budget alerts */
   const budgetAlerts = useMemo(() => {
     return groups
       .filter((g) => g.budgetLimit && g.budgetLimit > 0)
@@ -107,7 +107,6 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.pct - a.pct)
   }, [groups, transactions, resolveGroup])
 
-  /* Net balance 6M */
   const netData = useMemo(() => monthlyData.map((d) => ({ ...d, net: d.income - d.expense })), [monthlyData])
 
   const displayData = view === 'category' ? categoryData : groupData
@@ -130,7 +129,6 @@ export default function AnalyticsPage() {
     <div className="animate-fade-in space-y-5">
       <PageHeader title={t.analytics.title} subtitle={t.analytics.subtitle} />
 
-      {/* Monthly Trend */}
       <Card padding="none">
         <CardHeader>
           <CardTitle>{t.analytics.monthlyTrend}</CardTitle>
@@ -140,17 +138,16 @@ export default function AnalyticsPage() {
             <BarChart data={monthlyData} margin={CHART_MARGINS.default}>
               <CartesianGrid vertical={false} stroke={CHART_AXIS.grid.stroke} strokeDasharray={CHART_AXIS.grid.strokeDasharray} />
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={CHART_AXIS.tick} />
-              <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS.tick} tickFormatter={(v) => formatMoney(v as number, 'JPY', { compact: true })} />
+              <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS.tick} tickFormatter={(v) => format(v as number, { compact: true })} width={50} />
               <Tooltip content={<ChartTooltip />} />
-              <Bar dataKey="income"  name={t.analytics.income}  fill={CHART_COLORS.gain}    radius={[4, 4, 0, 0]} />
-              <Bar dataKey="expense" name={t.analytics.expense} fill={CHART_COLORS.loss}    radius={[4, 4, 0, 0]} />
+              <Bar dataKey="income"  name="income"  fill={CHART_COLORS.gain}    radius={[4, 4, 0, 0]} />
+              <Bar dataKey="expense" name="expense" fill={CHART_COLORS.loss}    radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
         </CardContent>
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Breakdown Pie */}
         <Card padding="none">
           <CardHeader>
             <CardTitle>
@@ -182,7 +179,7 @@ export default function AnalyticsPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => formatMoney(value)}
+                    formatter={(value: number) => format(value)}
                     contentStyle={CHART_TOOLTIP.contentStyle}
                   />
                 </PieChart>
@@ -194,7 +191,7 @@ export default function AnalyticsPage() {
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />
                   <span className="text-xs text-[var(--color-text-secondary)] flex-1 truncate">{d.name}</span>
                   <span className="text-xs font-medium font-tabular text-[var(--color-text-primary)]">
-                    {formatMoney(d.value)}
+                    {format(d.value)}
                   </span>
                 </div>
               ))}
@@ -202,7 +199,6 @@ export default function AnalyticsPage() {
           </CardContent>
         </Card>
 
-        {/* Net Balance Area */}
         <Card padding="none">
           <CardHeader>
             <CardTitle>{t.analytics.netBalance}</CardTitle>
@@ -218,12 +214,12 @@ export default function AnalyticsPage() {
                 </defs>
                 <CartesianGrid vertical={false} stroke={CHART_AXIS.grid.stroke} strokeDasharray={CHART_AXIS.grid.strokeDasharray} />
                 <XAxis dataKey="label" axisLine={false} tickLine={false} tick={CHART_AXIS.tick} />
-                <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS.tick} tickFormatter={(v) => formatMoney(v as number, 'JPY', { compact: true })} />
+                <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS.tick} tickFormatter={(v) => format(v as number, { compact: true })} width={50} />
                 <Tooltip content={<ChartTooltip />} />
                 <Area
                   type="monotone"
                   dataKey="net"
-                  name={t.analytics.net}
+                  name="net"
                   stroke={CHART_COLORS.brand}
                   strokeWidth={2}
                   fill="url(#netGradient)"
@@ -234,7 +230,6 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      {/* Budget Alerts */}
       <Card padding="none">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">

@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
+import { useTranslation } from '@/hooks/useTranslation'
 
 type NotifType = 'all' | 'unread'
 
@@ -75,6 +76,7 @@ const NOTIFICATIONS = [
 export default function NotificationsPage() {
   const [filter,   setFilter]   = useState<NotifType>('all')
   const [readIds,  setReadIds]  = useState<Set<string>>(new Set(['3', '4', '5']))
+  const { t, lang } = useTranslation()
 
   const displayed = NOTIFICATIONS.filter((n) =>
     filter === 'all' ? true : !readIds.has(n.id)
@@ -97,42 +99,44 @@ export default function NotificationsPage() {
   return (
     <div className="animate-fade-in space-y-5">
       <PageHeader
-        title="Notifications"
-        subtitle={`${unreadCount} unread`}
+        title={t.notifications.title}
+        subtitle={lang === 'vi' ? `${unreadCount} chưa đọc` : (lang === 'ja' ? `未読 ${unreadCount}件` : `${unreadCount} unread`)}
         actions={
           unreadCount > 0 ? (
             <Button variant="outline" size="sm" icon={<CheckCheck />} onClick={markAllRead}>
-              Mark all read
+              {lang === 'vi' ? 'Đánh dấu tất cả là đã đọc' : (lang === 'ja' ? 'すべて既読にする' : 'Mark all read')}
             </Button>
           ) : undefined
         }
       />
 
-      {/* Filter */}
       <div className="flex items-center justify-between">
         <SegmentedControl<NotifType>
           value={filter}
           onChange={setFilter}
           items={[
-            { value: 'all',    label: `All (${NOTIFICATIONS.length})`  },
-            { value: 'unread', label: `Unread (${unreadCount})`        },
+            { value: 'all',    label: lang === 'vi' ? `Tất cả (${NOTIFICATIONS.length})` : (lang === 'ja' ? `すべて (${NOTIFICATIONS.length})` : `All (${NOTIFICATIONS.length})`)  },
+            { value: 'unread', label: lang === 'vi' ? `Chưa đọc (${unreadCount})` : (lang === 'ja' ? `未読 (${unreadCount})` : `Unread (${unreadCount})`) },
           ]}
         />
         <button className="flex items-center gap-1.5 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors">
           <Filter className="w-3.5 h-3.5" />
-          Filter by type
+          {lang === 'vi' ? 'Lọc theo loại' : (lang === 'ja' ? 'タイプでフィルター' : 'Filter by type')}
         </button>
       </div>
 
-      {/* Notification list */}
       <div className="card-base overflow-hidden">
         {displayed.length === 0 ? (
           <div className="py-16 flex flex-col items-center gap-3 text-center">
             <div className="w-12 h-12 rounded-xl bg-[var(--color-bg-sunken)] flex items-center justify-center">
               <Bell className="w-6 h-6 text-[var(--color-text-quaternary)]" />
             </div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">All caught up</p>
-            <p className="text-xs text-[var(--color-text-tertiary)]">No unread notifications</p>
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">
+              {lang === 'vi' ? 'Tuyệt vời, bạn đã xem hết!' : (lang === 'ja' ? 'すべて完了しました' : 'All caught up')}
+            </p>
+            <p className="text-xs text-[var(--color-text-tertiary)]">
+              {lang === 'vi' ? 'Không có thông báo chưa đọc nào' : (lang === 'ja' ? '未読の通知はありません' : 'No unread notifications')}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-[var(--color-border-subtle)]">
@@ -147,12 +151,10 @@ export default function NotificationsPage() {
                   )}
                   onClick={() => toggleRead(n.id)}
                 >
-                  {/* Icon */}
                   <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5', n.iconBg)}>
                     <n.icon className={cn('w-4 h-4', n.iconColor)} />
                   </div>
 
-                  {/* Content */}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -168,7 +170,6 @@ export default function NotificationsPage() {
                     <p className="text-xs text-[var(--color-text-tertiary)] mt-1 leading-relaxed">{n.body}</p>
                   </div>
 
-                  {/* Unread dot */}
                   {!isRead && (
                     <div className="w-2 h-2 rounded-full bg-[var(--color-interactive-primary)] shrink-0 mt-2" />
                   )}
@@ -179,9 +180,10 @@ export default function NotificationsPage() {
         )}
       </div>
 
-      {/* Coming soon note */}
       <p className="text-xs text-center text-[var(--color-text-quaternary)]">
-        Real-time notifications via Supabase Realtime — <span className="font-medium">coming soon</span>
+        Real-time notifications via Supabase Realtime — <span className="font-medium">
+          {lang === 'vi' ? 'sắp ra mắt' : (lang === 'ja' ? '近日公開' : 'coming soon')}
+        </span>
       </p>
     </div>
   )

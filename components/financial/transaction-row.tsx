@@ -2,9 +2,11 @@
 
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
-import { formatMoney, getAmountSign, getAmountColor } from '@/lib/money'
+import { getAmountSign, getAmountColor } from '@/lib/money'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 import { Badge } from '@/components/ui/badge'
 import { PROVIDERS } from '@/lib/constants'
+import { useTranslation } from '@/hooks/useTranslation'
 import type { Transaction } from '@/types'
 
 export interface TransactionRowProps {
@@ -28,6 +30,8 @@ export function TransactionRow({
   selected,
   compact,
 }: TransactionRowProps) {
+  const { format } = useMoney()
+  const { t }      = useTranslation()
   const sign       = getAmountSign(txn.amount, txn.type)
   const amtColor   = getAmountColor(sign)
   const isTransfer = txn.type === 'transfer'
@@ -53,7 +57,6 @@ export function TransactionRow({
             : ''
       )}
     >
-      {/* Category icon */}
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-medium select-none"
         style={{
@@ -64,7 +67,6 @@ export function TransactionRow({
         {initials}
       </div>
 
-      {/* Description + meta */}
       <div className="flex-1 min-w-0">
         <p className={cn('font-medium text-[var(--color-text-primary)] truncate', compact ? 'text-xs' : 'text-sm')}>
           {txn.description}
@@ -72,7 +74,7 @@ export function TransactionRow({
         <div className="flex items-center gap-2 mt-0.5">
           <span className="text-xs text-[var(--color-text-quaternary)]">{formatDate(txn.date)}</span>
           {isTransfer ? (
-            <Badge variant="neutral" size="sm">Transfer</Badge>
+            <Badge variant="neutral" size="sm">{t.transactions.typeTransfer}</Badge>
           ) : groupName ? (
             <span className="text-xs font-medium" style={{ color: groupColor }}>
               {parentGroupName && <span className="opacity-60 mr-1">{parentGroupName} /</span>}
@@ -82,14 +84,12 @@ export function TransactionRow({
         </div>
       </div>
 
-      {/* Amount + provider */}
       <div className="text-right shrink-0">
         <p
           className={cn('font-tabular font-medium', compact ? 'text-xs' : 'text-sm')}
           style={{ color: amtColor }}
         >
-          {sign === 'gain' && '+'}
-          {formatMoney(txn.amount)}
+          {format(txn.amount, { sign: true })}
         </p>
         {provider && !compact && (
           <span className="text-[10px] text-[var(--color-text-quaternary)]">{provider.label}</span>

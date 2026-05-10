@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils'
-import { formatMoney, getAmountSign, getAmountColor } from '@/lib/money'
+import { getAmountSign, getAmountColor } from '@/lib/money'
 import type { CurrencyCode } from '@/types'
+import { useMoney } from '@/features/currency/hooks/useMoney'
 
 export interface MoneyValueProps {
   amount: number
@@ -24,7 +25,7 @@ const sizeClass: Record<NonNullable<MoneyValueProps['size']>, string> = {
 
 export function MoneyValue({
   amount,
-  currency = 'JPY',
+  currency,
   type,
   size = 'sm',
   colored = true,
@@ -33,10 +34,13 @@ export function MoneyValue({
   accounting,
   className,
 }: MoneyValueProps) {
+  const { format } = useMoney()
+  
   const sign  = getAmountSign(amount, type)
   const color = colored ? getAmountColor(sign) : undefined
 
-  const formatted = formatMoney(amount, currency, {
+  const formatted = format(amount, {
+    from:       currency, // If undefined, useMoney defaults to ledger currency
     sign:       signed,
     compact:    compact,
     accounting: accounting,
@@ -60,7 +64,9 @@ export interface LedgerBalanceProps {
   className?: string
 }
 
-export function LedgerBalance({ balance, currency = 'JPY', label, size = 'lg', className }: LedgerBalanceProps) {
+export function LedgerBalance({ balance, currency, label, size = 'lg', className }: LedgerBalanceProps) {
+  const { format } = useMoney()
+
   const sign  = getAmountSign(balance)
   const color = getAmountColor(sign)
 
@@ -80,7 +86,7 @@ export function LedgerBalance({ balance, currency = 'JPY', label, size = 'lg', c
         })}
         style={{ color }}
       >
-        {formatMoney(balance, currency)}
+        {format(balance, { from: currency })}
       </span>
     </div>
   )
