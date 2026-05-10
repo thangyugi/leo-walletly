@@ -12,12 +12,91 @@ export const CATEGORIES: { value: Category; label: string; emoji: string }[] = [
   { value: 'other', label: 'その他', emoji: '📦' },
 ]
 
-export const PROVIDERS: { value: PaymentProvider; label: string; color: string }[] = [
-  { value: 'rakuten-pay', label: 'Rakuten Pay', color: '#BF0000' },
-  { value: 'paypay', label: 'PayPay', color: '#FF0033' },
-  { value: 'paypay-card', label: 'PayPayカード', color: '#8B1AFF' },
-  { value: 'manual', label: '手動入力', color: '#0d9159' },
-  { value: 'ai-scan', label: 'AI Scan', color: '#3b82f6' },
+export type ProviderRegion = 'jp' | 'vn' | 'global'
+
+export interface ProviderMeta {
+  value: PaymentProvider
+  label: string
+  color: string
+  initials: string
+  region: ProviderRegion
+  fileTypes: ('csv' | 'pdf')[]
+  descJa: string
+  descVi: string
+  descEn: string
+}
+
+export const PROVIDERS: ProviderMeta[] = [
+  {
+    value: 'rakuten-pay', label: 'Rakuten Pay', color: '#BF0000', initials: 'RP',
+    region: 'jp', fileTypes: ['csv', 'pdf'],
+    descJa: '楽天ペイ 取引明細 CSV / PDF',
+    descVi: 'Lịch sử giao dịch Rakuten Pay CSV / PDF',
+    descEn: 'Rakuten Pay transaction history CSV / PDF',
+  },
+  {
+    value: 'paypay', label: 'PayPay', color: '#FF0033', initials: 'PP',
+    region: 'jp', fileTypes: ['csv', 'pdf'],
+    descJa: 'PayPay 取引履歴 CSV / PDF',
+    descVi: 'Lịch sử giao dịch PayPay CSV / PDF',
+    descEn: 'PayPay transaction history CSV / PDF',
+  },
+  {
+    value: 'paypay-card', label: 'PayPayカード', color: '#8B1AFF', initials: 'PC',
+    region: 'jp', fileTypes: ['csv'],
+    descJa: 'PayPayクレジットカード明細 CSV',
+    descVi: 'Sao kê thẻ PayPay CSV',
+    descEn: 'PayPay Credit Card statement CSV',
+  },
+  {
+    value: 'smbc', label: '三井住友銀行', color: '#00A040', initials: 'SM',
+    region: 'jp', fileTypes: ['csv'],
+    descJa: '三井住友銀行 口座明細 CSV',
+    descVi: 'Sao kê tài khoản Sumitomo Mitsui CSV',
+    descEn: 'SMBC bank account statement CSV',
+  },
+  {
+    value: 'mufg', label: '三菱UFJ銀行', color: '#D40000', initials: 'MU',
+    region: 'jp', fileTypes: ['csv'],
+    descJa: '三菱UFJ銀行 口座明細 CSV',
+    descVi: 'Sao kê tài khoản MUFG CSV',
+    descEn: 'MUFG bank account statement CSV',
+  },
+  {
+    value: 'vcb', label: 'Vietcombank', color: '#007A3D', initials: 'VB',
+    region: 'vn', fileTypes: ['csv'],
+    descJa: 'Vietcombank 口座明細 CSV',
+    descVi: 'Sao kê tài khoản Vietcombank CSV',
+    descEn: 'Vietcombank bank account statement CSV',
+  },
+  {
+    value: 'mbbank', label: 'MB Bank', color: '#8B0000', initials: 'MB',
+    region: 'vn', fileTypes: ['csv'],
+    descJa: 'MB Bank 口座明細 CSV',
+    descVi: 'Lịch sử giao dịch MB Bank CSV',
+    descEn: 'MB Bank transaction history CSV',
+  },
+  {
+    value: 'generic-csv', label: 'CSV Chung', color: '#6366F1', initials: 'GC',
+    region: 'global', fileTypes: ['csv'],
+    descJa: '任意のCSV（列を自動検出）',
+    descVi: 'CSV bất kỳ (tự động nhận diện cột)',
+    descEn: 'Any CSV file (auto-detect columns)',
+  },
+  {
+    value: 'manual', label: '手動入力', color: '#0d9159', initials: 'MT',
+    region: 'global', fileTypes: [],
+    descJa: '手動で取引を入力',
+    descVi: 'Nhập giao dịch thủ công',
+    descEn: 'Manually entered transaction',
+  },
+  {
+    value: 'ai-scan', label: 'AI Scan', color: '#3b82f6', initials: 'AI',
+    region: 'global', fileTypes: [],
+    descJa: 'AI レシートスキャン',
+    descVi: 'Quét hóa đơn bằng AI',
+    descEn: 'AI receipt scan',
+  },
 ]
 
 export const DEFAULT_GROUPS: CustomGroup[] = [

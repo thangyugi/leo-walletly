@@ -23,6 +23,11 @@ export type PaymentProvider =
   | 'rakuten-pay'
   | 'paypay'
   | 'paypay-card'
+  | 'smbc'
+  | 'mufg'
+  | 'vcb'
+  | 'mbbank'
+  | 'generic-csv'
   | 'manual'
   | 'ai-scan'
 
