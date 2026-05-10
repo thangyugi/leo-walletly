@@ -122,6 +122,7 @@ export default function ScanPage() {
 
   const [state,        setState]        = useState<ScanState>('idle')
   const [preview,      setPreview]      = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewZoom,  setPreviewZoom]  = useState(false)
   const [showReceipt,  setShowReceipt]  = useState(false)
   const [scanResult,   setScanResult]   = useState<ScanResult | null>(null)
@@ -136,7 +137,7 @@ export default function ScanPage() {
   const [errorMsg,  setErrorMsg]  = useState('')
   const [errorCode, setErrorCode] = useState('')
 
-  // Two separate inputs: gallery (file) and camera
+  // Input refs — only used to trigger the file picker; actual File stored in selectedFile state
   const fileRef   = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
@@ -147,6 +148,7 @@ export default function ScanPage() {
   function loadFile(file: File) {
     if (!file.type.startsWith('image/')) return
     const url = URL.createObjectURL(file)
+    setSelectedFile(file)   // store in state so it survives input unmount
     setPreview(url)
     setState('previewing')
     setErrorMsg('')
@@ -170,8 +172,8 @@ export default function ScanPage() {
   }
 
   async function handleScan() {
-    // Prefer camera file, fallback to gallery file
-    const file = cameraRef.current?.files?.[0] ?? fileRef.current?.files?.[0]
+    // Use file stored in state (survives input unmount when state changes)
+    const file = selectedFile
     if (!file) return
     setState('scanning')
     setErrorMsg('')
@@ -228,6 +230,7 @@ export default function ScanPage() {
   function handleReset() {
     setState('idle')
     setPreview(null)
+    setSelectedFile(null)
     setPreviewZoom(false)
     setShowReceipt(false)
     setScanResult(null)
