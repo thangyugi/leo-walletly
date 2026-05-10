@@ -77,30 +77,38 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   },
 
   addTransactions: (txns) => {
+    // Optimistic local update
     set((s) => {
       const existing = new Set(s.transactions.map((t) => t.id))
       const fresh = txns.filter((t) => !existing.has(t.id))
       return { transactions: [...s.transactions, ...fresh] }
     })
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        const toInsert = txns.map(t => ({
-          id: t.id,
-          user_id: user.id,
-          date: t.date,
-          amount: t.amount,
-          description: t.description,
-          category: t.category,
-          provider: t.provider,
-          type: t.type,
-          note: t.note,
-          group_id: t.groupId,
-          raw_data: t.rawData,
-        }))
-        supabase.from('transactions').upsert(toInsert).then(({ error }) => {
-          if (error) console.error('Error syncing transactions to Supabase:', error)
-        })
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+
+      // Ensure profile row exists — FK safeguard for users where the
+      // auth trigger may not have fired (demo accounts, manual inserts, etc.)
+      await supabase.from('profiles')
+        .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true })
+
+      const toInsert = txns.map(t => ({
+        id:          t.id,
+        user_id:     user.id,
+        date:        t.date,
+        amount:      t.amount,
+        description: t.description,
+        category:    t.category,
+        provider:    t.provider,
+        type:        t.type,
+        note:        t.note   ?? null,
+        raw_data:    t.rawData ?? null,
+        // group_id lives in the group_assignments table, not here
+      }))
+
+      const { error } = await supabase.from('transactions').upsert(toInsert)
+      if (error) {
+        console.error('Supabase insert error —', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint)
       }
     })
   },
@@ -111,23 +119,27 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       transactions: [...s.transactions, { ...txn, id }],
     }))
 
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) {
-        supabase.from('transactions').insert({
-          id,
-          user_id: user.id,
-          date: txn.date,
-          amount: txn.amount,
-          description: txn.description,
-          category: txn.category,
-          provider: txn.provider,
-          type: txn.type,
-          note: txn.note,
-          group_id: txn.groupId,
-          raw_data: txn.rawData,
-        }).then(({ error }) => {
-          if (error) console.error('Error syncing transaction to Supabase:', error)
-        })
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+
+      // Ensure profile exists (same FK safeguard as addTransactions)
+      await supabase.from('profiles')
+        .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true })
+
+      const { error } = await supabase.from('transactions').insert({
+        id,
+        user_id:     user.id,
+        date:        txn.date,
+        amount:      txn.amount,
+        description: txn.description,
+        category:    txn.category,
+        provider:    txn.provider,
+        type:        txn.type,
+        note:        txn.note   ?? null,
+        raw_data:    txn.rawData ?? null,
+      })
+      if (error) {
+        console.error('Supabase insert error —', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint)
       }
     })
   },
@@ -142,17 +154,18 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       transactions: s.transactions.map((t) => (t.id === id ? { ...t, ...update } : t)),
     }))
 
-    supabase.from('transactions').update({
-      date: update.date,
-      amount: update.amount,
-      description: update.description,
-      category: update.category,
-      provider: update.provider,
-      type: update.type,
-      note: update.note,
-      group_id: update.groupId,
-      raw_data: update.rawData,
-    }).eq('id', id).then()
+    const patch: Record<string, unknown> = {}
+    if (update.date        !== undefined) patch.date        = update.date
+    if (update.amount      !== undefined) patch.amount      = update.amount
+    if (update.description !== undefined) patch.description = update.description
+    if (update.category    !== undefined) patch.category    = update.category
+    if (update.provider    !== undefined) patch.provider    = update.provider
+    if (update.type        !== undefined) patch.type        = update.type
+    if (update.note        !== undefined) patch.note        = update.note ?? null
+    if (update.rawData     !== undefined) patch.raw_data    = update.rawData ?? null
+    supabase.from('transactions').update(patch).eq('id', id).then(({ error }) => {
+      if (error) console.error('Supabase update error —', error.message, '| code:', error.code)
+    })
   },
 
   setFilters: (filters) =>

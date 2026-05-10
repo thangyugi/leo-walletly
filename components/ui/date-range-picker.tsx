@@ -39,15 +39,21 @@ function lastOfMonth(y: number, m: number) {
 
 export function buildLabel(start: string, end: string, mode: DatePickerMode, lang: Lang): string {
   const s = parseDate(start)
+  if (lang === 'vi') {
+    const fmtD = (p: { y: number; m: number; d: number }) =>
+      `${String(p.d).padStart(2, '0')}/${String(p.m + 1).padStart(2, '0')}/${p.y}`
+    if (start === end) return fmtD(s)
+    const e = parseDate(end)
+    return `${fmtD(s)} - ${fmtD(e)}`
+  }
   if (mode === 'year') return `${s.y}`
   if (mode === 'quarter') {
     const q = Math.floor(s.m / 3) + 1
-    return lang === 'vi' ? `Quý ${q} ${s.y}` : `Q${q} ${s.y}`
+    return `Q${q} ${s.y}`
   }
   if (mode === 'month' || start.slice(0, 7) === end.slice(0, 7)) {
     const MONTH_SHORT = {
       ja: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
-      vi: ['Th.1','Th.2','Th.3','Th.4','Th.5','Th.6','Th.7','Th.8','Th.9','Th.10','Th.11','Th.12'],
       en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
     }
     return `${MONTH_SHORT[lang][s.m]} ${s.y}`
@@ -56,11 +62,9 @@ export function buildLabel(start: string, end: string, mode: DatePickerMode, lan
   const e = parseDate(end)
   if (start === end) {
     if (lang === 'ja') return `${s.y}年${s.m + 1}月${s.d}日`
-    if (lang === 'vi') return `${s.d}/${s.m + 1}/${s.y}`
     return new Date(start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
   }
   if (lang === 'ja') return `${s.m + 1}/${s.d} 〜 ${e.m + 1}/${e.d}`
-  if (lang === 'vi') return `${s.d}/${s.m + 1} – ${e.d}/${e.m + 1}`
   const fmt = (str: string) => new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
   return `${fmt(start)} – ${fmt(end)}`
 }
@@ -520,7 +524,7 @@ export function DateNavigator({
         <button
           onClick={() => setOpen((v) => !v)}
           className={cn(
-            'h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all min-w-[130px] justify-center',
+            'h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all min-w-[200px] justify-center',
             open
               ? 'bg-[var(--color-status-gain-bg)] border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]'
               : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]'

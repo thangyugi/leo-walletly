@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useMemo, useRef, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import {
   Search, Filter, Trash2, Upload, X, ArrowUpDown,
   ArrowUp, ArrowDown, ChevronDown, ChevronLeft, ChevronRight,
-  Maximize2, Edit2, CheckSquare, Square, Minus,
+  Maximize2, Minimize2, Edit2, CheckSquare, Square, Minus,
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,11 +28,11 @@ import type { Transaction } from '@/types'
 const PAGE_SIZE = 30
 
 // ------------------------------------------------------------------
-// Previous-period helper
+// Helpers
 // ------------------------------------------------------------------
 function getPrevPeriod(picker: PickerValue) {
-  const startMs = new Date(picker.start + 'T00:00:00').getTime()
-  const endMs   = new Date(picker.end   + 'T00:00:00').getTime()
+  const startMs  = new Date(picker.start + 'T00:00:00').getTime()
+  const endMs    = new Date(picker.end   + 'T00:00:00').getTime()
   const duration = endMs - startMs + 86_400_000
   const prevEnd   = new Date(startMs - 86_400_000).toISOString().split('T')[0]
   const prevStart = new Date(startMs - duration).toISOString().split('T')[0]
@@ -43,17 +44,40 @@ function pct(curr: number, prev: number) {
   return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10
 }
 
+function getTrendVsLabel(picker: PickerValue): string {
+  if (picker.mode === 'day' && picker.start === picker.end) return 'vs ngày hôm qua'
+  if (picker.mode === 'day')     return 'vs cùng khoảng trước'
+  if (picker.mode === 'month')   return 'vs tháng trước'
+  if (picker.mode === 'quarter') return 'vs quý trước'
+  if (picker.mode === 'year')    return 'vs năm trước'
+  return 'vs cùng khoảng trước'
+}
+
+function getInitials(text: string): string {
+  const words = text.trim().split(/\s+/)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return text.slice(0, 2).toUpperCase()
+}
+
+function fmtDateDMY(d: string): string {
+  const [y, m, dd] = d.split('-')
+  return `${dd}/${m}/${y}`
+}
+
+// Mock user (single user for now)
+const DEFAULT_USER = { initials: 'LT', color: '#059669' }
+
 // ------------------------------------------------------------------
 // Sort dropdown
 // ------------------------------------------------------------------
 const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
-  { value: 'dateDesc',   label: 'Mới nhất',        icon: ArrowDown  },
-  { value: 'dateAsc',    label: 'Cũ nhất',          icon: ArrowUp    },
-  { value: 'amountDesc', label: 'Số tiền cao nhất', icon: ArrowDown  },
-  { value: 'amountAsc',  label: 'Số tiền thấp nhất',icon: ArrowUp    },
-  { value: 'nameAsc',    label: 'Tên (A–Z)',         icon: ArrowUp    },
-  { value: 'category',   label: 'Danh mục',                           },
-  { value: 'group',      label: 'Nhóm',                               },
+  { value: 'dateDesc',   label: 'Mới nhất',         icon: ArrowDown  },
+  { value: 'dateAsc',    label: 'Cũ nhất',           icon: ArrowUp    },
+  { value: 'amountDesc', label: 'Số tiền cao nhất',  icon: ArrowDown  },
+  { value: 'amountAsc',  label: 'Số tiền thấp nhất', icon: ArrowUp    },
+  { value: 'nameAsc',    label: 'Tên (A–Z)',          icon: ArrowUp    },
+  { value: 'category',   label: 'Danh mục',                            },
+  { value: 'group',      label: 'Nhóm',                                },
 ]
 
 function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: SortOption) => void }) {
@@ -199,32 +223,38 @@ function StatCard({ label, main, sub, trend, trendLabel, isLoss }: {
 }
 
 // ------------------------------------------------------------------
-// Transaction Detail Panel
+// Transaction Detail Panel  — rendered via portal, supports fullscreen
 // ------------------------------------------------------------------
 function DetailPanel({
-  txn, groupName, groupColor, groupEmoji,
+  txn, groupName, groupColor,
   onClose, onEdit,
 }: {
   txn: Transaction
   groupName?: string; groupColor?: string; groupEmoji?: string
   onClose: () => void
-  onEdit: () => void
+  onEdit:  () => void
 }) {
-  const provider = PROVIDERS.find((p) => p.value === txn.provider)
-  const cat      = CATEGORIES.find((c) => c.value === txn.category)
+  const [fullscreen, setFullscreen] = useState(false)
+  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
+  const cat       = CATEGORIES.find((c) => c.value === txn.category)
   const isExpense = txn.amount < 0
   const accentHex = groupColor ?? '#6b7280'
-  const initials  = groupEmoji ?? txn.description.slice(0, 1).toUpperCase()
+  const initials  = getInitials(txn.description)
 
-  return (
-    <div className="fixed inset-0 z-40 flex items-end sm:items-start sm:justify-end pointer-events-none">
+  const panel = (
+    <div className="fixed inset-0 z-[200] flex items-end sm:items-start sm:justify-end pointer-events-none">
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/20 pointer-events-auto" onClick={onClose} />
 
       {/* Panel */}
-      <div className="relative pointer-events-auto w-full sm:w-96 sm:max-w-full bg-[var(--color-surface-default)] border-l border-[var(--color-border-default)] shadow-2xl rounded-t-2xl sm:rounded-none sm:h-full flex flex-col animate-slide-in-up sm:animate-none">
+      <div className={cn(
+        'relative pointer-events-auto bg-[var(--color-surface-default)] shadow-2xl flex flex-col transition-all duration-200',
+        fullscreen
+          ? 'w-full h-full'
+          : 'w-full sm:w-[420px] rounded-t-2xl sm:rounded-none sm:h-full border-l border-[var(--color-border-default)] animate-slide-in-up sm:animate-none',
+      )}>
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)] shrink-0">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">Chi tiết giao dịch</span>
           <div className="flex items-center gap-1">
             <button
@@ -235,11 +265,13 @@ function DetailPanel({
               <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             </button>
             <button
-              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors opacity-50 cursor-not-allowed"
-              title="Phóng to (coming soon)"
-              disabled
+              onClick={() => setFullscreen((v) => !v)}
+              className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
+              title={fullscreen ? 'Thu nhỏ' : 'Phóng to'}
             >
-              <Maximize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+              {fullscreen
+                ? <Minimize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+                : <Maximize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />}
             </button>
             <button
               onClick={onClose}
@@ -255,7 +287,7 @@ function DetailPanel({
           {/* Amount hero */}
           <div className="text-center py-4">
             <div
-              className="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl font-bold mx-auto mb-3"
+              className="w-14 h-14 rounded-2xl flex items-center justify-center text-lg font-bold mx-auto mb-3 select-none"
               style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
             >
               {initials}
@@ -267,18 +299,24 @@ function DetailPanel({
           </div>
 
           {/* Fields */}
-          <div className="space-y-3">
+          <div className="space-y-0 rounded-xl border border-[var(--color-border-default)] overflow-hidden">
             {[
-              { label: 'Ngày',      value: txn.date },
+              { label: 'Ngày',      value: fmtDateDMY(txn.date) },
               { label: 'Danh mục', value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
               { label: 'Tài khoản',value: provider?.label ?? txn.provider },
               { label: 'Loại',     value: txn.type === 'expense' ? 'Chi tiêu' : txn.type === 'income' ? 'Thu nhập' : 'Chuyển khoản' },
               ...(groupName ? [{ label: 'Nhóm', value: groupName }] : []),
               ...(txn.note   ? [{ label: 'Ghi chú', value: txn.note }] : []),
-            ].map(({ label, value }) => (
-              <div key={label} className="flex items-start gap-3 py-2 border-b border-[var(--color-border-subtle)] last:border-0">
+            ].map(({ label, value }, idx, arr) => (
+              <div
+                key={label}
+                className={cn(
+                  'flex items-start gap-3 px-4 py-2.5 bg-[var(--color-surface-default)]',
+                  idx < arr.length - 1 && 'border-b border-[var(--color-border-subtle)]',
+                )}
+              >
                 <span className="text-xs text-[var(--color-text-quaternary)] w-24 shrink-0 pt-0.5">{label}</span>
-                <span className="text-sm text-[var(--color-text-primary)] font-medium">{value}</span>
+                <span className="text-sm text-[var(--color-text-primary)] font-medium break-all">{value}</span>
               </div>
             ))}
           </div>
@@ -286,7 +324,7 @@ function DetailPanel({
           {txn.rawData && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-2">Dữ liệu gốc</p>
-              <div className="rounded-lg bg-[var(--color-bg-sunken)] p-3 text-[11px] font-mono text-[var(--color-text-tertiary)] space-y-0.5 max-h-32 overflow-y-auto">
+              <div className="rounded-lg bg-[var(--color-bg-sunken)] p-3 text-[11px] font-mono text-[var(--color-text-tertiary)] space-y-0.5 max-h-60 overflow-y-auto">
                 {Object.entries(txn.rawData).map(([k, v]) => (
                   <div key={k}><span className="text-[var(--color-text-quaternary)]">{k}:</span> {v}</div>
                 ))}
@@ -296,7 +334,7 @@ function DetailPanel({
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-4 border-t border-[var(--color-border-default)]">
+        <div className="px-5 py-4 border-t border-[var(--color-border-default)] shrink-0">
           <Button variant="primary" size="sm" className="w-full" onClick={onEdit}>
             <Edit2 className="w-3.5 h-3.5" />
             Chỉnh sửa giao dịch
@@ -305,6 +343,9 @@ function DetailPanel({
       </div>
     </div>
   )
+
+  if (typeof window === 'undefined') return null
+  return createPortal(panel, document.body)
 }
 
 // ------------------------------------------------------------------
@@ -316,13 +357,13 @@ function BulkBar({
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-interactive-primary)] rounded-xl text-white animate-slide-in-up">
       <span className="text-sm font-semibold shrink-0">
-        {count} đã chọn · Tổng {count}/{total}
+        {count} đã chọn · {count}/{total}
       </span>
       <div className="flex items-center gap-1 ml-auto flex-wrap">
         {[
-          { label: 'Đổi tài khoản', disabled: true },
-          { label: 'Đổi danh mục', disabled: true },
-          { label: 'Đổi nhóm',     disabled: true },
+          { label: 'Đổi tài khoản' },
+          { label: 'Đổi danh mục' },
+          { label: 'Đổi nhóm'     },
         ].map(({ label }) => (
           <button
             key={label}
@@ -348,30 +389,29 @@ function BulkBar({
 
 // ------------------------------------------------------------------
 // Table row
+// Columns: checkbox | icon | Nội dung | Ngày | Người dùng | Nhóm | Danh mục | Tài khoản | Số tiền
 // ------------------------------------------------------------------
 function TxnTableRow({
-  txn, groupName, groupColor, groupEmoji,
+  txn, groupName, groupColor,
   checked, onCheck, onView,
 }: {
   txn: Transaction
   groupName?: string; groupColor?: string; groupEmoji?: string
   checked: boolean
   onCheck: (id: string) => void
-  onView: (txn: Transaction) => void
+  onView:  (txn: Transaction) => void
 }) {
   const provider  = PROVIDERS.find((p) => p.value === txn.provider)
   const cat       = CATEGORIES.find((c) => c.value === txn.category)
   const isExpense = txn.amount < 0
   const accentHex = groupColor ?? '#6b7280'
-  const initials  = groupEmoji ?? txn.description.slice(0, 1).toUpperCase()
+  const initials  = getInitials(txn.description)
 
   return (
     <div
       className={cn(
-        'grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors group cursor-pointer',
-        checked
-          ? 'bg-[var(--color-status-info-bg)]'
-          : 'hover:bg-[var(--color-bg-sunken)]',
+        'grid grid-cols-[auto_auto_1fr_auto] sm:grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors group cursor-pointer',
+        checked ? 'bg-[var(--color-status-info-bg)]' : 'hover:bg-[var(--color-bg-sunken)]',
       )}
       onClick={() => onView(txn)}
     >
@@ -383,9 +423,9 @@ function TxnTableRow({
         }
       </div>
 
-      {/* Icon */}
+      {/* Icon — 2-char initials */}
       <div
-        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-semibold select-none"
+        className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold select-none"
         style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
       >
         {initials}
@@ -394,23 +434,30 @@ function TxnTableRow({
       {/* Description */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="text-xs text-[var(--color-text-quaternary)]">{txn.date}</p>
+        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.date)}</p>
       </div>
 
-      {/* Category */}
+      {/* Date — separate column */}
       <div className="hidden sm:block">
-        {cat ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">
-            {cat.emoji} {cat.label}
-          </span>
-        ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
+        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.date)}</span>
       </div>
 
-      {/* Group */}
-      <div className="hidden md:block">
+      {/* Người dùng */}
+      <div className="hidden sm:flex items-center">
+        <div
+          className="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+          style={{ background: DEFAULT_USER.color }}
+          title="Leo Thang"
+        >
+          {DEFAULT_USER.initials}
+        </div>
+      </div>
+
+      {/* Nhóm */}
+      <div className="hidden sm:block">
         {groupName ? (
           <span
-            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md"
+            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
             style={{ background: `color-mix(in srgb, ${accentHex} 10%, transparent)`, color: accentHex }}
           >
             {groupName}
@@ -418,11 +465,20 @@ function TxnTableRow({
         ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
       </div>
 
-      {/* Account */}
+      {/* Danh mục */}
+      <div className="hidden sm:block">
+        {cat ? (
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
+            {cat.emoji} {cat.label}
+          </span>
+        ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
+      </div>
+
+      {/* Tài khoản */}
       <div className="hidden lg:block">
         {provider ? (
           <span
-            className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md"
+            className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
             style={{ background: `color-mix(in srgb, ${provider.color} 10%, transparent)`, color: provider.color }}
           >
             {provider.label}
@@ -430,7 +486,7 @@ function TxnTableRow({
         ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
       </div>
 
-      {/* Amount */}
+      {/* Số tiền */}
       <span className={cn('text-sm font-semibold font-tabular shrink-0 text-right', isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]')}>
         {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount))}
       </span>
@@ -442,15 +498,15 @@ function TxnTableRow({
 // Date Group Header
 // ------------------------------------------------------------------
 function DateGroupHeader({ date, expense, income }: { date: string; expense: number; income: number }) {
-  const d = new Date(date + 'T00:00:00')
-  const wd = d.toLocaleDateString('ja-JP', { weekday: 'short' })
-  const label = `${d.getMonth() + 1}/${d.getDate()}（${wd}）`
+  const d  = new Date(date + 'T00:00:00')
+  const wd = d.toLocaleDateString('vi-VN', { weekday: 'short' })
+  const label = `${fmtDateDMY(date)} (${wd})`
   const net = income - expense
   return (
     <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
       <span className="text-xs font-semibold text-[var(--color-text-tertiary)]">{label}</span>
       <div className="flex items-center gap-3">
-        {income > 0 && <span className="text-xs font-tabular text-[var(--color-text-gain)]">+{formatMoney(income)}</span>}
+        {income  > 0 && <span className="text-xs font-tabular text-[var(--color-text-gain)]">+{formatMoney(income)}</span>}
         {expense > 0 && <span className="text-xs font-tabular text-[var(--color-text-loss)]">−{formatMoney(expense)}</span>}
         <span className={cn('text-xs font-semibold font-tabular', net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
           {net >= 0 ? '+' : ''}{formatMoney(net)}
@@ -475,7 +531,6 @@ export default function TransactionsPage() {
   const [selected,   setSelected]   = useState<Set<string>>(new Set())
   const [page,       setPage]       = useState(1)
 
-  // Apply picker filter on top of store filters
   const sorted = useMemo(() => {
     const base = getFiltered().filter((tx) => tx.date >= picker.start && tx.date <= picker.end)
     return base.sort((a, b) => {
@@ -491,7 +546,6 @@ export default function TransactionsPage() {
     })
   }, [getFiltered, sortOption, picker])
 
-  // Previous period stats
   const prev = useMemo(() => getPrevPeriod(picker), [picker])
   const prevSorted = useMemo(() =>
     transactions.filter((tx) => tx.date >= prev.start && tx.date <= prev.end),
@@ -512,32 +566,27 @@ export default function TransactionsPage() {
     ? totals.expense / sorted.filter((tx) => tx.amount < 0).length
     : 0
 
-  const prevLabel = picker.mode === 'month'
-    ? (() => { const d = new Date(prev.start + 'T00:00:00'); return `Th.${d.getMonth() + 1}` })()
-    : 'kỳ trước'
+  const trendVsLabel = getTrendVsLabel(picker)
 
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const paginated  = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
-  // Group by date (date sorts only)
   const groupedByDate = useMemo(() => {
     if (!['dateDesc', 'dateAsc'].includes(sortOption)) return null
-    const groups: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
+    const grps: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
     for (const tx of paginated) {
-      const last = groups[groups.length - 1]
+      const last = grps[grps.length - 1]
       if (last && last.date === tx.date) {
         last.txns.push(tx)
         if (tx.amount > 0) last.income  += tx.amount
         else               last.expense += Math.abs(tx.amount)
       } else {
-        groups.push({ date: tx.date, txns: [tx], income: tx.amount > 0 ? tx.amount : 0, expense: tx.amount < 0 ? Math.abs(tx.amount) : 0 })
+        grps.push({ date: tx.date, txns: [tx], income: tx.amount > 0 ? tx.amount : 0, expense: tx.amount < 0 ? Math.abs(tx.amount) : 0 })
       }
     }
-    return groups
+    return grps
   }, [paginated, sortOption])
 
-  // Reset page when filters change
   useEffect(() => { setPage(1) }, [sorted.length, picker])
 
   function getGroupProps(txn: Transaction) {
@@ -547,7 +596,6 @@ export default function TransactionsPage() {
     return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji, parentGroupName: parent?.name }
   }
 
-  // Checkbox logic
   const allPageIds  = paginated.map((tx) => tx.id)
   const allChecked  = allPageIds.length > 0 && allPageIds.every((id) => selected.has(id))
   const someChecked = allPageIds.some((id) => selected.has(id)) && !allChecked
@@ -576,14 +624,10 @@ export default function TransactionsPage() {
     setSelected(new Set())
   }
 
-  const selectedTotal = useMemo(() => {
-    return sorted.filter((tx) => selected.has(tx.id)).reduce((s, tx) => s + tx.amount, 0)
-  }, [sorted, selected])
-
-  // Period label for stat card titles
-  const periodTitle = picker.mode === 'month'
-    ? (() => { const d = new Date(picker.start + 'T00:00:00'); return `Th.${d.getMonth() + 1}` })()
-    : picker.label
+  const selectedTotal = useMemo(() =>
+    sorted.filter((tx) => selected.has(tx.id)).reduce((s, tx) => s + tx.amount, 0),
+    [sorted, selected],
+  )
 
   return (
     <div className="animate-fade-in space-y-4">
@@ -611,20 +655,20 @@ export default function TransactionsPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label={`Tổng tiền vào · ${periodTitle}`}
+          label="Tổng tiền vào"
           main={`+${formatMoney(totals.income)}`}
           trend={pct(totals.income, prevTotals.income)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={trendVsLabel}
         />
         <StatCard
-          label={`Tổng tiền ra · ${periodTitle}`}
+          label="Tổng tiền ra"
           main={`−${formatMoney(totals.expense)}`}
           trend={pct(totals.expense, prevTotals.expense)}
-          trendLabel={`so với ${prevLabel}`}
+          trendLabel={trendVsLabel}
           isLoss
         />
         <StatCard
-          label={`Số giao dịch · ${periodTitle}`}
+          label="Số giao dịch"
           main={String(sorted.length)}
           sub={`${sorted.filter((tx) => tx.amount < 0).length} chi · ${sorted.filter((tx) => tx.amount > 0).length} thu`}
         />
@@ -638,7 +682,6 @@ export default function TransactionsPage() {
 
       <FilterBar />
 
-      {/* Bulk bar */}
       {selected.size > 0 && (
         <BulkBar
           count={selected.size}
@@ -660,9 +703,9 @@ export default function TransactionsPage() {
           />
         ) : (
           <>
-            {/* Column header with select-all */}
-            <div className="grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
-              {/* Select all checkbox */}
+            {/* Column header */}
+            {/* Columns: checkbox | icon | Nội dung | Ngày | Người dùng | Nhóm | Danh mục | Tài khoản | Số tiền */}
+            <div className="hidden sm:grid grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
               <div onClick={toggleAll} className="w-5 h-5 flex items-center justify-center cursor-pointer">
                 {someChecked
                   ? <Minus className="w-4 h-4 text-[var(--color-interactive-primary)]" />
@@ -673,8 +716,10 @@ export default function TransactionsPage() {
               </div>
               <div className="w-8" />
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nội dung</p>
-              <p className="hidden sm:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
-              <p className="hidden md:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Ngày</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Người dùng</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
               <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Tài khoản</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">Số tiền</p>
             </div>
@@ -775,7 +820,7 @@ export default function TransactionsPage() {
         </div>
       )}
 
-      {/* Detail panel */}
+      {/* Detail panel — portal */}
       {detailTxn && !editingTxn && (
         <DetailPanel
           txn={detailTxn}
@@ -785,7 +830,7 @@ export default function TransactionsPage() {
         />
       )}
 
-      {/* Edit modal */}
+      {/* Edit modal — portal (inside TransactionEditModal) */}
       {editingTxn && (
         <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />
       )}
