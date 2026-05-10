@@ -18,6 +18,7 @@ import {
   Globe,
   User,
   Building2,
+  FolderTree,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
@@ -43,7 +44,7 @@ export function Sidebar() {
     { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays,    group: 'main' },
     { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3,       group: 'main' },
     { href: '/users',          label: t.nav.users,        icon: Users,           group: 'manage' },
-    { href: '/groups',         label: t.nav.groups,       icon: Tag,             group: 'manage' },
+    { href: '/groups',         label: t.nav.groups,       icon: FolderTree,      group: 'manage' },
     { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw,       group: 'manage' },
     { href: '/settings/ledger',  label: t.ledger_settings.title, icon: Settings,        group: 'settings' },
     { href: '/settings/profile', label: t.settings.sidebar.profile, icon: User,            group: 'settings' },
