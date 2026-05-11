@@ -200,7 +200,7 @@ export interface MonthlyReport {
 // ----------------------------------------------------------
 // MULTI-TENANT / WORKSPACE
 // ----------------------------------------------------------
-export type UserRole = 'owner' | 'admin' | 'member' | 'viewer'
+export type UserRole = 'owner' | 'admin' | 'accountant' | 'auditor' | 'viewer'
 
 export interface WorkspaceMember {
   id: string

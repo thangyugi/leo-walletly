@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { MemberService } from '@/features/user-management/services'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useTranslation } from '@/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Wallet, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
 
@@ -13,6 +14,7 @@ export default function JoinPage() {
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuthStore()
   const { initialize } = useLedgerStore()
+  const { t } = useTranslation()
   
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -30,12 +32,12 @@ export default function JoinPage() {
 
     if (!token) {
       setStatus('error')
-      setError('No invitation token found in the URL.')
+      setError(t.join.noToken)
       return
     }
 
     handleJoin()
-  }, [user, authLoading, token])
+  }, [user, authLoading, token, t])
 
   const handleJoin = async () => {
     if (!token || !user) return
@@ -52,7 +54,7 @@ export default function JoinPage() {
       }, 3000)
     } catch (err: any) {
       setStatus('error')
-      setError(err.message || 'Failed to join the ledger.')
+      setError(err.message || t.join.failed)
     }
   }
 
@@ -67,9 +69,9 @@ export default function JoinPage() {
           </div>
 
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">Accept Invitation</h1>
+            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t.join.title}</h1>
             <p className="text-sm text-[var(--color-text-tertiary)]">
-              Joining the financial workspace...
+              {t.join.subtitle}
             </p>
           </div>
 
@@ -77,7 +79,7 @@ export default function JoinPage() {
             {status === 'processing' && (
               <div className="flex flex-col items-center gap-3">
                 <Loader2 className="w-8 h-8 text-[var(--color-interactive-primary)] animate-spin" />
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">Validating your invitation...</p>
+                <p className="text-sm font-medium text-[var(--color-text-secondary)]">{t.join.validating}</p>
               </div>
             )}
 
@@ -87,11 +89,11 @@ export default function JoinPage() {
                   <CheckCircle2 className="w-12 h-12 text-[var(--color-gain-500)]" />
                 </div>
                 <div className="space-y-1">
-                  <p className="text-lg font-semibold text-[var(--color-text-primary)]">Welcome to the team!</p>
-                  <p className="text-sm text-[var(--color-text-tertiary)]">Redirecting you to the dashboard...</p>
+                  <p className="text-lg font-semibold text-[var(--color-text-primary)]">{t.join.welcome}</p>
+                  <p className="text-sm text-[var(--color-text-tertiary)]">{t.join.redirecting}</p>
                 </div>
                 <Button className="w-full" onClick={() => router.push('/')}>
-                  Go to Dashboard <ArrowRight className="w-4 h-4 ml-2" />
+                  {t.join.goDashboard} <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
             )}
@@ -105,7 +107,7 @@ export default function JoinPage() {
                   {error}
                 </p>
                 <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-                  Back to Home
+                  {t.join.backHome}
                 </Button>
               </div>
             )}

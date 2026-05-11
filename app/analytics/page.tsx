@@ -179,7 +179,7 @@ export default function AnalyticsPage() {
                     ))}
                   </Pie>
                   <Tooltip
-                    formatter={(value: number) => format(value)}
+                    formatter={(value: any) => format(Number(value || 0))}
                     contentStyle={CHART_TOOLTIP.contentStyle}
                   />
                 </PieChart>

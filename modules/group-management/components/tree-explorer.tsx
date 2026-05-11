@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useGroupStore } from '../stores/group-store'
 import { Group, GroupId } from '../domain/types'
-import { groupI18n } from '../i18n/config'
+import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
 import { 
   ChevronRight, 
@@ -29,7 +29,8 @@ interface TreeExplorerProps {
 }
 
 export function GroupTreeExplorer({ lang, workspaceId }: TreeExplorerProps) {
-  const t = groupI18n[lang].explorer
+  const { t } = useTranslation()
+  const te = t.enterprise_groups.explorer
   const { groups, tree, fetchGroups, subscribeToGroups, selectGroup, selectedGroupId, status } = useGroupStore()
   const [expanded, setExpanded] = React.useState<Set<GroupId>>(new Set())
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -144,7 +145,7 @@ export function GroupTreeExplorer({ lang, workspaceId }: TreeExplorerProps) {
           <div className="flex items-center gap-2">
             <FolderTree className="w-5 h-5 text-[var(--color-interactive-primary)]" />
             <h2 className="text-sm font-bold uppercase tracking-widest text-[var(--color-text-primary)]">
-              {t.title}
+              {te.title}
             </h2>
           </div>
           {status === 'syncing' && (
@@ -156,7 +157,7 @@ export function GroupTreeExplorer({ lang, workspaceId }: TreeExplorerProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-quaternary)]" />
           <Input 
             className="pl-9 h-9 text-xs bg-[var(--color-bg-sunken)] border-transparent focus:bg-[var(--color-bg-surface)] transition-all"
-            placeholder={t.search}
+            placeholder={te.search}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
           />
@@ -183,7 +184,7 @@ export function GroupTreeExplorer({ lang, workspaceId }: TreeExplorerProps) {
       {/* Quick Actions Footer */}
       <div className="p-4 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/30">
         <Button variant="secondary" className="w-full justify-start gap-2 h-9 text-xs font-semibold" icon={<Plus className="w-4 h-4" />}>
-          {t.newGroup}
+          {te.newGroup}
         </Button>
       </div>
     </div>

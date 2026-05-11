@@ -252,11 +252,7 @@ export default function ScanPage() {
 
   const catLabels = CATEGORIES.map((c) => ({
     ...c,
-    label: lang === 'vi'
-      ? ({ food: 'Ăn uống', transport: 'Đi lại', shopping: 'Mua sắm', entertainment: 'Giải trí', health: 'Y tế', utilities: 'Tiện ích', other: 'Khác' } as Record<string, string>)[c.value] ?? c.label
-      : lang === 'en'
-      ? ({ food: 'Food', transport: 'Transport', shopping: 'Shopping', entertainment: 'Entertainment', health: 'Health', utilities: 'Utilities', other: 'Other' } as Record<string, string>)[c.value] ?? c.label
-      : c.label,
+    label: (t.categories as any)[c.value] ?? c.label,
   }))
 
   return (

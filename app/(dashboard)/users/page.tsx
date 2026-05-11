@@ -87,7 +87,7 @@ export default function UserManagementPage() {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
-            icon={<Search className="w-4 h-4 text-[var(--color-text-quaternary)]" />}
+            leading={<Search className="w-4 h-4 text-[var(--color-text-quaternary)]" />}
           />
         </div>
         <div className="flex gap-2">

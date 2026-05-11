@@ -44,13 +44,17 @@ function pct(curr: number, prev: number) {
   return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10
 }
 
-function getTrendVsLabel(picker: PickerValue): string {
-  if (picker.mode === 'day' && picker.start === picker.end) return 'vs ngày hôm qua'
-  if (picker.mode === 'day')     return 'vs cùng khoảng trước'
-  if (picker.mode === 'month')   return 'vs tháng trước'
-  if (picker.mode === 'quarter') return 'vs quý trước'
-  if (picker.mode === 'year')    return 'vs năm trước'
-  return 'vs cùng khoảng trước'
+function getTrendVsLabel(picker: PickerValue, lang: string, t: any): string {
+  if (picker.mode === 'day' && picker.start === picker.end) return lang === 'vi' ? 'vs ngày hôm qua' : (lang === 'ja' ? '昨日と比較' : 'vs yesterday')
+  
+  const label = (() => {
+    if (picker.mode === 'month') return lang === 'vi' ? 'tháng trước' : (lang === 'ja' ? '先月' : 'last month')
+    if (picker.mode === 'quarter') return lang === 'vi' ? 'quý trước' : (lang === 'ja' ? '前四半期' : 'last quarter')
+    if (picker.mode === 'year') return lang === 'vi' ? 'năm trước' : (lang === 'ja' ? '昨年' : 'last year')
+    return lang === 'vi' ? 'khoảng trước' : (lang === 'ja' ? '前期' : 'prev period')
+  })()
+  
+  return t.dashboard.vsPrev.replace('{{label}}', label)
 }
 
 function getInitials(text: string): string {
@@ -70,17 +74,18 @@ const DEFAULT_USER = { initials: 'LT', color: '#059669' }
 // ------------------------------------------------------------------
 // Sort dropdown
 // ------------------------------------------------------------------
-const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
-  { value: 'dateDesc',   label: 'Mới nhất',         icon: ArrowDown  },
-  { value: 'dateAsc',    label: 'Cũ nhất',           icon: ArrowUp    },
-  { value: 'amountDesc', label: 'Số tiền cao nhất',  icon: ArrowDown  },
-  { value: 'amountAsc',  label: 'Số tiền thấp nhất', icon: ArrowUp    },
-  { value: 'nameAsc',    label: 'Tên (A–Z)',          icon: ArrowUp    },
-  { value: 'category',   label: 'Danh mục',                            },
-  { value: 'group',      label: 'Nhóm',                                },
-]
-
 function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: SortOption) => void }) {
+  const { t } = useTranslation()
+  const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
+    { value: 'dateDesc',   label: t.transactions.sortLatest,         icon: ArrowDown  },
+    { value: 'dateAsc',    label: t.transactions.sortOldest,         icon: ArrowUp    },
+    { value: 'amountDesc', label: t.transactions.sortAmountHigh,     icon: ArrowDown  },
+    { value: 'amountAsc',  label: t.transactions.sortAmountLow,      icon: ArrowUp    },
+    { value: 'nameAsc',    label: t.transactions.sortNameAZ,         icon: ArrowUp    },
+    { value: 'category',   label: t.transactions.labelCategory,                       },
+    { value: 'group',      label: t.nav.groups, },
+  ]
+
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   const current = SORT_OPTIONS.find((o) => o.value === value)
@@ -97,8 +102,8 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
     <div className="relative" ref={ref}>
       <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1.5">
         <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
-        <span className="hidden sm:inline text-[var(--color-text-tertiary)]">Sắp xếp:</span>
-        <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? 'Ngày'}</span>
+        <span className="hidden sm:inline text-[var(--color-text-tertiary)]">{t.transactions.sortBy}:</span>
+        <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? t.transactions.date}</span>
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
       {open && (
@@ -234,6 +239,7 @@ function DetailPanel({
   onClose: () => void
   onEdit:  () => void
 }) {
+  const { t, lang } = useTranslation()
   const [fullscreen, setFullscreen] = useState(false)
   const provider  = PROVIDERS.find((p) => p.value === txn.provider)
   const cat       = CATEGORIES.find((c) => c.value === txn.category)
@@ -255,19 +261,19 @@ function DetailPanel({
       )}>
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)] shrink-0">
-          <span className="text-sm font-semibold text-[var(--color-text-primary)]">Chi tiết giao dịch</span>
+          <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t.transactions.detailTitle}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={onEdit}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
-              title="Chỉnh sửa"
+              title={t.common.edit}
             >
               <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             </button>
             <button
               onClick={() => setFullscreen((v) => !v)}
               className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
-              title={fullscreen ? 'Thu nhỏ' : 'Phóng to'}
+              title={fullscreen ? t.common.minimize : t.common.maximize}
             >
               {fullscreen
                 ? <Minimize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
@@ -301,12 +307,12 @@ function DetailPanel({
           {/* Fields */}
           <div className="space-y-0 rounded-xl border border-[var(--color-border-default)] overflow-hidden">
             {[
-              { label: 'Ngày',      value: fmtDateDMY(txn.date) },
-              { label: 'Danh mục', value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
-              { label: 'Tài khoản',value: provider?.label ?? txn.provider },
-              { label: 'Loại',     value: txn.type === 'expense' ? 'Chi tiêu' : txn.type === 'income' ? 'Thu nhập' : 'Chuyển khoản' },
-              ...(groupName ? [{ label: 'Nhóm', value: groupName }] : []),
-              ...(txn.note   ? [{ label: 'Ghi chú', value: txn.note }] : []),
+              { label: t.transactions.date,      value: fmtDateDMY(txn.date) },
+              { label: t.transactions.labelCategory, value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
+              { label: t.transactions.labelProvider, value: provider?.label ?? txn.provider },
+              { label: t.transactions.labelType,     value: isExpense ? t.transactions.typeExpense : txn.type === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },
+              ...(groupName ? [{ label: lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group'), value: groupName }] : []),
+              ...(txn.note   ? [{ label: lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note'), value: txn.note }] : []),
             ].map(({ label, value }, idx, arr) => (
               <div
                 key={label}
@@ -337,7 +343,7 @@ function DetailPanel({
         <div className="px-5 py-4 border-t border-[var(--color-border-default)] shrink-0">
           <Button variant="primary" size="sm" className="w-full" onClick={onEdit}>
             <Edit2 className="w-3.5 h-3.5" />
-            Chỉnh sửa giao dịch
+            {t.transactions.editTitle}
           </Button>
         </div>
       </div>
@@ -354,6 +360,7 @@ function DetailPanel({
 function BulkBar({
   count, total, onClear, onDelete,
 }: { count: number; total: number; onClear: () => void; onDelete: () => void }) {
+  const { t } = useTranslation()
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-interactive-primary)] rounded-xl text-white animate-slide-in-up">
       <span className="text-sm font-semibold shrink-0">
@@ -377,7 +384,7 @@ function BulkBar({
           onClick={onDelete}
           className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
         >
-          Xóa
+          {t.common.delete}
         </button>
         <button onClick={onClear} className="ml-1 w-7 h-7 flex items-center justify-center rounded-lg bg-white/10 hover:bg-white/20 transition-colors">
           <X className="w-3.5 h-3.5" />
@@ -498,8 +505,9 @@ function TxnTableRow({
 // Date Group Header
 // ------------------------------------------------------------------
 function DateGroupHeader({ date, expense, income }: { date: string; expense: number; income: number }) {
+  const { lang } = useSettingsStore()
   const d  = new Date(date + 'T00:00:00')
-  const wd = d.toLocaleDateString('vi-VN', { weekday: 'short' })
+  const wd = d.toLocaleDateString(lang === 'vi' ? 'vi-VN' : (lang === 'ja' ? 'ja-JP' : 'en-US'), { weekday: 'short' })
   const label = `${fmtDateDMY(date)} (${wd})`
   const net = income - expense
   return (
@@ -566,7 +574,7 @@ export default function TransactionsPage() {
     ? totals.expense / sorted.filter((tx) => tx.amount < 0).length
     : 0
 
-  const trendVsLabel = getTrendVsLabel(picker)
+  const trendVsLabel = getTrendVsLabel(picker, lang, t)
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / PAGE_SIZE))
   const paginated  = sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
@@ -619,7 +627,7 @@ export default function TransactionsPage() {
   }
 
   function deleteSelected() {
-    if (!confirm(`Xóa ${selected.size} giao dịch đã chọn?`)) return
+    if (!confirm(t.transactions.deleteConfirm)) return
     selected.forEach((id) => removeTransaction(id))
     setSelected(new Set())
   }
@@ -655,27 +663,27 @@ export default function TransactionsPage() {
       {/* Stat cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <StatCard
-          label="Tổng tiền vào"
+          label={t.dashboard.inflow}
           main={`+${formatMoney(totals.income)}`}
           trend={pct(totals.income, prevTotals.income)}
           trendLabel={trendVsLabel}
         />
         <StatCard
-          label="Tổng tiền ra"
+          label={t.dashboard.outflow}
           main={`−${formatMoney(totals.expense)}`}
           trend={pct(totals.expense, prevTotals.expense)}
           trendLabel={trendVsLabel}
           isLoss
         />
         <StatCard
-          label="Số giao dịch"
+          label={t.transactions.count}
           main={String(sorted.length)}
-          sub={`${sorted.filter((tx) => tx.amount < 0).length} chi · ${sorted.filter((tx) => tx.amount > 0).length} thu`}
+          sub={`${sorted.filter((tx) => tx.amount < 0).length} ${t.transactions.typeExpense} · ${sorted.filter((tx) => tx.amount > 0).length} ${t.transactions.typeIncome}`}
         />
         <StatCard
-          label="Trung bình · giao dịch ra"
+          label={`${t.transactions.average} · ${t.transactions.typeExpense}`}
           main={avgExpense ? `−${formatMoney(avgExpense)}` : '—'}
-          sub={totals.expense > 0 ? `Tổng ${sorted.filter((tx) => tx.amount < 0).length} khoản` : undefined}
+          sub={totals.expense > 0 ? `${t.dashboard.total} ${sorted.filter((tx) => tx.amount < 0).length} ${t.transactions.shown}` : undefined}
           isLoss={avgExpense > 0}
         />
       </div>
@@ -715,13 +723,13 @@ export default function TransactionsPage() {
                 }
               </div>
               <div className="w-8" />
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nội dung</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Ngày</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Người dùng</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
-              <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Tài khoản</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">Số tiền</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.dashboard.users}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.nav.groups}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
+              <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
             </div>
 
             {/* Rows */}
@@ -781,7 +789,7 @@ export default function TransactionsPage() {
       {totalPages > 1 && (
         <div className="flex items-center justify-between px-1">
           <span className="text-xs text-[var(--color-text-quaternary)]">
-            Trang {page} / {totalPages} · {sorted.length} giao dịch
+            {t.common.page} {page} / {totalPages} · {sorted.length} {t.transactions.shown}
           </span>
           <div className="flex items-center gap-1">
             <button

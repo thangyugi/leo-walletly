@@ -74,18 +74,18 @@ export function TransactionEditModal({ txn, onClose }: Props) {
   }
 
   const labels = {
-    editTitle: lang === 'vi' ? 'Chỉnh sửa giao dịch' : '取引を編集',
-    amount: lang === 'vi' ? 'Số tiền' : '金額',
-    expense: lang === 'vi' ? 'Chi tiêu' : '支出',
-    income: lang === 'vi' ? 'Thu nhập' : '収入',
-    date: lang === 'vi' ? 'Ngày' : '日付',
-    desc: lang === 'vi' ? 'Nội dung' : '内容・店名',
-    category: lang === 'vi' ? 'Danh mục' : 'カテゴリ',
-    group: lang === 'vi' ? 'Nhóm chi tiêu' : 'グループ',
-    none: lang === 'vi' ? 'Không có' : 'なし',
-    note: lang === 'vi' ? 'Ghi chú' : 'メモ',
-    notePlaceholder: lang === 'vi' ? 'Thêm ghi chú...' : 'メモを入力...',
-    save: lang === 'vi' ? 'Lưu' : '保存',
+    editTitle: t.transactions.editTitle,
+    amount: t.transactions.amount,
+    expense: t.transactions.typeExpense,
+    income: t.transactions.typeIncome,
+    date: t.transactions.date,
+    desc: t.transactions.content,
+    category: t.transactions.labelCategory,
+    group: lang === 'vi' ? 'Nhóm chi tiêu' : (lang === 'ja' ? 'グループ' : 'Group'),
+    none: lang === 'vi' ? 'Không có' : (lang === 'ja' ? 'なし' : 'None'),
+    note: lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note'),
+    notePlaceholder: lang === 'vi' ? 'Thêm ghi chú...' : (lang === 'ja' ? 'メモを入力...' : 'Add note...'),
+    save: t.common.save,
   }
 
   const rootGroups = groups.filter(g => !g.parentId)
@@ -219,7 +219,7 @@ export function TransactionEditModal({ txn, onClose }: Props) {
             >
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
-                  {c.emoji} {c.label}
+                  {c.emoji} {(t.categories as any)[c.value] ?? c.label}
                 </option>
               ))}
             </select>

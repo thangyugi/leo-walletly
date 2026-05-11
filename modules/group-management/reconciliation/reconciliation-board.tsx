@@ -43,7 +43,7 @@ export function GroupReconciliationBoard({ groupId, lang }: ReconciliationBoardP
         {/* Source: Current Group */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Badge variant="outline" className="text-[9px] uppercase tracking-tighter">Current Entity</Badge>
+            <Badge variant="neutral" className="text-[9px] uppercase tracking-tighter">Current Entity</Badge>
             <span className="text-xs font-bold text-[var(--color-text-secondary)] tracking-wider">UNMATCHED LEDGER ENTRIES</span>
           </div>
           <div className="space-y-2">
@@ -55,7 +55,7 @@ export function GroupReconciliationBoard({ groupId, lang }: ReconciliationBoardP
         {/* Destination: Counterparty Groups */}
         <div className="space-y-4">
           <div className="flex items-center gap-2 px-1">
-            <Badge variant="outline" className="text-[9px] uppercase tracking-tighter">Counterparty</Badge>
+            <Badge variant="neutral" className="text-[9px] uppercase tracking-tighter">Counterparty</Badge>
             <span className="text-xs font-bold text-[var(--color-text-secondary)] tracking-wider">PENDING APPROVALS</span>
           </div>
           <div className="space-y-2">

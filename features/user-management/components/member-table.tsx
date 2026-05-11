@@ -23,7 +23,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
       case 'accountant': return t.members.accountant
       case 'auditor': return t.members.auditor
       case 'viewer': return t.members.viewer
-      case 'owner': return lang === 'vi' ? 'Chủ sở hữu' : (lang === 'ja' ? 'オーナー' : 'Owner')
+      case 'owner': return t.members.owner
       default: return role
     }
   }
@@ -35,7 +35,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
           <thead>
             <tr className="border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]/50">
               <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-                {lang === 'vi' ? 'Thành viên' : (lang === 'ja' ? 'メンバー' : 'Member')}
+                {t.members.member}
               </th>
               <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
                 {t.members.role}
@@ -58,7 +58,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        {member.profile?.full_name || (lang === 'vi' ? 'Hoạt động' : (lang === 'ja' ? 'アクティブ' : 'Active'))}
+                        {member.profile?.full_name || t.common.active}
                       </p>
                       <p className="text-[10px] font-mono text-[var(--color-text-quaternary)]">
                         ID: {member.user_id.substring(0, 8)}...
@@ -79,7 +79,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                       <option value="viewer">{t.members.viewer}</option>
                     </select>
                   ) : (
-                    <Badge variant={member.role === 'owner' ? 'destructive' : 'outline'} className="capitalize px-3 py-1 rounded-lg">
+                    <Badge variant={member.role === 'owner' ? 'loss' : 'neutral'} className="capitalize px-3 py-1 rounded-lg">
                       <Shield className="w-3 h-3 mr-1.5" />
                       {getRoleLabel(member.role)}
                     </Badge>
@@ -95,10 +95,8 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                   {isAdmin && member.role !== 'owner' ? (
                     <button
                       onClick={() => {
-                        const msg = lang === 'vi' 
-                          ? `Xóa ${member.profile?.full_name || 'thành viên này'}?` 
-                          : `Remove ${member.profile?.full_name || 'this member'}?`
-                        if (confirm(msg)) {
+                        const name = member.profile?.full_name || t.members.member
+                        if (confirm(t.members.removeConfirm.replace('{{name}}', name))) {
                           onRemove(member.id)
                         }
                       }}
@@ -126,9 +124,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
           </div>
           <h3 className="text-base font-bold text-[var(--color-text-primary)]">{t.members.noMembers}</h3>
           <p className="text-sm text-[var(--color-text-tertiary)] max-w-xs mt-2">
-            {lang === 'vi' 
-              ? 'Sau khi người được mời chấp nhận, họ sẽ xuất hiện tại đây.' 
-              : (lang === 'ja' ? '招待されたユーザーが承諾すると、ここに表示されます。' : 'Once invitees accept your invitation, they will appear here.')}
+            {t.members.noMembersSub}
           </p>
         </div>
       )}

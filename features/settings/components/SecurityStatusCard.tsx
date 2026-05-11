@@ -36,9 +36,9 @@ export function SecurityStatusCard({ mfaEnabled, passkeyEnabled, riskLevel }: Se
   ]
 
   const riskLabel = {
-    low:    lang === 'vi' ? 'THẤP' : (lang === 'ja' ? '低' : 'LOW'),
-    medium: lang === 'vi' ? 'TRUNG BÌNH' : (lang === 'ja' ? '中' : 'MEDIUM'),
-    high:   lang === 'vi' ? 'CAO' : (lang === 'ja' ? '高' : 'HIGH'),
+    low:    t.settings.security.riskLow,
+    medium: t.settings.security.riskMedium,
+    high:   t.settings.security.riskHigh,
   }[riskLevel]
 
   return (

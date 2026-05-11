@@ -43,13 +43,17 @@ function trendPct(curr: number, prev: number): number | null {
   return Math.round(((curr - prev) / Math.abs(prev)) * 1000) / 10
 }
 
-function getTrendVsLabel(picker: PickerValue): string {
-  if (picker.mode === 'day' && picker.start === picker.end) return 'vs ngày hôm qua'
-  if (picker.mode === 'day')     return 'vs cùng khoảng trước'
-  if (picker.mode === 'month')   return 'vs tháng trước'
-  if (picker.mode === 'quarter') return 'vs quý trước'
-  if (picker.mode === 'year')    return 'vs năm trước'
-  return 'vs cùng khoảng trước'
+function getTrendVsLabel(picker: PickerValue, lang: string, t: any): string {
+  if (picker.mode === 'day' && picker.start === picker.end) return lang === 'vi' ? 'vs ngày hôm qua' : (lang === 'ja' ? '昨日と比較' : 'vs yesterday')
+  
+  const label = (() => {
+    if (picker.mode === 'month') return lang === 'vi' ? 'tháng trước' : (lang === 'ja' ? '先月' : 'last month')
+    if (picker.mode === 'quarter') return lang === 'vi' ? 'quý trước' : (lang === 'ja' ? '前四半期' : 'last quarter')
+    if (picker.mode === 'year') return lang === 'vi' ? 'năm trước' : (lang === 'ja' ? '昨年' : 'last year')
+    return lang === 'vi' ? 'khoảng trước' : (lang === 'ja' ? '前期' : 'prev period')
+  })()
+  
+  return t.dashboard.vsPrev.replace('{{label}}', label)
 }
 
 function getInitials(text: string): string {
@@ -117,12 +121,13 @@ function KpiCard({
 // ------------------------------------------------------------------
 // Users panel
 // ------------------------------------------------------------------
-const MOCK_USERS = [
-  { id: '1', name: 'Leo Thang',    email: 'leo@example.com',    role: 'Chủ sở hữu', color: '#059669', initials: 'LT' },
-  { id: '2', name: 'Minh Anh',     email: 'minha@example.com',  role: 'Thành viên',  color: '#3b82f6', initials: 'MA' },
-]
-
 function UsersPanel() {
+  const { t } = useTranslation()
+  const MOCK_USERS = [
+    { id: '1', name: 'Leo Thang',    email: 'leo@example.com',    role: t.dashboard.owner, color: '#059669', initials: 'LT' },
+    { id: '2', name: 'Minh Anh',     email: 'minha@example.com',  role: t.dashboard.member, color: '#3b82f6', initials: 'MA' },
+  ]
+
   return (
     <div className="card-base p-5">
       <div className="flex items-center justify-between mb-3">
@@ -130,15 +135,15 @@ function UsersPanel() {
           <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-50)] flex items-center justify-center">
             <Users className="w-4 h-4 text-[var(--color-brand-600)]" />
           </div>
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">Người dùng</p>
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t.dashboard.users}</p>
         </div>
         <button
           disabled
-          title="Coming soon"
+          title={t.placeholders.devTitle}
           className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors opacity-50 cursor-not-allowed"
         >
           <UserPlus className="w-3.5 h-3.5" />
-          Mời
+          {t.dashboard.invite}
         </button>
       </div>
       <div className="space-y-2.5">
@@ -156,7 +161,7 @@ function UsersPanel() {
             </div>
             <span className={cn(
               'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
-              u.role === 'Chủ sở hữu'
+              u.role === t.dashboard.owner
                 ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]'
                 : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]',
             )}>
@@ -166,7 +171,7 @@ function UsersPanel() {
         ))}
       </div>
       <p className="text-[10px] text-[var(--color-text-quaternary)] mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
-        Quản lý nhiều người dùng — sắp ra mắt
+        {t.dashboard.manageUsers}
       </p>
     </div>
   )
@@ -176,6 +181,7 @@ function UsersPanel() {
 // Accounts panel
 // ------------------------------------------------------------------
 function AccountsPanel({ transactions }: { transactions: Transaction[] }) {
+  const { t } = useTranslation()
   const balances = useMemo(() => {
     const map: Record<string, number> = {}
     for (const tx of transactions) {
@@ -189,7 +195,7 @@ function AccountsPanel({ transactions }: { transactions: Transaction[] }) {
   return (
     <div className="card-base p-5">
       <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-3">
-        Tài khoản
+        {t.dashboard.accounts}
       </p>
       <div className="space-y-2">
         {balances.map((p) => (
@@ -218,6 +224,7 @@ function AccountsPanel({ transactions }: { transactions: Transaction[] }) {
 // Cash Flow chart
 // ------------------------------------------------------------------
 function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
+  const { t, lang } = useTranslation()
   const data = useMemo(() => {
     const map: Record<string, { income: number; expense: number }> = {}
     for (const tx of transactions) {
@@ -230,13 +237,14 @@ function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
     return Array.from({ length: 6 }, (_, i) => {
       const d = new Date(now.getFullYear(), now.getMonth() - (5 - i), 1)
       const k = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-      return { label: String(d.getMonth() + 1) + '月', income: map[k]?.income ?? 0, expense: map[k]?.expense ?? 0 }
+      const label = lang === 'ja' ? `${d.getMonth() + 1}月` : (lang === 'vi' ? `Th.${d.getMonth() + 1}` : `M${d.getMonth() + 1}`)
+      return { label, income: map[k]?.income ?? 0, expense: map[k]?.expense ?? 0 }
     })
-  }, [transactions])
+  }, [transactions, lang])
 
   return (
     <div className="card-base p-5">
-      <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">Dòng tiền</p>
+      <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">{t.dashboard.cashFlow}</p>
       <div style={{ height: 170 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={CHART_MARGINS.default} barCategoryGap="30%">
@@ -245,21 +253,21 @@ function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
             <YAxis axisLine={false} tickLine={false} tick={CHART_AXIS.tick} tickFormatter={(v) => formatMoney(v, 'JPY', { compact: true })} width={50} />
             <Tooltip
               contentStyle={{ background: '#fff', border: '1px solid #e5e7eb', borderRadius: 10, fontSize: 12 }}
-              formatter={(v: number, n: string) => [formatMoney(v), n]}
+              formatter={(v: any, n: any) => [formatMoney(Number(v) || 0), n === t.dashboard.inflow ? t.dashboard.inflow : t.dashboard.outflow]}
             />
-            <Bar dataKey="income"  name="Thu nhập" fill={CHART_COLORS.gain} radius={[4, 4, 0, 0]} />
-            <Bar dataKey="expense" name="Chi tiêu"  fill={CHART_COLORS.loss} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="income"  name={t.dashboard.inflow} fill={CHART_COLORS.gain} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="expense" name={t.dashboard.outflow}  fill={CHART_COLORS.loss} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ background: CHART_COLORS.gain }} />
-          <span className="text-xs text-[var(--color-text-quaternary)]">Thu nhập</span>
+          <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.inflow}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ background: CHART_COLORS.loss }} />
-          <span className="text-xs text-[var(--color-text-quaternary)]">Chi tiêu</span>
+          <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.outflow}</span>
         </div>
       </div>
     </div>
@@ -402,7 +410,7 @@ export default function DashboardPage() {
     return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji }
   }
 
-  const trendVsLabel = getTrendVsLabel(picker)
+  const trendVsLabel = getTrendVsLabel(picker, lang, t)
   const periodLabel  = picker.label
 
   return (
@@ -413,8 +421,8 @@ export default function DashboardPage() {
         <PageHeader title={t.dashboard.title} subtitle={t.dashboard.subtitle} className="mb-0" />
         <div className="flex items-center gap-2 shrink-0 pb-0.5">
           <DateNavigator value={picker} onChange={setPicker} lang={lang} />
-          <Button variant="outline" size="sm" icon={<Plus />} disabled title="Coming soon">
-            Thêm giao dịch
+          <Button variant="outline" size="sm" icon={<Plus />} disabled title={t.placeholders.devTitle}>
+            {t.dashboard.addTransaction}
           </Button>
           <Link href="/import">
             <Button variant="primary" size="sm" icon={<Upload />}>{t.dashboard.importData}</Button>
@@ -425,7 +433,7 @@ export default function DashboardPage() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Tổng số dư"
+          label={t.dashboard.totalBalance}
           value={formatMoney(stats.net)}
           currency="JPY"
           icon={Wallet}
@@ -435,7 +443,7 @@ export default function DashboardPage() {
           trendLabel={trendVsLabel}
         />
         <KpiCard
-          label="Tiền vào"
+          label={t.dashboard.inflow}
           value={formatMoney(stats.income)}
           currency="JPY"
           icon={TrendingUp}
@@ -445,7 +453,7 @@ export default function DashboardPage() {
           trendLabel={trendVsLabel}
         />
         <KpiCard
-          label="Tiền ra"
+          label={t.dashboard.outflow}
           value={formatMoney(stats.expense)}
           currency="JPY"
           icon={TrendingDown}
@@ -455,14 +463,14 @@ export default function DashboardPage() {
           trendLabel={trendVsLabel}
         />
         <KpiCard
-          label="Dự phòng · JPY"
+          label={`${t.dashboard.reserve} · JPY`}
           value={formatMoney(allTimeNet)}
           currency="JPY"
           icon={PiggyBank}
           iconBg={allTimeNet >= 0 ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-status-loss-bg)]'}
           iconColor={allTimeNet >= 0 ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-loss)]'}
           trend={trendPct(allTimeNet, prevAllTimeNet)}
-          trendLabel="vs 30 ngày trước"
+          trendLabel={t.dashboard.vsPrev.replace('{{label}}', lang === 'vi' ? '30 ngày trước' : (lang === 'ja' ? '30日前' : '30d ago'))}
         />
       </div>
 
@@ -492,7 +500,7 @@ export default function DashboardPage() {
                   <CardTitle>
                     {t.dashboard.recentTxn}
                     <span className="ml-2 text-[var(--color-text-quaternary)] font-normal text-sm">
-                      · {transactions.length} tổng
+                      · {transactions.length} {t.dashboard.total}
                     </span>
                   </CardTitle>
                 </div>
@@ -508,12 +516,12 @@ export default function DashboardPage() {
               {/* Column header — Nội dung | Ngày | Nhóm | Danh mục | Tài khoản | Số tiền */}
               <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
                 <div className="w-8" />
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nội dung</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Ngày</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Nhóm</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Danh mục</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">Tài khoản</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">Số tiền</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group')}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
               </div>
 
               <div className="divide-y divide-[var(--color-border-subtle)]">
@@ -526,7 +534,7 @@ export default function DashboardPage() {
                 <div className="px-4 py-3 border-t border-[var(--color-border-subtle)]">
                   <Link href="/transactions">
                     <Button variant="ghost" size="sm" iconRight={<ArrowRight />} className="w-full justify-center text-[var(--color-text-tertiary)]">
-                      Xem tất cả {transactions.length} giao dịch
+                      {lang === 'vi' ? `Xem tất cả ${transactions.length} giao dịch` : (lang === 'ja' ? `すべての ${transactions.length} 件の取引を表示` : `View all ${transactions.length} transactions`)}
                     </Button>
                   </Link>
                 </div>
@@ -542,20 +550,20 @@ export default function DashboardPage() {
             {/* Balance summary */}
             <div className="card-base p-5">
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1 truncate">
-                Tóm tắt
+                {t.dashboard.summary}
               </p>
               <p className="text-[11px] text-[var(--color-text-quaternary)] mb-3 truncate">{periodLabel}</p>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--color-text-quaternary)]">Tiền vào</span>
+                  <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.inflow}</span>
                   <span className="text-sm font-semibold font-tabular text-[var(--color-text-gain)]">+{formatMoney(stats.income)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--color-text-quaternary)]">Tiền ra</span>
+                  <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.outflow}</span>
                   <span className="text-sm font-semibold font-tabular text-[var(--color-text-loss)]">−{formatMoney(stats.expense)}</span>
                 </div>
                 <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-subtle)]">
-                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">Cân đối</span>
+                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{t.dashboard.balance}</span>
                   <span className={cn('text-sm font-bold font-tabular', stats.net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
                     {stats.net >= 0 ? '+' : ''}{formatMoney(stats.net)}
                   </span>
@@ -579,3 +587,4 @@ export default function DashboardPage() {
     </div>
   )
 }
+

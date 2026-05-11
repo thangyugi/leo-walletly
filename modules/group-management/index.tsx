@@ -4,7 +4,7 @@ import * as React from 'react'
 import { GroupTreeExplorer } from './components/tree-explorer'
 import { GroupDetailWorkspace } from './components/detail-workspace'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
-import { groupI18n } from './i18n/config'
+import { useTranslation } from '@/hooks/useTranslation'
 import { LoadingState } from '@/components/ui/async-state'
 import { cn } from '@/lib/utils'
 
@@ -14,6 +14,7 @@ interface GroupManagementPlatformProps {
 
 export function GroupManagementPlatform({ lang }: GroupManagementPlatformProps) {
   const { currentLedger } = useLedgerStore()
+  const { t } = useTranslation()
   
   if (!currentLedger) return <LoadingState />
 
@@ -30,7 +31,9 @@ export function GroupManagementPlatform({ lang }: GroupManagementPlatformProps) 
 
       {/* Right Audit/Activity Panel (Conceptual for now) */}
       <div className="w-80 border-l border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/10 hidden xl:flex flex-col p-6 space-y-6">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">Audit Trail</h3>
+        <h3 className="text-xs font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">
+          {t.enterprise_groups.detail.audit}
+        </h3>
         <div className="flex-1 overflow-y-auto space-y-4">
           <AuditItem 
             user="Staff Architect" 

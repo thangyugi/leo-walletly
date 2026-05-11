@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 import { useGroupStore } from '../stores/group-store'
-import { groupI18n } from '../i18n/config'
+import { useTranslation } from '@/hooks/useTranslation'
+import { Badge } from '@/components/ui/badge'
 import { GroupStatusBadge } from './group-status-badge'
 import { MoneyValue } from '@/components/ui/financial-primitives'
 import { TabBar } from '@/components/ui/tabs'
@@ -26,7 +27,9 @@ interface DetailWorkspaceProps {
 }
 
 export function GroupDetailWorkspace({ lang }: DetailWorkspaceProps) {
-  const t = groupI18n[lang].detail
+  const { t } = useTranslation()
+  const td = t.enterprise_groups.detail
+  const tt = t.enterprise_groups.types
   const { groups, selectedGroupId } = useGroupStore()
   const group = selectedGroupId ? groups[selectedGroupId] : null
   const [activeTab, setActiveTab] = React.useState('overview')
@@ -37,18 +40,18 @@ export function GroupDetailWorkspace({ lang }: DetailWorkspaceProps) {
         <div className="w-16 h-16 rounded-full bg-[var(--color-bg-sunken)] flex items-center justify-center mb-4">
           <Building2 className="w-8 h-8 opacity-20" />
         </div>
-        <p className="text-sm font-medium">Select a group entity to view its financial operations</p>
+        <p className="text-sm font-medium">{t.common.empty}</p>
       </div>
     )
   }
 
   const tabItems = [
-    { value: 'overview', label: t.overview },
-    { value: 'members', label: t.members },
-    { value: 'ledgers', label: t.ledgers },
-    { value: 'transactions', label: t.transactions },
-    { value: 'reconciliation', label: t.reconciliation },
-    { value: 'permissions', label: t.permissions },
+    { value: 'overview', label: td.overview },
+    { value: 'members', label: td.members },
+    { value: 'ledgers', label: td.ledgers },
+    { value: 'transactions', label: td.transactions },
+    { value: 'reconciliation', label: td.reconciliation },
+    { value: 'permissions', label: td.permissions },
   ]
 
   return (
@@ -67,9 +70,9 @@ export function GroupDetailWorkspace({ lang }: DetailWorkspaceProps) {
             <div className="flex items-center gap-3 text-sm text-[var(--color-text-tertiary)]">
               <span className="font-mono text-[var(--color-interactive-primary)]">{group.code}</span>
               <span className="opacity-30">/</span>
-              <span className="capitalize">{group.groupType}</span>
+              <span className="capitalize">{tt[group.groupType as keyof typeof tt] || group.groupType}</span>
               <span className="opacity-30">/</span>
-              <span>{group.level > 0 ? `Level ${group.level}` : 'Root Organization'}</span>
+              <span>{group.level > 0 ? `Level ${group.level}` : tt.organization}</span>
             </div>
           </div>
           
@@ -81,10 +84,10 @@ export function GroupDetailWorkspace({ lang }: DetailWorkspaceProps) {
         </div>
 
         <div className="grid grid-cols-4 gap-6">
-          <DetailStat label="Ledgers" value={group.ledgerIds.length} icon={<ArrowLeftRight />} />
-          <DetailStat label="Members" value={group.memberCount} icon={<Users2 />} />
-          <DetailStat label="Transactions" value={group.transactionCount} icon={<History />} />
-          <DetailStat label="Reconciliation" value={group.reconciliationMode} icon={<ShieldAlert />} status="balanced" />
+          <DetailStat label={td.ledgers} value={group.ledgerIds.length} icon={<ArrowLeftRight />} />
+          <DetailStat label={td.members} value={group.memberCount} icon={<Users2 />} />
+          <DetailStat label={td.transactions} value={group.transactionCount} icon={<History />} />
+          <DetailStat label={td.reconciliation} value={group.reconciliationMode} icon={<ShieldAlert />} status="balanced" />
         </div>
       </div>
 
@@ -162,7 +165,7 @@ function DetailStat({ label, value, icon, status }: { label: string; value: any;
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5 text-[var(--color-text-quaternary)]">
-        {React.cloneElement(icon as React.ReactElement, { className: 'w-3.5 h-3.5' })}
+        {React.isValidElement(icon) ? React.cloneElement(icon as React.ReactElement<any>, { className: 'w-3.5 h-3.5' }) : icon}
         <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
       <div className="flex items-center gap-2">
@@ -173,7 +176,7 @@ function DetailStat({ label, value, icon, status }: { label: string; value: any;
           {value}
         </span>
         {status && (
-          <Badge variant="outline" className="text-[10px] uppercase font-black bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)] border-none px-1.5 py-0 h-4">
+          <Badge variant="neutral" className="text-[10px] uppercase font-black bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)] border-none px-1.5 py-0 h-4">
             {status}
           </Badge>
         )}

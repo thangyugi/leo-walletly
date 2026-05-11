@@ -14,6 +14,7 @@ import type { ImportResult, ColumnMapping } from '@/features/import/parsers'
 import { cn } from '@/lib/utils'
 import { PROVIDERS, CATEGORIES, type ProviderRegion } from '@/lib/constants'
 import type { PaymentProvider, Transaction, Category } from '@/types'
+import { formatMoney } from '@/lib/money'
 import { useTranslation } from '@/hooks/useTranslation'
 
 const IMPORT_PROVIDERS = PROVIDERS.filter((p) => p.fileTypes.length > 0)
@@ -32,17 +33,17 @@ function getCat(v: Category) {
 
 // ---- Step indicator ---------------------------------------------------------
 function StepBar({
-  step, file, provider, L,
+  step, file, provider, t,
 }: {
   step: PageStep
   file: File | null
   provider: PaymentProvider
-  L: (ja: string, vi: string, en: string) => string
+  t: any
 }) {
   const provMeta = PROVIDERS.find((p) => p.value === provider)
   const steps = [
-    { key: 'setup', label: L('ソース選択・アップロード', 'Chọn nguồn & Tải file', 'Choose Source & Upload') },
-    { key: 'review', label: L('確認・インポート', 'Kiểm tra & Nhập', 'Review & Import') },
+    { key: 'setup', label: t.import.stepSetup },
+    { key: 'review', label: t.import.stepReview },
   ]
   return (
     <div className="flex items-center gap-1 flex-wrap">
@@ -146,20 +147,16 @@ function ColSelect({ label, value, headers, onChange }: {
 
 // ---- Preview row ------------------------------------------------------------
 function PreviewRow({
-  tx, checked, onToggle, lang,
+  tx, checked, onToggle, t,
 }: {
   tx: Transaction
   checked: boolean
   onToggle: () => void
-  lang: string
+  t: any
 }) {
   const isIncome  = tx.amount >= 0
   const cat       = getCat(tx.category)
-  const catLabel  = lang === 'vi'
-    ? ({ food: 'Ăn uống', transport: 'Đi lại', shopping: 'Mua sắm', entertainment: 'Giải trí', health: 'Y tế', utilities: 'Tiện ích', other: 'Khác' } as Record<string, string>)[tx.category]
-    : lang === 'en'
-    ? ({ food: 'Food', transport: 'Transport', shopping: 'Shopping', entertainment: 'Entertainment', health: 'Health', utilities: 'Utilities', other: 'Other' } as Record<string, string>)[tx.category]
-    : cat?.label ?? tx.category
+  const catLabel  = (t.categories as any)[tx.category] ?? cat?.label ?? tx.category
 
   return (
     <tr className={cn('border-t border-border transition-colors', !checked && 'opacity-40')}>
@@ -190,8 +187,8 @@ function PreviewRow({
             ? <TrendingUp className="w-2.5 h-2.5" />
             : <TrendingDown className="w-2.5 h-2.5" />}
           {isIncome
-            ? (lang === 'vi' ? 'Thu' : lang === 'en' ? 'In' : '収入')
-            : (lang === 'vi' ? 'Chi' : lang === 'en' ? 'Out' : '支出')}
+            ? t.transactions.typeIncome
+            : t.transactions.typeExpense}
         </span>
       </td>
       {/* Description */}
@@ -208,7 +205,7 @@ function PreviewRow({
       {/* Amount */}
       <td className="py-2.5 px-3 text-right whitespace-nowrap">
         <span className={cn('text-sm font-semibold tabular-nums', isIncome ? 'text-brand-600' : 'text-red-500')}>
-          {isIncome ? '+' : '−'}¥{Math.abs(tx.amount).toLocaleString()}
+          {isIncome ? '+' : '−'}{formatMoney(Math.abs(tx.amount))}
         </span>
       </td>
     </tr>
@@ -285,7 +282,7 @@ export default function ImportPage() {
       setSelected(new Set(res.transactions.map((tx) => tx.id)))
 
       if (!res.success && res.transactions.length === 0) {
-        setError(res.errors.join('\n') || L('取引が見つかりませんでした', 'Không tìm thấy giao dịch', 'No transactions found'))
+        setError(res.errors.join('\n') || t.import.errorNoTxns)
       }
     } catch (e: any) {
       setError(e.message)
@@ -362,7 +359,7 @@ export default function ImportPage() {
       {/* Header + step bar */}
       <div className="space-y-3">
         <PageHeader title={t.import.title} subtitle={t.import.subtitle} />
-        <StepBar step={step} file={file} provider={provider} L={L} />
+        <StepBar step={step} file={file} provider={provider} t={t} />
       </div>
 
       {/* ── STEP 1: SETUP (collapse when review step) ──────────────────────── */}
@@ -439,7 +436,7 @@ export default function ImportPage() {
             <div className="mt-4 px-5 py-2 rounded-lg bg-surface-alt text-xs font-medium text-text-muted">
               {loading
                 ? t.import.parsing
-                : L('クリックしてファイルを選択', 'Nhấn để chọn file', 'Click to browse files')}
+                : t.import.clickToBrowse}
             </div>
             <p className="mt-3 text-[11px] text-text-muted flex items-center gap-1">
               <Sparkles className="w-3.5 h-3.5" />
@@ -461,7 +458,7 @@ export default function ImportPage() {
             className="ml-auto text-xs font-semibold text-brand-600 underline-offset-2 hover:underline"
             onClick={() => { setProvider(detected); setDetected(null) }}
           >
-            {L('適用', 'Áp dụng', 'Apply')}
+            {t.common.confirm}
           </button>
         </div>
       )}
@@ -493,7 +490,7 @@ export default function ImportPage() {
           </div>
           <Button variant="secondary" size="sm" onClick={reParseWithMapping} disabled={loading}>
             <RefreshCw className="w-3.5 h-3.5" />
-            {L('再解析', 'Phân tích lại', 'Re-parse')}
+            {t.import.reParse}
           </Button>
         </div>
       )}
@@ -523,7 +520,7 @@ export default function ImportPage() {
               <div className="grid grid-cols-4 divide-x divide-border border-b border-border">
                 <div className="px-4 py-3 text-center">
                   <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">
-                    {L('取引数', 'Số GD', 'Count')}
+                    {t.transactions.txnTotal}
                   </p>
                   <p className="text-lg font-bold text-text-primary">{txns.length}</p>
                 </div>
@@ -531,20 +528,20 @@ export default function ImportPage() {
                   <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">
                     {L('収入', 'Thu vào', 'Income')}
                   </p>
-                  <p className="text-sm font-bold tabular-nums text-brand-600">+¥{income.toLocaleString()}</p>
+                  <p className="text-sm font-bold tabular-nums text-brand-600">+{formatMoney(income)}</p>
                 </div>
                 <div className="px-4 py-3 text-center">
                   <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">
                     {L('支出', 'Chi ra', 'Expense')}
                   </p>
-                  <p className="text-sm font-bold tabular-nums text-red-500">−¥{expense.toLocaleString()}</p>
+                  <p className="text-sm font-bold tabular-nums text-red-500">−{formatMoney(expense)}</p>
                 </div>
                 <div className="px-4 py-3 text-center">
                   <p className="text-[10px] text-text-muted font-semibold uppercase tracking-wide">
                     {L('収支', 'Cân đối', 'Net')}
                   </p>
                   <p className={cn('text-sm font-bold tabular-nums', net >= 0 ? 'text-brand-600' : 'text-red-500')}>
-                    {net >= 0 ? '+' : '−'}¥{Math.abs(net).toLocaleString()}
+                    {net >= 0 ? '+' : '−'}{formatMoney(Math.abs(net))}
                   </p>
                 </div>
               </div>
@@ -575,14 +572,14 @@ export default function ImportPage() {
               </button>
               <span className="text-xs font-semibold text-text-primary">
                 {selectedCount} / {result.transactions.length}
-                {' '}{L('件選択', 'đã chọn', 'selected')}
+                {' '}{t.transactions.selected}
               </span>
               {result.errors.length > 0 && (
                 <button
                   onClick={() => setShowErrors((v) => !v)}
                   className="text-xs text-amber-600 font-medium hover:underline"
                 >
-                  {result.errors.length} {L('件の警告', 'cảnh báo', 'warnings')}
+                  {result.errors.length} {t.import.warnings}
                 </button>
               )}
             </div>
@@ -611,19 +608,19 @@ export default function ImportPage() {
                 <tr>
                   <th className="py-2 pl-3 pr-1 w-8" />
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-text-muted whitespace-nowrap">
-                    {L('日付', 'Ngày', 'Date')}
+                    {t.transactions.date}
                   </th>
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-text-muted">
-                    {L('種別', 'Loại', 'Type')}
+                    {t.transactions.labelType}
                   </th>
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-text-muted">
-                    {L('内容', 'Nội dung', 'Description')}
+                    {t.transactions.content}
                   </th>
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-text-muted hidden sm:table-cell">
-                    {L('カテゴリ', 'Danh mục', 'Category')}
+                    {t.transactions.labelCategory}
                   </th>
                   <th className="py-2 px-3 text-right text-[10px] font-bold uppercase tracking-wide text-text-muted">
-                    {L('金額', 'Số tiền', 'Amount')}
+                    {t.transactions.amount}
                   </th>
                 </tr>
               </thead>
@@ -634,7 +631,7 @@ export default function ImportPage() {
                     tx={tx}
                     checked={selected.has(tx.id)}
                     onToggle={() => toggleRow(tx.id)}
-                    lang={lang}
+                    t={t}
                   />
                 ))}
               </tbody>
@@ -646,12 +643,11 @@ export default function ImportPage() {
             <div className="flex-1 text-sm text-text-secondary">
               {selectedCount > 0 ? (
                 <>
-                  <span className="font-semibold text-text-primary">{selectedCount}</span>
-                  {' '}{L('件をシステムに追加します', 'giao dịch sẽ được nhập vào hệ thống', 'transactions will be added')}
+                  {t.import.importItems.replace('{{count}}', String(selectedCount))}
                 </>
               ) : (
                 <span className="text-text-muted">
-                  {L('取引を選択してください', 'Hãy chọn ít nhất 1 giao dịch', 'Select at least 1 transaction')}
+                  {t.import.selectAtLeastOne}
                 </span>
               )}
             </div>
@@ -666,11 +662,7 @@ export default function ImportPage() {
                 className="flex-1 sm:flex-none sm:min-w-[180px]"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                {L(
-                  `${selectedCount} 件をインポート`,
-                  `Nhập ${selectedCount} giao dịch`,
-                  `Import ${selectedCount} transactions`,
-                )}
+                {t.import.importBtn.replace('{{count}}', String(selectedCount))}
               </Button>
             </div>
           </div>
@@ -686,20 +678,16 @@ export default function ImportPage() {
             </div>
             <div>
               <p className="text-sm font-bold text-brand-700">
-                {L(
-                  `${selectedCount} 件のデータを追加しました`,
-                  `Đã nhập ${selectedCount} giao dịch thành công`,
-                  `${selectedCount} transactions imported successfully`,
-                )}
+                {t.import.importSuccess.replace('{{count}}', String(selectedCount))}
               </p>
               <p className="text-xs text-brand-600 mt-0.5">
-                {L('ダッシュボードで確認できます', 'Kiểm tra ở Tổng quan', 'Check your Dashboard to see them')}
+                {t.import.checkDashboard}
               </p>
             </div>
           </div>
           <Button variant="secondary" size="sm" onClick={handleReset}>
             <RotateCcw className="w-3.5 h-3.5" />
-            {L('別のファイルをインポート', 'Nhập file khác', 'Import another file')}
+            {t.import.importAnother}
           </Button>
         </div>
       )}

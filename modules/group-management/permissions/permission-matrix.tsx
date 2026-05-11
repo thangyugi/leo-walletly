@@ -32,7 +32,7 @@ export function GroupPermissionMatrix() {
           <p className="text-xs text-[var(--color-text-tertiary)]">Configure hierarchical access and role inheritance</p>
         </div>
         <div className="flex gap-2">
-          <Badge variant="outline" className="bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)] border-none">
+          <Badge variant="neutral" className="bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)] border-none">
             Inheritance Enabled
           </Badge>
         </div>

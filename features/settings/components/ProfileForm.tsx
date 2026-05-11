@@ -195,7 +195,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
           >
             <div className="flex items-center gap-2 h-11 text-sm font-semibold text-[var(--color-text-tertiary)]">
               {initialData.email}
-              <Badge variant="outline" className="text-[10px] uppercase">
+              <Badge variant="neutral" className="text-[10px] uppercase">
                 {t.settings.profile.verified}
               </Badge>
             </div>

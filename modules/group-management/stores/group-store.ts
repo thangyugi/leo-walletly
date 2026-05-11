@@ -92,7 +92,7 @@ export const useGroupStore = create<GroupStore>((set, get) => ({
               }
               
               const nextGroups = { ...state.groups, [g.id]: updatedGroup }
-              const nextRoots = Object.values(nextGroups)
+              const nextRoots = (Object.values(nextGroups) as Group[])
                 .filter(node => !node.parentGroupId)
                 .map(node => node.id)
                 

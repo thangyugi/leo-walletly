@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Wallet, Mail, Lock, AlertCircle } from 'lucide-react'
+import { Wallet, Mail, Lock, AlertCircle, User } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { APP_NAME } from '@/lib/constants'
 
@@ -74,7 +74,7 @@ export default function LoginPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Leonardo Thang"
-                icon={<Wallet className="w-4 h-4" />}
+                leading={<User className="w-4 h-4" />}
               />
             )}
             <Input
@@ -84,7 +84,7 @@ export default function LoginPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="name@example.com"
-              icon={<Mail className="w-4 h-4" />}
+              leading={<Mail className="w-4 h-4" />}
             />
             <Input
               label={t.login.password}
@@ -93,7 +93,7 @@ export default function LoginPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              icon={<Lock className="w-4 h-4" />}
+              leading={<Lock className="w-4 h-4" />}
             />
 
             {error && (

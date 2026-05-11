@@ -49,6 +49,7 @@ export type Group = {
   reconciliationMode: ReconciliationMode
   currencyPolicy: CurrencyPolicy
   status: GroupStatus
+  emoji?: string
 
   createdAt: ISODate
   updatedAt: ISODate
