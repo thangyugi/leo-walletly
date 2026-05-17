@@ -127,22 +127,22 @@ export class SettingsService {
 
   static async getAuditLogs(userId: string, limit = 50): Promise<AuditEvent[]> {
     const { data, error } = await supabase
-      .from('audit_trails')
+      .from('audit_logs')
       .select('*')
-      .eq('user_id', userId)
+      .eq('actor_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit)
-
+ 
     if (error) throw error
     return data.map(d => ({
       id: d.id,
       action: d.action,
       entityType: d.entity_type,
       entityId: d.entity_id,
-      actorId: d.user_id,
+      actorId: d.actor_id,
       metadata: d.metadata || {},
-      ipAddress: d.ip_address,
-      userAgent: d.user_agent,
+      ipAddress: d.actor_ip,
+      userAgent: d.actor_user_agent,
       createdAt: d.created_at
     }))
   }

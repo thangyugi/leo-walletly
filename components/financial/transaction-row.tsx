@@ -11,10 +11,6 @@ import type { Transaction } from '@/types'
 
 export interface TransactionRowProps {
   txn: Transaction
-  groupName?: string
-  groupColor?: string
-  groupEmoji?: string
-  parentGroupName?: string
   onClick?: () => void
   selected?: boolean
   compact?: boolean
@@ -22,23 +18,18 @@ export interface TransactionRowProps {
 
 export function TransactionRow({
   txn,
-  groupName,
-  groupColor,
-  groupEmoji,
-  parentGroupName,
   onClick,
   selected,
   compact,
 }: TransactionRowProps) {
   const { format } = useMoney()
   const { t }      = useTranslation()
-  const sign       = getAmountSign(txn.amount, txn.type)
+  const sign       = getAmountSign(txn.amount, txn.transactionType)
   const amtColor   = getAmountColor(sign)
-  const isTransfer = txn.type === 'transfer'
-  const provider   = PROVIDERS.find((p) => p.value === txn.provider)
-  const accentHex  = isTransfer ? '#94a3b8' : (groupColor ?? '#6b7280')
-  const hasEmoji   = !!groupEmoji
-  const initials   = hasEmoji ? groupEmoji! : txn.description.slice(0, 1).toUpperCase()
+  const isTransfer = txn.transactionType === 'transfer'
+  const accentHex  = isTransfer ? '#94a3b8' : '#6b7280'
+  const provider   = PROVIDERS.find((p) => p.value === txn.paymentInstrumentId)
+  const initials   = (txn.description || '??').slice(0, 1).toUpperCase()
 
   return (
     <div
@@ -60,7 +51,7 @@ export function TransactionRow({
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm font-medium select-none"
         style={{
-          background: hasEmoji ? 'var(--color-bg-sunken)' : `color-mix(in srgb, ${accentHex} 12%, transparent)`,
+          background: `color-mix(in srgb, ${accentHex} 12%, transparent)`,
           color: accentHex,
         }}
       >
@@ -72,15 +63,10 @@ export function TransactionRow({
           {txn.description}
         </p>
         <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-xs text-[var(--color-text-quaternary)]">{formatDate(txn.date)}</span>
-          {isTransfer ? (
+          <span className="text-xs text-[var(--color-text-quaternary)]">{formatDate(txn.transactionDate)}</span>
+          {isTransfer && (
             <Badge variant="neutral" size="sm">{t.transactions.typeTransfer}</Badge>
-          ) : groupName ? (
-            <span className="text-xs font-medium" style={{ color: groupColor }}>
-              {parentGroupName && <span className="opacity-60 mr-1">{parentGroupName} /</span>}
-              {groupName}
-            </span>
-          ) : null}
+          )}
         </div>
       </div>
 

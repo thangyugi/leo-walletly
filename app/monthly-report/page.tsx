@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { EmptyState } from '@/components/ui/async-state'
 import { useTransactionsStore } from '@/stores/transactions'
-import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { formatDate, cn } from '@/lib/utils'
@@ -17,7 +16,6 @@ function pad(n: number) { return String(n).padStart(2, '0') }
 
 export default function MonthlyReportPage() {
   const { transactions } = useTransactionsStore()
-  const { groups, resolveGroup } = useGroupsStore()
   const { t, lang } = useTranslation()
   const { format } = useMoney()
   const today = new Date()
@@ -27,40 +25,25 @@ export default function MonthlyReportPage() {
   const mk = `${year}-${pad(month)}`
 
   const monthTxns = useMemo(
-    () => transactions.filter((tx) => tx.date.startsWith(mk)),
+    () => transactions.filter((tx) => tx.transactionDate.startsWith(mk)),
     [transactions, mk]
   )
 
   const summary = useMemo(() => {
-    const expense = monthTxns.filter((t) => t.amount < 0 && t.type !== 'transfer').reduce((s, t) => s + Math.abs(t.amount), 0)
-    const income  = monthTxns.filter((t) => t.amount > 0 && t.type !== 'transfer').reduce((s, t) => s + t.amount, 0)
+    const expense = monthTxns.filter((t) => t.transactionType === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0)
+    const income  = monthTxns.filter((t) => t.transactionType === 'income').reduce((s, t) => s + t.amount, 0)
     return { expense, income, net: income - expense, count: monthTxns.length }
   }, [monthTxns])
 
   const byCategory = useMemo(() => {
     const map: Record<string, number> = {}
-    monthTxns.filter((t) => t.amount < 0).forEach((t) => {
-      map[t.category] = (map[t.category] ?? 0) + Math.abs(t.amount)
+    monthTxns.filter((t) => t.transactionType === 'expense').forEach((t) => {
+      const catId = t.categoryId || '__none'
+      map[catId] = (map[catId] ?? 0) + Math.abs(t.amount)
     })
     return CATEGORIES.map((c) => ({ ...c, amount: map[c.value] ?? 0 })).filter((c) => c.amount > 0).sort((a, b) => b.amount - a.amount)
   }, [monthTxns])
 
-  const byGroup = useMemo(() => {
-    const map: Record<string, { name: string; color: string; emoji: string; amount: number }> = {}
-    monthTxns.filter((t) => t.amount < 0).forEach((t) => {
-      const gid   = resolveGroup(t.id, t.description, t.category, t)
-      const group = gid ? groups.find((g) => g.id === gid) : null
-      const key   = group?.id ?? '__none'
-      if (!map[key]) map[key] = { 
-        name: group?.name ?? (lang === 'vi' ? 'Chưa phân loại' : (lang === 'ja' ? '未分類' : 'Uncategorized')), 
-        color: group?.color ?? '#94a3b8', 
-        emoji: group?.emoji ?? '📦', 
-        amount: 0 
-      }
-      map[key].amount += Math.abs(t.amount)
-    })
-    return Object.values(map).sort((a, b) => b.amount - a.amount)
-  }, [monthTxns, groups, resolveGroup, lang])
 
   function prevMonth() {
     if (month === 1) { setYear((y) => y - 1); setMonth(12) } else setMonth((m) => m - 1)
@@ -105,7 +88,7 @@ export default function MonthlyReportPage() {
             ))}
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
             <Card padding="none">
               <CardHeader><CardTitle>{t.analytics.byCategory}</CardTitle></CardHeader>
               <CardContent className="space-y-2">
@@ -115,25 +98,13 @@ export default function MonthlyReportPage() {
                     <span className="flex-1 text-sm text-[var(--color-text-secondary)]">{c.label}</span>
                     <span className="text-sm font-medium font-tabular text-[var(--color-text-primary)]">{format(c.amount)}</span>
                     <span className="text-xs text-[var(--color-text-quaternary)] w-10 text-right">
-                      {((c.amount / summary.expense) * 100).toFixed(0)}%
+                      {((c.amount / (summary.expense || 1)) * 100).toFixed(0)}%
                     </span>
                   </div>
                 ))}
               </CardContent>
             </Card>
 
-            <Card padding="none">
-              <CardHeader><CardTitle>{t.analytics.byGroup}</CardTitle></CardHeader>
-              <CardContent className="space-y-2">
-                {byGroup.map((g) => (
-                  <div key={g.name} className="flex items-center gap-2">
-                    <span className="text-base w-6">{g.emoji}</span>
-                    <span className="flex-1 text-sm text-[var(--color-text-secondary)]">{g.name}</span>
-                    <span className="text-sm font-medium font-tabular" style={{ color: g.color }}>{format(g.amount)}</span>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
           </div>
 
           <Card padding="none">
@@ -152,11 +123,11 @@ export default function MonthlyReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthTxns.sort((a, b) => b.date.localeCompare(a.date)).map((tx) => (
+                  {monthTxns.sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)).map((tx) => (
                     <tr key={tx.id}>
-                      <td className="text-[var(--color-text-tertiary)] whitespace-nowrap">{formatDate(tx.date)}</td>
+                      <td className="text-[var(--color-text-tertiary)] whitespace-nowrap">{formatDate(tx.transactionDate)}</td>
                       <td className="max-w-[200px] truncate">{tx.description}</td>
-                      <td className={cn('cell-amount', tx.amount >= 0 ? 'gain' : 'loss')}>
+                      <td className={cn('cell-amount', tx.transactionType === 'income' ? 'gain' : 'loss')}>
                         {format(tx.amount, { sign: true })}
                       </td>
                     </tr>

@@ -73,14 +73,17 @@ export interface Invitation {
 
 export interface AuditTrail {
   id: string
+  organization_id: string
+  workspace_id: string | null
   ledger_id: string | null
-  user_id: string | null
+  actor_id: string | null
+  actor_email?: string
   action: string
   entity_type: string
   entity_id: string | null
   metadata: Record<string, any>
-  ip_address: string | null
-  user_agent: string | null
+  actor_ip: string | null
+  actor_user_agent: string | null
   created_at: string
 }
 

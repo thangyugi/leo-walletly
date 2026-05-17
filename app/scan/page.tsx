@@ -13,10 +13,10 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
-import { generateId, cn } from '@/lib/utils'
+import { cn } from '@/lib/utils'
 import { CATEGORIES } from '@/lib/constants'
 import { formatMoney } from '@/lib/money'
-import type { Category, ReceiptItem } from '@/types'
+import type { LegacyCategory as Category, ReceiptItem, Transaction } from '@/types'
 
 type ScanState = 'idle' | 'previewing' | 'scanning' | 'confirming' | 'error' | 'saved'
 
@@ -137,7 +137,6 @@ export default function ScanPage() {
   const [errorMsg,  setErrorMsg]  = useState('')
   const [errorCode, setErrorCode] = useState('')
 
-  // Input refs — only used to trigger the file picker; actual File stored in selectedFile state
   const fileRef   = useRef<HTMLInputElement>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
 
@@ -148,7 +147,7 @@ export default function ScanPage() {
   function loadFile(file: File) {
     if (!file.type.startsWith('image/')) return
     const url = URL.createObjectURL(file)
-    setSelectedFile(file)   // store in state so it survives input unmount
+    setSelectedFile(file)
     setPreview(url)
     setState('previewing')
     setErrorMsg('')
@@ -172,7 +171,6 @@ export default function ScanPage() {
   }
 
   async function handleScan() {
-    // Use file stored in state (survives input unmount when state changes)
     const file = selectedFile
     if (!file) return
     setState('scanning')
@@ -214,16 +212,17 @@ export default function ScanPage() {
   function handleSave() {
     const amt = parseFloat(form.amount.replace(/,/g, ''))
     if (!form.description || isNaN(amt) || amt <= 0) return
-    const finalAmount = form.isExpense ? -Math.abs(amt) : Math.abs(amt)
+    
     addTransaction({
-      date:        form.date || new Date().toISOString().split('T')[0],
-      description: form.description,
-      amount:      finalAmount,
-      type:        form.isExpense ? 'payment' : 'income',
-      category:    form.category,
-      provider:    'ai-scan',
-      note:        form.note || undefined,
-    })
+      transactionDate: form.date || new Date().toISOString().split('T')[0],
+      description:     form.description,
+      amount:          amt,
+      transactionType: form.isExpense ? 'expense' : 'income',
+      categoryId:      form.category,
+      paymentInstrumentId: 'ai-scan', // This should probably be a real ID from the new schema
+      notes:           form.note || undefined,
+    } as Partial<Transaction>)
+    
     setState('saved')
   }
 
@@ -257,13 +256,11 @@ export default function ScanPage() {
 
   return (
     <div className="animate-fade-in space-y-5 max-w-2xl mx-auto">
-      {/* Header + step bar */}
       <div className="flex flex-col gap-3">
         <PageHeader title={t.scan.title} subtitle={t.scan.subtitle} />
         <StepBar step={STEP_MAP[state]} L={L} />
       </div>
 
-      {/* ── STEP 1: Upload / idle ─────────────────────────────────── */}
       {(state === 'idle' || state === 'saved') && (
         <>
           {state === 'saved' && (
@@ -278,9 +275,7 @@ export default function ScanPage() {
             </div>
           )}
 
-          {/* Two upload entry points */}
           <div className="grid grid-cols-2 gap-3">
-            {/* Camera capture */}
             <label className="cursor-pointer group">
               <input
                 ref={cameraRef}
@@ -305,7 +300,6 @@ export default function ScanPage() {
               </div>
             </label>
 
-            {/* File upload / gallery */}
             <div
               onDragOver={(e) => e.preventDefault()}
               onDrop={handleDrop}
@@ -333,7 +327,6 @@ export default function ScanPage() {
             </div>
           </div>
 
-          {/* Info */}
           <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)] p-3.5 flex items-start gap-2.5">
             <ScanLine className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0 mt-0.5" />
             <p className="text-[11px] text-[var(--color-text-quaternary)] leading-relaxed">
@@ -347,7 +340,6 @@ export default function ScanPage() {
         </>
       )}
 
-      {/* ── STEP 1 (cont): Image preview before scan ─────────────── */}
       {state === 'previewing' && preview && (
         <Card padding="none">
           <CardHeader>
@@ -374,7 +366,6 @@ export default function ScanPage() {
                 previewZoom ? 'max-h-[600px]' : 'max-h-64',
               )}
             />
-            {/* Big prominent scan CTA */}
             <Button className="w-full mt-4" size="lg" icon={<ScanLine />} onClick={handleScan}>
               {L('AI で解析する', 'Phân tích bằng AI', 'Analyze with AI')}
             </Button>
@@ -382,13 +373,12 @@ export default function ScanPage() {
         </Card>
       )}
 
-      {/* ── STEP 2: Scanning ─────────────────────────────────────── */}
       {state === 'scanning' && (
         <Card>
           <div className="flex flex-col items-center gap-4 py-16">
             <div className="relative">
               <div className="w-16 h-16 rounded-2xl bg-[var(--color-brand-50)] flex items-center justify-center">
-                <ScanLine className="w-8 h-8 text-[var(--color-brand-600)]" />
+                <ScanLine className="w-8 h-8 text-[var(--brand-600)]" />
               </div>
               <span className="absolute -bottom-1 -right-1 w-5 h-5 border-2 border-[var(--color-interactive-primary)] border-t-transparent rounded-full animate-spin" />
             </div>
@@ -398,7 +388,6 @@ export default function ScanPage() {
                 {L('Gemini AI が内容を読み取っています...', 'Gemini AI đang đọc nội dung...', 'Gemini AI is reading the content...')}
               </p>
             </div>
-            {/* Still show the image for context */}
             {preview && (
               <img src={preview} alt="" className="max-h-36 max-w-[180px] rounded-xl object-contain opacity-40" />
             )}
@@ -406,7 +395,6 @@ export default function ScanPage() {
         </Card>
       )}
 
-      {/* ── STEP 2: Error ────────────────────────────────────────── */}
       {state === 'error' && (
         <div className="space-y-3">
           <div className="flex items-start gap-3 p-4 rounded-xl border border-[var(--color-border-error)] bg-[var(--color-status-loss-bg)]">
@@ -431,37 +419,11 @@ export default function ScanPage() {
               <img src={preview} alt="" className="w-16 h-16 rounded-lg object-cover shrink-0" />
             )}
           </div>
-
-          {(errorCode === 'MISSING_API_KEY' || errorMsg.includes('API_KEY')) && (
-            <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] p-4 space-y-2">
-              <div className="flex items-center gap-2 mb-3">
-                <Key className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-                  {L('セットアップガイド', 'Hướng dẫn cài đặt', 'Setup Guide')}
-                </p>
-              </div>
-              {[
-                { step: '1', text: L('Google AI Studio (ai.dev) でGemini APIキーを取得', 'Lấy API Key Gemini tại Google AI Studio (ai.dev)', 'Get a Gemini API key from Google AI Studio (ai.dev)') },
-                { step: '2', text: L('プロジェクトルートに .env.local を作成', 'Tạo file .env.local ở thư mục gốc dự án', 'Create .env.local in the project root') },
-                { step: '3', text: 'GEMINI_API_KEY=your_api_key_here' },
-                { step: '4', text: L('開発サーバーを再起動', 'Khởi động lại dev server', 'Restart the dev server') },
-              ].map(({ step, text }) => (
-                <div key={step} className="flex items-start gap-2.5">
-                  <span className="w-5 h-5 rounded-full bg-[var(--color-interactive-primary)] text-white text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">{step}</span>
-                  <p className={cn('text-xs text-[var(--color-text-secondary)]', step === '3' && 'font-mono bg-[var(--color-surface-default)] px-2 py-1 rounded text-[var(--color-interactive-primary)]')}>
-                    {text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )}
         </div>
       )}
 
-      {/* ── STEP 3: Confirming ───────────────────────────────────── */}
       {state === 'confirming' && (
         <div className="space-y-4">
-          {/* Receipt thumbnail + toggle */}
           {preview && (
             <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] overflow-hidden">
               <button
@@ -497,7 +459,6 @@ export default function ScanPage() {
             </div>
           )}
 
-          {/* Line items from AI */}
           {scanResult?.items && scanResult.items.length > 0 && (
             <div className="rounded-xl border border-[var(--color-border-default)] overflow-hidden">
               <div className="px-4 py-2.5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-subtle)]">
@@ -525,7 +486,6 @@ export default function ScanPage() {
             </div>
           )}
 
-          {/* Editable confirm form */}
           <Card padding="none">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -545,7 +505,6 @@ export default function ScanPage() {
                   className="col-span-2"
                 />
 
-                {/* Amount with expense/income toggle */}
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-[var(--color-text-tertiary)] mb-1.5">
                     {L('金額', 'Số tiền', 'Amount')}
@@ -581,7 +540,6 @@ export default function ScanPage() {
                       placeholder="0"
                     />
                   </div>
-                  {/* Amount preview */}
                   <p className={cn(
                     'text-right text-2xl font-bold mt-2 tabular-nums',
                     form.isExpense ? 'text-red-500' : 'text-brand-600',
@@ -614,7 +572,6 @@ export default function ScanPage() {
                 placeholder={L('メモを追加...', 'Thêm ghi chú...', 'Add note...')}
               />
 
-              {/* Save CTA — big and clear */}
               <Button
                 className="w-full"
                 size="lg"

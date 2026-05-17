@@ -1,17 +1,24 @@
 'use client'
 
-import { GroupManagementPlatform } from '@/modules/group-management'
+import { GroupExplorer } from '@/features/groups/group-explorer'
 import { useSettingsStore } from '@/stores/settings'
+import { PageHeader } from '@/components/layout/page-header'
+import { useTranslation } from '@/hooks/useTranslation'
 
 export default function GroupsPage() {
   const { lang } = useSettingsStore()
-  
-  // Ensure we only pass valid lang to the platform
-  const validLang = (['ja', 'vi', 'en'].includes(lang) ? lang : 'en') as 'ja' | 'vi' | 'en'
-  
+  const { t } = useTranslation()
+
   return (
-    <main className="h-[calc(100vh-0px)] overflow-hidden">
-      <GroupManagementPlatform lang={validLang} />
-    </main>
+    <div className="h-full flex flex-col gap-6">
+      <PageHeader 
+        title={t.groups.title} 
+        subtitle={t.groups.subtitle}
+      />
+      
+      <div className="flex-1 min-h-0">
+        <GroupExplorer lang={lang} />
+      </div>
+    </div>
   )
 }

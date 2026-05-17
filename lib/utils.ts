@@ -1,6 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Category, TransactionType } from '@/types'
+import type { LegacyCategory, TransactionType } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -66,8 +66,8 @@ export function generateId(): string {
   })
 }
 
-export function getCategoryLabel(cat: Category): string {
-  const map: Record<Category, string> = {
+export function getCategoryLabel(cat: LegacyCategory): string {
+  const map: Record<LegacyCategory, string> = {
     food:          '食費',
     transport:     '交通',
     shopping:      '買い物',
@@ -81,10 +81,11 @@ export function getCategoryLabel(cat: Category): string {
 
 export function getTypeLabel(type: TransactionType): string {
   const map: Record<TransactionType, string> = {
-    payment:  '支払い',
+    expense:  '支払い',
     refund:   '返金',
     income:   '入金',
     transfer: '振込',
+    asset_transfer: '資産移動',
   }
   return map[type] ?? type
 }

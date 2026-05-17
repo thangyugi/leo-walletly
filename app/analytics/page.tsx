@@ -14,7 +14,6 @@ import { BudgetProgress } from '@/components/financial/budget-progress'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
-import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { CATEGORIES } from '@/lib/constants'
@@ -44,22 +43,20 @@ function ChartTooltip({ active, payload, label }: any) {
 
 export default function AnalyticsPage() {
   const { transactions } = useTransactionsStore()
-  const { groups, resolveGroup } = useGroupsStore()
   const { t, lang } = useTranslation()
   const { format } = useMoney()
-  const [view, setView] = useState<'category' | 'group'>('category')
 
   const hasData = transactions.length > 0
 
   const monthlyData = useMemo(() => {
     const map: Record<string, { label: string; expense: number; income: number }> = {}
     transactions.forEach((tx) => {
-      const [y, m] = tx.date.split('-')
+      const [y, m] = tx.transactionDate.split('-')
       const key    = `${y}-${m}`
       const label = lang === 'ja' ? `${y}/${m}` : (lang === 'vi' ? `${m}/${y}` : `${m}/${y}`)
       if (!map[key]) map[key] = { label, expense: 0, income: 0 }
-      if (tx.amount < 0) map[key].expense += Math.abs(tx.amount)
-      else               map[key].income  += tx.amount
+      if (tx.transactionType === 'expense') map[key].expense += Math.abs(tx.amount)
+      else if (tx.transactionType === 'income') map[key].income  += tx.amount
     })
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -69,8 +66,9 @@ export default function AnalyticsPage() {
 
   const categoryData = useMemo(() => {
     const map: Record<string, number> = {}
-    transactions.filter((tx) => tx.amount < 0).forEach((tx) => {
-      map[tx.category] = (map[tx.category] ?? 0) + Math.abs(tx.amount)
+    transactions.filter((tx) => tx.transactionType === 'expense').forEach((tx) => {
+      const catId = tx.categoryId || '__none'
+      map[catId] = (map[catId] ?? 0) + Math.abs(tx.amount)
     })
     return CATEGORIES
       .map((c) => ({ name: c.label, value: map[c.value] ?? 0, color: CHART_COLORS.palette[CATEGORIES.indexOf(c) % CHART_COLORS.palette.length] }))
@@ -78,38 +76,10 @@ export default function AnalyticsPage() {
       .sort((a, b) => b.value - a.value)
   }, [transactions])
 
-  const groupData = useMemo(() => {
-    const map: Record<string, { name: string; value: number; color: string }> = {}
-    transactions.filter((tx) => tx.amount < 0).forEach((tx) => {
-      const gid   = resolveGroup(tx.id, tx.description, tx.category, tx)
-      const group = gid ? groups.find((g) => g.id === gid) : null
-      const key   = group?.id ?? '__none'
-      if (!map[key]) map[key] = { name: group?.name ?? (lang === 'vi' ? 'Chưa phân loại' : (lang === 'ja' ? '未分類' : 'Uncategorized')), value: 0, color: group?.color ?? CHART_COLORS.neutral }
-      map[key].value += Math.abs(tx.amount)
-    })
-    return Object.values(map).sort((a, b) => b.value - a.value).slice(0, 8)
-  }, [transactions, groups, resolveGroup, lang])
-
-  const budgetAlerts = useMemo(() => {
-    return groups
-      .filter((g) => g.budgetLimit && g.budgetLimit > 0)
-      .map((g) => {
-        const spent = transactions
-          .filter((tx) => tx.amount < 0)
-          .reduce((s, tx) => {
-            const gid = resolveGroup(tx.id, tx.description, tx.category, tx)
-            return gid === g.id ? s + Math.abs(tx.amount) : s
-          }, 0)
-        const pct = g.budgetLimit ? (spent / g.budgetLimit) * 100 : 0
-        return { ...g, spent, pct }
-      })
-      .filter((g) => g.pct > 0)
-      .sort((a, b) => b.pct - a.pct)
-  }, [groups, transactions, resolveGroup])
 
   const netData = useMemo(() => monthlyData.map((d) => ({ ...d, net: d.income - d.expense })), [monthlyData])
 
-  const displayData = view === 'category' ? categoryData : groupData
+  const displayData = categoryData
 
   if (!hasData) {
     return (
@@ -150,17 +120,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <Card padding="none">
           <CardHeader>
-            <CardTitle>
-              {view === 'category' ? t.analytics.byCategory : t.analytics.byGroup}
-            </CardTitle>
-            <SegmentedControl
-              value={view}
-              onChange={setView}
-              items={[
-                { value: 'category', label: t.analytics.byCategory },
-                { value: 'group',    label: t.analytics.byGroup    },
-              ]}
-            />
+            <CardTitle>{t.analytics.byCategory}</CardTitle>
           </CardHeader>
           <CardContent className="flex gap-4">
             <div className="h-48 w-48 shrink-0">
@@ -230,42 +190,6 @@ export default function AnalyticsPage() {
         </Card>
       </div>
 
-      <Card padding="none">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Target className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-            {t.analytics.budgetAlerts}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          {budgetAlerts.length === 0 ? (
-            <p className="text-sm text-[var(--color-text-tertiary)] py-4 text-center">
-              {t.analytics.noBudgetAlerts}
-            </p>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {budgetAlerts.map((g) => (
-                <div key={g.id} className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <span>{g.emoji}</span>
-                    <span className="text-sm font-medium text-[var(--color-text-primary)]">{g.name}</span>
-                    {g.pct >= 100 && (
-                      <span className="ml-auto text-xs font-medium text-[var(--color-text-loss)]">
-                        {t.analytics.over}
-                      </span>
-                    )}
-                  </div>
-                  <BudgetProgress
-                    spent={g.spent}
-                    limit={g.budgetLimit!}
-                    warningThreshold={g.warningThreshold}
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

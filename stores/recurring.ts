@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import type { Category, PaymentProvider } from '@/types'
+import type { LegacyCategory as Category, PaymentProvider } from '@/types'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 

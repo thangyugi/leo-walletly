@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import {
-  Upload, FileText, CheckCircle2, AlertCircle, X, ChevronDown, ChevronUp,
+  Upload, CheckCircle2, AlertCircle, X,
   Sparkles, RefreshCw, Globe, RotateCcw, ArrowRight, Check,
   TrendingDown, TrendingUp, Minus,
 } from 'lucide-react'
@@ -27,7 +27,7 @@ function fmtDate(d: string): string {
   return `${dd}/${m}/${y}`
 }
 
-function getCat(v: Category) {
+function getCat(v: string) {
   return CATEGORIES.find((c) => c.value === v)
 }
 
@@ -154,13 +154,12 @@ function PreviewRow({
   onToggle: () => void
   t: any
 }) {
-  const isIncome  = tx.amount >= 0
-  const cat       = getCat(tx.category)
-  const catLabel  = (t.categories as any)[tx.category] ?? cat?.label ?? tx.category
+  const isIncome  = tx.transactionType === 'income'
+  const cat       = getCat(tx.categoryId || '')
+  const catLabel  = (t.categories as any)[tx.categoryId || ''] ?? cat?.label ?? tx.categoryId
 
   return (
     <tr className={cn('border-t border-border transition-colors', !checked && 'opacity-40')}>
-      {/* Checkbox */}
       <td className="py-2.5 pl-3 pr-1 w-8">
         <button
           onClick={onToggle}
@@ -173,11 +172,9 @@ function PreviewRow({
           {checked && <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />}
         </button>
       </td>
-      {/* Date */}
       <td className="py-2.5 px-2 text-xs text-text-muted whitespace-nowrap">
-        {fmtDate(tx.date)}
+        {fmtDate(tx.transactionDate)}
       </td>
-      {/* Type */}
       <td className="py-2.5 px-2">
         <span className={cn(
           'inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
@@ -191,18 +188,15 @@ function PreviewRow({
             : t.transactions.typeExpense}
         </span>
       </td>
-      {/* Description */}
       <td className="py-2.5 px-2 max-w-[180px]">
         <p className="text-sm text-text-primary truncate">{tx.description}</p>
       </td>
-      {/* Category */}
       <td className="py-2.5 px-2 hidden sm:table-cell">
         <span className="inline-flex items-center gap-1 text-xs text-text-secondary whitespace-nowrap">
           <span>{cat?.emoji}</span>
           <span>{catLabel}</span>
         </span>
       </td>
-      {/* Amount */}
       <td className="py-2.5 px-3 text-right whitespace-nowrap">
         <span className={cn('text-sm font-semibold tabular-nums', isIncome ? 'text-brand-600' : 'text-red-500')}>
           {isIncome ? '+' : '−'}{formatMoney(Math.abs(tx.amount))}
@@ -222,7 +216,7 @@ export default function ImportPage() {
     lang === 'ja' ? ja : lang === 'vi' ? vi : en
 
   const [region,      setRegion]      = useState<Region>('jp')
-  const [provider,    setProvider]    = useState<PaymentProvider>('rakuten-pay')
+  const [provider,    setProvider]    = useState<PaymentProvider>('rakuten_pay')
   const [dragging,    setDragging]    = useState(false)
   const [loading,     setLoading]     = useState(false)
   const [file,        setFile]        = useState<File | null>(null)
@@ -261,7 +255,7 @@ export default function ImportPage() {
         const bytes   = new Uint8Array(buf)
         const hasBom  = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
         const sjis    = new TextDecoder('shift-jis').decode(buf)
-        const cleaned = (hasBom || sjis.includes('�') ? new TextDecoder('utf-8').decode(buf) : sjis).replace(/^﻿/, '')
+        const cleaned = (hasBom || sjis.includes('') ? new TextDecoder('utf-8').decode(buf) : sjis).replace(/^﻿/, '')
 
         const headers  = cleaned.split('\n')[0].split(',').map((h) => h.trim().replace(/^﻿/, ''))
         const guessed  = autoDetectProvider(headers)
@@ -270,7 +264,7 @@ export default function ImportPage() {
           activeProvider = guessed
         }
 
-        if (activeProvider === 'generic-csv') {
+        if (activeProvider === 'generic_csv') {
           const det = detectColumnsFromCSV(cleaned)
           setMapping(det)
         }
@@ -278,7 +272,6 @@ export default function ImportPage() {
 
       const res = await parseFile(f, activeProvider, userMapping)
       setResult(res)
-      // Select all by default
       setSelected(new Set(res.transactions.map((tx) => tx.id)))
 
       if (!res.success && res.transactions.length === 0) {
@@ -296,7 +289,7 @@ export default function ImportPage() {
     setLoading(true)
     setError(null)
     try {
-      const res = await parseFile(file, 'generic-csv', userMapping)
+      const res = await parseFile(file, 'generic_csv', userMapping)
       setResult(res)
       setSelected(new Set(res.transactions.map((tx) => tx.id)))
       if (!res.success && res.transactions.length === 0) setError(res.errors.join('\n'))
@@ -353,19 +346,15 @@ export default function ImportPage() {
     { key: 'global', label: t.import.regionUniversal, flag: '🌐' },
   ]
 
-  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className="animate-fade-in space-y-5">
-      {/* Header + step bar */}
       <div className="space-y-3">
         <PageHeader title={t.import.title} subtitle={t.import.subtitle} />
         <StepBar step={step} file={file} provider={provider} t={t} />
       </div>
 
-      {/* ── STEP 1: SETUP (collapse when review step) ──────────────────────── */}
       {step === 'setup' && (
         <>
-          {/* Region tabs */}
           <div className="flex gap-1 p-1 bg-surface-alt rounded-xl w-fit">
             {regionTabs.map((tab) => (
               <button
@@ -390,7 +379,6 @@ export default function ImportPage() {
             ))}
           </div>
 
-          {/* Provider grid */}
           <div>
             <p className="text-xs font-semibold text-text-muted mb-2">{t.import.selectProvider}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
@@ -406,7 +394,6 @@ export default function ImportPage() {
             </div>
           </div>
 
-          {/* Drop zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
             onDragLeave={() => setDragging(false)}
@@ -446,7 +433,6 @@ export default function ImportPage() {
         </>
       )}
 
-      {/* Auto-detect banner */}
       {detected && detected !== provider && (
         <div className="flex items-center gap-3 p-3 rounded-xl border border-brand-200 bg-brand-50 text-sm">
           <Sparkles className="w-4 h-4 text-brand-600 shrink-0" />
@@ -463,8 +449,7 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* Generic CSV column mapping */}
-      {mapping && provider === 'generic-csv' && step === 'setup' && (
+      {mapping && provider === 'generic_csv' && step === 'setup' && (
         <div className="rounded-xl border border-border bg-white p-4 space-y-3">
           <div className="flex items-center gap-2">
             <Globe className="w-4 h-4 text-brand-500 shrink-0" />
@@ -495,7 +480,6 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* Error */}
       {error && (
         <div className="flex items-start gap-3 p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-700">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -506,15 +490,12 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* ── STEP 2: REVIEW ─────────────────────────────────────────────────── */}
       {result && result.transactions.length > 0 && !confirmed && (
         <div className="rounded-xl border border-border bg-white overflow-hidden">
-
-          {/* ── Stats bar ── */}
           {(() => {
             const txns    = result.transactions
-            const income  = txns.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0)
-            const expense = txns.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0)
+            const income  = txns.filter((t) => t.transactionType === 'income').reduce((s, t) => s + t.amount, 0)
+            const expense = txns.filter((t) => t.transactionType === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0)
             const net     = income - expense
             return (
               <div className="grid grid-cols-4 divide-x divide-border border-b border-border">
@@ -548,10 +529,8 @@ export default function ImportPage() {
             )
           })()}
 
-          {/* ── Table header ── */}
           <div className="flex items-center justify-between px-4 py-2.5 border-b border-border bg-surface-alt">
             <div className="flex items-center gap-2">
-              {/* Select-all checkbox */}
               <button
                 onClick={toggleAll}
                 className={cn(
@@ -592,7 +571,6 @@ export default function ImportPage() {
             </button>
           </div>
 
-          {/* ── Warnings ── */}
           {showErrors && result.errors.length > 0 && (
             <div className="px-4 py-2.5 border-b border-amber-100 bg-amber-50 space-y-1 max-h-28 overflow-y-auto">
               {result.errors.map((e, i) => (
@@ -601,7 +579,6 @@ export default function ImportPage() {
             </div>
           )}
 
-          {/* ── Transaction table ── */}
           <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
             <table className="w-full">
               <thead className="sticky top-0 bg-surface-alt border-b border-border z-10">
@@ -627,7 +604,7 @@ export default function ImportPage() {
               <tbody>
                 {result.transactions.map((tx, i) => (
                   <PreviewRow
-                    key={tx.id ?? i}
+                    key={tx.id || i}
                     tx={tx}
                     checked={selected.has(tx.id)}
                     onToggle={() => toggleRow(tx.id)}
@@ -638,7 +615,6 @@ export default function ImportPage() {
             </table>
           </div>
 
-          {/* ── Prominent import CTA at bottom ── */}
           <div className="p-4 border-t border-border bg-surface-alt/50 flex flex-col sm:flex-row items-center gap-3">
             <div className="flex-1 text-sm text-text-secondary">
               {selectedCount > 0 ? (
@@ -669,7 +645,6 @@ export default function ImportPage() {
         </div>
       )}
 
-      {/* ── SUCCESS ─────────────────────────────────────────────────────────── */}
       {confirmed && (
         <div className="rounded-xl border border-brand-200 bg-brand-50 p-5 space-y-3">
           <div className="flex items-start gap-3">

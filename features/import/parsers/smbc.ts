@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 // 三井住友銀行 (SMBC) CSV — two common column layouts
@@ -34,7 +34,7 @@ function guessCategory(desc: string): Category {
 
 function resolveType(debit: number | null, credit: number | null): TransactionType {
   if (credit !== null && credit > 0) return 'income'
-  return 'payment'
+  return 'expense'
 }
 
 export function parseSMBCCSV(text: string): { transactions: Transaction[]; errors: string[] } {

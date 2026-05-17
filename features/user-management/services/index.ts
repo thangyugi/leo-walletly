@@ -51,7 +51,7 @@ export const MemberService = {
     // Log the action
     await AuditService.log({
       ledger_id: ledgerId,
-      user_id: user.id,
+      actor_id: user.id,
       action: 'member.invite',
       entity_type: 'invitation',
       metadata: { email, role }
@@ -202,11 +202,11 @@ export const OrganizationService = {
 export const AuditService = {
   async log(entry: Partial<AuditTrail>): Promise<void> {
     const { error } = await supabase
-      .from('audit_trails')
+      .from('audit_logs')
       .insert(entry)
     
     if (error) {
-      console.error('Failed to log audit trail:', error)
+      console.error('Failed to log audit log:', error)
     }
   }
 }

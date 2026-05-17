@@ -17,7 +17,6 @@ import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { useTransactionsStore, type SortOption } from '@/stores/transactions'
-import { useGroupsStore } from '@/stores/groups'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatMoney } from '@/lib/money'
@@ -64,8 +63,18 @@ function getInitials(text: string): string {
 }
 
 function fmtDateDMY(d: string): string {
-  const [y, m, dd] = d.split('-')
-  return `${dd}/${m}/${y}`
+  if (!d) return '—'
+  const date = new Date(d)
+  if (isNaN(date.getTime())) {
+    // Fallback if Date parsing fails
+    const parts = d.split('T')[0].split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+    return d
+  }
+  const day   = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year  = date.getFullYear()
+  return `${day}/${month}/${year}`
 }
 
 // Mock user (single user for now)
@@ -83,7 +92,6 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
     { value: 'amountAsc',  label: t.transactions.sortAmountLow,      icon: ArrowUp    },
     { value: 'nameAsc',    label: t.transactions.sortNameAZ,         icon: ArrowUp    },
     { value: 'category',   label: t.transactions.labelCategory,                       },
-    { value: 'group',      label: t.nav.groups, },
   ]
 
   const [open, setOpen] = useState(false)
@@ -231,21 +239,20 @@ function StatCard({ label, main, sub, trend, trendLabel, isLoss }: {
 // Transaction Detail Panel  — rendered via portal, supports fullscreen
 // ------------------------------------------------------------------
 function DetailPanel({
-  txn, groupName, groupColor,
+  txn,
   onClose, onEdit,
 }: {
   txn: Transaction
-  groupName?: string; groupColor?: string; groupEmoji?: string
   onClose: () => void
   onEdit:  () => void
 }) {
   const { t, lang } = useTranslation()
   const [fullscreen, setFullscreen] = useState(false)
-  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
-  const cat       = CATEGORIES.find((c) => c.value === txn.category)
-  const isExpense = txn.amount < 0
-  const accentHex = groupColor ?? '#6b7280'
-  const initials  = getInitials(txn.description)
+  const provider  = PROVIDERS.find((p) => p.value === txn.paymentInstrumentId)
+  const cat       = CATEGORIES.find((c) => c.value === txn.categoryId)
+  const isExpense = txn.transactionType === 'expense'
+  const accentHex = '#6b7280'
+  const initials  = getInitials(txn.description || '??')
 
   const panel = (
     <div className="fixed inset-0 z-[200] flex items-end sm:items-start sm:justify-end pointer-events-none">
@@ -299,7 +306,7 @@ function DetailPanel({
               {initials}
             </div>
             <p className={cn('text-3xl font-bold font-tabular', isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]')}>
-              {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount))}
+              {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount), txn.currencyCode)}
             </p>
             <p className="text-sm text-[var(--color-text-secondary)] mt-1 font-medium">{txn.description}</p>
           </div>
@@ -307,12 +314,11 @@ function DetailPanel({
           {/* Fields */}
           <div className="space-y-0 rounded-xl border border-[var(--color-border-default)] overflow-hidden">
             {[
-              { label: t.transactions.date,      value: fmtDateDMY(txn.date) },
-              { label: t.transactions.labelCategory, value: cat ? `${cat.emoji} ${cat.label}` : txn.category },
-              { label: t.transactions.labelProvider, value: provider?.label ?? txn.provider },
-              { label: t.transactions.labelType,     value: isExpense ? t.transactions.typeExpense : txn.type === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },
-              ...(groupName ? [{ label: lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group'), value: groupName }] : []),
-              ...(txn.note   ? [{ label: lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note'), value: txn.note }] : []),
+              { label: t.transactions.date,      value: fmtDateDMY(txn.transactionDate) },
+              { label: t.transactions.labelCategory, value: cat ? `${cat.emoji} ${cat.label}` : txn.categoryId },
+              { label: t.transactions.labelProvider, value: provider?.label ?? txn.paymentInstrumentId },
+              { label: t.transactions.labelType,     value: isExpense ? t.transactions.typeExpense : txn.transactionType === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },
+              ...(txn.notes   ? [{ label: lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note'), value: txn.notes }] : []),
             ].map(({ label, value }, idx, arr) => (
               <div
                 key={label}
@@ -327,12 +333,12 @@ function DetailPanel({
             ))}
           </div>
 
-          {txn.rawData && (
+          {txn.metadata && Object.keys(txn.metadata).length > 0 && (
             <div>
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-2">Dữ liệu gốc</p>
               <div className="rounded-lg bg-[var(--color-bg-sunken)] p-3 text-[11px] font-mono text-[var(--color-text-tertiary)] space-y-0.5 max-h-60 overflow-y-auto">
-                {Object.entries(txn.rawData).map(([k, v]) => (
-                  <div key={k}><span className="text-[var(--color-text-quaternary)]">{k}:</span> {v}</div>
+                {Object.entries(txn.metadata).map(([k, v]) => (
+                  <div key={k}><span className="text-[var(--color-text-quaternary)]">{k}:</span> {JSON.stringify(v)}</div>
                 ))}
               </div>
             </div>
@@ -370,7 +376,6 @@ function BulkBar({
         {[
           { label: 'Đổi tài khoản' },
           { label: 'Đổi danh mục' },
-          { label: 'Đổi nhóm'     },
         ].map(({ label }) => (
           <button
             key={label}
@@ -399,25 +404,23 @@ function BulkBar({
 // Columns: checkbox | icon | Nội dung | Ngày | Người dùng | Nhóm | Danh mục | Tài khoản | Số tiền
 // ------------------------------------------------------------------
 function TxnTableRow({
-  txn, groupName, groupColor,
-  checked, onCheck, onView,
+  txn, checked, onCheck, onView,
 }: {
   txn: Transaction
-  groupName?: string; groupColor?: string; groupEmoji?: string
   checked: boolean
   onCheck: (id: string) => void
   onView:  (txn: Transaction) => void
 }) {
-  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
-  const cat       = CATEGORIES.find((c) => c.value === txn.category)
-  const isExpense = txn.amount < 0
-  const accentHex = groupColor ?? '#6b7280'
-  const initials  = getInitials(txn.description)
+  const provider  = PROVIDERS.find((p) => p.value === txn.paymentInstrumentId)
+  const cat       = CATEGORIES.find((c) => c.value === txn.categoryId)
+  const isExpense = txn.transactionType === 'expense'
+  const accentHex = '#6b7280'
+  const initials  = getInitials(txn.description || '??')
 
   return (
     <div
       className={cn(
-        'grid grid-cols-[auto_auto_1fr_auto] sm:grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors group cursor-pointer',
+        'grid grid-cols-[auto_auto_1fr_auto] sm:grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 transition-colors group cursor-pointer',
         checked ? 'bg-[var(--color-status-info-bg)]' : 'hover:bg-[var(--color-bg-sunken)]',
       )}
       onClick={() => onView(txn)}
@@ -441,12 +444,12 @@ function TxnTableRow({
       {/* Description */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.date)}</p>
+        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.transactionDate)}</p>
       </div>
 
       {/* Date — separate column */}
       <div className="hidden sm:block">
-        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.date)}</span>
+        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.transactionDate)}</span>
       </div>
 
       {/* Người dùng */}
@@ -460,17 +463,6 @@ function TxnTableRow({
         </div>
       </div>
 
-      {/* Nhóm */}
-      <div className="hidden sm:block">
-        {groupName ? (
-          <span
-            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
-            style={{ background: `color-mix(in srgb, ${accentHex} 10%, transparent)`, color: accentHex }}
-          >
-            {groupName}
-          </span>
-        ) : <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>}
-      </div>
 
       {/* Danh mục */}
       <div className="hidden sm:block">
@@ -529,7 +521,6 @@ function DateGroupHeader({ date, expense, income }: { date: string; expense: num
 // ------------------------------------------------------------------
 export default function TransactionsPage() {
   const { transactions, sortOption, setSortOption, clearAll, getFiltered, removeTransaction } = useTransactionsStore()
-  const { groups, resolveGroup } = useGroupsStore()
   const { lang }                 = useSettingsStore()
   const { t }                    = useTranslation()
 
@@ -540,38 +531,38 @@ export default function TransactionsPage() {
   const [page,       setPage]       = useState(1)
 
   const sorted = useMemo(() => {
-    const base = getFiltered().filter((tx) => tx.date >= picker.start && tx.date <= picker.end)
+    const base = getFiltered().filter((tx) => tx.transactionDate >= picker.start && tx.transactionDate <= picker.end)
     return base.sort((a, b) => {
       switch (sortOption) {
-        case 'dateAsc':    return a.date.localeCompare(b.date)
+        case 'dateAsc':    return a.transactionDate.localeCompare(b.transactionDate)
         case 'amountDesc': return Math.abs(b.amount) - Math.abs(a.amount)
         case 'amountAsc':  return Math.abs(a.amount) - Math.abs(b.amount)
-        case 'nameAsc':    return a.description.localeCompare(b.description)
-        case 'nameDesc':   return b.description.localeCompare(a.description)
-        case 'category':   return a.category.localeCompare(b.category)
-        default:           return b.date.localeCompare(a.date)
+        case 'nameAsc':    return (a.description || '').localeCompare(b.description || '')
+        case 'nameDesc':   return (b.description || '').localeCompare(a.description || '')
+        case 'category':   return (a.categoryId || '').localeCompare(b.categoryId || '')
+        default:           return b.transactionDate.localeCompare(a.transactionDate)
       }
     })
   }, [getFiltered, sortOption, picker])
 
   const prev = useMemo(() => getPrevPeriod(picker), [picker])
   const prevSorted = useMemo(() =>
-    transactions.filter((tx) => tx.date >= prev.start && tx.date <= prev.end),
+    transactions.filter((tx) => tx.transactionDate >= prev.start && tx.transactionDate <= prev.end),
     [transactions, prev],
   )
 
   const totals = useMemo(() => ({
-    income:  sorted.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0),
-    expense: sorted.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0),
+    income:  sorted.reduce((s, tx) => (tx.transactionType === 'income' ? s + tx.amount : s), 0),
+    expense: sorted.reduce((s, tx) => (tx.transactionType === 'expense' ? s + Math.abs(tx.amount) : s), 0),
   }), [sorted])
 
   const prevTotals = useMemo(() => ({
-    income:  prevSorted.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0),
-    expense: prevSorted.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0),
+    income:  prevSorted.reduce((s, tx) => (tx.transactionType === 'income' ? s + tx.amount : s), 0),
+    expense: prevSorted.reduce((s, tx) => (tx.transactionType === 'expense' ? s + Math.abs(tx.amount) : s), 0),
   }), [prevSorted])
 
   const avgExpense = sorted.length > 0 && totals.expense > 0
-    ? totals.expense / sorted.filter((tx) => tx.amount < 0).length
+    ? totals.expense / sorted.filter((tx) => tx.transactionType === 'expense').length
     : 0
 
   const trendVsLabel = getTrendVsLabel(picker, lang, t)
@@ -584,12 +575,17 @@ export default function TransactionsPage() {
     const grps: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
     for (const tx of paginated) {
       const last = grps[grps.length - 1]
-      if (last && last.date === tx.date) {
+      if (last && last.date === tx.transactionDate) {
         last.txns.push(tx)
-        if (tx.amount > 0) last.income  += tx.amount
-        else               last.expense += Math.abs(tx.amount)
+        if (tx.transactionType === 'income') last.income  += tx.amount
+        else if (tx.transactionType === 'expense') last.expense += Math.abs(tx.amount)
       } else {
-        grps.push({ date: tx.date, txns: [tx], income: tx.amount > 0 ? tx.amount : 0, expense: tx.amount < 0 ? Math.abs(tx.amount) : 0 })
+        grps.push({
+          date: tx.transactionDate,
+          txns: [tx],
+          income: tx.transactionType === 'income' ? tx.amount : 0,
+          expense: tx.transactionType === 'expense' ? Math.abs(tx.amount) : 0
+        })
       }
     }
     return grps
@@ -597,12 +593,6 @@ export default function TransactionsPage() {
 
   useEffect(() => { setPage(1) }, [sorted.length, picker])
 
-  function getGroupProps(txn: Transaction) {
-    const gid   = resolveGroup(txn.id, txn.description, txn.category, txn)
-    const group = gid ? groups.find((g) => g.id === gid) : null
-    const parent = group?.parentId ? groups.find((g) => g.id === group.parentId) : null
-    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji, parentGroupName: parent?.name }
-  }
 
   const allPageIds  = paginated.map((tx) => tx.id)
   const allChecked  = allPageIds.length > 0 && allPageIds.every((id) => selected.has(id))
@@ -678,12 +668,12 @@ export default function TransactionsPage() {
         <StatCard
           label={t.transactions.count}
           main={String(sorted.length)}
-          sub={`${sorted.filter((tx) => tx.amount < 0).length} ${t.transactions.typeExpense} · ${sorted.filter((tx) => tx.amount > 0).length} ${t.transactions.typeIncome}`}
+          sub={`${sorted.filter((tx) => tx.transactionType === 'expense').length} ${t.transactions.typeExpense} · ${sorted.filter((tx) => tx.transactionType === 'income').length} ${t.transactions.typeIncome}`}
         />
         <StatCard
           label={`${t.transactions.average} · ${t.transactions.typeExpense}`}
           main={avgExpense ? `−${formatMoney(avgExpense)}` : '—'}
-          sub={totals.expense > 0 ? `${t.dashboard.total} ${sorted.filter((tx) => tx.amount < 0).length} ${t.transactions.shown}` : undefined}
+          sub={totals.expense > 0 ? `${t.dashboard.total} ${sorted.filter((tx) => tx.transactionType === 'expense').length} ${t.transactions.shown}` : undefined}
           isLoss={avgExpense > 0}
         />
       </div>
@@ -726,7 +716,6 @@ export default function TransactionsPage() {
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.dashboard.users}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.nav.groups}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
               <p className="hidden lg:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
@@ -742,7 +731,6 @@ export default function TransactionsPage() {
                       <TxnTableRow
                         key={txn.id}
                         txn={txn}
-                        {...getGroupProps(txn)}
                         checked={selected.has(txn.id)}
                         onCheck={toggleOne}
                         onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }}
@@ -757,7 +745,6 @@ export default function TransactionsPage() {
                   <TxnTableRow
                     key={txn.id}
                     txn={txn}
-                    {...getGroupProps(txn)}
                     checked={selected.has(txn.id)}
                     onCheck={toggleOne}
                     onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }}
@@ -832,7 +819,6 @@ export default function TransactionsPage() {
       {detailTxn && !editingTxn && (
         <DetailPanel
           txn={detailTxn}
-          {...getGroupProps(detailTxn)}
           onClose={() => setDetailTxn(null)}
           onEdit={() => { setEditingTxn(detailTxn); setDetailTxn(null) }}
         />

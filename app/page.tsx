@@ -12,15 +12,13 @@ import {
 } from 'recharts'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { PageHeader } from '@/components/layout/page-header'
 import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { useTransactionsStore } from '@/stores/transactions'
-import { useGroupsStore } from '@/stores/groups'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
-import { formatMoney, formatCurrencyCompact } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { CATEGORIES, PROVIDERS } from '@/lib/constants'
 import { CHART_COLORS, CHART_AXIS, CHART_MARGINS } from '@/components/charts/chart-theme'
 import { cn } from '@/lib/utils'
@@ -63,8 +61,17 @@ function getInitials(text: string): string {
 }
 
 function fmtDateDMY(d: string): string {
-  const [y, m, dd] = d.split('-')
-  return `${dd}/${m}/${y}`
+  if (!d) return '—'
+  const date = new Date(d)
+  if (isNaN(date.getTime())) {
+    const parts = d.split('T')[0].split('-')
+    if (parts.length === 3) return `${parts[2]}/${parts[1]}/${parts[0]}`
+    return d
+  }
+  const day   = String(date.getDate()).padStart(2, '0')
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const year  = date.getFullYear()
+  return `${day}/${month}/${year}`
 }
 
 // ------------------------------------------------------------------
@@ -185,7 +192,9 @@ function AccountsPanel({ transactions }: { transactions: Transaction[] }) {
   const balances = useMemo(() => {
     const map: Record<string, number> = {}
     for (const tx of transactions) {
-      map[tx.provider] = (map[tx.provider] ?? 0) + tx.amount
+      if (tx.paymentInstrumentId) {
+        map[tx.paymentInstrumentId] = (map[tx.paymentInstrumentId] ?? 0) + tx.amount
+      }
     }
     return PROVIDERS.map((p) => ({ ...p, balance: map[p.value] ?? 0 })).filter((p) => p.balance !== 0)
   }, [transactions])
@@ -228,10 +237,10 @@ function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
   const data = useMemo(() => {
     const map: Record<string, { income: number; expense: number }> = {}
     for (const tx of transactions) {
-      const key = tx.date.slice(0, 7)
+      const key = tx.transactionDate.slice(0, 7)
       if (!map[key]) map[key] = { income: 0, expense: 0 }
-      if (tx.amount > 0) map[key].income += tx.amount
-      else               map[key].expense += Math.abs(tx.amount)
+      if (tx.transactionType === 'income') map[key].income += tx.amount
+      else if (tx.transactionType === 'expense') map[key].expense += Math.abs(tx.amount)
     }
     const now = new Date()
     return Array.from({ length: 6 }, (_, i) => {
@@ -276,21 +285,18 @@ function CashFlowChart({ transactions }: { transactions: Transaction[] }) {
 
 // ------------------------------------------------------------------
 // Recent transaction table row
-// Columns: icon | Nội dung | Ngày | Nhóm | Danh mục | Tài khoản | Số tiền
 // ------------------------------------------------------------------
-function RecentTxnRow({ txn, groupName, groupColor }: {
+function RecentTxnRow({ txn }: {
   txn: Transaction
-  groupName?: string; groupColor?: string; groupEmoji?: string
 }) {
-  const provider  = PROVIDERS.find((p) => p.value === txn.provider)
-  const cat       = CATEGORIES.find((c) => c.value === txn.category)
-  const isExpense = txn.amount < 0
-  const accentHex = groupColor ?? '#6b7280'
-  const initials  = getInitials(txn.description)
+  const provider  = PROVIDERS.find((p) => p.value === txn.paymentInstrumentId)
+  const cat       = CATEGORIES.find((c) => c.value === txn.categoryId)
+  const isExpense = txn.transactionType === 'expense'
+  const accentHex = '#6b7280'
+  const initials  = getInitials(txn.description || '??')
 
   return (
-    <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
-      {/* Icon — 2-char initials */}
+    <div className="grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold select-none"
         style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
@@ -298,32 +304,16 @@ function RecentTxnRow({ txn, groupName, groupColor }: {
         {initials}
       </div>
 
-      {/* Description */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.date)}</p>
+        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.transactionDate)}</p>
       </div>
 
-      {/* Date — separate column, hidden on mobile */}
       <div className="hidden sm:block">
-        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.date)}</span>
+        <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.transactionDate)}</span>
       </div>
 
-      {/* Group */}
-      <div className="hidden sm:block">
-        {groupName ? (
-          <span
-            className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded-md whitespace-nowrap"
-            style={{ background: `color-mix(in srgb, ${accentHex} 10%, transparent)`, color: accentHex }}
-          >
-            {groupName}
-          </span>
-        ) : (
-          <span className="text-[10px] text-[var(--color-text-quaternary)]">—</span>
-        )}
-      </div>
 
-      {/* Category */}
       <div className="hidden sm:block">
         {cat && (
           <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
@@ -332,7 +322,6 @@ function RecentTxnRow({ txn, groupName, groupColor }: {
         )}
       </div>
 
-      {/* Account */}
       <div className="hidden sm:block">
         {provider && (
           <span
@@ -344,12 +333,11 @@ function RecentTxnRow({ txn, groupName, groupColor }: {
         )}
       </div>
 
-      {/* Amount */}
       <span className={cn(
         'text-sm font-semibold font-tabular shrink-0 text-right',
         isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]',
       )}>
-        {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount))}
+        {isExpense ? '−' : '+'}{formatMoney(Math.abs(txn.amount), txn.currencyCode)}
       </span>
     </div>
   )
@@ -360,55 +348,49 @@ function RecentTxnRow({ txn, groupName, groupColor }: {
 // ------------------------------------------------------------------
 export default function DashboardPage() {
   const { transactions }         = useTransactionsStore()
-  const { groups, resolveGroup } = useGroupsStore()
   const { lang }                 = useSettingsStore()
   const { t }                    = useTranslation()
 
   const [picker, setPicker] = useState<PickerValue>(() => defaultPickerValue(lang))
 
   const filtered = useMemo(() =>
-    transactions.filter((tx) => tx.date >= picker.start && tx.date <= picker.end),
+    transactions.filter((tx) => tx.transactionDate >= picker.start && tx.transactionDate <= picker.end),
     [transactions, picker],
   )
 
   const prev = useMemo(() => getPrevPeriod(picker), [picker])
 
   const prevFiltered = useMemo(() =>
-    transactions.filter((tx) => tx.date >= prev.start && tx.date <= prev.end),
+    transactions.filter((tx) => tx.transactionDate >= prev.start && tx.transactionDate <= prev.end),
     [transactions, prev],
   )
 
   const stats = useMemo(() => {
-    const expense = filtered.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0)
-    const income  = filtered.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0)
+    const expense = filtered.reduce((s, tx) => (tx.transactionType === 'expense' ? s + Math.abs(tx.amount) : s), 0)
+    const income  = filtered.reduce((s, tx) => (tx.transactionType === 'income' ? s + tx.amount : s), 0)
     return { expense, income, net: income - expense }
   }, [filtered])
 
   const prevStats = useMemo(() => {
-    const expense = prevFiltered.reduce((s, tx) => (tx.amount < 0 ? s + Math.abs(tx.amount) : s), 0)
-    const income  = prevFiltered.reduce((s, tx) => (tx.amount > 0 ? s + tx.amount : s), 0)
+    const expense = prevFiltered.reduce((s, tx) => (tx.transactionType === 'expense' ? s + Math.abs(tx.amount) : s), 0)
+    const income  = prevFiltered.reduce((s, tx) => (tx.transactionType === 'income' ? s + tx.amount : s), 0)
     return { expense, income, net: income - expense }
   }, [prevFiltered])
 
-  const allTimeNet = useMemo(() => transactions.reduce((s, tx) => s + tx.amount, 0), [transactions])
+  const allTimeNet = useMemo(() => transactions.reduce((s, tx) => s + (tx.transactionType === 'income' ? tx.amount : -Math.abs(tx.amount)), 0), [transactions])
   const prevAllTimeNet = useMemo(() => {
     const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 30)
     const cutoffStr = cutoff.toISOString().split('T')[0]
-    return transactions.filter((tx) => tx.date < cutoffStr).reduce((s, tx) => s + tx.amount, 0)
+    return transactions.filter((tx) => tx.transactionDate < cutoffStr).reduce((s, tx) => s + (tx.transactionType === 'income' ? tx.amount : -Math.abs(tx.amount)), 0)
   }, [transactions])
 
   const recent = useMemo(
-    () => [...transactions].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
+    () => [...transactions].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)).slice(0, 8),
     [transactions],
   )
 
   const hasData = transactions.length > 0
 
-  function getGroupProps(txn: Transaction) {
-    const gid   = resolveGroup(txn.id, txn.description, txn.category, txn)
-    const group = gid ? groups.find((g) => g.id === gid) : null
-    return { groupName: group?.name, groupColor: group?.color, groupEmoji: group?.emoji }
-  }
 
   const trendVsLabel = getTrendVsLabel(picker, lang, t)
   const periodLabel  = picker.label
@@ -513,12 +495,11 @@ export default function DashboardPage() {
                 </Link>
               </CardHeader>
 
-              {/* Column header — Nội dung | Ngày | Nhóm | Danh mục | Tài khoản | Số tiền */}
-              <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+              {/* Column header */}
+              <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
                 <div className="w-8" />
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group')}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
@@ -526,7 +507,7 @@ export default function DashboardPage() {
 
               <div className="divide-y divide-[var(--color-border-subtle)]">
                 {recent.map((txn) => (
-                  <RecentTxnRow key={txn.id} txn={txn} {...getGroupProps(txn)} />
+                  <RecentTxnRow key={txn.id} txn={txn} />
                 ))}
               </div>
 
@@ -587,4 +568,3 @@ export default function DashboardPage() {
     </div>
   )
 }
-

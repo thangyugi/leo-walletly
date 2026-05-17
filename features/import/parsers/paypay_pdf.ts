@@ -1,4 +1,4 @@
-import type { Transaction, Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
 import { generateId } from '@/lib/utils'
 import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-utils'
 
@@ -26,7 +26,7 @@ function resolveType(typeStr: string, amount: number): TransactionType {
   if (/チャージ|入金|受取|ポイント付与/.test(typeStr)) return 'income'
   if (/返金|キャンセル|払戻/.test(typeStr)) return 'refund'
   if (/送金|振込/.test(typeStr)) return 'transfer'
-  return amount >= 0 ? 'income' : 'payment'
+  return amount >= 0 ? 'income' : 'expense'
 }
 
 const TYPE_KEYWORDS = ['支払い', 'チャージ', '送金', '受取', '返金', 'キャンセル', '払戻', 'ポイント']

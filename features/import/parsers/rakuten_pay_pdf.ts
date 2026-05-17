@@ -1,4 +1,4 @@
-import type { Transaction, Category } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
 import { generateId } from '@/lib/utils'
 import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-utils'
 
@@ -126,9 +126,9 @@ export async function parseRakutenPayPDF(file: File): Promise<{
       date: parsed.date,
       description: parsed.storeName || '不明',
       amount: -parsed.billing,
-      type: 'payment',
+      type: 'expense',
       category: guessCategory(parsed.storeName),
-      provider: 'rakuten-pay',
+      provider: 'rakuten_pay',
       rawData: {
         line: line.text.slice(0, 120),
         billing: String(parsed.billing),

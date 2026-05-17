@@ -1,12 +1,12 @@
 'use client'
 
 import { create } from 'zustand'
-import type { Transaction, Category, PaymentProvider } from '@/types'
+import type { Transaction, LegacyCategory as Category, PaymentProvider } from '@/types'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 
-export type SortOption = 'dateDesc' | 'dateAsc' | 'amountDesc' | 'amountAsc' | 'nameAsc' | 'nameDesc' | 'category' | 'group'
-
+export type SortOption = 'dateDesc' | 'dateAsc' | 'amountDesc' | 'amountAsc' | 'nameAsc' | 'nameDesc' | 'category'
 
 export interface TransactionFilters {
   search: string
@@ -22,7 +22,7 @@ interface TransactionsState {
   filters: TransactionFilters
   sortOption: SortOption
   addTransactions: (txns: Transaction[]) => void
-  addTransaction: (txn: Omit<Transaction, 'id'>) => void
+  addTransaction: (txn: Partial<Transaction>) => void
   removeTransaction: (id: string) => void
   updateTransaction: (id: string, update: Partial<Transaction>) => void
   setFilters: (filters: Partial<TransactionFilters>) => void
@@ -56,90 +56,144 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
-      .order('date', { ascending: false })
+      .order('transaction_date', { ascending: false })
       .limit(limit)
 
     if (data) {
       const mapped: Transaction[] = data.map(t => ({
         id: t.id,
-        date: t.date,
+        organizationId: t.organization_id,
+        workspaceId: t.workspace_id,
+        ledgerId: t.ledger_id,
+        paymentInstrumentId: t.payment_instrument_id || undefined,
+        fundingSourceId: t.funding_source_id || undefined,
+        settlementAccountId: t.settlement_account_id || undefined,
+        categoryId: t.category_id || undefined,
+        status: t.status,
+        transactionType: t.transaction_type,
+        businessEventType: t.business_event_type || undefined,
+        source: t.source || undefined,
+        sourceReference: t.source_reference || undefined,
+        externalId: t.external_id || undefined,
+        externalHash: t.external_hash || undefined,
+        merchantName: t.merchant_name || undefined,
+        merchantNormalized: t.merchant_normalized || undefined,
+        merchantCategoryCode: t.merchant_category_code || undefined,
+        description: t.description || undefined,
+        notes: t.notes || undefined,
+        transactionDate: t.transaction_date,
+        valueDate: t.value_date || undefined,
+        postedDate: t.posted_date || undefined,
         amount: Number(t.amount),
-        description: t.description,
-        category: t.category,
-        provider: t.provider,
-        type: t.type as any,
-        note: t.note || undefined,
-        groupId: t.group_id || undefined,
-        rawData: t.raw_data || undefined,
+        currencyCode: t.currency_code,
+        baseAmount: t.base_amount ? Number(t.base_amount) : undefined,
+        baseCurrencyCode: t.base_currency_code || undefined,
+        exchangeRate: t.exchange_rate ? Number(t.exchange_rate) : undefined,
+        exchangeRateSource: t.exchange_rate_source || undefined,
+        receiptDocumentId: t.receipt_document_id || undefined,
+        accountingPeriodId: t.accounting_period_id || undefined,
+        createdBy: t.created_by || undefined,
+        reviewedBy: t.reviewed_by || undefined,
+        reviewedAt: t.reviewed_at || undefined,
+        isReconciled: t.is_reconciled,
+        reconciledAt: t.reconciled_at || undefined,
+        metadata: t.metadata || {},
+        createdAt: t.created_at,
+        updatedAt: t.updated_at,
+        deletedAt: t.deleted_at || undefined,
       }))
       set({ transactions: mapped })
     }
   },
 
   addTransactions: (txns) => {
-    // Optimistic local update
+    const currentLedger = useLedgerStore.getState().currentLedger
+    if (!currentLedger) {
+      console.warn('No active ledger found. Transactions might fail to save.')
+    }
+
+    const processedTxns = txns.map(tx => ({
+      ...tx,
+      ledgerId: tx.ledgerId || currentLedger?.id || '',
+      workspaceId: tx.workspaceId || currentLedger?.workspace_id || '',
+      organizationId: tx.organizationId || (currentLedger as any)?.organization_id || '',
+    }))
+
     set((s) => {
       const existing = new Set(s.transactions.map((t) => t.id))
-      const fresh = txns.filter((t) => !existing.has(t.id))
+      const fresh = processedTxns.filter((t) => !existing.has(t.id))
       return { transactions: [...s.transactions, ...fresh] }
     })
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
 
-      // Ensure profile row exists — FK safeguard for users where the
-      // auth trigger may not have fired (demo accounts, manual inserts, etc.)
-      await supabase.from('profiles')
-        .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true })
-
-      const toInsert = txns.map(t => ({
-        id:          t.id,
-        user_id:     user.id,
-        date:        t.date,
-        amount:      t.amount,
-        description: t.description,
-        category:    t.category,
-        provider:    t.provider,
-        type:        t.type,
-        note:        t.note   ?? null,
-        raw_data:    t.rawData ?? null,
-        // group_id lives in the group_assignments table, not here
+      const toInsert = processedTxns.map(t => ({
+        id:                      t.id,
+        organization_id:         t.organizationId,
+        workspace_id:            t.workspaceId,
+        ledger_id:               t.ledgerId,
+        payment_instrument_id:   t.paymentInstrumentId || null,
+        funding_source_id:       t.fundingSourceId || null,
+        settlement_account_id:   t.settlementAccountId || null,
+        category_id:             t.categoryId || null,
+        status:                  t.status || 'posted',
+        transaction_type:        t.transactionType,
+        business_event_type:     t.businessEventType || null,
+        source:                  t.source || 'manual',
+        description:             t.description || null,
+        notes:                   t.notes || null,
+        transaction_date:        t.transactionDate,
+        amount:                  t.amount,
+        currency_code:           t.currencyCode || 'JPY',
+        metadata:                t.metadata || {},
       }))
 
       const { error } = await supabase.from('transactions').upsert(toInsert)
       if (error) {
-        console.error('Supabase insert error —', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint)
+        console.error('Supabase insert error —', error.message)
       }
     })
   },
 
   addTransaction: (txn) => {
     const id = generateId()
+    const currentLedger = useLedgerStore.getState().currentLedger
+    
+    const newTxn = { 
+      ...txn, 
+      id,
+      ledgerId: txn.ledgerId || currentLedger?.id || '',
+      workspaceId: txn.workspaceId || currentLedger?.workspace_id || '',
+      organizationId: txn.organizationId || (currentLedger as any)?.organization_id || '',
+    } as Transaction
+
     set((s) => ({
-      transactions: [...s.transactions, { ...txn, id }],
+      transactions: [...s.transactions, newTxn],
     }))
 
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) return
 
-      // Ensure profile exists (same FK safeguard as addTransactions)
-      await supabase.from('profiles')
-        .upsert({ id: user.id }, { onConflict: 'id', ignoreDuplicates: true })
-
       const { error } = await supabase.from('transactions').insert({
         id,
-        user_id:     user.id,
-        date:        txn.date,
-        amount:      txn.amount,
-        description: txn.description,
-        category:    txn.category,
-        provider:    txn.provider,
-        type:        txn.type,
-        note:        txn.note   ?? null,
-        raw_data:    txn.rawData ?? null,
+        organization_id:         newTxn.organizationId,
+        workspace_id:            newTxn.workspaceId,
+        ledger_id:               newTxn.ledgerId,
+        payment_instrument_id:   txn.paymentInstrumentId || null,
+        funding_source_id:       txn.fundingSourceId || null,
+        category_id:             txn.categoryId || null,
+        status:                  txn.status || 'posted',
+        transaction_type:        txn.transactionType,
+        description:             txn.description || null,
+        notes:                   txn.notes || null,
+        transaction_date:        txn.transactionDate,
+        amount:                  txn.amount,
+        currency_code:           txn.currencyCode || 'JPY',
+        metadata:                txn.metadata || {},
       })
       if (error) {
-        console.error('Supabase insert error —', error.message, '| code:', error.code, '| details:', error.details, '| hint:', error.hint)
+        console.error('Supabase insert error —', error.message)
       }
     })
   },
@@ -155,16 +209,16 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     }))
 
     const patch: Record<string, unknown> = {}
-    if (update.date        !== undefined) patch.date        = update.date
-    if (update.amount      !== undefined) patch.amount      = update.amount
-    if (update.description !== undefined) patch.description = update.description
-    if (update.category    !== undefined) patch.category    = update.category
-    if (update.provider    !== undefined) patch.provider    = update.provider
-    if (update.type        !== undefined) patch.type        = update.type
-    if (update.note        !== undefined) patch.note        = update.note ?? null
-    if (update.rawData     !== undefined) patch.raw_data    = update.rawData ?? null
+    if (update.transactionDate !== undefined) patch.transaction_date = update.transactionDate
+    if (update.amount          !== undefined) patch.amount           = update.amount
+    if (update.description     !== undefined) patch.description      = update.description
+    if (update.categoryId      !== undefined) patch.category_id      = update.categoryId
+    if (update.status          !== undefined) patch.status           = update.status
+    if (update.notes           !== undefined) patch.notes            = update.notes ?? null
+    if (update.metadata        !== undefined) patch.metadata         = update.metadata ?? null
+    
     supabase.from('transactions').update(patch).eq('id', id).then(({ error }) => {
-      if (error) console.error('Supabase update error —', error.message, '| code:', error.code)
+      if (error) console.error('Supabase update error —', error.message)
     })
   },
 
@@ -176,10 +230,11 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   resetFilters: () => set({ filters: DEFAULT_FILTERS }),
 
   clearAll: () => {
+    const txns = get().transactions
+    if (txns.length === 0) return
+    const ledgerId = txns[0].ledgerId
     set({ transactions: [] })
-    supabase.auth.getUser().then(({ data: { user } }) => {
-      if (user) supabase.from('transactions').delete().eq('user_id', user.id).then()
-    })
+    supabase.from('transactions').delete().eq('ledger_id', ledgerId).then()
   },
 
   getFiltered: () => {
@@ -188,18 +243,19 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .filter((t) => {
         if (filters.search) {
           const q = filters.search.toLowerCase()
-          if (!t.description.toLowerCase().includes(q) && !t.note?.toLowerCase().includes(q))
+          if (!t.description?.toLowerCase().includes(q) && !t.notes?.toLowerCase().includes(q))
             return false
         }
-        if (filters.provider !== 'all' && t.provider !== filters.provider) return false
-        if (filters.category !== 'all' && t.category !== filters.category) return false
-        if (filters.dateFrom && t.date < filters.dateFrom) return false
-        if (filters.dateTo && t.date > filters.dateTo) return false
-        if (filters.type === 'expense' && (t.amount >= 0 || t.type === 'transfer')) return false
-        if (filters.type === 'income' && (t.amount < 0 || t.type === 'transfer')) return false
-        if (filters.type === 'transfer' && t.type !== 'transfer') return false
+        if (filters.category !== 'all' && t.categoryId !== filters.category) return false
+        if (filters.dateFrom && t.transactionDate < filters.dateFrom) return false
+        if (filters.dateTo && t.transactionDate > filters.dateTo) return false
+        
+        if (filters.type === 'expense' && t.transactionType !== 'expense') return false
+        if (filters.type === 'income' && t.transactionType !== 'income') return false
+        if (filters.type === 'transfer' && t.transactionType !== 'transfer') return false
+        
         return true
       })
-      .sort((a, b) => b.date.localeCompare(a.date))
+      .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate))
   },
 }))

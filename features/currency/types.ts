@@ -1,4 +1,5 @@
-export type CurrencyCode = 'JPY' | 'USD' | 'EUR' | 'VND'
+import { CurrencyCode } from '@/types'
+export type { CurrencyCode }
 
 export interface Money {
   amount: number

@@ -2,7 +2,6 @@
 
 import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
-import { useGroupsStore } from '@/stores/groups'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useRecurringStore } from '@/stores/recurring'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -11,7 +10,6 @@ import { useRouter, usePathname } from 'next/navigation'
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, initialized: authInitialized, initialize: initializeAuth } = useAuthStore()
   const { initialized: ledgerInitialized, initialize: initializeLedger, currentLedger } = useLedgerStore()
-  const { syncGroups } = useGroupsStore()
   const { syncTransactions } = useTransactionsStore()
   const { syncRecurring } = useRecurringStore()
   const router = useRouter()
@@ -33,7 +31,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         router.push('/login')
       } else if (user) {
         // Sync data when user is present
-        syncGroups()
         syncTransactions()
         syncRecurring()
         
@@ -46,7 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
       }
     }
-  }, [authInitialized, ledgerInitialized, user, pathname, router, currentLedger, syncGroups, syncTransactions, syncRecurring])
+  }, [authInitialized, ledgerInitialized, user, pathname, router, currentLedger, syncTransactions, syncRecurring])
 
   if ((!authInitialized || (user && !ledgerInitialized)) && pathname !== '/login') {
     return (

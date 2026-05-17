@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
 import { generateId } from '@/lib/utils'
 
 // MB Bank CSV / Excel export
@@ -91,7 +91,7 @@ export function parseMBBankCSV(text: string): { transactions: Transaction[]; err
       date,
       description: desc || 'MB Bank',
       amount,
-      type: amount >= 0 ? 'income' : 'payment',
+      type: amount >= 0 ? 'income' : 'expense',
       category: guessCategory(desc),
       provider: 'mbbank',
       rawData: { date: dateRaw, desc, amount: amountRaw || debitRaw || creditRaw },

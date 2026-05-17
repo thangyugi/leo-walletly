@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 /**
@@ -38,7 +38,7 @@ function guessCategory(desc: string): Category {
 
 function resolveType(storeName: string): TransactionType {
   if (TRANSFER_RE.test(storeName)) return 'transfer'
-  return 'payment'
+  return 'expense'
 }
 
 function parseYen(raw: string): number | null {
@@ -101,7 +101,7 @@ export function parsePayPayCardCSV(text: string): {
       amount: -amount, // credit card charges are always expenses
       type,
       category: type === 'transfer' ? 'other' : guessCategory(storeName),
-      provider: 'paypay-card',
+      provider: 'paypay_card',
       rawData: {
         date: dateRaw,
         store: storeName,

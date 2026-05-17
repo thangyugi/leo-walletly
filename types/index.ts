@@ -249,10 +249,22 @@ export type ApprovalStatus = 'pending' | 'approved' | 'rejected' | 'cancelled' |
 /** Category types */
 export type CategoryType = 'expense' | 'income' | 'transfer' | 'asset_transfer' | 'reimbursement'
 
-/** Legacy category (kept for backward compatibility) */
-export type Category =
-  | 'food' | 'transport' | 'shopping' | 'entertainment'
-  | 'health' | 'utilities' | 'other'
+/** @deprecated Use Category interface for V3 categories */
+export type LegacyCategory = 'food' | 'transport' | 'shopping' | 'entertainment' | 'health' | 'utilities' | 'other'
+
+/** @deprecated Use Transaction interface for V3 transactions */
+export interface LegacyTransaction {
+  id: string
+  date: string
+  description: string
+  amount: number
+  category: LegacyCategory
+  provider: string
+  rawData?: any
+  type: TransactionType
+  note?: string
+}
+
 
 // ----------------------------------------------------------
 // MULTI-TENANT HIERARCHY
@@ -400,7 +412,7 @@ export interface SettlementProfile {
 // ----------------------------------------------------------
 // CATEGORIES (V3 — multi-language, hierarchical)
 // ----------------------------------------------------------
-export interface CategoryV3 {
+export interface Category {
   id: string
   workspaceId: string
   parentId?: string
@@ -424,7 +436,7 @@ export interface CategoryV3 {
 // ----------------------------------------------------------
 // TRANSACTIONS V3 — core business event
 // ----------------------------------------------------------
-export interface TransactionV3 {
+export interface Transaction {
   id: string
 
   // Tenant anchors
@@ -898,72 +910,6 @@ export interface AnalyticsSnapshot {
   updatedAt: string
 }
 
-// ----------------------------------------------------------
-// LEGACY TYPES (backward compatibility — do not use in new code)
-// ----------------------------------------------------------
-
-/** @deprecated Use TransactionV3 */
-export interface Transaction {
-  id: string
-  date: string
-  description: string
-  amount: number
-  type: 'payment' | 'refund' | 'income' | 'transfer'
-  category: Category
-  provider: PaymentProvider
-  note?: string
-  groupId?: string
-  rawData?: Record<string, string>
-}
-
-export type BudgetPeriodType = 'monthly' | 'weekly' | 'custom'
-
-export interface GroupKeyword {
-  id: string
-  groupId: string
-  keyword: string
-}
-
-export interface GroupBudget {
-  id: string
-  groupId: string
-  amount: number
-  periodType: BudgetPeriodType
-  startDay?: number
-  startDate?: string
-  endDate?: string
-  isActive: boolean
-}
-
-export interface CustomGroup {
-  id: string
-  name: string
-  color: string
-  emoji: string
-  keywords: string[]
-  isDefault?: boolean
-  categoryKey?: Category
-  budgetLimit?: number
-  warningThreshold?: number
-  parentId?: string
-  budgets?: GroupBudget[]
-  keywords_list?: GroupKeyword[]
-}
-
-export interface RecurringTransaction {
-  id: string
-  description: string
-  amount: number
-  category: Category
-  provider: PaymentProvider
-  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly'
-  startDate: string
-  endDate?: string
-  isActive: boolean
-  groupId?: string
-  lastDetectedDate?: string
-  matchCount?: number
-}
 
 /** @deprecated Use ImportJob */
 export interface ImportResult {
@@ -997,8 +943,7 @@ export interface MonthlyReport {
   totalExpense: number
   totalIncome: number
   netBalance: number
-  byCategory: Record<Category, number>
-  byGroup: Record<string, number>
+  byCategory: Record<string, number>
   transactionCount: number
   avgDailyExpense: number
 }
@@ -1034,7 +979,6 @@ export interface Workspace {
 export type Permission =
   | 'transactions:read' | 'transactions:write' | 'transactions:delete'
   | 'journal:read' | 'journal:write' | 'journal:post'
-  | 'groups:read' | 'groups:write'
   | 'reports:read' | 'reports:export'
   | 'import:create' | 'import:commit'
   | 'reconciliation:read' | 'reconciliation:write'

@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
 import { generateId } from '@/lib/utils'
 
 // Vietcombank CSV export
@@ -92,7 +92,7 @@ export function parseVCBCSV(text: string): { transactions: Transaction[]; errors
       date,
       description: desc || 'Vietcombank',
       amount,
-      type: amount >= 0 ? 'income' : 'payment',
+      type: amount >= 0 ? 'income' : 'expense',
       category: guessCategory(desc),
       provider: 'vcb',
       rawData: { date: dateRaw, desc, amount: amountRaw || debitRaw || creditRaw },

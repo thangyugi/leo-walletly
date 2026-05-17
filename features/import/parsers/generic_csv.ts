@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 // Generic CSV parser with intelligent column auto-detection
@@ -165,9 +165,9 @@ export function parseGenericCSV(
       date,
       description: desc || 'Unknown',
       amount,
-      type: amount >= 0 ? 'income' : 'payment',
+      type: amount >= 0 ? 'income' : 'expense',
       category: guessCategory(desc),
-      provider: 'generic-csv',
+      provider: 'generic_csv',
       rawData: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, String(v)])),
     })
   }

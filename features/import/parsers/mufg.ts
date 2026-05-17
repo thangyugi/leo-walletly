@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 // 三菱UFJ銀行 (MUFG) CSV
@@ -74,7 +74,7 @@ export function parseMUFGCSV(text: string): { transactions: Transaction[]; error
       date,
       description: desc || '三菱UFJ銀行',
       amount,
-      type: isCredit ? 'income' : 'payment',
+      type: isCredit ? 'income' : 'expense',
       category: guessCategory(desc),
       provider: 'mufg',
       rawData: { date: dateRaw, desc, debit: debitRaw, credit: creditRaw },

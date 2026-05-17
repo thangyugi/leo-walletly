@@ -9,21 +9,20 @@ import { Input, Select } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useRecurringStore, type RecurringTransaction } from '@/stores/recurring'
-import { useGroupsStore } from '@/stores/groups'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn } from '@/lib/utils'
 import { CATEGORIES, PROVIDERS } from '@/lib/constants'
-import type { Category, PaymentProvider } from '@/types'
+import type { LegacyCategory as Category, PaymentProvider } from '@/types'
 
 interface FormState {
   description: string; amount: string; category: Category
-  provider: PaymentProvider; dayOfMonth: string; groupId: string; note: string
+  provider: PaymentProvider; dayOfMonth: string; note: string
 }
 
 const DEFAULT_FORM: FormState = {
   description: '', amount: '', category: 'other',
-  provider: 'manual', dayOfMonth: '1', groupId: '', note: '',
+  provider: 'manual', dayOfMonth: '1', note: '',
 }
 
 function RecurringForm({ initial, onSave, onCancel }: {
@@ -32,7 +31,6 @@ function RecurringForm({ initial, onSave, onCancel }: {
   onCancel:() => void
 }) {
   const { t, lang } = useTranslation()
-  const { groups } = useGroupsStore()
   const [form, setForm] = useState<FormState>({ ...DEFAULT_FORM, ...initial })
 
   function setField<K extends keyof FormState>(k: K, v: FormState[K]) {
@@ -63,12 +61,6 @@ function RecurringForm({ initial, onSave, onCancel }: {
           <Select label={t.transactions.labelProvider} value={form.provider} onChange={(e) => setField('provider', e.target.value as PaymentProvider)}>
             {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
           </Select>
-          {groups.length > 0 && (
-            <Select label={lang === 'vi' ? 'Nhóm' : (lang === 'ja' ? 'グループ' : 'Group')} value={form.groupId} onChange={(e) => setField('groupId', e.target.value)}>
-              <option value="">{lang === 'vi' ? 'Không có' : (lang === 'ja' ? 'なし' : 'None')}</option>
-              {groups.map((g) => <option key={g.id} value={g.id}>{g.emoji} {g.name}</option>)}
-            </Select>
-          )}
           <Input label={lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note')} value={form.note} onChange={(e) => setField('note', e.target.value)} placeholder={lang === 'vi' ? 'Ghi chú thêm (tùy chọn)...' : (lang === 'ja' ? 'オプションのメモ...' : 'Optional note...')} />
           <Button className="w-full" onClick={() => form.description && form.amount && onSave(form)}>
             {t.common.save}
@@ -93,7 +85,6 @@ export default function RecurringPage() {
       category:    data.category,
       provider:    data.provider,
       dayOfMonth:  Number(data.dayOfMonth),
-      groupId:     data.groupId || undefined,
       note:        data.note || undefined,
       isActive:    true,
     }
@@ -194,7 +185,7 @@ export default function RecurringPage() {
 
       {formOpen && (
         <RecurringForm
-          initial={editItem ? { description: editItem.description, amount: String(editItem.amount), category: editItem.category, provider: editItem.provider, dayOfMonth: String(editItem.dayOfMonth), groupId: editItem.groupId ?? '', note: editItem.note ?? '' } : undefined}
+          initial={editItem ? { description: editItem.description, amount: String(editItem.amount), category: editItem.category, provider: editItem.provider, dayOfMonth: String(editItem.dayOfMonth), note: editItem.note ?? '' } : undefined}
           onSave={handleSave}
           onCancel={() => { setFormOpen(false); setEditItem(null) }}
         />

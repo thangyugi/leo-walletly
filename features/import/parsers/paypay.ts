@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 /**
@@ -60,7 +60,7 @@ function resolveType(typeStr: string, amount: number): TransactionType {
   if (/受取|incoming|received/.test(t)) return 'income'
   if (/返金|キャンセル|払戻|refund|cancel/.test(t)) return 'refund'
   if (/送金|振込|transfer|send/.test(t)) return 'transfer'
-  return amount >= 0 ? 'income' : 'payment'
+  return amount >= 0 ? 'income' : 'expense'
 }
 
 function isEnglishFormat(headers: string[]): boolean {

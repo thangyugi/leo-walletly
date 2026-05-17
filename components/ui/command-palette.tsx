@@ -35,7 +35,6 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp     },
     { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3       },
     { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays    },
-    { href: '/groups',         label: t.nav.groups,       icon: Tag             },
     { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw       },
     { href: '/monthly-report', label: t.nav.report,       icon: FileText        },
     { href: '/scan',           label: t.nav.scan,         icon: ScanLine        },
@@ -70,7 +69,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     if (!query.trim() || query.length < 2) return []
     const q = query.toLowerCase()
     return transactions
-      .filter((tx) => tx.description.toLowerCase().includes(q) || tx.date.includes(q))
+      .filter((tx) => (tx.description?.toLowerCase() || '').includes(q) || tx.transactionDate.includes(q))
       .slice(0, 5)
   }, [query, transactions])
 
@@ -126,11 +125,11 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-bg-sunken)] transition-colors text-left group"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center shrink-0 text-xs font-medium text-[var(--color-text-tertiary)]">
-                    {tx.description.slice(0, 1).toUpperCase()}
+                    {(tx.description || '??').slice(0, 1).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{tx.description}</p>
-                    <p className="text-xs text-[var(--color-text-quaternary)]">{tx.date}</p>
+                    <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{tx.description || t.common.noDescription}</p>
+                    <p className="text-xs text-[var(--color-text-quaternary)]">{tx.transactionDate}</p>
                   </div>
                   <span className={cn(
                     'text-sm font-semibold font-tabular shrink-0',

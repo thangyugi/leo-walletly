@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { Transaction, Category } from '@/types'
+import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 /**
@@ -80,9 +80,9 @@ export function parseRakutenPayCSV(text: string): {
       date,
       description: descRaw || '不明',
       amount,
-      type: amount >= 0 ? 'refund' : 'payment',
+      type: amount >= 0 ? 'refund' : 'expense',
       category: guessCategory(descRaw),
-      provider: 'rakuten-pay',
+      provider: 'rakuten_pay',
       note: noteRaw || undefined,
       rawData: row,
     })

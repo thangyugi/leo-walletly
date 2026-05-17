@@ -26,17 +26,17 @@ export function GroupBadge({ name, type, color, emoji, className }: GroupBadgePr
   return (
     <div 
       className={cn(
-        'inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs font-medium border border-transparent shadow-sm transition-all hover:brightness-95 cursor-default',
+        'inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all hover:brightness-95 cursor-default shadow-sm',
         className
       )}
       style={{ 
-        backgroundColor: color ? `${color}15` : 'var(--color-bg-sunken)',
+        backgroundColor: color ? `${color}10` : 'var(--color-bg-sunken)',
         color: color || 'var(--color-text-secondary)',
-        borderColor: color ? `${color}30` : 'var(--color-border-subtle)'
+        borderColor: color ? `${color}20` : 'var(--color-border-subtle)'
       }}
     >
       {emoji ? (
-        <span className="text-[10px] leading-none">{emoji}</span>
+        <span className="text-[12px] leading-none">{emoji}</span>
       ) : (
         <Icon className="w-3 h-3" />
       )}
@@ -71,33 +71,51 @@ export function GroupTreeItem({
   return (
     <div 
       className={cn(
-        'group flex items-center gap-2 py-1.5 px-2 rounded-lg cursor-pointer transition-colors select-none',
-        isSelected ? 'bg-[var(--color-interactive-primary-subtle)] text-[var(--color-interactive-primary)]' : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
+        'group flex items-center gap-3 py-2.5 px-3 rounded-2xl cursor-pointer transition-all duration-200 select-none relative overflow-hidden',
+        isSelected 
+          ? 'bg-white shadow-md border border-[var(--color-interactive-primary-subtle)] text-[var(--color-interactive-primary)] ring-4 ring-[var(--color-interactive-primary-subtle)]/30' 
+          : 'hover:bg-white/60 text-[var(--color-text-secondary)] border border-transparent',
       )}
-      style={{ paddingLeft: `${level * 16 + 8}px` }}
+      style={{ marginLeft: `${level * 16}px` }}
       onClick={onSelect}
     >
-      <div className="flex items-center justify-center w-4 h-4">
+      {isSelected && (
+        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-interactive-primary)] rounded-full" />
+      )}
+      
+      <div className="flex items-center justify-center w-5 h-5 shrink-0">
         {hasChildren ? (
           <button 
             onClick={(e) => {
               e.stopPropagation()
               onToggle()
             }}
-            className="p-0.5 rounded hover:bg-[var(--color-border-subtle)] text-[var(--color-text-quaternary)]"
+            className={cn(
+              "p-1 rounded-lg transition-transform",
+              isExpanded ? "rotate-0" : "-rotate-90",
+              isSelected ? "bg-[var(--color-interactive-primary-subtle)]" : "hover:bg-[var(--color-border-subtle)]"
+            )}
           >
-            {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            <ChevronDown className="w-3 h-3" />
           </button>
         ) : (
-          <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-border-strong)] ml-1" />
+          <div className={cn(
+            "w-1.5 h-1.5 rounded-full",
+            isSelected ? "bg-[var(--color-interactive-primary)]" : "bg-[var(--color-border-strong)]"
+          )} />
         )}
       </div>
       
-      <span className="text-lg leading-none">{emoji || '📁'}</span>
-      <span className="text-sm font-medium truncate flex-1">{name}</span>
+      <span className="text-xl leading-none shrink-0">{emoji || '📁'}</span>
+      <span className={cn(
+        "text-sm font-semibold truncate flex-1 tracking-tight",
+        isSelected ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-secondary)]"
+      )}>
+        {name}
+      </span>
       
-      <span className="opacity-0 group-hover:opacity-100 text-[10px] uppercase font-bold text-[var(--color-text-quaternary)] tracking-widest px-1.5 py-0.5 rounded bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]">
-        {type.replace('_', ' ')}
+      <span className="opacity-0 group-hover:opacity-100 text-[9px] font-black text-[var(--color-text-quaternary)] uppercase tracking-tighter transition-opacity">
+        {type?.replace('_', ' ')}
       </span>
     </div>
   )
