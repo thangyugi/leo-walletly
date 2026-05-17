@@ -1,13 +1,19 @@
 'use client'
 
 import * as React from 'react'
-import Link from 'next/link'
 import { cn } from '@/lib/utils'
 import {
   ArrowLeft, Download, Plus, MoreVertical,
   Sun, Shield, ChevronLeft, ChevronRight,
-  Check, X, ArrowRight, Clock,
+  Check, X, ArrowRight, Clock, Loader2,
 } from 'lucide-react'
+import { useGroupStore } from './store'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useTransactionsStore } from '@/stores/transactions'
+import { useUserManagementStore } from '@/features/user-management/store'
+import type { Group, GroupBalance } from './types'
+import type { Transaction } from '@/types'
+import type { LedgerMember } from '@/features/user-management/types'
 
 /* ─────────────────────────────────────────────────────────────
    Helpers
@@ -16,164 +22,77 @@ function fmtVND(n: number) {
   return n.toLocaleString('vi-VN')
 }
 
+function groupGlyph(name: string): string {
+  return (name || '')
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+function memberInitials(name?: string | null): string {
+  if (!name) return '?'
+  return name
+    .trim()
+    .split(/\s+/)
+    .map(w => w[0] || '')
+    .join('')
+    .toUpperCase()
+    .slice(0, 2)
+}
+
+const MEMBER_COLORS = [
+  { bg: '#fef3c7', color: '#b45309' },
+  { bg: '#dbeafe', color: '#2563eb' },
+  { bg: '#d1fae5', color: '#047857' },
+  { bg: '#f3e8ff', color: '#7e22ce' },
+  { bg: '#fee2e2', color: '#b91c1c' },
+  { bg: '#ecfdf5', color: '#059669' },
+]
+
+function memberColor(index: number) {
+  return MEMBER_COLORS[index % MEMBER_COLORS.length]
+}
+
 /* ─────────────────────────────────────────────────────────────
    Types
 ───────────────────────────────────────────────────────────── */
 type DetailTab = 'overview' | 'subgroups' | 'keywords' | 'transactions' | 'balances' | 'members' | 'settings'
 
 /* ─────────────────────────────────────────────────────────────
-   Mock data  (mirrors the group-detail.html exactly)
-───────────────────────────────────────────────────────────── */
-const GROUP = {
-  id:       'travel-dalat',
-  name:     'Du lịch Đà Lạt 2026',
-  emoji:    '🌲',
-  glyph:    'DL',
-  gradient: 'linear-gradient(135deg,#0f766e 0%,#10b981 60%,#34d399 130%)',
-  sub:      '5 thành viên · VND · Chủ nhóm: Mai · 04 → 09 tháng 5 · Chia đều mặc định',
-  members: [
-    { initials: 'MA', bg: '#fef3c7', color: '#b45309', name: 'Mai · chủ chuyến', paid: 5_040_000, balance: 2_472_000 },
-    { initials: 'LI', bg: '#dbeafe', color: '#2563eb', name: 'Linh',              paid: 4_200_000, balance: 1_632_000 },
-    { initials: 'YN', bg: '#d1fae5', color: '#047857', name: 'Bạn (Yến Nhi)',      paid: 2_148_000, balance: -420_000 },
-    { initials: 'HU', bg: '#ecfdf5', color: '#047857', name: 'Hùng',              paid: 730_000,   balance: -1_838_000 },
-    { initials: 'TU', bg: '#fee2e2', color: '#b91c1c', name: 'Tuấn',              paid: 720_000,   balance: -1_848_000 },
-  ],
-}
-
-const STATS = [
-  { label: 'Tổng chi tiêu',    value: '12.840.000', unit: '₫', sub: '18 giao dịch · 4 ngày' },
-  { label: 'Ngân sách',        value: '20.000.000', unit: '₫', sub: '64% · còn 7.160.000 ₫', subBrand: true },
-  { label: 'Trung bình / người', value: '2.568.000', unit: '₫', sub: '5 thành viên · chia đều' },
-  { label: 'Bạn đã trả',       value: '2.148.000', unit: '₫', sub: 'Còn nợ 420.000 ₫', subLoss: true },
-  { label: 'Tự động khớp',     value: '15',          unit: ' / 18', sub: '83% · 3 cần xem lại', subBrand: true },
-]
-
-const SUB_GROUPS = [
-  { emoji: '🍜', bg: '#fef3c7', name: 'Ăn uống',  count: 7, amount: 4_820_000, pct: 38, barPct: 96, budget: 5_000_000, barClass: 'warn' },
-  { emoji: '🏨', bg: '#dbeafe', name: 'Lưu trú',  count: 2, amount: 4_200_000, pct: 33, barPct: 84, budget: 5_000_000, barClass: 'ok'   },
-  { emoji: '🚃', bg: '#fee2e2', name: 'Di chuyển', count: 4, amount: 2_118_000, pct: 16, barPct: 53, budget: 4_000_000, barClass: 'ok'   },
-  { emoji: '🎟️', bg: '#dcfce7', name: 'Tham quan', count: 3, amount: 1_190_000, pct: 9,  barPct: 60, budget: 2_000_000, barClass: 'ok'   },
-  { emoji: '🛍️', bg: '#f3e8ff', name: 'Mua sắm',  count: 2, amount: 512_000,   pct: 4,  barPct: 26, budget: 2_000_000, barClass: 'ok'   },
-]
-
-const LINKED_ACCOUNTS = [
-  { logo: 'VCB', color: '#10b981', name: 'Vietcombank · cá nhân',  meta: '••8821 · Thẻ ghi nợ',        amount: 7_420_000, dist: 58 },
-  { logo: 'MM',  color: '#7c3aed', name: 'MoMo · ví điện tử',      meta: '••5573 · Tự động đồng bộ',    amount: 3_300_000, dist: 26 },
-  { logo: '$',   color: '#64748b', name: 'Tiền mặt',                meta: 'Ghi tay · 6 mục',             amount: 2_120_000, dist: 16 },
-]
-
-const KW_SECTIONS = [
-  {
-    title: 'Cho cả nhóm Du lịch Đà Lạt',
-    count: 5,
-    hint: '· khớp tên cửa hàng / mô tả',
-    keywords: [
-      { text: 'đà lạt',      hits: 12, auto: false },
-      { text: 'datanla',     hits: 3,  auto: false },
-      { text: 'anna resort', hits: 2,  auto: false },
-      { text: 'phương trang',hits: 2,  auto: false },
-      { text: 'grab.*dalat', hits: 5,  auto: true  },
-    ],
-    suggests: [],
-    placeholder: 'thêm từ khóa…',
-  },
-  {
-    title: 'Cho nhóm con · Ăn uống',
-    count: 3,
-    hint: '· phân nhóm con sau khi đã khớp nhóm cha',
-    keywords: [
-      { text: 'bbq',       hits: 0,  auto: false },
-      { text: 'cà phê',    hits: 4,  auto: false },
-      { text: 'quán ngon', hits: 1,  auto: false },
-    ],
-    suggests: ['highlands', 'the coffee house', 'phở'],
-    placeholder: 'thêm từ khóa…',
-  },
-  {
-    title: 'Cho nhóm con · Di chuyển',
-    count: 4,
-    hint: '',
-    keywords: [
-      { text: 'grab',     hits: 8,  auto: false },
-      { text: 'xăng',     hits: 2,  auto: false },
-      { text: 'vetc',     hits: 1,  auto: false },
-      { text: 'cao tốc',  hits: 2,  auto: false },
-    ],
-    suggests: [],
-    placeholder: 'thêm từ khóa…',
-  },
-  {
-    title: 'Cho nhóm con · Lưu trú · Tham quan · Mua sắm',
-    count: 2,
-    hint: '',
-    keywords: [
-      { text: 'resort',      hits: 2,  auto: false },
-      { text: 'vé tham quan', hits: 3,  auto: false },
-    ],
-    suggests: ['Tạo nhanh cho 3 nhóm còn lại'],
-    placeholder: 'thêm từ khóa…',
-  },
-]
-
-const TRANSACTIONS = [
-  { avatar: '🏨', avatarBg: '#dbeafe', desc: 'Resort Anna · 2 đêm',           meta: 'Hôm nay 14:22 · VCB ••8821 · Mai trả · Chia đều 5 người',      kwMatch: 'anna resort', amount: -4_200_000 },
-  { avatar: '🍜', avatarBg: '#fef3c7', desc: 'BBQ tối · Quán Ngon',            meta: 'Hôm qua 19:48 · MoMo ••5573 · Bạn trả · Chia 4/5',            kwMatch: 'quán ngon',   amount: -1_480_000 },
-  { avatar: '🚃', avatarBg: '#fee2e2', desc: 'Vé xe khách Phương Trang',        meta: 'Hôm qua 08:00 · Tiền mặt · Linh trả · Chia đều',              kwMatch: 'phương trang',amount: -1_450_000 },
-  { avatar: '?',  avatarBg: '#f3f4f6', desc: 'Tipsy Cafe · Đường Khe Sanh',     meta: '07/05 16:30 · VCB ••8821 · Bạn trả',                          review: true,           amount: -320_000  },
-  { avatar: '🚃', avatarBg: '#fee2e2', desc: 'Xăng + đường cao tốc',            meta: '06/05 06:12 · VISA ••3201 · Bạn trả · Chia 3/5',              kwMatch: 'cao tốc',     amount: -668_000  },
-  { avatar: '🍜', avatarBg: '#fef3c7', desc: 'Đêm nướng Đà Lạt · An thêm 4 ảnh',meta: '06/05 21:08 · Tiền mặt · An trả · Chia đều',                kwMatch: 'đà lạt',      amount: -920_000  },
-  { avatar: '🎟️', avatarBg: '#dcfce7', desc: 'Vé tham quan thác Datanla',       meta: '06/05 09:14 · VCB ••8821 · Hùng trả · Chia đều',              kwMatch: 'datanla',     amount: -500_000  },
-]
-
-const SETTLE_UP = [
-  { from: { initials: 'LI', bg: '#dbeafe', color: '#2563eb', name: 'Linh' }, amount: '1.150k', to: { initials: 'YN', bg: '#d1fae5', color: '#047857', name: 'Bạn' } },
-  { from: { initials: 'MA', bg: '#fef3c7', color: '#b45309', name: 'Mai'  }, amount: '880k',   to: { initials: 'TU', bg: '#fee2e2', color: '#b91c1c', name: 'Tuấn' } },
-  { from: { initials: 'MA', bg: '#fef3c7', color: '#b45309', name: 'Mai'  }, amount: '1.512k', to: { initials: 'HU', bg: '#ecfdf5', color: '#047857', name: 'Hùng' } },
-]
-
-const RULES = [
-  {
-    conditions: [
-      { field: 'mô tả',          op: 'chứa',     val: 'phương trang', style: 'kw' },
-      { field: 'tài khoản',      op: '=',         val: 'VCB ••8821',  style: 'kw' },
-    ],
-    target: { emoji: '🚃', bg: '#fee2e2', label: 'Du lịch ĐL / Di chuyển' },
-    on: true,
-  },
-  {
-    conditions: [
-      { field: 'mô tả',          op: 'khớp regex', val: 'grab.*dalat', style: 'kw-auto' },
-    ],
-    target: { emoji: '🚃', bg: '#fee2e2', label: 'Du lịch ĐL / Di chuyển' },
-    on: true,
-  },
-  {
-    conditions: [
-      { field: 'khoảng thời gian', op: '=', val: '04 → 09 / 05 / 2026', style: 'kw' },
-      { field: 'số tiền',          op: '≥', val: '200.000 ₫',           style: 'kw' },
-    ],
-    target: { label: 'Gắn nhãn: du-lich-dalat-26', isTag: true },
-    on: false,
-  },
-]
-
-/* ─────────────────────────────────────────────────────────────
    Sub-components
 ───────────────────────────────────────────────────────────── */
 
 // ── Hero cover ───────────────────────────────────────────────
-function HeroCover() {
+function HeroCover({
+  group,
+  members,
+}: {
+  group: Group
+  members: LedgerMember[]
+}) {
+  const gradient = `linear-gradient(135deg,${group.color}ee 0%,${group.color}88 100%)`
+  const glyph = groupGlyph(group.name)
+
+  const subParts = [
+    members.length > 0 ? `${members.length} thành viên` : null,
+    'VND',
+    group.is_active ? 'Đang hoạt động' : 'Không hoạt động',
+  ].filter(Boolean)
+
   return (
     <div
       className="relative flex items-end px-[22px] pb-[18px] pt-[52px] text-white overflow-hidden"
-      style={{ background: GROUP.gradient, minHeight: 130 }}
+      style={{ background: gradient, minHeight: 130 }}
     >
       {/* Glyph watermark */}
       <span
         className="absolute right-[-20px] top-[-20px] font-black font-mono opacity-[0.14] leading-none select-none pointer-events-none"
         style={{ fontSize: 170 }}
       >
-        {GROUP.glyph}
+        {glyph}
       </span>
 
       {/* Badges */}
@@ -193,10 +112,10 @@ function HeroCover() {
       <div className="relative z-10 flex items-end gap-4 w-full">
         <div className="flex-1 min-w-0">
           <h2 className="text-[24px] font-semibold tracking-[-0.025em] leading-[1.15] m-0">
-            {GROUP.emoji} {GROUP.name}
+            {group.emoji} {group.name}
           </h2>
           <div className="flex items-center gap-2 flex-wrap text-[12px] opacity-85 mt-1">
-            {GROUP.sub.split(' · ').map((part, i, arr) => (
+            {subParts.map((part, i, arr) => (
               <React.Fragment key={i}>
                 <span>{part}</span>
                 {i < arr.length - 1 && <span className="opacity-45">·</span>}
@@ -206,18 +125,29 @@ function HeroCover() {
         </div>
         {/* Member avatar stack */}
         <div className="flex items-center shrink-0">
-          {GROUP.members.map((m, i) => (
+          {members.slice(0, 6).map((m, i) => {
+            const { bg, color } = memberColor(i)
+            const initials = memberInitials(m.profile?.full_name)
+            return (
+              <span
+                key={m.id}
+                className="w-[30px] h-[30px] rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold shrink-0"
+                style={{
+                  background: bg,
+                  color,
+                  marginLeft: i > 0 ? -9 : 0,
+                  zIndex: members.length - i,
+                }}
+                title={m.profile?.full_name ?? m.user_id}
+              >{initials}</span>
+            )
+          })}
+          {members.length > 6 && (
             <span
-              key={m.initials}
-              className="w-[30px] h-[30px] rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold shrink-0"
-              style={{
-                background: m.bg,
-                color: m.color,
-                marginLeft: i > 0 ? -9 : 0,
-                zIndex: GROUP.members.length - i,
-              }}
-            >{m.initials}</span>
-          ))}
+              className="w-[30px] h-[30px] rounded-full border-2 border-white flex items-center justify-center text-[11px] font-semibold shrink-0 bg-white/30"
+              style={{ marginLeft: -9, zIndex: 0 }}
+            >+{members.length - 6}</span>
+          )}
         </div>
       </div>
     </div>
@@ -225,14 +155,28 @@ function HeroCover() {
 }
 
 // ── Tab bar ──────────────────────────────────────────────────
-function TabBar({ active, onChange }: { active: DetailTab; onChange: (t: DetailTab) => void }) {
+function TabBar({
+  active,
+  onChange,
+  subGroupsCount,
+  keywordsCount,
+  transactionsCount,
+  membersCount,
+}: {
+  active: DetailTab
+  onChange: (t: DetailTab) => void
+  subGroupsCount: number
+  keywordsCount: number
+  transactionsCount: number
+  membersCount: number
+}) {
   const TABS: { value: DetailTab; label: string; count?: number }[] = [
     { value: 'overview',     label: 'Tổng quan' },
-    { value: 'subgroups',    label: 'Nhóm con',    count: 5 },
-    { value: 'keywords',     label: 'Từ khóa',     count: 14 },
-    { value: 'transactions', label: 'Giao dịch',   count: 18 },
+    { value: 'subgroups',    label: 'Nhóm con',    count: subGroupsCount },
+    { value: 'keywords',     label: 'Từ khóa',     count: keywordsCount },
+    { value: 'transactions', label: 'Giao dịch',   count: transactionsCount },
     { value: 'balances',     label: 'Số dư' },
-    { value: 'members',      label: 'Thành viên',  count: 5 },
+    { value: 'members',      label: 'Thành viên',  count: membersCount },
     { value: 'settings',     label: 'Cài đặt' },
   ]
   return (
@@ -274,7 +218,75 @@ function TabBar({ active, onChange }: { active: DetailTab; onChange: (t: DetailT
 }
 
 // ── Stats strip ──────────────────────────────────────────────
-function StatsStrip() {
+function StatsStrip({
+  group,
+  groupTxns,
+  members,
+}: {
+  group: Group
+  groupTxns: Transaction[]
+  members: LedgerMember[]
+}) {
+  const totalExpense = groupTxns
+    .filter(t => t.transactionType === 'expense')
+    .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  const budgetPct = group.budget_limit > 0
+    ? Math.round((totalExpense / group.budget_limit) * 100)
+    : 0
+  const budgetRemaining = group.budget_limit > 0 ? group.budget_limit - totalExpense : 0
+
+  const avgPerPerson = totalExpense / Math.max(members.length, 1)
+
+  const matchedCount = groupTxns.filter(t => t.categoryId).length
+  const reviewCount = groupTxns.filter(t => t.status === 'pending' || !t.isReconciled).length
+  const matchPct = groupTxns.length > 0 ? Math.round((matchedCount / groupTxns.length) * 100) : 0
+
+  const STATS = [
+    {
+      label: 'Tổng chi tiêu',
+      value: fmtVND(totalExpense),
+      unit: ' ₫',
+      sub: `${groupTxns.length} giao dịch`,
+      subBrand: false,
+      subLoss: false,
+    },
+    {
+      label: 'Ngân sách',
+      value: group.budget_limit > 0 ? fmtVND(group.budget_limit) : '—',
+      unit: group.budget_limit > 0 ? ' ₫' : '',
+      sub: group.budget_limit > 0
+        ? `${budgetPct}% · còn ${fmtVND(budgetRemaining)} ₫`
+        : 'Chưa đặt ngân sách',
+      subBrand: group.budget_limit > 0,
+      subLoss: false,
+    },
+    {
+      label: 'Trung bình / người',
+      value: fmtVND(Math.round(avgPerPerson)),
+      unit: ' ₫',
+      sub: `${members.length} thành viên · chia đều`,
+      subBrand: false,
+      subLoss: false,
+    },
+    {
+      label: 'Bạn đã trả',
+      value: fmtVND(totalExpense),
+      unit: ' ₫',
+      sub: 'Tổng nhóm',
+      subBrand: false,
+      subLoss: false,
+    },
+    {
+      label: 'Tự động khớp',
+      value: String(matchedCount),
+      unit: ` / ${groupTxns.length}`,
+      sub: `${matchPct}% · ${reviewCount} cần xem lại`,
+      subBrand: true,
+      subLoss: false,
+    },
+  ]
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-5 border-b border-[var(--color-border-subtle)]">
       {STATS.map((s, i) => (
@@ -303,16 +315,47 @@ function StatsStrip() {
 }
 
 // ── Sub-groups section ───────────────────────────────────────
-function SubGroupsSection() {
+function SubGroupsSection({
+  group,
+  subGroups,
+  transactions,
+}: {
+  group: Group
+  subGroups: Group[]
+  transactions: Transaction[]
+}) {
   const [sortTab, setSortTab] = React.useState<'spend' | 'name'>('spend')
   const BAR_COLORS: Record<string, string> = { ok: 'bg-[var(--color-gain-500)]', warn: 'bg-[var(--color-warning-500)]' }
+
+  const totalExpense = transactions
+    .filter(t => t.categoryId === group.id && t.transactionType === 'expense')
+    .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  function subGroupExpense(sgId: string) {
+    return transactions
+      .filter(t => t.categoryId === sgId && t.transactionType === 'expense')
+      .reduce((s, t) => s + Math.abs(t.amount), 0)
+  }
+
+  const sgCards = subGroups.map(sg => {
+    const expense = subGroupExpense(sg.id)
+    const count = transactions.filter(t => t.categoryId === sg.id).length
+    const pct = totalExpense > 0 ? Math.round((expense / totalExpense) * 100) : 0
+    const barPct = sg.budget_limit > 0 ? Math.min(Math.round((expense / sg.budget_limit) * 100), 100) : 0
+    const barClass = barPct >= 90 ? 'warn' : 'ok'
+    return { sg, expense, count, pct, barPct, barClass }
+  })
+
+  const sorted = sortTab === 'spend'
+    ? [...sgCards].sort((a, b) => b.expense - a.expense)
+    : [...sgCards].sort((a, b) => a.sg.name.localeCompare(b.sg.name, 'vi'))
 
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       {/* Section header */}
       <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-[var(--color-border-subtle)]">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Nhóm con</h3>
-        <span className="text-[12px] text-[var(--color-text-tertiary)]">· 5 mục</span>
+        <span className="text-[12px] text-[var(--color-text-tertiary)]">· {subGroups.length} mục</span>
         <span className="flex-1" />
         <div className="inline-flex bg-[var(--color-bg-sunken)] rounded-[7px] p-0.5">
           {(['spend', 'name'] as const).map(v => (
@@ -335,25 +378,28 @@ function SubGroupsSection() {
 
       {/* Sub-group grid */}
       <div className="p-[14px_18px] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {SUB_GROUPS.map(sg => (
-          <div key={sg.name} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group">
+        {sorted.map(({ sg, expense, count, pct, barPct, barClass }) => (
+          <div key={sg.id} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group">
             <div className="flex items-center gap-1.5 mb-2">
-              <span className="w-6 h-6 rounded-[6px] flex items-center justify-center text-sm shrink-0" style={{ background: sg.bg }}>{sg.emoji}</span>
+              <span
+                className="w-6 h-6 rounded-[6px] flex items-center justify-center text-sm shrink-0"
+                style={{ background: sg.color + '22' }}
+              >{sg.emoji}</span>
               <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate flex-1">{sg.name}</span>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{sg.count}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{count}</span>
             </div>
             <div className="text-[13px] font-semibold font-tabular tracking-[-0.01em]">
-              {fmtVND(sg.amount)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> ₫ · {sg.pct}%</span>
+              {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> ₫ · {pct}%</span>
             </div>
             <div className="h-[3px] bg-[var(--color-bg-sunken)] rounded-full mt-1.5 overflow-hidden">
               <div
-                className={cn('h-full rounded-full transition-all', BAR_COLORS[sg.barClass] ?? BAR_COLORS.ok)}
-                style={{ width: `${sg.barPct}%` }}
+                className={cn('h-full rounded-full transition-all', BAR_COLORS[barClass] ?? BAR_COLORS.ok)}
+                style={{ width: `${barPct}%` }}
               />
             </div>
             <div className="flex items-center justify-between mt-1 text-[10px] text-[var(--color-text-tertiary)] font-tabular">
-              <span>NS {fmtVND(sg.budget)} ₫</span>
-              <span>{sg.barPct}%</span>
+              <span>NS {sg.budget_limit > 0 ? fmtVND(sg.budget_limit) + ' ₫' : '—'}</span>
+              <span>{barPct}%</span>
             </div>
           </div>
         ))}
@@ -367,12 +413,36 @@ function SubGroupsSection() {
 }
 
 // ── Linked accounts section ──────────────────────────────────
-function LinkedAccountsSection() {
+function LinkedAccountsSection({ groupTxns }: { groupTxns: Transaction[] }) {
+  // Group by source
+  const sourceMap: Record<string, { total: number; count: number }> = {}
+  for (const t of groupTxns) {
+    const src = t.source || 'manual'
+    if (!sourceMap[src]) sourceMap[src] = { total: 0, count: 0 }
+    sourceMap[src].total += Math.abs(t.amount)
+    sourceMap[src].count += 1
+  }
+
+  const SOURCE_META: Record<string, { logo: string; color: string; label: string }> = {
+    manual:     { logo: '$',   color: '#64748b', label: 'Tiền mặt / Ghi tay' },
+    csv_import: { logo: 'CSV', color: '#0ea5e9', label: 'Nhập CSV' },
+    bank_feed:  { logo: 'BNK', color: '#10b981', label: 'Kết nối ngân hàng' },
+    vcb:        { logo: 'VCB', color: '#10b981', label: 'Vietcombank' },
+    momo:       { logo: 'MM',  color: '#7c3aed', label: 'MoMo' },
+  }
+
+  const accounts = Object.entries(sourceMap).map(([src, { total, count }]) => {
+    const meta = SOURCE_META[src] || { logo: src.slice(0, 3).toUpperCase(), color: '#94a3b8', label: src }
+    return { ...meta, amount: total, count, src }
+  })
+
+  const grandTotal = accounts.reduce((s, a) => s + a.amount, 0)
+
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-[var(--color-border-subtle)]">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Tài khoản liên kết</h3>
-        <span className="text-[12px] text-[var(--color-text-tertiary)]">· 3</span>
+        <span className="text-[12px] text-[var(--color-text-tertiary)]">· {accounts.length}</span>
         <span className="flex-1" />
         <button className="w-7 h-7 flex items-center justify-center rounded-lg border border-transparent hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-tertiary)]">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z"/></svg>
@@ -380,15 +450,17 @@ function LinkedAccountsSection() {
       </div>
 
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {LINKED_ACCOUNTS.map(acc => (
-          <div key={acc.name} className="flex items-center gap-3 px-[18px] py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
+        {accounts.length === 0 ? (
+          <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">Chưa có dữ liệu</div>
+        ) : accounts.map(acc => (
+          <div key={acc.src} className="flex items-center gap-3 px-[18px] py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
             <div
               className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white text-[11px] font-bold shrink-0"
               style={{ background: acc.color }}
             >{acc.logo}</div>
             <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium text-[var(--color-text-primary)] leading-snug">{acc.name}</div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono">{acc.meta}</div>
+              <div className="text-[13px] font-medium text-[var(--color-text-primary)] leading-snug">{acc.label}</div>
+              <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono">{acc.count} giao dịch</div>
             </div>
             <div className="text-right shrink-0">
               <div className="text-[10px] text-[var(--color-text-quaternary)]">đã chi</div>
@@ -405,22 +477,28 @@ function LinkedAccountsSection() {
       </div>
 
       {/* Distribution */}
-      <div className="px-[18px] py-[10px] pb-[14px] border-t border-[var(--color-border-subtle)]">
-        <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-1.5">Phân bổ chi tiêu</div>
-        <div className="flex h-2 rounded-full overflow-hidden bg-[var(--color-bg-sunken)]">
-          {LINKED_ACCOUNTS.map(acc => (
-            <div key={acc.logo} style={{ width: `${acc.dist}%`, background: acc.color }} />
-          ))}
+      {accounts.length > 0 && (
+        <div className="px-[18px] py-[10px] pb-[14px] border-t border-[var(--color-border-subtle)]">
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-1.5">Phân bổ chi tiêu</div>
+          <div className="flex h-2 rounded-full overflow-hidden bg-[var(--color-bg-sunken)]">
+            {accounts.map(acc => {
+              const distPct = grandTotal > 0 ? Math.round((acc.amount / grandTotal) * 100) : 0
+              return <div key={acc.src} style={{ width: `${distPct}%`, background: acc.color }} />
+            })}
+          </div>
+          <div className="flex items-center gap-2.5 flex-wrap mt-2">
+            {accounts.map(acc => {
+              const distPct = grandTotal > 0 ? Math.round((acc.amount / grandTotal) * 100) : 0
+              return (
+                <span key={acc.src} className="flex items-center gap-1 text-[10px] text-[var(--color-text-tertiary)] font-mono">
+                  <span className="w-2 h-2 rounded-full inline-block" style={{ background: acc.color }} />
+                  {acc.logo} {distPct}%
+                </span>
+              )
+            })}
+          </div>
         </div>
-        <div className="flex items-center gap-2.5 flex-wrap mt-2">
-          {LINKED_ACCOUNTS.map(acc => (
-            <span key={acc.logo} className="flex items-center gap-1 text-[10px] text-[var(--color-text-tertiary)] font-mono">
-              <span className="w-2 h-2 rounded-full inline-block" style={{ background: acc.color }} />
-              {acc.logo} {acc.dist}%
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
     </section>
   )
 }
@@ -446,11 +524,80 @@ function Toggle({ on, onChange }: { on: boolean; onChange: (v: boolean) => void 
 }
 
 // ── Keyword manager section ──────────────────────────────────
-function KeywordManagerSection() {
-  const [sections, setSections] = React.useState(
-    KW_SECTIONS.map(s => ({ ...s, keywords: [...s.keywords], inputVal: '' }))
+function KeywordManagerSection({
+  group,
+  subGroups,
+  transactions,
+  onUpdateKeywords,
+}: {
+  group: Group
+  subGroups: Group[]
+  transactions: Transaction[]
+  onUpdateKeywords: (groupId: string, keywords: string[]) => void
+}) {
+  type KwEntry = { text: string; hits: number; auto: boolean }
+  type SectionState = {
+    groupId: string
+    title: string
+    hint: string
+    keywords: KwEntry[]
+    suggests: string[]
+    inputVal: string
+  }
+
+  function buildSections(): SectionState[] {
+    const parentKws: KwEntry[] = (group.keywords || []).map(kw => ({
+      text: kw,
+      hits: transactions.filter(t =>
+        (t.description || t.merchantName || '').toLowerCase().includes(kw.toLowerCase())
+      ).length,
+      auto: false,
+    }))
+
+    const base: SectionState = {
+      groupId: group.id,
+      title: `Cho cả nhóm ${group.name}`,
+      hint: '· khớp tên cửa hàng / mô tả',
+      keywords: parentKws,
+      suggests: [],
+      inputVal: '',
+    }
+
+    const subSections: SectionState[] = subGroups.map(sg => {
+      const kws: KwEntry[] = (sg.keywords || []).map(kw => ({
+        text: kw,
+        hits: transactions.filter(t =>
+          (t.description || t.merchantName || '').toLowerCase().includes(kw.toLowerCase())
+        ).length,
+        auto: false,
+      }))
+      return {
+        groupId: sg.id,
+        title: `Cho nhóm con · ${sg.name}`,
+        hint: '· phân nhóm con sau khi đã khớp nhóm cha',
+        keywords: kws,
+        suggests: [],
+        inputVal: '',
+      }
+    })
+
+    return [base, ...subSections]
+  }
+
+  const [sections, setSections] = React.useState<SectionState[]>(() => buildSections())
+
+  // Sync when group/subGroups keywords change from store
+  const groupKwKey = JSON.stringify([group.keywords, subGroups.map(sg => sg.keywords)])
+  React.useEffect(() => {
+    setSections(buildSections())
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupKwKey])
+
+  // Rules — use group metadata.rules or fallback to empty
+  const metaRules = (group.metadata?.rules as any[]) || []
+  const [rules, setRules] = React.useState(
+    metaRules.map(r => ({ ...r, on: r.on ?? true }))
   )
-  const [rules, setRules] = React.useState(RULES.map(r => ({ ...r })))
 
   function removeKw(si: number, ki: number) {
     setSections(prev => {
@@ -458,6 +605,7 @@ function KeywordManagerSection() {
       const kws = [...next[si].keywords]
       kws.splice(ki, 1)
       next[si] = { ...next[si], keywords: kws }
+      onUpdateKeywords(next[si].groupId, kws.map(k => k.text))
       return next
     })
   }
@@ -467,11 +615,9 @@ function KeywordManagerSection() {
       const next = [...prev]
       const val = next[si].inputVal.trim()
       if (val && !next[si].keywords.find(k => k.text === val)) {
-        next[si] = {
-          ...next[si],
-          keywords: [...next[si].keywords, { text: val, hits: 0, auto: false }],
-          inputVal: '',
-        }
+        const newKws = [...next[si].keywords, { text: val, hits: 0, auto: false }]
+        next[si] = { ...next[si], keywords: newKws, inputVal: '' }
+        onUpdateKeywords(next[si].groupId, newKws.map(k => k.text))
       }
       return next
     })
@@ -483,6 +629,7 @@ function KeywordManagerSection() {
       const suggests = next[si].suggests.filter(s => s !== text)
       const keywords = [...next[si].keywords, { text, hits: 0, auto: false }]
       next[si] = { ...next[si], suggests, keywords }
+      onUpdateKeywords(next[si].groupId, keywords.map(k => k.text))
       return next
     })
   }
@@ -506,10 +653,10 @@ function KeywordManagerSection() {
       {/* Keyword sections */}
       <div className="divide-y divide-[var(--color-border-subtle)]">
         {sections.map((section, si) => (
-          <div key={si} className="px-[18px] py-4">
+          <div key={section.groupId} className="px-[18px] py-4">
             <h5 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-3">
               {section.title}
-              <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)]">{section.count}</span>
+              <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)]">{section.keywords.length}</span>
               {section.hint && (
                 <span className="normal-case tracking-normal font-normal text-[11px] text-[var(--color-text-tertiary)]">{section.hint}</span>
               )}
@@ -560,7 +707,7 @@ function KeywordManagerSection() {
                     return next
                   })}
                   onKeyDown={e => e.key === 'Enter' && addKw(si)}
-                  placeholder={section.placeholder}
+                  placeholder="thêm từ khóa…"
                   className="outline-none bg-transparent text-[12px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] w-24"
                 />
                 <span className="font-mono text-[9px] text-[var(--color-text-quaternary)]">Enter</span>
@@ -578,50 +725,54 @@ function KeywordManagerSection() {
           <span className="flex-1" />
           <span className="normal-case font-normal tracking-normal text-[var(--color-text-quaternary)]">áp dụng tự động khi import</span>
         </div>
-        <div className="divide-y divide-[var(--color-border-subtle)]">
-          {rules.map((rule, ri) => (
-            <div key={ri} className="flex items-center gap-3 px-[18px] py-3 flex-wrap">
-              <div className="flex items-center gap-1.5 flex-wrap text-[11px] flex-1 min-w-0">
-                <span className="font-semibold text-[var(--color-text-tertiary)]">Khi</span>
-                {rule.conditions.map((cond, ci) => (
-                  <React.Fragment key={ci}>
-                    {ci > 0 && <span className="text-[var(--color-text-tertiary)]">và</span>}
-                    <span className="font-mono text-[11px] bg-white border border-[var(--color-border-default)] px-1.5 py-0.5 rounded-[5px]">{cond.field}</span>
-                    <span className="text-[var(--color-text-tertiary)]">{cond.op}</span>
-                    <span className={cn(
-                      'font-medium px-2 py-0.5 rounded-lg text-[11px]',
-                      cond.style === 'kw-auto'
-                        ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]'
-                        : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]',
-                    )}>{cond.val}</span>
-                  </React.Fragment>
-                ))}
+        {rules.length > 0 && (
+          <div className="divide-y divide-[var(--color-border-subtle)]">
+            {rules.map((rule: any, ri: number) => (
+              <div key={ri} className="flex items-center gap-3 px-[18px] py-3 flex-wrap">
+                <div className="flex items-center gap-1.5 flex-wrap text-[11px] flex-1 min-w-0">
+                  <span className="font-semibold text-[var(--color-text-tertiary)]">Khi</span>
+                  {(rule.conditions || []).map((cond: any, ci: number) => (
+                    <React.Fragment key={ci}>
+                      {ci > 0 && <span className="text-[var(--color-text-tertiary)]">và</span>}
+                      <span className="font-mono text-[11px] bg-white border border-[var(--color-border-default)] px-1.5 py-0.5 rounded-[5px]">{cond.field}</span>
+                      <span className="text-[var(--color-text-tertiary)]">{cond.op}</span>
+                      <span className={cn(
+                        'font-medium px-2 py-0.5 rounded-lg text-[11px]',
+                        cond.style === 'kw-auto'
+                          ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]'
+                          : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]',
+                      )}>{cond.val}</span>
+                    </React.Fragment>
+                  ))}
+                </div>
+                <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
+                <div className="flex items-center gap-1.5 text-[11px] shrink-0">
+                  {rule.target?.isTag ? (
+                    <span className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] text-[11px]">{rule.target.label}</span>
+                  ) : (
+                    <>
+                      <span className="w-5 h-5 rounded-[5px] flex items-center justify-center text-xs" style={{ background: rule.target?.bg }}>{rule.target?.emoji}</span>
+                      <span className="font-medium text-[var(--color-text-primary)]">{rule.target?.label}</span>
+                    </>
+                  )}
+                  <Toggle on={rule.on} onChange={v => setRules((prev: any[]) => {
+                    const next = [...prev]
+                    next[ri] = { ...next[ri], on: v }
+                    return next
+                  })} />
+                </div>
               </div>
-              <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
-              <div className="flex items-center gap-1.5 text-[11px] shrink-0">
-                {rule.target.isTag ? (
-                  <span className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] text-[11px]">{rule.target.label}</span>
-                ) : (
-                  <>
-                    <span className="w-5 h-5 rounded-[5px] flex items-center justify-center text-xs" style={{ background: rule.target.bg }}>{rule.target.emoji}</span>
-                    <span className="font-medium text-[var(--color-text-primary)]">{rule.target.label}</span>
-                  </>
-                )}
-                <Toggle on={rule.on} onChange={v => setRules(prev => {
-                  const next = [...prev]
-                  next[ri] = { ...next[ri], on: v }
-                  return next
-                })} />
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
         <div className="flex items-center gap-2 px-[18px] py-[10px]">
           <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors">
             <Plus className="w-3 h-3" /> Thêm quy tắc
           </button>
           <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-transparent text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
-            Chạy thử trên giao dịch chưa khớp (9)
+            Chạy thử trên giao dịch chưa khớp ({
+              transactions.filter(t => t.categoryId === group.id && (t.status === 'pending' || !t.isReconciled)).length
+            })
           </button>
         </div>
       </div>
@@ -630,19 +781,48 @@ function KeywordManagerSection() {
 }
 
 // ── Recent transactions ──────────────────────────────────────
-function RecentTransactions() {
+function RecentTransactions({
+  group,
+  subGroups,
+  groupTxns,
+}: {
+  group: Group
+  subGroups: Group[]
+  groupTxns: Transaction[]
+}) {
   const [txTab, setTxTab] = React.useState<'all' | 'auto' | 'review'>('all')
   const TX_TABS = [
     { value: 'all',    label: 'Tất cả' },
     { value: 'auto',   label: 'Tự động' },
-    { value: 'review', label: 'Cần xem lại', badge: 3 },
+    { value: 'review', label: 'Cần xem lại', badge: groupTxns.filter(t => t.status === 'pending' || !t.isReconciled).length },
   ] as const
+
+  const displayTxns = groupTxns.slice(0, 7)
+
+  function txEmoji(t: Transaction): string {
+    // Use sub-group emoji if categoryId matches a sub-group
+    const sg = subGroups.find(s => s.id === t.categoryId)
+    if (sg?.emoji) return sg.emoji
+    return group.emoji || '💳'
+  }
+
+  function txAvatarBg(t: Transaction): string {
+    const sg = subGroups.find(s => s.id === t.categoryId)
+    if (sg?.color) return sg.color + '22'
+    return (group.color || '#6366f1') + '22'
+  }
+
+  function txKwMatch(t: Transaction): string | undefined {
+    const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
+    const allKws = [...(group.keywords || []), ...subGroups.flatMap(sg => sg.keywords || [])]
+    return allKws.find(kw => haystack.includes(kw.toLowerCase()))
+  }
 
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-[var(--color-border-subtle)] flex-wrap">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Hoạt động gần đây</h3>
-        <span className="text-[12px] text-[var(--color-text-tertiary)]">· 18 giao dịch</span>
+        <span className="text-[12px] text-[var(--color-text-tertiary)]">· {groupTxns.length} giao dịch</span>
         <span className="flex-1" />
         <div className="inline-flex bg-[var(--color-bg-sunken)] rounded-[7px] p-0.5">
           {TX_TABS.map(tab => (
@@ -655,7 +835,7 @@ function RecentTransactions() {
               )}
             >
               {tab.label}
-              {'badge' in tab && (
+              {'badge' in tab && tab.badge > 0 && (
                 <span className="font-mono text-[9px] bg-[var(--color-loss-50)] text-[var(--color-loss-600)] px-1 rounded">
                   {tab.badge}
                 </span>
@@ -666,29 +846,44 @@ function RecentTransactions() {
       </div>
 
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {TRANSACTIONS.map((tx, i) => (
-          <div key={i} className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors" style={{ gridTemplateColumns: '32px 1fr auto auto' }}>
-            <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0" style={{ background: tx.avatarBg }}>{tx.avatar}</div>
-            <div className="min-w-0">
-              <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{tx.desc}</div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 truncate">{tx.meta}</div>
-            </div>
-            {tx.review ? (
-              <span className="text-[10px] font-medium px-[7px] py-[2px] rounded-full bg-[var(--color-warning-50)] text-[var(--color-warning-600)] shrink-0">cần xem lại</span>
-            ) : (
-              <span className="text-[11px] font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2 py-0.5 rounded-md shrink-0">
-                khớp "{tx.kwMatch}"
-              </span>
-            )}
-            <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)] shrink-0">
-              −{fmtVND(Math.abs(tx.amount))} ₫
-            </span>
+        {displayTxns.length === 0 ? (
+          <div className="px-[18px] py-6 text-[12px] text-[var(--color-text-tertiary)] text-center">
+            Chưa có giao dịch nào
           </div>
-        ))}
+        ) : displayTxns.map((tx, i) => {
+          const review = tx.status === 'pending' || !tx.isReconciled
+          const kwMatch = txKwMatch(tx)
+          const desc = tx.merchantName || tx.description || '—'
+          const meta = new Date(tx.transactionDate).toLocaleDateString('vi-VN') + ' · ' + tx.currencyCode
+          const avatar = txEmoji(tx)
+          const avatarBg = txAvatarBg(tx)
+
+          return (
+            <div key={tx.id} className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors" style={{ gridTemplateColumns: '32px 1fr auto auto' }}>
+              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0" style={{ background: avatarBg }}>{avatar}</div>
+              <div className="min-w-0">
+                <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{desc}</div>
+                <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 truncate">{meta}</div>
+              </div>
+              {review ? (
+                <span className="text-[10px] font-medium px-[7px] py-[2px] rounded-full bg-[var(--color-warning-50)] text-[var(--color-warning-600)] shrink-0">cần xem lại</span>
+              ) : kwMatch ? (
+                <span className="text-[11px] font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2 py-0.5 rounded-md shrink-0">
+                  khớp "{kwMatch}"
+                </span>
+              ) : (
+                <span className="text-[11px] font-medium text-[var(--color-text-quaternary)] shrink-0">tự động</span>
+              )}
+              <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)] shrink-0">
+                −{fmtVND(Math.abs(tx.amount))} ₫
+              </span>
+            </div>
+          )
+        })}
       </div>
 
       <div className="flex items-center px-[18px] py-3 border-t border-[var(--color-border-subtle)]">
-        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị 7 / 18</span>
+        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị {Math.min(7, groupTxns.length)} / {groupTxns.length}</span>
         <span className="flex-1" />
         <button className="text-xs font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--color-bg-sunken)]">
           Xem tất cả →
@@ -699,7 +894,20 @@ function RecentTransactions() {
 }
 
 // ── Settle-up section ────────────────────────────────────────
-function SettleUpSection() {
+function SettleUpSection({
+  group,
+  groupTxns,
+  members,
+}: {
+  group: Group
+  groupTxns: Transaction[]
+  members: LedgerMember[]
+}) {
+  const totalExpense = groupTxns
+    .filter(t => t.transactionType === 'expense')
+    .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  // Simplified: show a summary message since we don't have per-member breakdown
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       {/* Gradient header */}
@@ -711,8 +919,10 @@ function SettleUpSection() {
           <ArrowRight className="w-4 h-4" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="text-[13px] font-semibold tracking-[-0.005em]">Đối soát chỉ với 3 lệnh</div>
-          <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">18 giao dịch → 3 đường thanh toán tối ưu</div>
+          <div className="text-[13px] font-semibold tracking-[-0.005em]">Đối soát chi tiêu nhóm</div>
+          <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
+            {groupTxns.length} giao dịch · tổng {fmtVND(totalExpense)} ₫
+          </div>
         </div>
         <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
           Đối soát
@@ -720,54 +930,89 @@ function SettleUpSection() {
       </div>
 
       <div className="p-[14px_18px] flex flex-col gap-2">
-        {SETTLE_UP.map((s, i) => (
-          <div key={i} className="grid items-center gap-2 p-2 border border-dashed border-[var(--color-border-default)] rounded-[9px] bg-[var(--color-bg-canvas)] text-[11px]" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
-            <div className="flex items-center gap-1.5">
-              <span className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: s.from.bg, color: s.from.color }}>{s.from.initials}</span>
-              {s.from.name}
-            </div>
-            <span className="font-semibold font-tabular text-center">→ {s.amount}</span>
-            <div className="flex items-center gap-1.5 justify-end">
-              {s.to.name}
-              <span className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: s.to.bg, color: s.to.color }}>{s.to.initials}</span>
-            </div>
+        {members.length === 0 ? (
+          <div className="text-[12px] text-[var(--color-text-tertiary)] py-2 text-center">
+            Chưa có dữ liệu thành viên để tính toán
           </div>
-        ))}
+        ) : members.slice(0, 3).map((m, i) => {
+          const { bg, color } = memberColor(i)
+          const initials = memberInitials(m.profile?.full_name)
+          const shareAmount = members.length > 0 ? Math.round(totalExpense / members.length) : 0
+
+          return (
+            <div key={m.id} className="grid items-center gap-2 p-2 border border-dashed border-[var(--color-border-default)] rounded-[9px] bg-[var(--color-bg-canvas)] text-[11px]" style={{ gridTemplateColumns: '1fr auto 1fr' }}>
+              <div className="flex items-center gap-1.5">
+                <span className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: bg, color }}>{initials}</span>
+                {m.profile?.full_name || m.user_id.slice(0, 8)}
+              </div>
+              <span className="font-semibold font-tabular text-center">→ {fmtVND(shareAmount)} ₫</span>
+              <div className="flex items-center gap-1.5 justify-end text-[var(--color-text-tertiary)]">
+                phần bằng nhau
+              </div>
+            </div>
+          )
+        })}
       </div>
     </section>
   )
 }
 
 // ── Balances section ─────────────────────────────────────────
-function BalancesSection() {
+function BalancesSection({
+  group,
+  members,
+  balance,
+}: {
+  group: Group
+  members: LedgerMember[]
+  balance: GroupBalance | undefined
+}) {
+  const shareAmount = balance && members.length > 0
+    ? Math.round(balance.net_balance / members.length)
+    : 0
+
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       <div className="flex items-center gap-2 px-[18px] py-[14px] border-b border-[var(--color-border-subtle)]">
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Số dư từng người</h3>
         <span className="flex-1" />
-        <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">5p trước</span>
+        <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{members.length} thành viên</span>
       </div>
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {GROUP.members.map(m => (
-          <div key={m.initials} className="flex items-center gap-3 px-[18px] py-[10px] hover:bg-[var(--color-bg-sunken)] transition-colors">
-            <div
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
-              style={{ background: m.bg, color: m.color }}
-            >{m.initials}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium text-[var(--color-text-primary)]">{m.name}</div>
-              <div className={cn('text-[11px] font-mono mt-0.5', m.balance < 0 ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>
-                đã trả {fmtVND(m.paid)} ₫
+        {members.length === 0 ? (
+          <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">
+            Chưa có thành viên
+          </div>
+        ) : members.map((m, i) => {
+          const { bg, color } = memberColor(i)
+          const initials = memberInitials(m.profile?.full_name)
+          const displayName = m.profile?.full_name || m.user_id.slice(0, 12)
+          const isOwner = m.role === 'owner'
+          const memberBalance = shareAmount
+          return (
+            <div key={m.id} className="flex items-center gap-3 px-[18px] py-[10px] hover:bg-[var(--color-bg-sunken)] transition-colors">
+              <div
+                className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0"
+                style={{ background: bg, color }}
+              >{initials}</div>
+              <div className="flex-1 min-w-0">
+                <div className="text-[13px] font-medium text-[var(--color-text-primary)]">
+                  {displayName}
+                  {isOwner && <span className="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)]">chủ nhóm</span>}
+                </div>
+                <div className="text-[11px] font-mono mt-0.5 text-[var(--color-text-tertiary)]">
+                  {m.role}
+                </div>
+              </div>
+              <div className={cn(
+                'text-[13px] font-semibold font-tabular shrink-0',
+                memberBalance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
+              )}>
+                {memberBalance >= 0 ? '+' : '−'}{fmtVND(Math.abs(memberBalance))} ₫
               </div>
             </div>
-            <div className={cn(
-              'text-[13px] font-semibold font-tabular shrink-0',
-              m.balance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
-            )}>
-              {m.balance >= 0 ? '+' : '−'}{fmtVND(Math.abs(m.balance))} ₫
-            </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </section>
   )
@@ -779,13 +1024,61 @@ function BalancesSection() {
 export function GroupDetailView({ groupId }: { groupId: string }) {
   const [activeTab, setActiveTab] = React.useState<DetailTab>('overview')
 
+  const { groups, balances, fetchGroups, isLoading, updateGroup } = useGroupStore()
+  const { transactions, syncTransactions } = useTransactionsStore()
+  const { currentLedger } = useLedgerStore()
+  const { members, fetchMembers } = useUserManagementStore()
+
+  React.useEffect(() => {
+    if (currentLedger?.id) {
+      fetchGroups(currentLedger.id)
+      syncTransactions(500)
+      fetchMembers(currentLedger.id)
+    }
+  }, [currentLedger?.id])
+
+  // Derived
+  const group = groups.find(g => g.id === groupId)
+  const subGroups = groups.filter(g => g.parent_id === groupId)
+  const groupTxns = transactions
+    .filter(t => t.categoryId === groupId)
+    .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate))
+  const balance = balances.find(b => b.group_id === groupId)
+
+  const totalKeywords =
+    (group?.keywords?.length ?? 0) +
+    subGroups.reduce((s, sg) => s + (sg.keywords?.length ?? 0), 0)
+
+  function handleUpdateKeywords(gid: string, keywords: string[]) {
+    updateGroup(gid, { keywords })
+  }
+
+  // Loading / not found
+  if (isLoading || !group) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        {isLoading
+          ? <Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-tertiary)]" />
+          : <div className="text-sm text-[var(--color-text-tertiary)]">Không tìm thấy nhóm</div>
+        }
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-4 animate-fade-in pb-10">
       {/* ── Hero card ── */}
       <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-        <HeroCover />
-        <TabBar active={activeTab} onChange={setActiveTab} />
-        <StatsStrip />
+        <HeroCover group={group} members={members} />
+        <TabBar
+          active={activeTab}
+          onChange={setActiveTab}
+          subGroupsCount={subGroups.length}
+          keywordsCount={totalKeywords}
+          transactionsCount={groupTxns.length}
+          membersCount={members.length}
+        />
+        <StatsStrip group={group} groupTxns={groupTxns} members={members} />
       </div>
 
       {/* ── Tab content ── */}
@@ -793,19 +1086,30 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
         <>
           {/* Row 1: Sub-groups + Linked accounts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2"><SubGroupsSection /></div>
-            <div><LinkedAccountsSection /></div>
+            <div className="lg:col-span-2">
+              <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} />
+            </div>
+            <div>
+              <LinkedAccountsSection groupTxns={groupTxns} />
+            </div>
           </div>
 
           {/* Keyword manager */}
-          <KeywordManagerSection />
+          <KeywordManagerSection
+            group={group}
+            subGroups={subGroups}
+            transactions={transactions}
+            onUpdateKeywords={handleUpdateKeywords}
+          />
 
           {/* Row 2: Recent transactions + Settle-up + Balances */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2"><RecentTransactions /></div>
+            <div className="lg:col-span-2">
+              <RecentTransactions group={group} subGroups={subGroups} groupTxns={groupTxns} />
+            </div>
             <div className="flex flex-col gap-4">
-              <SettleUpSection />
-              <BalancesSection />
+              <SettleUpSection group={group} groupTxns={groupTxns} members={members} />
+              <BalancesSection group={group} members={members} balance={balance} />
             </div>
           </div>
         </>
@@ -813,28 +1117,41 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
 
       {activeTab === 'subgroups' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2"><SubGroupsSection /></div>
+          <div className="lg:col-span-2">
+            <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} />
+          </div>
         </div>
       )}
 
-      {activeTab === 'keywords' && <KeywordManagerSection />}
+      {activeTab === 'keywords' && (
+        <KeywordManagerSection
+          group={group}
+          subGroups={subGroups}
+          transactions={transactions}
+          onUpdateKeywords={handleUpdateKeywords}
+        />
+      )}
 
       {activeTab === 'transactions' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2"><RecentTransactions /></div>
+          <div className="lg:col-span-2">
+            <RecentTransactions group={group} subGroups={subGroups} groupTxns={groupTxns} />
+          </div>
         </div>
       )}
 
       {activeTab === 'balances' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2"><SettleUpSection /></div>
-          <BalancesSection />
+          <div className="lg:col-span-2">
+            <SettleUpSection group={group} groupTxns={groupTxns} members={members} />
+          </div>
+          <BalancesSection group={group} members={members} balance={balance} />
         </div>
       )}
 
       {activeTab === 'members' && (
         <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-          <BalancesSection />
+          <BalancesSection group={group} members={members} balance={balance} />
         </div>
       )}
 
