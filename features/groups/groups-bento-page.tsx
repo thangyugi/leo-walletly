@@ -13,17 +13,20 @@ import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
 import {
   Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
-  Shield, BarChart3, TrendingDown, Filter,
+  Shield, BarChart3, TrendingDown, Filter, Search,
   LayoutGrid, ChevronUp, Check, X, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { CURRENCY_META } from '@/lib/money'
 
 /* ─────────────────────────────────────────────────────────────
-   Helpers
+   Currency context — provides fmt(n) + sym to all sub-components
 ───────────────────────────────────────────────────────────── */
-function fmtVND(n: number) {
-  return Math.round(n).toLocaleString('vi-VN')
-}
+const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string; currency: string }>({
+  fmt: (n) => Math.round(n).toLocaleString('ja-JP'),
+  sym: '¥',
+  currency: 'JPY',
+})
 
 function currentYearMonth() {
   const now = new Date()
@@ -105,6 +108,7 @@ function FeaturedCard({
   expense: number
   budget: number
 }) {
+  const { fmt, sym, currency } = React.useContext(FmtCtx)
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const remaining = budget - expense
   const glyph = groupGlyph(group.name)
@@ -138,7 +142,7 @@ function FeaturedCard({
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
             <span>{group.emoji} {typeLabel(group.type)}</span>
             <span className="opacity-50">·</span>
-            <span>VND</span>
+            <span>{currency}</span>
           </div>
           <h3 className="text-[22px] font-semibold tracking-[-0.025em] mt-1 leading-tight">{group.name}</h3>
         </div>
@@ -151,7 +155,7 @@ function FeaturedCard({
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Tổng chi tiêu</div>
             <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-0.5 leading-tight">
-              {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
+              {fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> {sym}</span>
             </div>
           </div>
           {budget > 0 && (
@@ -160,8 +164,8 @@ function FeaturedCard({
                 <div className="h-full bg-[var(--color-gain-500)] rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
               </div>
               <div className="flex items-center justify-between mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-                <span>Ngân sách <b className="text-[var(--color-text-secondary)]">{fmtVND(budget)} ₫</b></span>
-                <span><b className="text-[var(--color-text-secondary)]">{pct}%</b> · còn {fmtVND(remaining)} ₫</span>
+                <span>Ngân sách <b className="text-[var(--color-text-secondary)]">{fmt(budget)} {sym}</b></span>
+                <span><b className="text-[var(--color-text-secondary)]">{pct}%</b> · còn {fmt(remaining)} {sym}</span>
               </div>
             </div>
           )}
@@ -205,6 +209,7 @@ function DarkStatCard({
   total?: number
   topGroups?: { name: string; expense: number }[]
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const isV1 = variant === 1
   const pct = total && total > 0 ? Math.round(((classified ?? 0) / total) * 100) : 0
   const unclassified = (total ?? 0) - (classified ?? 0)
@@ -258,7 +263,7 @@ function DarkStatCard({
           {topGroups && topGroups[0] && (
             <div className="flex items-center gap-1 text-[11px] font-medium mt-1 text-[var(--color-loss-400)]">
               <ChevronDown className="w-3 h-3" />
-              {fmtVND(topGroups[0].expense)} ₫
+              {fmt(topGroups[0].expense)} {sym}
             </div>
           )}
           <hr className="border-white/10 my-3" />
@@ -267,7 +272,7 @@ function DarkStatCard({
               <div key={g.name} className="flex items-center">
                 <span className="truncate">{g.name}</span>
                 <span className="flex-1" />
-                <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmtVND(g.expense)} ₫</span>
+                <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmt(g.expense)} {sym}</span>
               </div>
             ))}
             {(!topGroups || topGroups.length <= 1) && (
@@ -290,13 +295,14 @@ function GroupCard({
   expense: number
   txCount: number
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const budget = group.budget_limit || 0
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const barClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
   const iconBg = `${group.color}22`
   const meta = typeLabel(group.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
   const progressLabel = budget > 0 ? `${pct}% ngân sách` : `${txCount} giao dịch`
-  const progressRight = budget > 0 ? `còn ${fmtVND(budget - expense)} ₫` : ''
+  const progressRight = budget > 0 ? `còn ${fmt(budget - expense)} ${sym}` : ''
   const isOver = pct > 100
 
   return (
@@ -324,7 +330,7 @@ function GroupCard({
           "text-[18px] font-semibold font-tabular tracking-[-0.022em]",
           isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]'
         )}>
-          {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
+          {fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> {sym}</span>
         </div>
         <div className="flex items-center justify-between text-[11px] mt-1.5">
           <span className={cn(
@@ -496,10 +502,20 @@ function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
 export function GroupsBentoPage() {
   const [activeTab, setActiveTab]   = React.useState('all')
   const [isFormOpen, setIsFormOpen] = React.useState(false)
+  const [search, setSearch]         = React.useState('')
   const { lang } = useSettingsStore()
   const { currentLedger } = useLedgerStore()
   const { groups, balances, isLoading, fetchGroups } = useGroupStore()
   const { transactions, syncTransactions } = useTransactionsStore()
+
+  // ── Currency formatting ───────────────────────────────────
+  const currency = (currentLedger?.base_currency ?? 'JPY') as string
+  const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
+  const fmt = React.useCallback(
+    (n: number) => Math.round(n).toLocaleString(currMeta.locale),
+    [currMeta.locale],
+  )
+  const sym = currMeta.symbol
 
   // ── Fetch data on mount ──────────────────────────────────
   React.useEffect(() => {
@@ -547,15 +563,15 @@ export function GroupsBentoPage() {
   const kpiData = [
     {
       label: 'Chi tiêu tháng này',
-      value: fmtVND(totalExpense),
-      unit: '₫',
+      value: fmt(totalExpense),
+      unit: sym,
       sub: `${groups.filter((g: Group) => g.is_active).length} nhóm đang hoạt động`,
       subLoss: false,
     },
     {
       label: 'Ngân sách còn lại',
-      value: fmtVND(Math.max(0, totalBudget - totalExpense)),
-      unit: '₫',
+      value: fmt(Math.max(0, totalBudget - totalExpense)),
+      unit: sym,
       sub: totalBudget > 0
         ? `${Math.round(((totalBudget - totalExpense) / totalBudget) * 100)}% ngân sách còn lại`
         : 'Chưa đặt ngân sách',
@@ -684,8 +700,59 @@ export function GroupsBentoPage() {
     )
   }
 
+  // ── Search filter ────────────────────────────────────────
+  const searchedGroups = React.useMemo(() => {
+    if (!search.trim()) return regularGroups
+    const q = search.toLowerCase()
+    return regularGroups.filter((g: Group) =>
+      g.name.toLowerCase().includes(q) ||
+      g.type.toLowerCase().includes(q) ||
+      (g.keywords ?? []).some((kw: string) => kw.toLowerCase().includes(q))
+    )
+  }, [regularGroups, search])
+
   return (
+    <FmtCtx.Provider value={{ fmt, sym, currency }}>
     <div className="space-y-4 animate-fade-in">
+
+      {/* ── Page header ── */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <div>
+          <h1 className="text-[18px] font-semibold tracking-[-0.025em] text-[var(--color-text-primary)]">
+            Quản lý nhóm
+          </h1>
+          <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">
+            {currentLedger?.name ?? '—'} · {currency}
+          </p>
+        </div>
+        <span className="flex-1" />
+        {/* Search */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Tìm kiếm nhóm…"
+            className={cn(
+              'pl-8 pr-3 h-9 w-52 rounded-lg border text-sm',
+              'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
+              'placeholder:text-[var(--color-text-placeholder)]',
+              'border-[var(--color-border-default)] focus:border-[var(--color-border-focus)]',
+              'focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors',
+            )}
+          />
+        </div>
+        {/* Create button */}
+        <button
+          onClick={() => setIsFormOpen(true)}
+          className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          Tạo nhóm mới
+        </button>
+      </div>
+
       {/* ── KPI strip ── */}
       <section className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
         {kpiData.map((kpi, i) => (
@@ -784,7 +851,7 @@ export function GroupsBentoPage() {
         />
 
         {/* 4. Regular group cards */}
-        {regularGroups.slice(0, 2).map((g: Group) => (
+        {searchedGroups.slice(0, 2).map((g: Group) => (
           <GroupCard
             key={g.id}
             group={g}
@@ -797,7 +864,7 @@ export function GroupsBentoPage() {
         <SmartClassifyCard pendingTxns={pendingTxns} groups={groups} />
 
         {/* 6. More group cards */}
-        {regularGroups.slice(2, 5).map((g: Group) => (
+        {searchedGroups.slice(2, 5).map((g: Group) => (
           <GroupCard
             key={g.id}
             group={g}
@@ -844,5 +911,6 @@ export function GroupsBentoPage() {
         </div>
       </Modal>
     </div>
+    </FmtCtx.Provider>
   )
 }

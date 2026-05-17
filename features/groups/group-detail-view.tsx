@@ -14,13 +14,15 @@ import { useUserManagementStore } from '@/features/user-management/store'
 import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
 import type { LedgerMember } from '@/features/user-management/types'
+import { CURRENCY_META } from '@/lib/money'
 
 /* ─────────────────────────────────────────────────────────────
-   Helpers
+   Currency context
 ───────────────────────────────────────────────────────────── */
-function fmtVND(n: number) {
-  return n.toLocaleString('vi-VN')
-}
+const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string }>({
+  fmt: (n) => Math.round(n).toLocaleString('ja-JP'),
+  sym: '¥',
+})
 
 function groupGlyph(name: string): string {
   return (name || '')
@@ -73,12 +75,13 @@ function HeroCover({
   group: Group
   members: LedgerMember[]
 }) {
+  const { sym: heroCurrency } = React.useContext(FmtCtx)
   const gradient = `linear-gradient(135deg,${group.color}ee 0%,${group.color}88 100%)`
   const glyph = groupGlyph(group.name)
 
   const subParts = [
     members.length > 0 ? `${members.length} thành viên` : null,
-    'VND',
+    heroCurrency,
     group.is_active ? 'Đang hoạt động' : 'Không hoạt động',
   ].filter(Boolean)
 
@@ -227,6 +230,7 @@ function StatsStrip({
   groupTxns: Transaction[]
   members: LedgerMember[]
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const totalExpense = groupTxns
     .filter(t => t.transactionType === 'expense')
     .reduce((s, t) => s + Math.abs(t.amount), 0)
@@ -245,34 +249,34 @@ function StatsStrip({
   const STATS = [
     {
       label: 'Tổng chi tiêu',
-      value: fmtVND(totalExpense),
-      unit: ' ₫',
+      value: fmt(totalExpense),
+      unit: ` ${sym}`,
       sub: `${groupTxns.length} giao dịch`,
       subBrand: false,
       subLoss: false,
     },
     {
       label: 'Ngân sách',
-      value: group.budget_limit > 0 ? fmtVND(group.budget_limit) : '—',
-      unit: group.budget_limit > 0 ? ' ₫' : '',
+      value: group.budget_limit > 0 ? fmt(group.budget_limit) : '—',
+      unit: group.budget_limit > 0 ? ` ${sym}` : '',
       sub: group.budget_limit > 0
-        ? `${budgetPct}% · còn ${fmtVND(budgetRemaining)} ₫`
+        ? `${budgetPct}% · còn ${fmt(budgetRemaining)} ${sym}`
         : 'Chưa đặt ngân sách',
       subBrand: group.budget_limit > 0,
       subLoss: false,
     },
     {
       label: 'Trung bình / người',
-      value: fmtVND(Math.round(avgPerPerson)),
-      unit: ' ₫',
+      value: fmt(Math.round(avgPerPerson)),
+      unit: ` ${sym}`,
       sub: `${members.length} thành viên · chia đều`,
       subBrand: false,
       subLoss: false,
     },
     {
       label: 'Bạn đã trả',
-      value: fmtVND(totalExpense),
-      unit: ' ₫',
+      value: fmt(totalExpense),
+      unit: ` ${sym}`,
       sub: 'Tổng nhóm',
       subBrand: false,
       subLoss: false,
@@ -324,6 +328,7 @@ function SubGroupsSection({
   subGroups: Group[]
   transactions: Transaction[]
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const [sortTab, setSortTab] = React.useState<'spend' | 'name'>('spend')
   const BAR_COLORS: Record<string, string> = { ok: 'bg-[var(--color-gain-500)]', warn: 'bg-[var(--color-warning-500)]' }
 
@@ -389,7 +394,7 @@ function SubGroupsSection({
               <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{count}</span>
             </div>
             <div className="text-[13px] font-semibold font-tabular tracking-[-0.01em]">
-              {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> ₫ · {pct}%</span>
+              {fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> {sym} · {pct}%</span>
             </div>
             <div className="h-[3px] bg-[var(--color-bg-sunken)] rounded-full mt-1.5 overflow-hidden">
               <div
@@ -398,7 +403,7 @@ function SubGroupsSection({
               />
             </div>
             <div className="flex items-center justify-between mt-1 text-[10px] text-[var(--color-text-tertiary)] font-tabular">
-              <span>NS {sg.budget_limit > 0 ? fmtVND(sg.budget_limit) + ' ₫' : '—'}</span>
+              <span>NS {sg.budget_limit > 0 ? fmt(sg.budget_limit) + ' ' + sym : '—'}</span>
               <span>{barPct}%</span>
             </div>
           </div>
@@ -414,6 +419,7 @@ function SubGroupsSection({
 
 // ── Linked accounts section ──────────────────────────────────
 function LinkedAccountsSection({ groupTxns }: { groupTxns: Transaction[] }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   // Group by source
   const sourceMap: Record<string, { total: number; count: number }> = {}
   for (const t of groupTxns) {
@@ -464,7 +470,7 @@ function LinkedAccountsSection({ groupTxns }: { groupTxns: Transaction[] }) {
             </div>
             <div className="text-right shrink-0">
               <div className="text-[10px] text-[var(--color-text-quaternary)]">đã chi</div>
-              <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">{fmtVND(acc.amount)} ₫</div>
+              <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">{fmt(acc.amount)} {sym}</div>
             </div>
           </div>
         ))}
@@ -790,6 +796,7 @@ function RecentTransactions({
   subGroups: Group[]
   groupTxns: Transaction[]
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const [txTab, setTxTab] = React.useState<'all' | 'auto' | 'review'>('all')
   const TX_TABS = [
     { value: 'all',    label: 'Tất cả' },
@@ -875,7 +882,7 @@ function RecentTransactions({
                 <span className="text-[11px] font-medium text-[var(--color-text-quaternary)] shrink-0">tự động</span>
               )}
               <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)] shrink-0">
-                −{fmtVND(Math.abs(tx.amount))} ₫
+                −{fmt(Math.abs(tx.amount))} {sym}
               </span>
             </div>
           )
@@ -903,6 +910,7 @@ function SettleUpSection({
   groupTxns: Transaction[]
   members: LedgerMember[]
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const totalExpense = groupTxns
     .filter(t => t.transactionType === 'expense')
     .reduce((s, t) => s + Math.abs(t.amount), 0)
@@ -921,7 +929,7 @@ function SettleUpSection({
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-semibold tracking-[-0.005em]">Đối soát chi tiêu nhóm</div>
           <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
-            {groupTxns.length} giao dịch · tổng {fmtVND(totalExpense)} ₫
+            {groupTxns.length} giao dịch · tổng {fmt(totalExpense)} {sym}
           </div>
         </div>
         <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
@@ -945,7 +953,7 @@ function SettleUpSection({
                 <span className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: bg, color }}>{initials}</span>
                 {m.profile?.full_name || m.user_id.slice(0, 8)}
               </div>
-              <span className="font-semibold font-tabular text-center">→ {fmtVND(shareAmount)} ₫</span>
+              <span className="font-semibold font-tabular text-center">→ {fmt(shareAmount)} {sym}</span>
               <div className="flex items-center gap-1.5 justify-end text-[var(--color-text-tertiary)]">
                 phần bằng nhau
               </div>
@@ -967,6 +975,7 @@ function BalancesSection({
   members: LedgerMember[]
   balance: GroupBalance | undefined
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const shareAmount = balance && members.length > 0
     ? Math.round(balance.net_balance / members.length)
     : 0
@@ -1008,7 +1017,7 @@ function BalancesSection({
                 'text-[13px] font-semibold font-tabular shrink-0',
                 memberBalance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
               )}>
-                {memberBalance >= 0 ? '+' : '−'}{fmtVND(Math.abs(memberBalance))} ₫
+                {memberBalance >= 0 ? '+' : '−'}{fmt(Math.abs(memberBalance))} {sym}
               </div>
             </div>
           )
@@ -1028,6 +1037,15 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
   const { transactions, syncTransactions } = useTransactionsStore()
   const { currentLedger } = useLedgerStore()
   const { members, fetchMembers } = useUserManagementStore()
+
+  // ── Currency formatting ───────────────────────────────────
+  const currency = (currentLedger?.base_currency ?? 'JPY') as string
+  const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
+  const fmt = React.useCallback(
+    (n: number) => Math.round(n).toLocaleString(currMeta.locale),
+    [currMeta.locale],
+  )
+  const sym = currMeta.symbol
 
   React.useEffect(() => {
     if (currentLedger?.id) {
@@ -1066,6 +1084,7 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
   }
 
   return (
+    <FmtCtx.Provider value={{ fmt, sym }}>
     <div className="space-y-4 animate-fade-in pb-10">
       {/* ── Hero card ── */}
       <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
@@ -1161,5 +1180,6 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
         </div>
       )}
     </div>
+    </FmtCtx.Provider>
   )
 }
