@@ -673,6 +673,17 @@ export function GroupsBentoPage() {
     [transactions],
   )
 
+  // ── Search filter (must be before early returns — Rules of Hooks) ──
+  const searchedGroups = React.useMemo(() => {
+    if (!search.trim()) return regularGroups
+    const q = search.toLowerCase()
+    return regularGroups.filter((g: Group) =>
+      g.name.toLowerCase().includes(q) ||
+      g.type.toLowerCase().includes(q) ||
+      (g.keywords ?? []).some((kw: string) => kw.toLowerCase().includes(q))
+    )
+  }, [regularGroups, search])
+
   // ── Loading state ─────────────────────────────────────────
   if (isLoading) {
     return (
@@ -699,17 +710,6 @@ export function GroupsBentoPage() {
       </div>
     )
   }
-
-  // ── Search filter ────────────────────────────────────────
-  const searchedGroups = React.useMemo(() => {
-    if (!search.trim()) return regularGroups
-    const q = search.toLowerCase()
-    return regularGroups.filter((g: Group) =>
-      g.name.toLowerCase().includes(q) ||
-      g.type.toLowerCase().includes(q) ||
-      (g.keywords ?? []).some((kw: string) => kw.toLowerCase().includes(q))
-    )
-  }, [regularGroups, search])
 
   return (
     <FmtCtx.Provider value={{ fmt, sym, currency }}>
