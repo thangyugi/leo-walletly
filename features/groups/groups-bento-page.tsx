@@ -8,10 +8,13 @@ import { GroupForm } from './group-form'
 import { useGroupStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useSettingsStore } from '@/stores/settings'
+import { useTransactionsStore } from '@/stores/transactions'
+import type { Group, GroupBalance } from './types'
+import type { Transaction } from '@/types'
 import {
   Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
   Shield, BarChart3, TrendingDown, Filter,
-  LayoutGrid, ChevronUp, Check, X,
+  LayoutGrid, ChevronUp, Check, X, Loader2,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -19,153 +22,44 @@ import { cn } from '@/lib/utils'
    Helpers
 ───────────────────────────────────────────────────────────── */
 function fmtVND(n: number) {
-  return n.toLocaleString('vi-VN')
+  return Math.round(n).toLocaleString('vi-VN')
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Static mock data (mirrors design exactly)
-───────────────────────────────────────────────────────────── */
-const MOCK_KPI = [
-  { label: 'Chi tiêu tháng này',  value: '18.420.000', unit: '₫',          sub: '+12% so với T4 · 8 nhóm',               subLoss: true },
-  { label: 'Ngân sách còn lại',   value: '6.580.000',  unit: '₫',          sub: '26% · còn 13 ngày trong tháng',          subLoss: false },
-  { label: 'Tự động phân loại',   value: '94',          unit: '%',          sub: '128 / 137 giao dịch · 47 từ khóa',      subLoss: false },
-  { label: 'Chờ đối soát',        value: '3',           unit: ' giao dịch', sub: 'Linh, Hùng · −420.000 ₫ tổng',          subLoss: false },
-]
-
-const FILTER_TABS = [
-  { value: 'all',      label: 'Tất cả',         count: 8 },
-  { value: 'active',   label: 'Đang hoạt động', count: 5 },
-  { value: 'shared',   label: 'Chia sẻ',        count: 4 },
-  { value: 'recurring',label: 'Định kỳ',        count: 2 },
-  { value: 'archived', label: 'Lưu trữ',        count: 3 },
-]
-
-const MOCK_FEATURED = {
-  id: 'travel-dalat',
-  name: 'Du lịch Đà Lạt 2026',
-  emoji: '🌲',
-  glyph: 'DL',
-  status: 'Đang hoạt động',
-  daysActive: 4,
-  meta: '5 thành viên · VND · Chia đều mặc định',
-  totalExpense: 12_840_000,
-  budget: 20_000_000,
-  pct: 64,
-  remaining: 7_160_000,
-  gradient: 'linear-gradient(135deg,#0f766e 0%,#10b981 60%,#34d399 130%)',
-  accounts: [
-    { label: 'VCB ••8821',  color: '#10b981' },
-    { label: 'MoMo ••5573', color: '#7c3aed' },
-  ],
-  subGroups: [
-    { emoji: '🍜', bg: '#fef3c7', name: 'Ăn uống',    amount: 4_820_000 },
-    { emoji: '🏨', bg: '#dbeafe', name: 'Lưu trú',    amount: 4_200_000 },
-    { emoji: '🚃', bg: '#fee2e2', name: 'Di chuyển',  amount: 2_118_000 },
-  ],
-  extraCount: 2,
-  extraAmount: 1_702_000,
+function currentYearMonth() {
+  const now = new Date()
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-const MOCK_GROUPS = [
-  {
-    id: 'chung-cu',
-    emoji: '🏠', iconBg: '#f3e8ff',
-    name: 'Chung cư Eco · tiền nhà',
-    meta: 'Định kỳ · ngày 5 hàng tháng',
-    amount: 2_833_000,
-    amountColor: 'normal',
-    progressLabel: 'Đã thu 100%',
-    progressRight: '3 / 3 thành viên',
-    pct: 100, barClass: 'ok',
-    account: { label: 'BIDV ••4406', color: '#1e40af' },
-    members: [
-      { initials: 'M', bg: '#fef3c7', color: '#b45309' },
-      { initials: 'H', bg: '#ecfdf5', color: '#047857' },
-      { initials: 'T', bg: '#fee2e2', color: '#b91c1c' },
-    ],
-  },
-  {
-    id: 'gia-dinh',
-    emoji: '👨‍👩‍👧', iconBg: '#dbeafe',
-    name: 'Gia đình · sinh hoạt',
-    meta: '4 thành viên · ngân sách 8tr',
-    amount: 4_260_000,
-    amountColor: 'normal',
-    progressLabel: '53% ngân sách',
-    progressRight: 'còn 3.740.000 ₫',
-    pct: 53, barClass: 'ok',
-    account: { label: 'VCB Joint ••2210', color: '#10b981' },
-    members: [
-      { initials: 'B', bg: '#fee2e2', color: '#b91c1c' },
-      { initials: 'M', bg: '#ecfdf5', color: '#047857' },
-      { initials: 'A', bg: '#dbeafe', color: '#2563eb' },
-    ],
-    moreMem: 1,
-  },
-  {
-    id: 'sinh-nhat',
-    emoji: '🎂', iconBg: '#fee2e2',
-    name: 'Sinh nhật Mai · 12/05',
-    meta: '7 thành viên · 4 giao dịch',
-    amount: 0,
-    amountLabel: 'đã đối soát',
-    amountColor: 'muted',
-    progressLabel: '1.680.000 ₫ · chia đều',
-    progressRight: '240.000 ₫/người',
-    pct: 100, barClass: 'ok',
-    account: { label: 'MoMo ••5573', color: '#f59e0b' },
-    members: [
-      { initials: 'L', bg: '#dbeafe', color: '#2563eb' },
-      { initials: 'M', bg: '#fef3c7', color: '#b45309' },
-    ],
-    moreMem: 5,
-  },
-  {
-    id: 'tra-sua',
-    emoji: '🧋', iconBg: '#fef3c7',
-    name: 'Văn phòng · Trà sữa',
-    meta: '12 thành viên · luân phiên',
-    amount: 540_000,
-    amountColor: 'normal',
-    progressLabel: 'Đến lượt: An',
-    progressRight: 'thứ 6 này',
-    pct: 82, barClass: 'warn',
-    account: { label: 'Tiền mặt · luân phiên', color: '#64748b' },
-    members: [
-      { initials: 'M', bg: '#fef3c7', color: '#b45309' },
-      { initials: 'A', bg: '#f3e8ff', color: '#7e22ce' },
-    ],
-    moreMem: 10,
-  },
-  {
-    id: 'an-trua',
-    emoji: '🍱', iconBg: '#dcfce7',
-    name: 'Ăn trưa cá nhân',
-    meta: 'Chỉ mình bạn · 28 giao dịch',
-    amount: 2_150_000,
-    amountColor: 'loss',
-    progressLabel: 'Vượt ngân sách 8%',
-    progressLabelColor: 'loss',
-    progressRight: '2.000.000 ₫',
-    pct: 100, barClass: 'over',
-    account: { label: 'MoMo ••5573', color: '#7c3aed' },
-    members: [
-      { initials: 'YN', bg: '#d1fae5', color: '#047857' },
-    ],
-  },
-]
+function getGroupExpense(groupId: string, balances: GroupBalance[], monthTxns: Transaction[]) {
+  const bal = balances.find((b: GroupBalance) => b.group_id === groupId)
+  if (bal) return bal.total_expense
+  return monthTxns
+    .filter((t: Transaction) => t.categoryId === groupId && t.transactionType === 'expense')
+    .reduce((s: number, t: Transaction) => s + Math.abs(t.amount), 0)
+}
 
-const MOCK_SMART_CLASSIFY = [
-  { merchant: 'Grab', keyword: 'grab', suffix: 'ride 06/05', groupEmoji: '🚃', groupName: 'Di chuyển · Du lịch ĐL' },
-  { merchant: 'Highlands Coffee', keyword: 'cf', suffix: '14:22', groupEmoji: '☕', groupName: 'Cà phê · Văn phòng' },
-  { merchant: 'EVN ĐN', keyword: 'điện', suffix: 'kỳ 05/2026', groupEmoji: '💡', groupName: 'Tiện ích · Gia đình' },
-]
+function groupGlyph(name: string) {
+  const words = name.trim().split(/\s+/)
+  return words.length >= 2
+    ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
+    : name.substring(0, 2).toUpperCase()
+}
 
-const MOCK_ARCHIVED = [
-  { emoji: '💒', name: 'Đám cưới Anh Tuấn',      date: '18/03' },
-  { emoji: '🎄', name: 'Quà Tết 2026',            date: '02/02' },
-  { emoji: '🏝️', name: 'Phú Quốc · cuối năm 2025', date: '28/12' },
-]
+function typeLabel(type: string): string {
+  return (
+    ({
+      cost_center: 'Trung tâm chi phí',
+      department: 'Phòng ban',
+      project: 'Dự án',
+      team: 'Nhóm',
+      subsidiary: 'Công ty con',
+    } as Record<string, string>)[type] ?? type
+  )
+}
+
+function makeGradient(color: string) {
+  return `linear-gradient(135deg,${color}dd 0%,${color}99 60%,${color}66 130%)`
+}
 
 /* ─────────────────────────────────────────────────────────────
    Sub-components
@@ -200,11 +94,25 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
 }
 
 // ── Featured card ────────────────────────────────────────────
-function FeaturedCard() {
-  const g = MOCK_FEATURED
+function FeaturedCard({
+  group,
+  subGroups,
+  expense,
+  budget,
+}: {
+  group: Group
+  subGroups: Group[]
+  expense: number
+  budget: number
+}) {
+  const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
+  const remaining = budget - expense
+  const glyph = groupGlyph(group.name)
+  const gradient = makeGradient(group.color || '#0f766e')
+
   return (
     <Link
-      href={`/groups/${g.id}`}
+      href={`/groups/${group.id}`}
       className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
     >
       <BnArrow className="bg-white/20 text-white" />
@@ -212,31 +120,27 @@ function FeaturedCard() {
       {/* Cover */}
       <div
         className="relative flex items-end p-[18px_22px] text-white overflow-hidden"
-        style={{ background: g.gradient, minHeight: 150 }}
+        style={{ background: gradient, minHeight: 150 }}
       >
         {/* Glyph watermark */}
         <span
           className="absolute right-[-20px] top-[-20px] font-black font-mono opacity-[0.14] leading-none select-none pointer-events-none"
           style={{ fontSize: 170 }}
         >
-          {g.glyph}
+          {glyph}
         </span>
         {/* Status pill */}
         <span className="absolute left-[22px] top-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm border border-white/20">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-          {g.status} · {g.daysActive} ngày
+          Đang hoạt động
         </span>
         <div className="relative z-10 mt-8">
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
-            <span>{g.emoji} Du lịch</span>
-            <span className="opacity-50">·</span>
-            <span>5 thành viên</span>
+            <span>{group.emoji} {typeLabel(group.type)}</span>
             <span className="opacity-50">·</span>
             <span>VND</span>
-            <span className="opacity-50">·</span>
-            <span>Chia đều mặc định</span>
           </div>
-          <h3 className="text-[22px] font-semibold tracking-[-0.025em] mt-1 leading-tight">{g.name}</h3>
+          <h3 className="text-[22px] font-semibold tracking-[-0.025em] mt-1 leading-tight">{group.name}</h3>
         </div>
       </div>
 
@@ -247,47 +151,42 @@ function FeaturedCard() {
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Tổng chi tiêu</div>
             <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-0.5 leading-tight">
-              {fmtVND(g.totalExpense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
+              {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
             </div>
           </div>
-          <div>
-            <div className="h-2 bg-[var(--color-bg-sunken)] rounded-full overflow-hidden shadow-inner">
-              <div className="h-full bg-[var(--color-gain-500)] rounded-full" style={{ width: `${g.pct}%` }} />
+          {budget > 0 && (
+            <div>
+              <div className="h-2 bg-[var(--color-bg-sunken)] rounded-full overflow-hidden shadow-inner">
+                <div className="h-full bg-[var(--color-gain-500)] rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} />
+              </div>
+              <div className="flex items-center justify-between mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
+                <span>Ngân sách <b className="text-[var(--color-text-secondary)]">{fmtVND(budget)} ₫</b></span>
+                <span><b className="text-[var(--color-text-secondary)]">{pct}%</b> · còn {fmtVND(remaining)} ₫</span>
+              </div>
             </div>
-            <div className="flex items-center justify-between mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
-              <span>Ngân sách <b className="text-[var(--color-text-secondary)]">{fmtVND(g.budget)} ₫</b></span>
-              <span><b className="text-[var(--color-text-secondary)]">{g.pct}%</b> · còn {fmtVND(g.remaining)} ₫</span>
-            </div>
-          </div>
-          <div className="flex flex-wrap gap-1.5">
-            {g.accounts.map(acc => (
-              <span key={acc.label} className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]">
-                <span className="w-2 h-2 rounded-full shrink-0" style={{ background: acc.color }} />
-                {acc.label}
-              </span>
-            ))}
-          </div>
+          )}
         </div>
 
         {/* Right col */}
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
-            {g.subGroups.length + g.extraCount} nhóm con
+            {subGroups.length} nhóm con
           </div>
-          <div className="flex flex-col gap-[5px] text-[11px]">
-            {g.subGroups.map(sg => (
-              <div key={sg.name} className="flex items-center gap-[7px]">
-                <span className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] shrink-0" style={{ background: sg.bg }}>{sg.emoji}</span>
-                <span className="text-[var(--color-text-secondary)]">{sg.name}</span>
-                <span className="ml-auto font-medium font-tabular text-[var(--color-text-primary)]">{fmtVND(sg.amount)} ₫</span>
-              </div>
-            ))}
-            <div className="flex items-center gap-[7px] text-[var(--color-text-tertiary)]">
-              <span className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] bg-[var(--color-bg-sunken)] shrink-0">+</span>
-              <span>{g.extraCount} nhóm con khác</span>
-              <span className="ml-auto font-tabular">{fmtVND(g.extraAmount)} ₫</span>
+          {subGroups.length > 0 ? (
+            <div className="flex flex-col gap-[5px] text-[11px]">
+              {subGroups.map((sg: Group) => (
+                <div key={sg.id} className="flex items-center gap-[7px]">
+                  <span
+                    className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] shrink-0"
+                    style={{ background: `${sg.color}22` }}
+                  >{sg.emoji || '📁'}</span>
+                  <span className="text-[var(--color-text-secondary)] truncate">{sg.name}</span>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (
+            <div className="text-[11px] text-[var(--color-text-quaternary)]">Chưa có nhóm con</div>
+          )}
         </div>
       </div>
     </Link>
@@ -295,8 +194,21 @@ function FeaturedCard() {
 }
 
 // ── Dark stat card ───────────────────────────────────────────
-function DarkStatCard({ variant }: { variant: 1 | 2 }) {
+function DarkStatCard({
+  variant,
+  classified,
+  total,
+  topGroups,
+}: {
+  variant: 1 | 2
+  classified?: number
+  total?: number
+  topGroups?: { name: string; expense: number }[]
+}) {
   const isV1 = variant === 1
+  const pct = total && total > 0 ? Math.round(((classified ?? 0) / total) * 100) : 0
+  const unclassified = (total ?? 0) - (classified ?? 0)
+
   return (
     <div className="relative bg-[#111827] text-white rounded-[14px] overflow-hidden p-5 flex flex-col">
       {/* Watermark */}
@@ -316,18 +228,18 @@ function DarkStatCard({ variant }: { variant: 1 | 2 }) {
         <>
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Phân loại tự động</div>
           <div className="text-[28px] font-semibold tracking-[-0.025em] leading-tight font-tabular">
-            128 <span className="text-[18px] opacity-60">/ 137</span>
+            {classified ?? 0} <span className="text-[18px] opacity-60">/ {total ?? 0}</span>
           </div>
           <div className="flex items-center gap-1 text-[11px] font-medium mt-1" style={{ color: '#34d399' }}>
             <ChevronUp className="w-3 h-3" />
-            +9 hôm nay · 94% chính xác
+            {pct}% chính xác
           </div>
           <hr className="border-white/10 my-3" />
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
             {[
-              ['Cần xem lại',       '9'],
-              ['Từ khóa đang dùng', '47'],
-              ['Quy tắc thông minh','12'],
+              ['Cần xem lại', String(unclassified)],
+              ['Tổng giao dịch', String(total ?? 0)],
+              ['Đã phân loại', String(classified ?? 0)],
             ].map(([label, val]) => (
               <div key={label} className="flex items-center">
                 <span>{label}</span>
@@ -339,25 +251,28 @@ function DarkStatCard({ variant }: { variant: 1 | 2 }) {
         </>
       ) : (
         <>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Nhóm chi nhiều nhất · T5</div>
-          <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight">Du lịch ĐL</div>
-          <div className="flex items-center gap-1 text-[11px] font-medium mt-1 text-[var(--color-loss-400)]">
-            <ChevronDown className="w-3 h-3" />
-            12.840.000 ₫ · 70% của tháng
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Nhóm chi nhiều nhất</div>
+          <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">
+            {topGroups && topGroups[0] ? topGroups[0].name : '—'}
           </div>
+          {topGroups && topGroups[0] && (
+            <div className="flex items-center gap-1 text-[11px] font-medium mt-1 text-[var(--color-loss-400)]">
+              <ChevronDown className="w-3 h-3" />
+              {fmtVND(topGroups[0].expense)} ₫
+            </div>
+          )}
           <hr className="border-white/10 my-3" />
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
-            {[
-              ['Tiếp theo · Gia đình',  '4.260.000 ₫'],
-              ['Chung cư Eco',          '2.833.000 ₫'],
-              ['Văn phòng · Trà sữa',   '540.000 ₫'],
-            ].map(([label, val]) => (
-              <div key={label} className="flex items-center">
-                <span>{label}</span>
+            {(topGroups ?? []).slice(1, 4).map((g: { name: string; expense: number }) => (
+              <div key={g.name} className="flex items-center">
+                <span className="truncate">{g.name}</span>
                 <span className="flex-1" />
-                <span className="font-semibold font-tabular opacity-100">{val}</span>
+                <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmtVND(g.expense)} ₫</span>
               </div>
             ))}
+            {(!topGroups || topGroups.length <= 1) && (
+              <div className="text-[var(--color-text-quaternary)]">Chưa có dữ liệu</div>
+            )}
           </div>
         </>
       )}
@@ -366,10 +281,27 @@ function DarkStatCard({ variant }: { variant: 1 | 2 }) {
 }
 
 // ── Standard group card ──────────────────────────────────────
-function GroupCard({ g, onOpenDetail }: { g: typeof MOCK_GROUPS[0]; onOpenDetail?: () => void }) {
+function GroupCard({
+  group,
+  expense,
+  txCount,
+}: {
+  group: Group
+  expense: number
+  txCount: number
+}) {
+  const budget = group.budget_limit || 0
+  const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
+  const barClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
+  const iconBg = `${group.color}22`
+  const meta = typeLabel(group.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
+  const progressLabel = budget > 0 ? `${pct}% ngân sách` : `${txCount} giao dịch`
+  const progressRight = budget > 0 ? `còn ${fmtVND(budget - expense)} ₫` : ''
+  const isOver = pct > 100
+
   return (
     <Link
-      href={`/groups/${g.id}`}
+      href={`/groups/${group.id}`}
       className="relative bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
       <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
@@ -378,63 +310,38 @@ function GroupCard({ g, onOpenDetail }: { g: typeof MOCK_GROUPS[0]; onOpenDetail
       <div className="flex items-start gap-3">
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-          style={{ background: g.iconBg }}
-        >{g.emoji}</div>
+          style={{ background: iconBg }}
+        >{group.emoji || '📁'}</div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{g.name}</div>
-          <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{g.meta}</div>
+          <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{group.name}</div>
+          <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{meta}</div>
         </div>
       </div>
 
       {/* Amount */}
       <div>
-        {g.amountLabel ? (
-          <div className="text-[18px] font-semibold font-tabular text-[var(--color-text-quaternary)]">{g.amountLabel}</div>
-        ) : (
-          <div className={cn(
-            "text-[18px] font-semibold font-tabular tracking-[-0.022em]",
-            g.amountColor === 'loss' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]'
-          )}>
-            {fmtVND(g.amount)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
-          </div>
-        )}
+        <div className={cn(
+          "text-[18px] font-semibold font-tabular tracking-[-0.022em]",
+          isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]'
+        )}>
+          {fmtVND(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> ₫</span>
+        </div>
         <div className="flex items-center justify-between text-[11px] mt-1.5">
           <span className={cn(
-            g.progressLabelColor === 'loss' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]'
-          )}>{g.progressLabel}</span>
-          <span className="text-[var(--color-text-tertiary)]">{g.progressRight}</span>
+            isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]'
+          )}>{progressLabel}</span>
+          <span className="text-[var(--color-text-tertiary)]">{progressRight}</span>
         </div>
         <div className="h-[6px] bg-[var(--color-bg-sunken)] rounded-full mt-1 overflow-hidden">
-          <BarInner pct={g.pct} barClass={g.barClass} />
+          <BarInner pct={pct} barClass={barClass} />
         </div>
       </div>
 
       {/* Footer */}
       <div className="flex items-center mt-auto pt-3 border-t border-[var(--color-border-subtle)] gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)] truncate min-w-0">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: g.account.color }} />
-          {g.account.label}
-        </span>
-        <span className="flex-1" />
-        <span className="flex items-center">
-          {g.members.slice(0, 3).map((m, i) => (
-            <span
-              key={i}
-              className="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-semibold shrink-0"
-              style={{
-                background: m.bg,
-                color: m.color,
-                marginLeft: i > 0 ? -6 : 0,
-                zIndex: 3 - i,
-              }}
-            >{m.initials}</span>
-          ))}
-          {g.moreMem ? (
-            <span
-              className="w-6 h-6 rounded-full border-2 border-white bg-[var(--color-bg-sunken)] flex items-center justify-center text-[9px] font-semibold text-[var(--color-text-quaternary)] shrink-0"
-              style={{ marginLeft: -6 }}
-            >+{g.moreMem}</span>
-          ) : null}
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: group.color || '#94a3b8' }} />
+          {typeLabel(group.type)}
         </span>
       </div>
     </Link>
@@ -442,7 +349,20 @@ function GroupCard({ g, onOpenDetail }: { g: typeof MOCK_GROUPS[0]; onOpenDetail
 }
 
 // ── Smart classify widget ────────────────────────────────────
-function SmartClassifyCard() {
+function SmartClassifyCard({
+  pendingTxns,
+  groups,
+}: {
+  pendingTxns: Transaction[]
+  groups: Group[]
+}) {
+  function suggestGroup(txn: Transaction): Group | undefined {
+    const haystack = [txn.merchantName, txn.description].filter(Boolean).join(' ').toLowerCase()
+    return groups.find((g: Group) =>
+      (g.keywords ?? []).some((kw: string) => haystack.includes(kw.toLowerCase()))
+    )
+  }
+
   return (
     <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
       {/* Arrow link indicator */}
@@ -457,7 +377,7 @@ function SmartClassifyCard() {
         </div>
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)] leading-snug">
-            9 giao dịch mới chờ phân loại
+            {pendingTxns.length} giao dịch mới chờ phân loại
           </h4>
           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
             Leo gợi ý nhóm dựa trên từ khóa đã học · xem trước trước khi áp dụng
@@ -467,32 +387,57 @@ function SmartClassifyCard() {
 
       {/* Preview rows */}
       <div className="flex flex-col gap-1.5">
-        {MOCK_SMART_CLASSIFY.map((pv, i) => (
-          <div key={i} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
-            <span className="text-[var(--color-text-secondary)] min-w-0 truncate flex-1">
-              {pv.merchant} · <span className="font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1 rounded">{pv.keyword}</span>{' '}{pv.suffix}
-            </span>
-            <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
-            <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
-              <em className="not-italic">{pv.groupEmoji}</em> {pv.groupName}
-            </span>
+        {pendingTxns.length === 0 ? (
+          <div className="text-[12px] text-[var(--color-text-quaternary)] py-2 text-center">
+            Tất cả giao dịch đã được phân loại
           </div>
-        ))}
+        ) : (
+          pendingTxns.map((txn: Transaction) => {
+            const suggested = suggestGroup(txn)
+            const label = txn.merchantName || txn.description || txn.id.slice(0, 8)
+            const kw = suggested?.keywords?.[0] ?? ''
+            return (
+              <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
+                <span className="text-[var(--color-text-secondary)] min-w-0 truncate flex-1">
+                  {label}
+                  {kw && (
+                    <> · <span className="font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1 rounded">{kw}</span></>
+                  )}
+                </span>
+                {suggested && (
+                  <>
+                    <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
+                    <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
+                      <em className="not-italic">{suggested.emoji || '📁'}</em> {suggested.name}
+                    </span>
+                  </>
+                )}
+              </div>
+            )
+          })
+        )}
       </div>
 
       {/* Footer */}
       <div className="flex items-center gap-2 pt-3 border-t border-[var(--color-border-subtle)] mt-auto">
         <span className="text-[11px] text-[var(--color-text-tertiary)]">
-          Độ tin cậy trung bình <b className="text-[var(--color-brand-700)]">96%</b>
+          {pendingTxns.length > 0
+            ? <><b className="text-[var(--color-brand-700)]">{pendingTxns.length}</b> giao dịch chờ xử lý</>
+            : 'Không có giao dịch chờ phân loại'
+          }
         </span>
         <span className="flex-1" />
-        <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
-          Xem 6 cái khác
-        </button>
-        <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer">
-          <Check className="w-3 h-3" />
-          Áp dụng tất cả
-        </button>
+        {pendingTxns.length > 0 && (
+          <>
+            <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
+              Xem tất cả
+            </button>
+            <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer">
+              <Check className="w-3 h-3" />
+              Áp dụng tất cả
+            </button>
+          </>
+        )}
       </div>
     </div>
   )
@@ -519,19 +464,22 @@ function AddGroupTile({ onClick }: { onClick: () => void }) {
 }
 
 // ── Archive strip ────────────────────────────────────────────
-function ArchiveStrip() {
+function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
+  if (archivedGroups.length === 0) return null
   return (
     <div className="col-span-full bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] p-4 flex items-center gap-6 flex-wrap">
       <div className="shrink-0">
         <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Lưu trữ</div>
-        <span className="inline-block mt-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">3</span>
+        <span className="inline-block mt-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{archivedGroups.length}</span>
       </div>
       <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
-        {MOCK_ARCHIVED.map(item => (
-          <div key={item.name} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer transition-colors">
-            <span className="text-base">{item.emoji}</span>
+        {archivedGroups.map((item: Group) => (
+          <div key={item.id} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer transition-colors">
+            <span className="text-base">{item.emoji || '📁'}</span>
             <span className="font-medium">{item.name}</span>
-            <span className="font-mono text-[10px] text-[var(--color-text-quaternary)]">{item.date}</span>
+            <span className="font-mono text-[10px] text-[var(--color-text-quaternary)]">
+              {new Date(item.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
+            </span>
           </div>
         ))}
       </div>
@@ -550,17 +498,202 @@ export function GroupsBentoPage() {
   const [isFormOpen, setIsFormOpen] = React.useState(false)
   const { lang } = useSettingsStore()
   const { currentLedger } = useLedgerStore()
+  const { groups, balances, isLoading, fetchGroups } = useGroupStore()
+  const { transactions, syncTransactions } = useTransactionsStore()
+
+  // ── Fetch data on mount ──────────────────────────────────
+  React.useEffect(() => {
+    if (currentLedger?.id) {
+      fetchGroups(currentLedger.id)
+      syncTransactions(500)
+    }
+  }, [currentLedger?.id])
+
+  // ── Derived data ─────────────────────────────────────────
+  const ym = currentYearMonth()
+
+  const monthTxns = React.useMemo(
+    () => transactions.filter((t: Transaction) => t.transactionDate?.startsWith(ym)),
+    [transactions, ym],
+  )
+
+  // KPI computations
+  const totalExpense = React.useMemo(
+    () => monthTxns
+      .filter((t: Transaction) => t.transactionType === 'expense')
+      .reduce((s: number, t: Transaction) => s + Math.abs(t.amount), 0),
+    [monthTxns],
+  )
+
+  const totalBudget = React.useMemo(
+    () => groups.reduce((s: number, g: Group) => s + (g.budget_limit || 0), 0),
+    [groups],
+  )
+
+  const txnsWithCategory = React.useMemo(
+    () => transactions.filter((t: Transaction) => t.categoryId),
+    [transactions],
+  )
+
+  const classifyPct = transactions.length > 0
+    ? ((txnsWithCategory.length / transactions.length) * 100).toFixed(0)
+    : '0'
+
+  const pendingReconcile = React.useMemo(
+    () => transactions.filter((t: Transaction) => !t.isReconciled).length,
+    [transactions],
+  )
+
+  const kpiData = [
+    {
+      label: 'Chi tiêu tháng này',
+      value: fmtVND(totalExpense),
+      unit: '₫',
+      sub: `${groups.filter((g: Group) => g.is_active).length} nhóm đang hoạt động`,
+      subLoss: false,
+    },
+    {
+      label: 'Ngân sách còn lại',
+      value: fmtVND(Math.max(0, totalBudget - totalExpense)),
+      unit: '₫',
+      sub: totalBudget > 0
+        ? `${Math.round(((totalBudget - totalExpense) / totalBudget) * 100)}% ngân sách còn lại`
+        : 'Chưa đặt ngân sách',
+      subLoss: totalExpense > totalBudget,
+    },
+    {
+      label: 'Tự động phân loại',
+      value: classifyPct,
+      unit: '%',
+      sub: `${txnsWithCategory.length} / ${transactions.length} giao dịch`,
+      subLoss: false,
+    },
+    {
+      label: 'Chờ đối soát',
+      value: String(pendingReconcile),
+      unit: ' giao dịch',
+      sub: pendingReconcile > 0 ? 'Cần xem lại' : 'Đã đối soát hết',
+      subLoss: false,
+    },
+  ]
+
+  // Filter tab counts
+  const tabCounts = React.useMemo(() => ({
+    all: groups.length,
+    active: groups.filter((g: Group) => g.is_active).length,
+    shared: groups.filter((g: Group) => g.metadata?.is_shared).length,
+    recurring: groups.filter((g: Group) => g.metadata?.is_recurring || g.type === 'project').length,
+    archived: groups.filter((g: Group) => !g.is_active).length,
+  }), [groups])
+
+  const filterTabs = [
+    { value: 'all',       label: 'Tất cả',         count: tabCounts.all },
+    { value: 'active',    label: 'Đang hoạt động', count: tabCounts.active },
+    { value: 'shared',    label: 'Chia sẻ',        count: tabCounts.shared },
+    { value: 'recurring', label: 'Định kỳ',        count: tabCounts.recurring },
+    { value: 'archived',  label: 'Lưu trữ',        count: tabCounts.archived },
+  ]
+
+  // Filtered groups per tab
+  const filteredGroups = React.useMemo(() => {
+    switch (activeTab) {
+      case 'all':
+      case 'active':
+        return groups.filter((g: Group) => g.is_active)
+      case 'shared':
+        return groups.filter((g: Group) => g.metadata?.is_shared)
+      case 'recurring':
+        return groups.filter((g: Group) => g.metadata?.is_recurring || g.type === 'project')
+      case 'archived':
+        return groups.filter((g: Group) => !g.is_active)
+      default:
+        return groups.filter((g: Group) => g.is_active)
+    }
+  }, [groups, activeTab])
+
+  const archivedGroups = React.useMemo(
+    () => groups.filter((g: Group) => !g.is_active),
+    [groups],
+  )
+
+  // Active groups sorted by expense desc
+  const activeGroups = React.useMemo(() => {
+    const active = groups.filter((g: Group) => g.is_active)
+    return [...active].sort((a: Group, b: Group) => {
+      const ea = getGroupExpense(a.id, balances, monthTxns)
+      const eb = getGroupExpense(b.id, balances, monthTxns)
+      return eb - ea
+    })
+  }, [groups, balances, monthTxns])
+
+  const featuredGroup = activeGroups[0]
+  const featuredSubGroups = featuredGroup
+    ? activeGroups.filter((g: Group) => g.parent_id === featuredGroup.id).slice(0, 3)
+    : []
+  const featuredExpense = featuredGroup
+    ? getGroupExpense(featuredGroup.id, balances, monthTxns)
+    : 0
+  const featuredBudget = featuredGroup?.budget_limit ?? 0
+
+  // Regular group cards (active groups except featured)
+  const regularGroups = activeGroups.slice(1)
+
+  // Dark stat card data
+  const classifiedCount = txnsWithCategory.length
+  const totalTxCount = transactions.length
+
+  const topGroupsForStat = React.useMemo(() => {
+    return activeGroups.slice(0, 4).map((g: Group) => ({
+      name: g.name,
+      expense: getGroupExpense(g.id, balances, monthTxns),
+    }))
+  }, [activeGroups, balances, monthTxns])
+
+  // Smart classify: unclassified expense transactions
+  const pendingTxns = React.useMemo(
+    () => transactions
+      .filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense')
+      .slice(0, 3),
+    [transactions],
+  )
+
+  // ── Loading state ─────────────────────────────────────────
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="animate-spin w-8 h-8 text-[var(--color-text-quaternary)]" />
+      </div>
+    )
+  }
+
+  // ── Empty state ───────────────────────────────────────────
+  if (groups.length === 0) {
+    return (
+      <div className="space-y-4 animate-fade-in">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="max-w-sm w-full">
+            <AddGroupTile onClick={() => setIsFormOpen(true)} />
+          </div>
+        </div>
+        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} maxWidth="2xl">
+          <div className="p-2">
+            <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
+          </div>
+        </Modal>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-4 animate-fade-in">
       {/* ── KPI strip ── */}
       <section className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-        {MOCK_KPI.map((kpi, i) => (
+        {kpiData.map((kpi, i) => (
           <div
             key={kpi.label}
             className={cn(
               'px-4 lg:px-5 py-4',
-              i < MOCK_KPI.length - 1 && 'border-b lg:border-b-0 lg:border-r border-[var(--color-border-subtle)]',
+              i < kpiData.length - 1 && 'border-b lg:border-b-0 lg:border-r border-[var(--color-border-subtle)]',
               i === 1 && 'border-r lg:border-r border-[var(--color-border-subtle)]',
             )}
           >
@@ -579,7 +712,7 @@ export function GroupsBentoPage() {
       <div className="flex items-center gap-2.5 flex-wrap">
         {/* Segmented control */}
         <div className="inline-flex bg-white border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs flex-wrap gap-0.5">
-          {FILTER_TABS.map(tab => (
+          {filterTabs.map(tab => (
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value)}
@@ -627,32 +760,57 @@ export function GroupsBentoPage() {
 
       {/* ── Bento Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* 1. Featured */}
-        <FeaturedCard />
+        {/* 1. Featured — first active group by expense */}
+        {featuredGroup && (
+          <FeaturedCard
+            group={featuredGroup}
+            subGroups={featuredSubGroups}
+            expense={featuredExpense}
+            budget={featuredBudget}
+          />
+        )}
 
-        {/* 2. Dark stat 1 */}
-        <DarkStatCard variant={1} />
+        {/* 2. Dark stat 1 — auto classify */}
+        <DarkStatCard
+          variant={1}
+          classified={classifiedCount}
+          total={totalTxCount}
+        />
 
-        {/* 3. Dark stat 2 */}
-        <DarkStatCard variant={2} />
+        {/* 3. Dark stat 2 — top spending groups */}
+        <DarkStatCard
+          variant={2}
+          topGroups={topGroupsForStat}
+        />
 
-        {/* 4. Group cards row 2: Chung cư + Gia đình */}
-        <GroupCard g={MOCK_GROUPS[0]} />
-        <GroupCard g={MOCK_GROUPS[1]} />
+        {/* 4. Regular group cards */}
+        {regularGroups.slice(0, 2).map((g: Group) => (
+          <GroupCard
+            key={g.id}
+            group={g}
+            expense={getGroupExpense(g.id, balances, monthTxns)}
+            txCount={monthTxns.filter((t: Transaction) => t.categoryId === g.id).length}
+          />
+        ))}
 
         {/* 5. Smart classify (wide) */}
-        <SmartClassifyCard />
+        <SmartClassifyCard pendingTxns={pendingTxns} groups={groups} />
 
-        {/* 6. Group cards row 3 */}
-        <GroupCard g={MOCK_GROUPS[2]} />
-        <GroupCard g={MOCK_GROUPS[3]} />
-        <GroupCard g={MOCK_GROUPS[4]} />
+        {/* 6. More group cards */}
+        {regularGroups.slice(2, 5).map((g: Group) => (
+          <GroupCard
+            key={g.id}
+            group={g}
+            expense={getGroupExpense(g.id, balances, monthTxns)}
+            txCount={monthTxns.filter((t: Transaction) => t.categoryId === g.id).length}
+          />
+        ))}
 
         {/* 7. Add new */}
         <AddGroupTile onClick={() => setIsFormOpen(true)} />
 
         {/* 8. Archive strip (full width) */}
-        <ArchiveStrip />
+        <ArchiveStrip archivedGroups={archivedGroups} />
       </div>
 
       {/* ── Bottom insight strip ── */}
