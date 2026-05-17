@@ -1,9 +1,12 @@
 import * as React from 'react'
 import { cn } from '@/lib/utils'
-import { ChevronRight, ChevronDown, Folder, Briefcase, Database, Tag } from 'lucide-react'
+import { ChevronDown, Briefcase, Database, Tag, Folder, Building2 } from 'lucide-react'
 
 export type GroupType = 'cost_center' | 'department' | 'project' | 'team' | 'subsidiary'
 
+// ─────────────────────────────────────────────────────────────
+// GroupBadge — inline chip with emoji/icon + name
+// ─────────────────────────────────────────────────────────────
 interface GroupBadgeProps {
   name: string
   type: GroupType
@@ -14,47 +17,50 @@ interface GroupBadgeProps {
 
 const TYPE_ICONS: Record<GroupType, React.ElementType> = {
   cost_center: Database,
-  department: Briefcase,
-  project: Tag,
-  team: Folder,
-  subsidiary: Briefcase,
+  department:  Briefcase,
+  project:     Tag,
+  team:        Folder,
+  subsidiary:  Building2,
 }
 
 export function GroupBadge({ name, type, color, emoji, className }: GroupBadgeProps) {
-  const Icon = TYPE_ICONS[type] || Tag
+  const Icon = TYPE_ICONS[type] ?? Tag
 
   return (
-    <div 
+    <div
       className={cn(
-        'inline-flex items-center gap-2 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider border transition-all hover:brightness-95 cursor-default shadow-sm',
-        className
+        'inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all hover:brightness-95 cursor-default shadow-xs',
+        className,
       )}
-      style={{ 
-        backgroundColor: color ? `${color}10` : 'var(--color-bg-sunken)',
-        color: color || 'var(--color-text-secondary)',
-        borderColor: color ? `${color}20` : 'var(--color-border-subtle)'
+      style={{
+        backgroundColor: color ? `${color}12` : 'var(--color-bg-sunken)',
+        color:           color ?? 'var(--color-text-secondary)',
+        borderColor:     color ? `${color}20` : 'var(--color-border-subtle)',
       }}
     >
       {emoji ? (
-        <span className="text-[12px] leading-none">{emoji}</span>
+        <span className="text-sm leading-none">{emoji}</span>
       ) : (
-        <Icon className="w-3 h-3" />
+        <Icon className="w-3 h-3 shrink-0" />
       )}
       <span className="truncate max-w-[120px]">{name}</span>
     </div>
   )
 }
 
+// ─────────────────────────────────────────────────────────────
+// GroupTreeItem — sidebar tree node
+// ─────────────────────────────────────────────────────────────
 interface GroupTreeItemProps {
-  name: string
-  level: number
+  name:        string
+  level:       number
   hasChildren: boolean
-  isExpanded: boolean
-  onToggle: () => void
-  onSelect: () => void
+  isExpanded:  boolean
+  onToggle:    () => void
+  onSelect:    () => void
   isSelected?: boolean
-  type: GroupType
-  emoji?: string
+  type:        GroupType
+  emoji?:      string
 }
 
 export function GroupTreeItem({
@@ -66,55 +72,71 @@ export function GroupTreeItem({
   onSelect,
   isSelected,
   type,
-  emoji
+  emoji,
 }: GroupTreeItemProps) {
   return (
-    <div 
+    <div
       className={cn(
-        'group flex items-center gap-3 py-2.5 px-3 rounded-2xl cursor-pointer transition-all duration-200 select-none relative overflow-hidden',
-        isSelected 
-          ? 'bg-white shadow-md border border-[var(--color-interactive-primary-subtle)] text-[var(--color-interactive-primary)] ring-4 ring-[var(--color-interactive-primary-subtle)]/30' 
-          : 'hover:bg-white/60 text-[var(--color-text-secondary)] border border-transparent',
+        'group flex items-center gap-2.5 py-2 px-3 rounded-xl cursor-pointer transition-all duration-150 select-none relative',
+        isSelected
+          ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)]'
+          : 'hover:bg-[var(--color-sidebar-item-hover)] text-[var(--color-text-secondary)]',
       )}
-      style={{ marginLeft: `${level * 16}px` }}
+      style={{ paddingLeft: `${12 + level * 16}px` }}
       onClick={onSelect}
     >
+      {/* Active indicator */}
       {isSelected && (
-        <div className="absolute left-0 top-0 bottom-0 w-1 bg-[var(--color-interactive-primary)] rounded-full" />
+        <span className="absolute left-0 top-2 bottom-2 w-0.5 bg-[var(--color-interactive-primary)] rounded-full" />
       )}
-      
-      <div className="flex items-center justify-center w-5 h-5 shrink-0">
+
+      {/* Expand toggle or leaf dot */}
+      <div className="w-4 h-4 flex items-center justify-center shrink-0">
         {hasChildren ? (
-          <button 
+          <button
             onClick={(e) => {
               e.stopPropagation()
               onToggle()
             }}
             className={cn(
-              "p-1 rounded-lg transition-transform",
-              isExpanded ? "rotate-0" : "-rotate-90",
-              isSelected ? "bg-[var(--color-interactive-primary-subtle)]" : "hover:bg-[var(--color-border-subtle)]"
+              'w-4 h-4 flex items-center justify-center rounded transition-transform duration-150',
+              isExpanded ? 'rotate-0' : '-rotate-90',
+              isSelected
+                ? 'text-[var(--color-sidebar-item-active-text)]'
+                : 'text-[var(--color-text-quaternary)] hover:text-[var(--color-text-tertiary)]',
             )}
           >
-            <ChevronDown className="w-3 h-3" />
+            <ChevronDown className="w-3.5 h-3.5" />
           </button>
         ) : (
-          <div className={cn(
-            "w-1.5 h-1.5 rounded-full",
-            isSelected ? "bg-[var(--color-interactive-primary)]" : "bg-[var(--color-border-strong)]"
-          )} />
+          <span
+            className={cn(
+              'w-1 h-1 rounded-full',
+              isSelected
+                ? 'bg-[var(--color-interactive-primary)]'
+                : 'bg-[var(--color-border-strong)]',
+            )}
+          />
         )}
       </div>
-      
-      <span className="text-xl leading-none shrink-0">{emoji || '📁'}</span>
-      <span className={cn(
-        "text-sm font-semibold truncate flex-1 tracking-tight",
-        isSelected ? "text-[var(--color-text-primary)]" : "text-[var(--color-text-secondary)]"
-      )}>
+
+      {/* Emoji */}
+      <span className="text-base leading-none shrink-0">{emoji || '📁'}</span>
+
+      {/* Name */}
+      <span
+        className={cn(
+          'text-sm font-medium truncate flex-1 leading-tight',
+          isSelected
+            ? 'text-[var(--color-sidebar-item-active-text)] font-semibold'
+            : 'text-[var(--color-text-secondary)]',
+        )}
+      >
         {name}
       </span>
-      
-      <span className="opacity-0 group-hover:opacity-100 text-[9px] font-black text-[var(--color-text-quaternary)] uppercase tracking-tighter transition-opacity">
+
+      {/* Type label — appears on hover */}
+      <span className="opacity-0 group-hover:opacity-100 text-[9px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider transition-opacity shrink-0">
         {type?.replace('_', ' ')}
       </span>
     </div>
