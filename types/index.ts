@@ -427,7 +427,8 @@ export interface Category {
   isSystem: boolean
   isActive: boolean
   sortOrder: number
-  path?: string              // ltree path
+  categoryCode?: string      // 4-character hierarchy code
+  path?: string              // text path (e.g. /A001/AB01)
   metadata: Record<string, unknown>
   createdAt: string
   updatedAt: string

@@ -15,6 +15,9 @@ import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
 import type { LedgerMember } from '@/features/user-management/types'
 import { CURRENCY_META } from '@/lib/money'
+import { GroupIcon } from './group-icon'
+import { Modal } from '@/components/ui/modal'
+import { GroupForm } from './group-form'
 
 /* ─────────────────────────────────────────────────────────────
    Currency context
@@ -114,8 +117,8 @@ function HeroCover({
       {/* Meta + members */}
       <div className="relative z-10 flex items-end gap-4 w-full">
         <div className="flex-1 min-w-0">
-          <h2 className="text-[24px] font-semibold tracking-[-0.025em] leading-[1.15] m-0">
-            {group.emoji} {group.name}
+          <h2 className="text-[24px] font-semibold tracking-[-0.025em] leading-[1.15] m-0 flex items-center gap-2">
+            <GroupIcon name={group.emoji} className="w-6 h-6" /> {group.name}
           </h2>
           <div className="flex items-center gap-2 flex-wrap text-[12px] opacity-85 mt-1">
             {subParts.map((part, i, arr) => (
@@ -165,6 +168,8 @@ function TabBar({
   keywordsCount,
   transactionsCount,
   membersCount,
+  selectedMonth,
+  onMonthChange,
 }: {
   active: DetailTab
   onChange: (t: DetailTab) => void
@@ -172,6 +177,8 @@ function TabBar({
   keywordsCount: number
   transactionsCount: number
   membersCount: number
+  selectedMonth: Date
+  onMonthChange: (d: Date) => void
 }) {
   const TABS: { value: DetailTab; label: string; count?: number }[] = [
     { value: 'overview',     label: 'Tổng quan' },
@@ -211,9 +218,23 @@ function TabBar({
         ))}
       </div>
       <div className="flex items-center gap-2 shrink-0 border-t border-b border-[var(--color-border-subtle)] py-[7px] px-4 ml-auto">
-        <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-transparent bg-transparent text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
+        <button 
+          onClick={(e) => (e.currentTarget.lastElementChild as HTMLInputElement)?.showPicker?.()}
+          className="relative overflow-hidden inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-transparent bg-transparent text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
+        >
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M6 12h12M10 18h4"/></svg>
-          Tháng 5/2026
+          Tháng {selectedMonth.getMonth() + 1}/{selectedMonth.getFullYear()}
+          <input 
+            type="month" 
+            value={`${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`}
+            onChange={(e) => {
+              if (e.target.value) {
+                const [y, m] = e.target.value.split('-')
+                onMonthChange(new Date(Number(y), Number(m) - 1, 1))
+              }
+            }}
+            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+          />
         </button>
       </div>
     </div>
@@ -323,10 +344,14 @@ function SubGroupsSection({
   group,
   subGroups,
   transactions,
+  onAddSubGroup,
+  onSubGroupClick,
 }: {
   group: Group
   subGroups: Group[]
   transactions: Transaction[]
+  onAddSubGroup: () => void
+  onSubGroupClick: (id: string) => void
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
   const [sortTab, setSortTab] = React.useState<'spend' | 'name'>('spend')
@@ -376,20 +401,20 @@ function SubGroupsSection({
             </button>
           ))}
         </div>
-        <button className="inline-flex items-center gap-1 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors">
+        <button onClick={onAddSubGroup} className="inline-flex items-center gap-1 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
           <Plus className="w-3 h-3" /> Thêm nhóm con
         </button>
       </div>
 
       {/* Sub-group grid */}
-      <div className="p-[14px_18px] grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+      <div className="p-[14px_18px] grid grid-cols-2 sm:grid-cols-3 gap-3">
         {sorted.map(({ sg, expense, count, pct, barPct, barClass }) => (
-          <div key={sg.id} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group">
+          <div key={sg.id} onClick={() => onSubGroupClick(sg.id)} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group">
             <div className="flex items-center gap-1.5 mb-2">
               <span
                 className="w-6 h-6 rounded-[6px] flex items-center justify-center text-sm shrink-0"
                 style={{ background: sg.color + '22' }}
-              >{sg.emoji}</span>
+              ><GroupIcon name={sg.emoji} className="w-3.5 h-3.5" /></span>
               <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate flex-1">{sg.name}</span>
               <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{count}</span>
             </div>
@@ -408,7 +433,7 @@ function SubGroupsSection({
             </div>
           </div>
         ))}
-        <button className="p-3 border-2 border-dashed border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[80px]">
+        <button onClick={onAddSubGroup} className="p-3 border-2 border-dashed border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[80px]">
           <Plus className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
           <span className="text-[11px] text-[var(--color-text-quaternary)] font-medium">Tạo nhóm con</span>
         </button>
@@ -640,6 +665,14 @@ function KeywordManagerSection({
     })
   }
 
+  function addMockRule() {
+    setRules([...rules, {
+      conditions: [{ field: 'merchant', op: 'chứa', val: 'Từ khóa mới', style: 'kw-auto' }],
+      target: { emoji: '✨', bg: '#e0e7ff', label: 'Quy tắc mới' },
+      on: true
+    }])
+  }
+
   return (
     <section className="bg-white border border-[var(--color-border-default)] rounded-[12px] overflow-hidden shadow-[var(--shadow-card)]">
       {/* Header */}
@@ -772,7 +805,7 @@ function KeywordManagerSection({
           </div>
         )}
         <div className="flex items-center gap-2 px-[18px] py-[10px]">
-          <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors">
+          <button onClick={addMockRule} className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
             <Plus className="w-3 h-3" /> Thêm quy tắc
           </button>
           <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-transparent text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
@@ -810,7 +843,7 @@ function RecentTransactions({
     // Use sub-group emoji if categoryId matches a sub-group
     const sg = subGroups.find(s => s.id === t.categoryId)
     if (sg?.emoji) return sg.emoji
-    return group.emoji || '💳'
+    return group.emoji || 'Folder'
   }
 
   function txAvatarBg(t: Transaction): string {
@@ -867,7 +900,7 @@ function RecentTransactions({
 
           return (
             <div key={tx.id} className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors" style={{ gridTemplateColumns: '32px 1fr auto auto' }}>
-              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0" style={{ background: avatarBg }}>{avatar}</div>
+              <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0" style={{ background: avatarBg }}><GroupIcon name={avatar} className="w-4 h-4" /></div>
               <div className="min-w-0">
                 <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{desc}</div>
                 <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 truncate">{meta}</div>
@@ -1030,8 +1063,11 @@ function BalancesSection({
 /* ─────────────────────────────────────────────────────────────
    Main GroupDetailView
 ───────────────────────────────────────────────────────────── */
-export function GroupDetailView({ groupId }: { groupId: string }) {
+export function GroupDetailView({ groupId, isNested }: { groupId: string; isNested?: boolean }) {
   const [activeTab, setActiveTab] = React.useState<DetailTab>('overview')
+  const [isFormOpen, setIsFormOpen] = React.useState(false)
+  const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = React.useState(new Date())
 
   const { groups, balances, fetchGroups, isLoading, updateGroup } = useGroupStore()
   const { transactions, syncTransactions } = useTransactionsStore()
@@ -1048,19 +1084,29 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
   const sym = currMeta.symbol
 
   React.useEffect(() => {
-    if (currentLedger?.id) {
+    if (currentLedger?.id && !isNested) {
       fetchGroups(currentLedger.id)
       syncTransactions(500)
       fetchMembers(currentLedger.id)
     }
-  }, [currentLedger?.id])
+  }, [currentLedger?.id, isNested])
 
   // Derived
   const group = groups.find(g => g.id === groupId)
   const subGroups = groups.filter(g => g.parent_id === groupId)
-  const groupTxns = transactions
-    .filter(t => t.categoryId === groupId)
-    .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate))
+  const groupTxns = React.useMemo(() => {
+    return transactions
+      .filter(t => {
+        if (t.categoryId !== groupId) return false
+        const tDate = new Date(t.transactionDate || (t as any).transaction_date || (t as any).date || new Date())
+        return tDate.getMonth() === selectedMonth.getMonth() && tDate.getFullYear() === selectedMonth.getFullYear()
+      })
+      .sort((a, b) => {
+        const da = String(a.transactionDate || (a as any).transaction_date || (a as any).date || '')
+        const db = String(b.transactionDate || (b as any).transaction_date || (b as any).date || '')
+        return db.localeCompare(da)
+      })
+  }, [transactions, groupId, selectedMonth])
   const balance = balances.find(b => b.group_id === groupId)
 
   const totalKeywords =
@@ -1072,7 +1118,7 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
   }
 
   // Loading / not found
-  if (isLoading || !group) {
+  if (!group) {
     return (
       <div className="flex items-center justify-center h-64">
         {isLoading
@@ -1096,6 +1142,8 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
           keywordsCount={totalKeywords}
           transactionsCount={groupTxns.length}
           membersCount={members.length}
+          selectedMonth={selectedMonth}
+          onMonthChange={setSelectedMonth}
         />
         <StatsStrip group={group} groupTxns={groupTxns} members={members} />
       </div>
@@ -1106,7 +1154,7 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
           {/* Row 1: Sub-groups + Linked accounts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} />
+              <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} onAddSubGroup={() => setIsFormOpen(true)} onSubGroupClick={(id) => setSelectedSubGroup(id)} />
             </div>
             <div>
               <LinkedAccountsSection groupTxns={groupTxns} />
@@ -1137,7 +1185,7 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
       {activeTab === 'subgroups' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} />
+            <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} onAddSubGroup={() => setIsFormOpen(true)} onSubGroupClick={(id) => setSelectedSubGroup(id)} />
           </div>
         </div>
       )}
@@ -1179,6 +1227,24 @@ export function GroupDetailView({ groupId }: { groupId: string }) {
           <p className="text-sm text-[var(--color-text-tertiary)]">Cài đặt nhóm – sắp ra mắt</p>
         </div>
       )}
+
+      {/* Modal tạo nhóm con */}
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
+        <GroupForm 
+          lang="vi" 
+          onClose={() => setIsFormOpen(false)} 
+          initialData={{ parent_id: group.id }} 
+        />
+      </Modal>
+
+      {/* Modal chi tiết nhóm con */}
+      <Modal isOpen={!!selectedSubGroup} onClose={() => setSelectedSubGroup(null)} className="!bg-transparent !border-0 !shadow-none max-w-5xl" noPadding>
+        {selectedSubGroup && (
+          <div className="bg-[var(--color-bg-canvas)] rounded-[24px] shadow-2xl overflow-y-auto max-h-[90vh] p-2 sm:p-4 md:p-6 w-full border border-[var(--color-border-subtle)]">
+            <GroupDetailView groupId={selectedSubGroup} isNested />
+          </div>
+        )}
+      </Modal>
     </div>
     </FmtCtx.Provider>
   )

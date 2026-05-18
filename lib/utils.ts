@@ -94,3 +94,15 @@ export function clampPercent(value: number, total: number): number {
   if (total === 0) return 0
   return Math.min(100, Math.max(0, (value / total) * 100))
 }
+
+export function slugify(str: string) {
+  return String(str)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd').replace(/Đ/g, 'D')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9 -]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+}

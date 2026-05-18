@@ -64,7 +64,10 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       const normalizedGroups = (groups || []).map(g => ({
         ...g,
         name: g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
-        type: g.category_type || g.type || 'cost_center'
+        type: g.category_type || g.type || 'cost_center',
+        budget_limit: g.metadata?.budget_limit || g.budget_limit || 0,
+        keywords: g.metadata?.keywords || g.keywords || [],
+        categoryCode: g.metadata?.category_code || g.category_code || '',
       }))
 
       set({ groups: normalizedGroups, balances, isLoading: false })
@@ -77,15 +80,89 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     try {
       const { data: ledger } = await supabase.from('ledgers').select('workspace_id').eq('id', group.ledger_id).single()
       
+      const newId = crypto.randomUUID()
+      
+      // Determine depth and generate code
+      let depth = 0
+      let parentCode = ''
+      let parentPath = ''
+      if (group.parent_id) {
+        const parentGroup = get().groups.find(g => g.id === group.parent_id)
+        if (parentGroup) {
+          parentCode = parentGroup.categoryCode || parentGroup.metadata?.category_code || ''
+          parentPath = parentGroup.path || parentGroup.metadata?.path || ''
+          depth = parentPath ? parentPath.split('/').filter(Boolean).length : 1
+        }
+      }
+
+      let newCode = ''
+      const allGroups = get().groups
+      const allCodes = allGroups.map(g => g.categoryCode || g.metadata?.category_code || '')
+      
+      if (depth === 0) {
+        // Level 1: A001, A002...
+        const l1Codes = allCodes.filter(c => /^A\d{3}$/.test(c))
+        const maxNum = l1Codes.reduce((max, c) => Math.max(max, parseInt(c.substring(1))), 0)
+        newCode = `A${(maxNum + 1).toString().padStart(3, '0')}`
+      } else if (depth === 1) {
+        // Level 2: AA01, AB01...
+        const prefix = parentCode.charAt(0) || 'A'
+        for (let i = 0; i < 26; i++) {
+          const char = String.fromCharCode(65 + i)
+          const candidate = `${prefix}${char}01`
+          if (!allCodes.includes(candidate)) {
+            newCode = candidate
+            break
+          }
+        }
+        if (!newCode) newCode = `${prefix}Z01` // Fallback
+      } else if (depth === 2) {
+        // Level 3: AAA1, AAB1...
+        const prefix = parentCode.substring(0, 2) || 'AA'
+        for (let i = 0; i < 26; i++) {
+          const char = String.fromCharCode(65 + i)
+          const candidate = `${prefix}${char}1`
+          if (!allCodes.includes(candidate)) {
+            newCode = candidate
+            break
+          }
+        }
+        if (!newCode) newCode = `${prefix}Z1` // Fallback
+      } else {
+        // Level 4 (and beyond): 0001, 0002...
+        const l4Codes = allCodes.filter(c => /^\d{4}$/.test(c))
+        const maxNum = l4Codes.reduce((max, c) => Math.max(max, parseInt(c)), 0)
+        newCode = (maxNum + 1).toString().padStart(4, '0')
+      }
+
+      const pathStr = parentPath ? `${parentPath}/${newCode}` : `/${newCode}`
+
+      const siblings = allGroups.filter(g => g.parent_id === (group.parent_id || null))
+      const maxSortOrder = siblings.reduce((max, s) => Math.max(max, s.sort_order || 0), -1)
+      const newSortOrder = maxSortOrder + 1
+
       const payload = {
-        ...group,
+        id: newId,
         workspace_id: ledger?.workspace_id,
+        parent_id: group.parent_id || null,
         name_en: group.name,
         name_vi: group.name,
         name_ja: group.name,
+        category_type: group.type,
+        color: group.color,
+        emoji: group.emoji,
+        path: pathStr,
+        category_code: newCode,
+        sort_order: newSortOrder,
+        is_active: true,
+        metadata: {
+          budget_limit: group.budget_limit,
+          keywords: group.keywords,
+          category_code: newCode,
+          path: pathStr,
+          ...group.metadata
+        }
       }
-      delete (payload as any).ledger_id
-      delete (payload as any).name
 
       // Try categories first
       const { data, error } = await supabase
@@ -98,13 +175,31 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         // Fallback to legacy groups
         const { data: lData, error: lError } = await supabase
           .from('groups')
-          .insert(group)
+          .insert({ ...group, id: newId })
           .select()
           .single()
         if (lError) throw lError
-        set((state) => ({ groups: [...state.groups, { ...lData, name: lData.name }] }))
+        const norm = {
+          ...lData,
+          name: lData.name_en || lData.name || 'Unnamed',
+          type: lData.category_type || lData.type || 'cost_center',
+          budget_limit: lData.metadata?.budget_limit || lData.budget_limit || 0,
+          keywords: lData.metadata?.keywords || lData.keywords || [],
+          categoryCode: lData.metadata?.category_code || lData.category_code || '',
+          path: lData.path || lData.metadata?.path || '',
+        }
+        set((state) => ({ groups: [...state.groups, norm] }))
       } else {
-        set((state) => ({ groups: [...state.groups, { ...data, name: data.name_en }] }))
+        const norm = {
+          ...data,
+          name: data.name_en || data.name || 'Unnamed',
+          type: data.category_type || data.type || 'cost_center',
+          budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
+          keywords: data.metadata?.keywords || data.keywords || [],
+          categoryCode: data.metadata?.category_code || data.category_code || '',
+          path: data.path || data.metadata?.path || '',
+        }
+        set((state) => ({ groups: [...state.groups, norm] }))
       }
     } catch (err: any) {
       set({ error: err.message })
@@ -115,13 +210,19 @@ export const useGroupStore = create<GroupState>((set, get) => ({
   updateGroup: async (id, group) => {
     try {
       const payload = {
-        ...group,
+        parent_id: group.parent_id || null,
         name_en: group.name,
         name_vi: group.name,
         name_ja: group.name,
+        category_type: group.type,
+        color: group.color,
+        emoji: group.emoji,
+        metadata: {
+          budget_limit: group.budget_limit,
+          keywords: group.keywords,
+          ...group.metadata
+        }
       }
-      delete (payload as any).ledger_id
-      delete (payload as any).name
 
       const { data, error } = await supabase
         .from('categories')
@@ -138,12 +239,30 @@ export const useGroupStore = create<GroupState>((set, get) => ({
           .select()
           .single()
         if (lError) throw lError
+        const norm = {
+          ...lData,
+          name: lData.name_en || lData.name || 'Unnamed',
+          type: lData.category_type || lData.type || 'cost_center',
+          budget_limit: lData.metadata?.budget_limit || lData.budget_limit || 0,
+          keywords: lData.metadata?.keywords || lData.keywords || [],
+          categoryCode: lData.metadata?.category_code || lData.category_code || '',
+          path: lData.path || lData.metadata?.path || '',
+        }
         set((state) => ({
-          groups: state.groups.map((g) => (g.id === id ? { ...lData, name: lData.name } : g)),
+          groups: state.groups.map((g) => (g.id === id ? norm : g)),
         }))
       } else {
+        const norm = {
+          ...data,
+          name: data.name_en || data.name || 'Unnamed',
+          type: data.category_type || data.type || 'cost_center',
+          budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
+          keywords: data.metadata?.keywords || data.keywords || [],
+          categoryCode: data.metadata?.category_code || data.category_code || '',
+          path: data.path || data.metadata?.path || '',
+        }
         set((state) => ({
-          groups: state.groups.map((g) => (g.id === id ? { ...data, name: data.name_en } : g)),
+          groups: state.groups.map((g) => (g.id === id ? norm : g)),
         }))
       }
     } catch (err: any) {

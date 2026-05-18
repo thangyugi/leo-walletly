@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { createPortal } from 'react-dom'
 import { cn } from '@/lib/utils'
 
 interface ModalProps {
@@ -8,19 +9,26 @@ interface ModalProps {
   onClose: () => void
   children: React.ReactNode
   className?: string
+  noPadding?: boolean
 }
 
-export function Modal({ isOpen, onClose, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, children, className, noPadding }: ModalProps) {
+  const [mounted, setMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setMounted(true)
+  }, [])
+
   React.useEffect(() => {
     if (isOpen) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = 'unset'
     return () => { document.body.style.overflow = 'unset' }
   }, [isOpen])
 
-  if (!isOpen) return null
+  if (!isOpen || !mounted) return null
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+  const modalContent = (
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
       <div 
         className="absolute inset-0" 
         onClick={onClose} 
@@ -31,10 +39,12 @@ export function Modal({ isOpen, onClose, children, className }: ModalProps) {
           className
         )}
       >
-        <div className="p-6">
+        <div className={cn(noPadding ? "" : "p-6")}>
           {children}
         </div>
       </div>
     </div>
   )
+
+  return createPortal(modalContent, document.body)
 }

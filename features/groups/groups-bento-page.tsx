@@ -11,12 +11,12 @@ import { useSettingsStore } from '@/stores/settings'
 import { useTransactionsStore } from '@/stores/transactions'
 import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
-import {
-  Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
+import { GroupIcon } from './group-icon'
+import { Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
   Shield, BarChart3, TrendingDown, Filter, Search,
   LayoutGrid, ChevronUp, Check, X, Loader2,
 } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, slugify } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
 
 /* ─────────────────────────────────────────────────────────────
@@ -116,7 +116,7 @@ function FeaturedCard({
 
   return (
     <Link
-      href={`/groups/${group.id}`}
+      href={`/groups/${slugify(group.name)}-${group.categoryCode || group.id}`}
       className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
     >
       <BnArrow className="bg-white/20 text-white" />
@@ -140,7 +140,7 @@ function FeaturedCard({
         </span>
         <div className="relative z-10 mt-8">
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
-            <span>{group.emoji} {typeLabel(group.type)}</span>
+            <span><GroupIcon name={group.emoji} className="w-4 h-4 inline-block mr-1" />{typeLabel(group.type)}</span>
             <span className="opacity-50">·</span>
             <span>{currency}</span>
           </div>
@@ -183,7 +183,7 @@ function FeaturedCard({
                   <span
                     className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] shrink-0"
                     style={{ background: `${sg.color}22` }}
-                  >{sg.emoji || '📁'}</span>
+                  ><GroupIcon name={sg.emoji} className="w-2.5 h-2.5" /></span>
                   <span className="text-[var(--color-text-secondary)] truncate">{sg.name}</span>
                 </div>
               ))}
@@ -307,7 +307,7 @@ function GroupCard({
 
   return (
     <Link
-      href={`/groups/${group.id}`}
+      href={`/groups/${slugify(group.name)}-${group.categoryCode || group.id}`}
       className="relative bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
       <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
@@ -317,7 +317,7 @@ function GroupCard({
         <div
           className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
           style={{ background: iconBg }}
-        >{group.emoji || '📁'}</div>
+        ><GroupIcon name={group.emoji} className="w-5 h-5" /></div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{group.name}</div>
           <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{meta}</div>
@@ -362,12 +362,16 @@ function SmartClassifyCard({
   pendingTxns: Transaction[]
   groups: Group[]
 }) {
+  const [expanded, setExpanded] = React.useState(false)
+  
   function suggestGroup(txn: Transaction): Group | undefined {
     const haystack = [txn.merchantName, txn.description].filter(Boolean).join(' ').toLowerCase()
     return groups.find((g: Group) =>
       (g.keywords ?? []).some((kw: string) => haystack.includes(kw.toLowerCase()))
     )
   }
+
+  const displayTxns = expanded ? pendingTxns : pendingTxns.slice(0, 3)
 
   return (
     <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
@@ -393,12 +397,12 @@ function SmartClassifyCard({
 
       {/* Preview rows */}
       <div className="flex flex-col gap-1.5">
-        {pendingTxns.length === 0 ? (
+        {displayTxns.length === 0 ? (
           <div className="text-[12px] text-[var(--color-text-quaternary)] py-2 text-center">
             Tất cả giao dịch đã được phân loại
           </div>
         ) : (
-          pendingTxns.map((txn: Transaction) => {
+          displayTxns.map((txn: Transaction) => {
             const suggested = suggestGroup(txn)
             const label = txn.merchantName || txn.description || txn.id.slice(0, 8)
             const kw = suggested?.keywords?.[0] ?? ''
@@ -414,7 +418,7 @@ function SmartClassifyCard({
                   <>
                     <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
                     <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
-                      <em className="not-italic">{suggested.emoji || '📁'}</em> {suggested.name}
+                      <em className="not-italic flex items-center"><GroupIcon name={suggested.emoji} className="w-3.5 h-3.5" /></em> {suggested.name}
                     </span>
                   </>
                 )}
@@ -435,9 +439,14 @@ function SmartClassifyCard({
         <span className="flex-1" />
         {pendingTxns.length > 0 && (
           <>
-            <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
-              Xem tất cả
-            </button>
+            {pendingTxns.length > 3 && (
+              <button 
+                onClick={() => setExpanded(!expanded)}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
+              >
+                {expanded ? 'Thu gọn' : 'Xem tất cả'}
+              </button>
+            )}
             <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer">
               <Check className="w-3 h-3" />
               Áp dụng tất cả
@@ -481,7 +490,7 @@ function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
       <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
         {archivedGroups.map((item: Group) => (
           <div key={item.id} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer transition-colors">
-            <span className="text-base">{item.emoji || '📁'}</span>
+            <span className="text-base flex items-center"><GroupIcon name={item.emoji} className="w-4 h-4" /></span>
             <span className="font-medium">{item.name}</span>
             <span className="font-mono text-[10px] text-[var(--color-text-quaternary)]">
               {new Date(item.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
@@ -628,13 +637,13 @@ export function GroupsBentoPage() {
   }, [groups, activeTab])
 
   const archivedGroups = React.useMemo(
-    () => groups.filter((g: Group) => !g.is_active),
+    () => groups.filter((g: Group) => !g.is_active && !g.parent_id),
     [groups],
   )
 
   // Active groups sorted by expense desc
   const activeGroups = React.useMemo(() => {
-    const active = groups.filter((g: Group) => g.is_active)
+    const active = groups.filter((g: Group) => g.is_active && !g.parent_id)
     return [...active].sort((a: Group, b: Group) => {
       const ea = getGroupExpense(a.id, balances, monthTxns)
       const eb = getGroupExpense(b.id, balances, monthTxns)
@@ -644,7 +653,7 @@ export function GroupsBentoPage() {
 
   const featuredGroup = activeGroups[0]
   const featuredSubGroups = featuredGroup
-    ? activeGroups.filter((g: Group) => g.parent_id === featuredGroup.id).slice(0, 3)
+    ? groups.filter((g: Group) => g.is_active && g.parent_id === featuredGroup.id).slice(0, 3)
     : []
   const featuredExpense = featuredGroup
     ? getGroupExpense(featuredGroup.id, balances, monthTxns)
@@ -668,8 +677,7 @@ export function GroupsBentoPage() {
   // Smart classify: unclassified expense transactions
   const pendingTxns = React.useMemo(
     () => transactions
-      .filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense')
-      .slice(0, 3),
+      .filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense'),
     [transactions],
   )
 
@@ -702,10 +710,8 @@ export function GroupsBentoPage() {
             <AddGroupTile onClick={() => setIsFormOpen(true)} />
           </div>
         </div>
-        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} maxWidth="2xl">
-          <div className="p-2">
-            <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
-          </div>
+        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
+          <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
         </Modal>
       </div>
     )
@@ -905,10 +911,8 @@ export function GroupsBentoPage() {
       </div>
 
       {/* Create group modal */}
-      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} maxWidth="2xl">
-        <div className="p-2">
-          <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
-        </div>
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
+        <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
       </Modal>
     </div>
     </FmtCtx.Provider>
