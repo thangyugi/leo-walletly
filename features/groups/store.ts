@@ -63,7 +63,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const normalizedCategories = (categories || []).map(g => ({
         ...g,
-        name: g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
+        name: g.name_i18n?.en || g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
         type: g.category_type || g.type || 'cost_center',
         budget_limit: g.metadata?.budget_limit || g.budget_limit || 0,
         keywords: g.metadata?.keywords || g.keywords || [],
@@ -176,7 +176,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const norm = {
         ...data,
-        name: data.name_en || data.name || 'Unnamed',
+        name: data.name_i18n?.en || data.name_en || data.name || 'Unnamed',
         type: data.category_type || data.type || 'cost_center',
         budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
         keywords: data.metadata?.keywords || data.keywords || [],
@@ -219,7 +219,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const norm = {
         ...data,
-        name: data.name_en || data.name || 'Unnamed',
+        name: data.name_i18n?.en || data.name_en || data.name || 'Unnamed',
         type: data.category_type || data.type || 'cost_center',
         budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
         keywords: data.metadata?.keywords || data.keywords || [],
