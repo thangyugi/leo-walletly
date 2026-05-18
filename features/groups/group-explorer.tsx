@@ -749,7 +749,7 @@ export function GroupExplorer({ lang = 'ja' }: { lang?: Lang }) {
       </div>
 
       {/* Create / Edit modal */}
-      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} maxWidth="2xl">
+      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="max-w-2xl">
         <div className="p-2">
           <GroupForm lang={lang} onClose={() => setIsFormOpen(false)} initialData={editingGroup} />
         </div>

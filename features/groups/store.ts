@@ -1,84 +1,85 @@
 import { create } from 'zustand'
-import { Group, GroupTreeNode, GroupBalance } from './types'
+import { Category, CategoryTreeNode, CategoryBalance } from './types'
 import { supabase } from '@/lib/supabase'
 
-interface GroupState {
-  groups: Group[]
-  balances: GroupBalance[]
+interface CategoryState {
+  categories: Category[]
+  balances: CategoryBalance[]
   isLoading: boolean
   error: string | null
-  selectedGroupId: string | null
+  selectedCategoryId: string | null
   
-  fetchGroups: (ledgerId: string) => Promise<void>
-  setSelectedGroupId: (id: string | null) => void
-  createGroup: (group: Partial<Group>) => Promise<void>
-  updateGroup: (id: string, group: Partial<Group>) => Promise<void>
-  deleteGroup: (id: string) => Promise<void>
-  seedGroups: (ledgerId: string) => Promise<void>
+  fetchCategories: (ledgerId: string) => Promise<void>
+  setSelectedCategoryId: (id: string | null) => void
+  createCategory: (category: Partial<Category>) => Promise<void>
+  updateCategory: (id: string, category: Partial<Category>) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
+  seedCategories: (ledgerId: string) => Promise<void>
 }
 
-export const useGroupStore = create<GroupState>((set, get) => ({
-  groups: [],
+export const useCategoryStore = create<CategoryState>((set, get) => ({
+  categories: [],
   balances: [],
   isLoading: false,
   error: null,
-  selectedGroupId: null,
+  selectedCategoryId: null,
 
-  setSelectedGroupId: (id) => set({ selectedGroupId: id }),
+  setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
 
-  fetchGroups: async (ledgerId) => {
+  fetchCategories: async (ledgerId) => {
     set({ isLoading: true, error: null })
     try {
-      // Try fetching from 'categories' (V3) first, fallback to 'groups'
-      let { data: groups, error: gError } = await supabase
+      // Fetch strictly from 'categories' (V3)
+      const { data: categories, error: gError } = await supabase
         .from('categories')
         .select('*')
         .eq('workspace_id', (await supabase.from('ledgers').select('workspace_id').eq('id', ledgerId).single()).data?.workspace_id)
         .order('name_en')
 
-      if (gError) {
-        // Fallback to legacy 'groups' table
-        const { data: legacyGroups, error: lgError } = await supabase
-          .from('groups')
-          .select('*')
-          .eq('ledger_id', ledgerId)
-          .order('name')
-        
-        if (lgError) throw lgError
-        groups = legacyGroups
-      }
+      if (gError) throw gError
 
-      // Try fetching balances, but don't crash if view is missing
+      // Fetch balances from category_balances view, or fallback to group_balances
       let balances: any[] = []
       try {
         const { data: bData, error: bError } = await supabase
-          .from('group_balances')
+          .from('category_balances')
           .select('*')
           .eq('ledger_id', ledgerId)
         
-        if (!bError) balances = bData || []
+        if (bError) throw bError
+        balances = bData || []
       } catch (e) {
-        console.warn('group_balances view not found, showing empty balances')
+        // Fallback to legacy group_balances view for backwards compatibility
+        try {
+          const { data: bData, error: bError } = await supabase
+            .from('group_balances')
+            .select('*')
+            .eq('ledger_id', ledgerId)
+          if (!bError) balances = bData || []
+        } catch (inner) {
+          console.warn('category_balances and group_balances views not found, showing empty balances')
+        }
       }
 
-      const normalizedGroups = (groups || []).map(g => ({
+      const normalizedCategories = (categories || []).map(g => ({
         ...g,
         name: g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
         type: g.category_type || g.type || 'cost_center',
         budget_limit: g.metadata?.budget_limit || g.budget_limit || 0,
         keywords: g.metadata?.keywords || g.keywords || [],
         categoryCode: g.metadata?.category_code || g.category_code || '',
+        path: g.path || g.metadata?.path || '',
       }))
 
-      set({ groups: normalizedGroups, balances, isLoading: false })
+      set({ categories: normalizedCategories, balances, isLoading: false })
     } catch (err: any) {
       set({ error: err.message, isLoading: false })
     }
   },
 
-  createGroup: async (group) => {
+  createCategory: async (category) => {
     try {
-      const { data: ledger } = await supabase.from('ledgers').select('workspace_id').eq('id', group.ledger_id).single()
+      const { data: ledger } = await supabase.from('ledgers').select('workspace_id').eq('id', category.ledger_id).single()
       
       const newId = crypto.randomUUID()
       
@@ -86,18 +87,18 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       let depth = 0
       let parentCode = ''
       let parentPath = ''
-      if (group.parent_id) {
-        const parentGroup = get().groups.find(g => g.id === group.parent_id)
-        if (parentGroup) {
-          parentCode = parentGroup.categoryCode || parentGroup.metadata?.category_code || ''
-          parentPath = parentGroup.path || parentGroup.metadata?.path || ''
+      if (category.parent_id) {
+        const parentCategory = get().categories.find(g => g.id === category.parent_id)
+        if (parentCategory) {
+          parentCode = parentCategory.categoryCode || parentCategory.metadata?.category_code || ''
+          parentPath = parentCategory.path || parentCategory.metadata?.path || ''
           depth = parentPath ? parentPath.split('/').filter(Boolean).length : 1
         }
       }
 
       let newCode = ''
-      const allGroups = get().groups
-      const allCodes = allGroups.map(g => g.categoryCode || g.metadata?.category_code || '')
+      const allCategories = get().categories
+      const allCodes = allCategories.map(g => g.categoryCode || g.metadata?.category_code || '')
       
       if (depth === 0) {
         // Level 1: A001, A002...
@@ -137,93 +138,76 @@ export const useGroupStore = create<GroupState>((set, get) => ({
 
       const pathStr = parentPath ? `${parentPath}/${newCode}` : `/${newCode}`
 
-      const siblings = allGroups.filter(g => g.parent_id === (group.parent_id || null))
+      const siblings = allCategories.filter(g => g.parent_id === (category.parent_id || null))
       const maxSortOrder = siblings.reduce((max, s) => Math.max(max, s.sort_order || 0), -1)
       const newSortOrder = maxSortOrder + 1
 
       const payload = {
         id: newId,
         workspace_id: ledger?.workspace_id,
-        parent_id: group.parent_id || null,
-        name_en: group.name,
-        name_vi: group.name,
-        name_ja: group.name,
-        category_type: group.type,
-        color: group.color,
-        emoji: group.emoji,
+        parent_id: category.parent_id || null,
+        name_en: category.name,
+        name_vi: category.name,
+        name_ja: category.name,
+        category_type: category.type,
+        color: category.color,
+        emoji: category.emoji,
         path: pathStr,
         category_code: newCode,
         sort_order: newSortOrder,
         is_active: true,
         metadata: {
-          budget_limit: group.budget_limit,
-          keywords: group.keywords,
+          budget_limit: category.budget_limit,
+          keywords: category.keywords,
           category_code: newCode,
           path: pathStr,
-          ...group.metadata
+          ...category.metadata
         }
       }
 
-      // Try categories first
+      // Strictly insert into categories table
       const { data, error } = await supabase
         .from('categories')
         .insert(payload)
         .select()
         .single()
 
-      if (error) {
-        // Fallback to legacy groups
-        const { data: lData, error: lError } = await supabase
-          .from('groups')
-          .insert({ ...group, id: newId })
-          .select()
-          .single()
-        if (lError) throw lError
-        const norm = {
-          ...lData,
-          name: lData.name_en || lData.name || 'Unnamed',
-          type: lData.category_type || lData.type || 'cost_center',
-          budget_limit: lData.metadata?.budget_limit || lData.budget_limit || 0,
-          keywords: lData.metadata?.keywords || lData.keywords || [],
-          categoryCode: lData.metadata?.category_code || lData.category_code || '',
-          path: lData.path || lData.metadata?.path || '',
-        }
-        set((state) => ({ groups: [...state.groups, norm] }))
-      } else {
-        const norm = {
-          ...data,
-          name: data.name_en || data.name || 'Unnamed',
-          type: data.category_type || data.type || 'cost_center',
-          budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
-          keywords: data.metadata?.keywords || data.keywords || [],
-          categoryCode: data.metadata?.category_code || data.category_code || '',
-          path: data.path || data.metadata?.path || '',
-        }
-        set((state) => ({ groups: [...state.groups, norm] }))
+      if (error) throw error
+
+      const norm = {
+        ...data,
+        name: data.name_en || data.name || 'Unnamed',
+        type: data.category_type || data.type || 'cost_center',
+        budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
+        keywords: data.metadata?.keywords || data.keywords || [],
+        categoryCode: data.metadata?.category_code || data.category_code || '',
+        path: data.path || data.metadata?.path || '',
       }
+      set((state) => ({ categories: [...state.categories, norm] }))
     } catch (err: any) {
       set({ error: err.message })
       throw err
     }
   },
 
-  updateGroup: async (id, group) => {
+  updateCategory: async (id, category) => {
     try {
       const payload = {
-        parent_id: group.parent_id || null,
-        name_en: group.name,
-        name_vi: group.name,
-        name_ja: group.name,
-        category_type: group.type,
-        color: group.color,
-        emoji: group.emoji,
+        parent_id: category.parent_id || null,
+        name_en: category.name,
+        name_vi: category.name,
+        name_ja: category.name,
+        category_type: category.type,
+        color: category.color,
+        emoji: category.emoji,
         metadata: {
-          budget_limit: group.budget_limit,
-          keywords: group.keywords,
-          ...group.metadata
+          budget_limit: category.budget_limit,
+          keywords: category.keywords,
+          ...category.metadata
         }
       }
 
+      // Strictly update categories table
       const { data, error } = await supabase
         .from('categories')
         .update(payload)
@@ -231,60 +215,19 @@ export const useGroupStore = create<GroupState>((set, get) => ({
         .select()
         .single()
 
-      if (error) {
-        const { data: lData, error: lError } = await supabase
-          .from('groups')
-          .update(group)
-          .eq('id', id)
-          .select()
-          .single()
-        if (lError) throw lError
-        const norm = {
-          ...lData,
-          name: lData.name_en || lData.name || 'Unnamed',
-          type: lData.category_type || lData.type || 'cost_center',
-          budget_limit: lData.metadata?.budget_limit || lData.budget_limit || 0,
-          keywords: lData.metadata?.keywords || lData.keywords || [],
-          categoryCode: lData.metadata?.category_code || lData.category_code || '',
-          path: lData.path || lData.metadata?.path || '',
-        }
-        set((state) => ({
-          groups: state.groups.map((g) => (g.id === id ? norm : g)),
-        }))
-      } else {
-        const norm = {
-          ...data,
-          name: data.name_en || data.name || 'Unnamed',
-          type: data.category_type || data.type || 'cost_center',
-          budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
-          keywords: data.metadata?.keywords || data.keywords || [],
-          categoryCode: data.metadata?.category_code || data.category_code || '',
-          path: data.path || data.metadata?.path || '',
-        }
-        set((state) => ({
-          groups: state.groups.map((g) => (g.id === id ? norm : g)),
-        }))
-      }
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
-    }
-  },
+      if (error) throw error
 
-  deleteGroup: async (id) => {
-    try {
-      // Try categories first
-      const { error } = await supabase.from('categories').delete().eq('id', id)
-      
-      if (error) {
-        // Fallback to groups
-        const { error: lError } = await supabase.from('groups').delete().eq('id', id)
-        if (lError) throw lError
+      const norm = {
+        ...data,
+        name: data.name_en || data.name || 'Unnamed',
+        type: data.category_type || data.type || 'cost_center',
+        budget_limit: data.metadata?.budget_limit || data.budget_limit || 0,
+        keywords: data.metadata?.keywords || data.keywords || [],
+        categoryCode: data.metadata?.category_code || data.category_code || '',
+        path: data.path || data.metadata?.path || '',
       }
-
       set((state) => ({
-        groups: state.groups.filter((g) => g.id !== id),
-        selectedGroupId: state.selectedGroupId === id ? null : state.selectedGroupId,
+        categories: state.categories.map((g) => (g.id === id ? norm : g)),
       }))
     } catch (err: any) {
       set({ error: err.message })
@@ -292,7 +235,23 @@ export const useGroupStore = create<GroupState>((set, get) => ({
     }
   },
 
-  seedGroups: async (ledgerId) => {
+  deleteCategory: async (id) => {
+    try {
+      // Strictly delete from categories table
+      const { error } = await supabase.from('categories').delete().eq('id', id)
+      if (error) throw error
+
+      set((state) => ({
+        categories: state.categories.filter((g) => g.id !== id),
+        selectedCategoryId: state.selectedCategoryId === id ? null : state.selectedCategoryId,
+      }))
+    } catch (err: any) {
+      set({ error: err.message })
+      throw err
+    }
+  },
+
+  seedCategories: async (ledgerId) => {
     const { data: ledger } = await supabase.from('ledgers').select('workspace_id').eq('id', ledgerId).single()
     if (!ledger?.workspace_id) return
 
@@ -305,21 +264,34 @@ export const useGroupStore = create<GroupState>((set, get) => ({
       { name: 'Entertainment', emoji: '🎮', color: '#8b5cf6', type: 'cost_center' },
     ]
 
-    const payload = defaults.map(d => ({
-      workspace_id: ledger.workspace_id,
-      name_en: d.name,
-      name_vi: d.name, // Will need actual translations later
-      name_ja: d.name,
-      emoji: d.emoji,
-      color: d.color,
-      category_type: d.type,
-      is_active: true
-    }))
+    const payload = defaults.map((d, index) => {
+      const code = `A${(index + 1).toString().padStart(3, '0')}`
+      const path = `/${code}`
+      return {
+        workspace_id: ledger.workspace_id,
+        name_en: d.name,
+        name_vi: d.name,
+        name_ja: d.name,
+        emoji: d.emoji,
+        color: d.color,
+        category_type: d.type,
+        category_code: code,
+        path: path,
+        sort_order: index,
+        is_active: true,
+        metadata: {
+          budget_limit: 0,
+          keywords: [d.name.toLowerCase()],
+          category_code: code,
+          path: path
+        }
+      }
+    })
 
     try {
       const { error } = await supabase.from('categories').insert(payload)
       if (error) throw error
-      await get().fetchGroups(ledgerId)
+      await get().fetchCategories(ledgerId)
     } catch (err: any) {
       set({ error: err.message })
     }
@@ -327,14 +299,39 @@ export const useGroupStore = create<GroupState>((set, get) => ({
 }))
 
 /**
- * Utility to transform flat groups into a tree structure
+ * Utility to transform flat categories into a tree structure
  */
-export function buildGroupTree(groups: Group[], parentId: string | null = null, depth = 0): GroupTreeNode[] {
-  return groups
+export function buildCategoryTree(categories: Category[], parentId: string | null = null, depth = 0): CategoryTreeNode[] {
+  return categories
     .filter((g) => g.parent_id === parentId)
     .map((g) => ({
       ...g,
       depth,
-      children: buildGroupTree(groups, g.id, depth + 1),
+      children: buildCategoryTree(categories, g.id, depth + 1),
     }))
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COMPATIBILITY ALIASES: Maps Category concepts to Group terms for UI Layer
+// ─────────────────────────────────────────────────────────────────────────────
+export const useGroupStore = () => {
+  const store = useCategoryStore()
+  return {
+    groups: store.categories,
+    balances: store.balances,
+    isLoading: store.isLoading,
+    error: store.error,
+    selectedGroupId: store.selectedCategoryId,
+    setSelectedGroupId: store.setSelectedCategoryId,
+    fetchGroups: store.fetchCategories,
+    createGroup: store.createCategory,
+    updateGroup: store.updateCategory,
+    deleteGroup: store.deleteCategory,
+    seedGroups: store.seedCategories,
+  }
+}
+
+export function buildGroupTree(groups: Category[], parentId: string | null = null, depth = 0): CategoryTreeNode[] {
+  return buildCategoryTree(groups, parentId, depth)
+}
+
