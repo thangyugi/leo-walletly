@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tài liệu trang /categories – Walletly</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; font-size: 14px; line-height: 1.6; color: #1e293b; background: #f8fafc; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 24px 80px; }
+    h1 { font-size: 26px; font-weight: 700; color: #0f172a; margin-bottom: 4px; }
+    h2 { font-size: 19px; font-weight: 700; color: #0f172a; margin: 36px 0 14px; border-bottom: 2px solid #e2e8f0; padding-bottom: 7px; }
+    h3 { font-size: 15px; font-weight: 600; color: #1e293b; margin: 22px 0 8px; }
+    h4 { font-size: 13px; font-weight: 600; color: #334155; margin: 14px 0 6px; }
+    p { margin-bottom: 10px; color: #475569; }
+    a { color: #2563eb; text-decoration: none; }
+    code { font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; color: #0f172a; }
+    pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.7; margin: 10px 0; }
+    pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
+
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    th { background: #f1f5f9; color: #374151; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #e2e8f0; }
+    td { padding: 7px 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #475569; }
+    tr:nth-child(even) td { background: #f8fafc; }
+
+    .badge { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 9999px; padding: 1px 8px; }
+    .badge-green  { background: #dcfce7; color: #166534; }
+    .badge-blue   { background: #dbeafe; color: #1e40af; }
+    .badge-yellow { background: #fef9c3; color: #854d0e; }
+    .badge-red    { background: #fee2e2; color: #991b1b; }
+    .badge-gray   { background: #f1f5f9; color: #475569; }
+    .badge-purple { background: #f3e8ff; color: #6b21a8; }
+
+    .section-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 14px 0; }
+    .route-tag { display: inline-block; font-family: monospace; font-size: 12px; background: #1e293b; color: #94a3b8; border-radius: 6px; padding: 2px 8px; }
+    .warning { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #92400e; font-size: 13px; }
+    .tip { background: #eff6ff; border: 1px solid #93c5fd; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #1e40af; font-size: 13px; }
+    .toc { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 16px 22px; margin-bottom: 32px; }
+    .toc ul { padding-left: 18px; }
+    .toc li { margin: 4px 0; }
+    .toc a { color: #2563eb; font-size: 13px; }
+    .meta { font-size: 12px; color: #94a3b8; margin-top: 2px; }
+    .static-label  { color: #64748b; font-style: italic; font-size: 12px; }
+    .interactive-label { color: #2563eb; font-size: 12px; font-weight: 600; }
+    .not-impl { color: #ef4444; font-size: 12px; font-style: italic; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Tài liệu trang <code>/categories</code> – Walletly</h1>
+  <p class="meta">Ngày phân tích: 2026-05-23 · Nguồn: phân tích trực tiếp từ source code</p>
+
+  <div class="toc">
+    <h3 style="margin-top:0">Mục lục</h3>
+    <ul>
+      <li><a href="#routes">1. Cấu trúc route</a></li>
+      <li><a href="#main-page">2. Màn hình chính <code>/categories</code></a>
+        <ul>
+          <li><a href="#header">2.1 Page Header</a></li>
+          <li><a href="#kpi">2.2 KPI Strip</a></li>
+          <li><a href="#filter">2.3 Filter Row</a></li>
+          <li><a href="#bento">2.4 Bento Grid</a></li>
+          <li><a href="#insight">2.5 Insight Strip</a></li>
+        </ul>
+      </li>
+      <li><a href="#modal-form">3. Modal tạo / chỉnh sửa nhóm (GroupForm)</a></li>
+      <li><a href="#detail-page">4. Màn hình chi tiết <code>/categories/[id]</code></a>
+        <ul>
+          <li><a href="#hero">4.1 HeroCover + Breadcrumb</a></li>
+          <li><a href="#tabbar">4.2 TabBar + bộ chọn tháng</a></li>
+          <li><a href="#statsstrip">4.3 StatsStrip</a></li>
+          <li><a href="#tabs-content">4.4 Nội dung từng tab</a></li>
+        </ul>
+      </li>
+      <li><a href="#classify-page">5. Màn hình phân loại <code>/categories/classify</code></a></li>
+      <li><a href="#db-section">6. Database – phân tích đầy đủ</a>
+        <ul>
+          <li><a href="#table-categories">6.1 Bảng <code>categories</code></a></li>
+          <li><a href="#table-transactions">6.2 Bảng <code>transactions</code></a></li>
+          <li><a href="#table-ledgers">6.3 Bảng <code>ledgers</code></a></li>
+          <li><a href="#table-ledger-members">6.4 Bảng <code>ledger_members</code></a></li>
+          <li><a href="#table-profiles">6.5 Bảng <code>profiles</code></a></li>
+          <li><a href="#view-balances">6.6 View <code>category_balances</code> / <code>group_balances</code></a></li>
+          <li><a href="#db-recommendations">6.7 Đánh giá và đề xuất</a></li>
+        </ul>
+      </li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="routes">1. Cấu trúc route</h2>
+  <table>
+    <tr>
+      <th>Route</th><th>File nguồn</th><th>Component render</th><th>Ghi chú</th>
+    </tr>
+    <tr>
+      <td><code>/categories</code></td>
+      <td><code>app/categories/page.tsx</code></td>
+      <td><code>GroupsBentoPage</code></td>
+      <td>Client component</td>
+    </tr>
+    <tr>
+      <td><code>/categories/[id]</code></td>
+      <td><code>app/categories/[id]/page.tsx</code></td>
+      <td><code>GroupDetailView</code></td>
+      <td>ID là UUID hoặc slug, lấy 36 ký tự cuối để cắt UUID</td>
+    </tr>
+    <tr>
+      <td><code>/categories/classify</code></td>
+      <td><code>app/categories/classify/page.tsx</code></td>
+      <td><code>ClassifyPage</code></td>
+      <td>Server component wrapper, title metadata</td>
+    </tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="main-page">2. Màn hình chính <span class="route-tag">/categories</span></h2>
+  <p>Component: <code>features/groups/groups-bento-page.tsx</code>. Khi load, gọi 2 hàm song song:</p>
+  <ul style="margin: 6px 0 10px 20px; color:#475569;">
+    <li><code>fetchGroups(ledgerId)</code> → query <code>categories</code> và <code>category_balances</code></li>
+    <li><code>syncTransactions(500)</code> → query <code>transactions</code> giới hạn 500 bản ghi</li>
+  </ul>
+  <p>Nếu <code>isLoading = true</code> → hiện spinner toàn trang. Nếu <code>groups.length === 0</code> → hiện trạng thái trống với một ô "Tạo danh mục mới".</p>
+
+  <!-- ── 2.1 ── -->
+  <h3 id="header">2.1 Page Header</h3>
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chức năng</th></tr>
+      <tr>
+        <td>Tiêu đề "Quản lý danh mục"</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Không có chức năng. Hiển thị tên ledger hiện tại và currency lấy từ <code>currentLedger.base_currency</code>.</td>
+      </tr>
+      <tr>
+        <td>Ô tìm kiếm (input)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Lọc client-side trên danh sách <code>regularGroups</code>. So sánh với <code>group.name</code>, <code>group.type</code>, và mảng <code>group.keywords</code>. Không gọi DB.</td>
+      </tr>
+      <tr>
+        <td>Nút "Tạo danh mục mới"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>isFormOpen = true</code> → mở Modal chứa <code>GroupForm</code> ở chế độ tạo mới.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.2 ── -->
+  <h3 id="kpi">2.2 KPI Strip (4 ô thống kê)</h3>
+  <div class="section-box">
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị, không có tương tác.</span> Tất cả số liệu tính toán client-side từ dữ liệu đã fetch.</p>
+    <table>
+      <tr><th>Ô KPI</th><th>Tính từ đâu</th></tr>
+      <tr>
+        <td>Chi tiêu tháng này</td>
+        <td>Lọc <code>transactions</code> theo <code>transactionDate.startsWith(YYYY-MM)</code> tháng hiện tại + <code>transactionType === 'expense'</code> → sum <code>Math.abs(amount)</code></td>
+      </tr>
+      <tr>
+        <td>Ngân sách còn lại</td>
+        <td><code>sum(groups.budget_limit)</code> – chi tiêu tháng. <code>budget_limit</code> lấy từ <code>metadata.budget_limit</code> trong bảng <code>categories</code>.</td>
+      </tr>
+      <tr>
+        <td>Tự động phân loại (%)</td>
+        <td><code>transactions.filter(t =&gt; t.categoryId).length / transactions.length * 100</code>. Tính trên toàn bộ transactions đã load, không giới hạn tháng.</td>
+      </tr>
+      <tr>
+        <td>Chờ đối soát</td>
+        <td><code>transactions.filter(t =&gt; !t.isReconciled).length</code>. Trường <code>is_reconciled</code> từ bảng <code>transactions</code>.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.3 ── -->
+  <h3 id="filter">2.3 Filter Row</h3>
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chức năng / Trạng thái</th></tr>
+      <tr>
+        <td>Tab filter (Tất cả / Đang hoạt động / Chia sẻ / Định kỳ / Lưu trữ)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Lọc client-side. "Tất cả" và "Đang hoạt động" cùng trả về <code>groups.is_active = true</code>. "Chia sẻ" → <code>metadata.is_shared</code>. "Định kỳ" → <code>metadata.is_recurring || type === 'project'</code>. "Lưu trữ" → <code>!is_active</code>. Số đếm hiện bên cạnh mỗi tab.</td>
+      </tr>
+      <tr>
+        <td>Chip "Tài khoản: tất cả"</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Button hiển thị nhưng không có handler onClick. Không mở dropdown. Là UI placeholder.</td>
+      </tr>
+      <tr>
+        <td>Chip "Sắp xếp: chi tiêu cao nhất"</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Button hiển thị nhưng không có handler. Danh sách luôn sort theo expense giảm dần (hardcode).</td>
+      </tr>
+      <tr>
+        <td>Chip "Bento" (LayoutGrid icon)</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Button hiển thị nhưng không có handler. Chỉ có một chế độ xem bento grid.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.4 ── -->
+  <h3 id="bento">2.4 Bento Grid</h3>
+  <p>Grid responsive: 1 cột (mobile) → 2 cột (md) → 4 cột (xl). Thứ tự card cố định trong code:</p>
+
+  <div class="section-box">
+    <h4>Card 1 – FeaturedCard (nhóm nổi bật)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Toàn bộ card</td>
+        <td><span class="interactive-label">Link điều hướng</span></td>
+        <td>Nhấn vào → điều hướng đến <code>/categories/{slugify(group.name)}</code>. Nhóm nổi bật là nhóm root (<code>parent_id = null</code>) có chi tiêu tháng cao nhất.</td>
+      </tr>
+      <tr>
+        <td>Cover gradient</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Màu từ <code>group.color</code>, watermark từ 2 chữ cái đầu tên nhóm.</td>
+      </tr>
+      <tr>
+        <td>Status pill "Đang hoạt động"</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Hardcode "Đang hoạt động", không kiểm tra <code>is_active</code>.</td>
+      </tr>
+      <tr>
+        <td>Tổng chi tiêu + progress bar</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Chi tiêu tính từ <code>transactions</code> tháng hiện tại. Budget từ <code>categories.metadata.budget_limit</code>.</td>
+      </tr>
+      <tr>
+        <td>Danh sách nhóm con</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Hiện tối đa 3 nhóm con trực tiếp (<code>parent_id = group.id</code>).</td>
+      </tr>
+      <tr>
+        <td>Arrow icon (hover)</td>
+        <td><span class="static-label">Tĩnh visual</span></td>
+        <td>Chỉ là hiệu ứng CSS opacity khi hover, không thêm chức năng.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>Card 2 – DarkStatCard variant 1 (Phân loại tự động)</h4>
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị số liệu.</span></p>
+    <p>Hiển thị: số giao dịch đã phân loại / tổng · % chính xác · số cần xem lại. Tất cả tính client-side từ <code>transactions</code> store.</p>
+  </div>
+
+  <div class="section-box">
+    <h4>Card 3 – DarkStatCard variant 2 (Danh mục chi nhiều nhất)</h4>
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị.</span></p>
+    <p>Hiển thị tên và số tiền của 4 nhóm root có chi tiêu cao nhất tháng hiện tại. Tính client-side.</p>
+  </div>
+
+  <div class="section-box">
+    <h4>GroupCard (các card nhóm thông thường)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Toàn bộ card</td>
+        <td><span class="interactive-label">Link điều hướng</span></td>
+        <td>Nhấn → <code>/categories/{slugify(group.name)}</code>.</td>
+      </tr>
+      <tr>
+        <td>Tên, icon, màu nhóm</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Từ <code>categories.name_en</code>, <code>categories.emoji</code>, <code>categories.color</code>.</td>
+      </tr>
+      <tr>
+        <td>Số tiền chi tiêu</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Tính client-side: BFS để lấy tất cả <code>descendantIds</code>, sau đó sum <code>transactions.amount</code> có <code>categoryId</code> thuộc descendant + tháng hiện tại.</td>
+      </tr>
+      <tr>
+        <td>Progress bar</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Màu: xanh lá (ok, &lt;80%), vàng (warn, 80–100%), đỏ (over, &gt;100%).</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>SmartClassifyCard (Giao dịch chờ phân loại)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Header, preview rows</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Hiển thị tối đa 3 giao dịch chưa có <code>categoryId</code> và có <code>transactionType = 'expense'</code>. Gợi ý danh mục bằng cách khớp <code>group.keywords</code> với <code>merchantName / description</code> của transaction.</td>
+      </tr>
+      <tr>
+        <td>Nút "Xem tất cả"</td>
+        <td><span class="interactive-label">Link điều hướng</span></td>
+        <td>Chỉ hiện khi <code>pendingTxns.length &gt; 3</code>. Nhấn → <code>/categories/classify</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút "Áp dụng tất cả"</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>Tìm gợi ý danh mục cho từng pending transaction theo keyword → gọi <code>bulkUpdateTransactions()</code> → UPDATE bảng <code>transactions</code>, cột <code>category_id</code>. Hiển thị spinner trong lúc xử lý.</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>AddGroupTile (Tạo danh mục mới)</h4>
+    <p><strong>Loại:</strong> <span class="interactive-label">Tương tác</span> – Nhấn → mở Modal GroupForm tạo mới.</p>
+  </div>
+
+  <div class="section-box">
+    <h4>ArchiveStrip (Lưu trữ)</h4>
+    <p><strong>Loại:</strong> Chỉ hiển thị khi có nhóm root với <code>is_active = false</code>.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Danh sách item lưu trữ</td>
+        <td><span class="static-label">Tĩnh (visual hover)</span></td>
+        <td>Có class hover nhưng không có onClick handler. Không điều hướng.</td>
+      </tr>
+      <tr>
+        <td>Nút "Xem tất cả lưu trữ →"</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Button không có onClick, không dẫn đến đâu.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.5 ── -->
+  <h3 id="insight">2.5 Insight Strip (cuối trang)</h3>
+  <div class="section-box">
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – thông báo hướng dẫn.</span></p>
+    <table>
+      <tr><th>Nút</th><th>Trạng thái</th></tr>
+      <tr><td>"Tìm hiểu"</td><td><span class="not-impl">Chưa implement</span> – button không có handler.</td></tr>
+      <tr><td>"Mở quản lý từ khóa"</td><td><span class="not-impl">Chưa implement</span> – button không có handler.</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="modal-form">3. Modal tạo / chỉnh sửa nhóm (GroupForm)</h2>
+  <p>File: <code>features/groups/group-form.tsx</code>. Mở bằng <code>isFormOpen = true</code>. Chế độ tạo khi <code>initialData = null</code>, chỉnh sửa khi <code>initialData = {group}</code>.</p>
+
+  <div class="section-box">
+    <table>
+      <tr><th>Field</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tên nhóm (input text)</td>
+        <td><span class="interactive-label">Required</span></td>
+        <td>Ghi vào <code>name_en</code>, <code>name_vi</code>, <code>name_ja</code> (cùng 1 giá trị – chưa hỗ trợ đa ngôn ngữ riêng).</td>
+      </tr>
+      <tr>
+        <td>Loại nhóm (select)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>5 lựa chọn: cost_center / department / project / team / subsidiary. Ghi vào cột <code>category_type</code>.</td>
+      </tr>
+      <tr>
+        <td>Nhóm cha (select)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Lọc danh sách để tránh circular reference và giới hạn 4 tầng sâu. Ghi vào cột <code>parent_id</code>.</td>
+      </tr>
+      <tr>
+        <td>Biểu tượng icon (grid)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Chọn từ preset icons (lucide-react names). Ghi vào cột <code>emoji</code>.</td>
+      </tr>
+      <tr>
+        <td>Màu sắc (8 màu preset)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Ghi vào cột <code>color</code> (hex string).</td>
+      </tr>
+      <tr>
+        <td>Ngân sách hàng tháng (NumberInput)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Ghi vào <code>metadata.budget_limit</code> (JSONB). Có validation: tổng budget các nhóm con không vượt budget nhóm cha.</td>
+      </tr>
+      <tr>
+        <td>Từ khóa (input + tag list)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Nhấn Enter hoặc nút "Thêm" để thêm keyword. Ghi vào <code>metadata.keywords</code> (JSONB array).</td>
+      </tr>
+      <tr>
+        <td>Nút "Hủy bỏ"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Gọi <code>onClose()</code>, đóng modal, không lưu.</td>
+      </tr>
+      <tr>
+        <td>Nút "Lưu nhóm"</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>
+          <strong>Tạo mới:</strong> INSERT vào <code>categories</code> với auto-generated <code>category_code</code> (A001, AA01...) và <code>path</code>.<br/>
+          <strong>Cập nhật:</strong> UPDATE <code>categories</code> + nếu path thay đổi → cập nhật đệ quy tất cả descendants.<br/>
+          <strong>Logic kiểm tra:</strong> Giới hạn tối đa 4 tầng sâu.
+        </td>
+      </tr>
+    </table>
+
+    <h4>Budget Warning Modal (modal lồng)</h4>
+    <p>Xuất hiện khi tổng <code>budget_limit</code> của các nhóm con vượt <code>budget_limit</code> nhóm cha.</p>
+    <table>
+      <tr><th>Nút</th><th>Hành động</th></tr>
+      <tr><td>"Xem lại"</td><td>Đóng warning modal, giữ nguyên form, không lưu.</td></tr>
+      <tr><td>"Vẫn tiếp tục lưu"</td><td>Bỏ qua cảnh báo, gọi <code>performSave()</code> → INSERT hoặc UPDATE DB.</td></tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="detail-page">4. Màn hình chi tiết <span class="route-tag">/categories/[id]</span></h2>
+  <p>File: <code>features/groups/group-detail-view.tsx</code>. Khi load (không phải nested), gọi:</p>
+  <ul style="margin: 6px 0 10px 20px; color:#475569;">
+    <li><code>fetchGroups(ledgerId)</code></li>
+    <li><code>syncTransactions(500)</code></li>
+    <li><code>fetchMembers(ledgerId)</code> → query <code>ledger_members</code> join <code>profiles</code></li>
+  </ul>
+  <p>Nhận dạng nhóm bằng: so khớp <code>group.id === groupId</code> hoặc <code>slugify(group.name) === groupId</code>.</p>
+
+  <!-- ── 4.1 ── -->
+  <h3 id="hero">4.1 HeroCover + Breadcrumb</h3>
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Breadcrumb "Danh mục"</td>
+        <td><span class="interactive-label">Link</span></td>
+        <td>Điều hướng về <code>/categories</code>.</td>
+      </tr>
+      <tr>
+        <td>Breadcrumb tổ tiên</td>
+        <td><span class="interactive-label">Link</span></td>
+        <td>Điều hướng đến <code>/categories/{slugify(ancestor.name)}</code>. Nếu là modal lồng, nút cha gần nhất gọi <code>onClose()</code>.</td>
+      </tr>
+      <tr>
+        <td>Cover gradient + tên nhóm</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Màu từ <code>color</code>, icon từ <code>emoji</code>, tên từ <code>name</code>. Badges "Đang hoạt động", "Tự động phân loại", "Mã hóa E2E" đều hardcode, không phản ánh trạng thái thực.</td>
+      </tr>
+      <tr>
+        <td>Member avatars</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Initials từ <code>ledger_members → profiles.full_name</code>. Hiện tối đa 6 avatar.</td>
+      </tr>
+      <tr>
+        <td>Nút Edit (pencil)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>editingGroup = group</code> → mở Modal GroupForm ở chế độ chỉnh sửa.</td>
+      </tr>
+      <tr>
+        <td>Nút Delete (trash, đỏ)</td>
+        <td><span class="interactive-label">Tương tác – xóa DB</span></td>
+        <td>Hiện <code>window.confirm()</code> → nếu xác nhận → DELETE <code>categories</code> theo id. Sau khi xóa nhóm hiện tại → điều hướng về <code>/categories</code>.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 4.2 ── -->
+  <h3 id="tabbar">4.2 TabBar + bộ chọn tháng</h3>
+  <div class="section-box">
+    <p>7 tab: <strong>Tổng quan · Nhóm con · Từ khóa · Giao dịch · Số dư · Thành viên · Cài đặt</strong></p>
+    <table>
+      <tr><th>Tab</th><th>Loại</th><th>Chức năng</th></tr>
+      <tr><td>Tổng quan</td><td><span class="interactive-label">Tương tác</span></td><td>Render full layout: SubGroups + LinkedAccounts + KeywordManager + RecentTransactions + SettleUp + Balances.</td></tr>
+      <tr><td>Nhóm con</td><td><span class="interactive-label">Tương tác</span></td><td>Chỉ render SubGroupsSection.</td></tr>
+      <tr><td>Từ khóa</td><td><span class="interactive-label">Tương tác</span></td><td>Chỉ render KeywordManagerSection.</td></tr>
+      <tr><td>Giao dịch</td><td><span class="interactive-label">Tương tác</span></td><td>Chỉ render RecentTransactions.</td></tr>
+      <tr><td>Số dư</td><td><span class="interactive-label">Tương tác</span></td><td>Render SettleUpSection + BalancesSection.</td></tr>
+      <tr><td>Thành viên</td><td><span class="interactive-label">Tương tác</span></td><td>Render BalancesSection (danh sách thành viên + số dư chia đều).</td></tr>
+      <tr><td>Cài đặt</td><td><span class="not-impl">Chưa implement</span></td><td>Hiện text "Cài đặt nhóm – sắp ra mắt".</td></tr>
+    </table>
+
+    <h4>Bộ chọn tháng</h4>
+    <p><span class="interactive-label">Tương tác</span> – Native <code>&lt;input type="month"&gt;</code> ẩn, hiển thị qua button. Chọn tháng → lọc lại <code>groupTxns</code> client-side theo <code>transactionDate.startsWith(YYYY-MM)</code>. Không gọi DB.</p>
+  </div>
+
+  <!-- ── 4.3 ── -->
+  <h3 id="statsstrip">4.3 StatsStrip (5 ô thống kê)</h3>
+  <div class="section-box">
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị.</span> Tất cả tính client-side từ <code>groupTxns</code> (transactions đã lọc theo nhóm + tháng).</p>
+    <table>
+      <tr><th>Ô</th><th>Nguồn dữ liệu</th></tr>
+      <tr><td>Tổng chi tiêu</td><td>Sum <code>Math.abs(amount)</code> với <code>transactionType = 'expense'</code></td></tr>
+      <tr><td>Ngân sách</td><td><code>categories.metadata.budget_limit</code></td></tr>
+      <tr><td>Trung bình / người</td><td>Tổng chi / số <code>ledger_members</code></td></tr>
+      <tr><td>Bạn đã trả</td><td>Hardcode bằng "Tổng chi tiêu" – không có dữ liệu per-user</td></tr>
+      <tr><td>Tự động khớp</td><td>Số transaction có <code>categoryId</code> / tổng; số cần xem lại = <code>status='pending' || !isReconciled</code></td></tr>
+    </table>
+  </div>
+
+  <!-- ── 4.4 ── -->
+  <h3 id="tabs-content">4.4 Nội dung từng section trong tab</h3>
+
+  <div class="section-box">
+    <h4>SubGroupsSection (Nhóm con)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr><td>Toggle "Theo chi tiêu / Theo tên"</td><td><span class="interactive-label">Tương tác</span></td><td>Sort client-side, không gọi DB.</td></tr>
+      <tr><td>Card nhóm con</td><td><span class="interactive-label">Tương tác</span></td><td>Click card → mở Modal <code>GroupDetailView</code> lồng với <code>isNested=true</code>.</td></tr>
+      <tr><td>Hover icon Edit (pencil)</td><td><span class="interactive-label">Tương tác – ghi DB</span></td><td>Mở GroupForm chỉnh sửa nhóm con.</td></tr>
+      <tr><td>Hover icon Delete (trash)</td><td><span class="interactive-label">Tương tác – xóa DB</span></td><td><code>window.confirm()</code> → DELETE <code>categories</code>.</td></tr>
+      <tr><td>Nút "Thêm nhóm con"</td><td><span class="interactive-label">Tương tác</span></td><td>Mở GroupForm với <code>parent_id = group.id</code>. Bị ẩn nếu depth đã = 4.</td></tr>
+      <tr><td>Badge "Đạt cấp tối đa (Cấp 4)"</td><td><span class="static-label">Tĩnh</span></td><td>Hiện khi <code>depth &gt;= 4</code>.</td></tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>LinkedAccountsSection (Tài khoản liên kết)</h4>
+    <p><strong>Loại: Tĩnh</strong> – Nhóm giao dịch theo trường <code>transactions.source</code> (manual / csv_import / bank_feed / vcb / momo). Tính client-side, không query DB riêng.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th></tr>
+      <tr><td>Nút Edit (icon)</td><td><span class="not-impl">Chưa implement</span></td></tr>
+      <tr><td>Nút "Liên kết tài khoản"</td><td><span class="not-impl">Chưa implement</span> – button không có handler</td></tr>
+      <tr><td>Phân bổ chi tiêu (bar + legend)</td><td><span class="static-label">Tĩnh</span></td></tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>KeywordManagerSection (Từ khóa)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr><td>Xóa keyword (X)</td><td><span class="interactive-label">Tương tác – ghi DB</span></td><td>Gọi <code>updateGroup(groupId, {keywords})</code> → UPDATE <code>categories.metadata.keywords</code>.</td></tr>
+      <tr><td>Thêm keyword (Enter)</td><td><span class="interactive-label">Tương tác – ghi DB</span></td><td>Gọi <code>updateGroup()</code> → UPDATE <code>categories.metadata.keywords</code>.</td></tr>
+      <tr><td>Gợi ý keyword (nút dashed)</td><td><span class="interactive-label">Tương tác – ghi DB</span></td><td>Promote suggestion thành keyword → <code>updateGroup()</code>. Hiện tại suggestions luôn rỗng (chưa có logic tự sinh).</td></tr>
+      <tr><td>Nút "Học từ lịch sử"</td><td><span class="not-impl">Chưa implement</span></td><td>Button không có handler.</td></tr>
+      <tr><td>Nút "Quy tắc nâng cao"</td><td><span class="not-impl">Chưa implement</span></td><td>Button không có handler.</td></tr>
+      <tr><td>Toggle On/Off quy tắc</td><td><span class="interactive-label">Tương tác</span></td><td>Cập nhật state local (<code>rules</code>). <strong>KHÔNG ghi DB</strong> – thay đổi mất khi reload.</td></tr>
+      <tr><td>Nút "Thêm quy tắc"</td><td><span class="interactive-label">Tương tác – local only</span></td><td>Thêm rule mock vào state local. <strong>KHÔNG ghi DB.</strong></td></tr>
+      <tr><td>Nút "Chạy thử..."</td><td><span class="not-impl">Chưa implement</span></td><td>Button không có handler.</td></tr>
+    </table>
+  </div>
+
+  <div class="section-box">
+    <h4>RecentTransactions (Giao dịch)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr><td>Tab "Tất cả / Tự động / Cần xem lại"</td><td><span class="interactive-label">Tương tác</span></td><td>Lọc client-side. "Tự động" = <code>!categoryId</code> (có vẻ logic ngược – transaction chưa có category). "Cần xem lại" = <code>status='pending' || !isReconciled</code>.</td></tr>
+      <tr><td>Danh sách transaction</td><td><span class="static-label">Tĩnh</span></td><td>Hiển thị tối đa 20 transaction. Không click được.</td></tr>
+      <tr><td>Nút "Xem tất cả →"</td><td><span class="not-impl">Chưa implement</span></td><td>Button không có handler.</td></tr>
+    </table>
+    <p>Dữ liệu: transactions đã load vào store, lọc theo <code>categoryId ∈ descendantIds</code> hoặc keyword match + tháng đang chọn.</p>
+  </div>
+
+  <div class="section-box">
+    <h4>SettleUpSection (Đối soát chi tiêu)</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th></tr>
+      <tr><td>Danh sách thành viên + số tiền chia đều</td><td><span class="static-label">Tĩnh – chia đều đơn giản</span></td></tr>
+      <tr><td>Nút "Đối soát"</td><td><span class="not-impl">Chưa implement</span> – không có handler</td></tr>
+    </table>
+    <p>Số tiền = tổng chi / số thành viên (chia đều, không tính người trả thực tế).</p>
+  </div>
+
+  <div class="section-box">
+    <h4>BalancesSection (Số dư từng người)</h4>
+    <p><strong>Loại: Tĩnh</strong> – Hiển thị danh sách thành viên từ <code>ledger_members + profiles</code>. Số dư = <code>balance.net_balance / members.length</code> từ view <code>category_balances</code>. Nếu view không có data → hiển thị 0.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="classify-page">5. Màn hình phân loại <span class="route-tag">/categories/classify</span></h2>
+  <p>File: <code>features/groups/classify-page.tsx</code>. Khi load: dùng dữ liệu đã có trong store (không fetch thêm).</p>
+
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Nút Back (←)</td>
+        <td><span class="interactive-label">Điều hướng</span></td>
+        <td><code>router.push('/categories')</code></td>
+      </tr>
+      <tr>
+        <td>Header thống kê</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Số nhóm transaction, số pending, số đã áp dụng. Client-side.</td>
+      </tr>
+      <tr>
+        <td>Nút "Lưu tạm"</td>
+        <td><span class="not-impl">Chưa implement thực sự</span></td>
+        <td>Chỉ reset <code>isDirty = false</code>. Không ghi DB, không lưu bất kỳ thứ gì.</td>
+      </tr>
+      <tr>
+        <td>Nút "Xác nhận tất cả"</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>Bulk UPDATE <code>transactions.category_id</code> cho tất cả nhóm chưa áp dụng. Sau đó UPDATE <code>categories.metadata.keywords</code> với keywords mới rút ra từ tên merchant. Cuối cùng <code>router.push('/categories')</code>.</td>
+      </tr>
+      <tr>
+        <td>Progress bar</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Tính: (đã áp dụng + chờ xác nhận) / tổng pending.</td>
+      </tr>
+      <tr>
+        <td>Ô tìm kiếm</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Lọc client-side nhóm transaction theo <code>merchantName / description</code>.</td>
+      </tr>
+      <tr>
+        <td>Mỗi row nhóm transaction</td>
+        <td><span class="static-label">Tĩnh + controls</span></td>
+        <td>Nhóm các transaction cùng merchant/description + cùng chiều tiền vào/ra.</td>
+      </tr>
+      <tr>
+        <td>Select danh mục (dropdown)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Dropdown phân cấp cha/con. Gợi ý tự động từ keyword match. Thay đổi đặt <code>isDirty = true</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút "Áp dụng (N)"</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>UPDATE <code>transactions.category_id</code> cho từng transaction trong nhóm (batch 10). Sau đó UPDATE <code>categories.metadata.keywords</code> với smart keywords mới. Hiện "Đã lưu" sau khi xong.</td>
+      </tr>
+      <tr>
+        <td>Nút expand/collapse (ChevronDown/Up)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Toggle state local, hiện danh sách chi tiết transaction trong nhóm.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="db-section">6. Database – phân tích đầy đủ</h2>
+
+  <!-- ── 6.1 ── -->
+  <h3 id="table-categories">6.1 Bảng <code>categories</code></h3>
+  <p><span class="badge badge-green">Dùng nhiều</span> Bảng chính cho toàn bộ trang /categories. Dùng: SELECT (khi load), INSERT (tạo), UPDATE (sửa, keyword), DELETE (xóa).</p>
+
+  <table>
+    <tr><th>Cột</th><th>Kiểu</th><th>Dùng trong code</th><th>Ghi chú</th></tr>
+    <tr><td><code>id</code></td><td>UUID PK</td><td>Khóa tra cứu, foreign key từ transactions</td><td>Đọc/ghi</td></tr>
+    <tr><td><code>workspace_id</code></td><td>UUID FK</td><td>Filter trong SELECT: lấy workspace_id từ ledger trước</td><td>Không có ledger_id trực tiếp</td></tr>
+    <tr><td><code>parent_id</code></td><td>UUID FK (self)</td><td>Dùng để build cây, tìm subgroups, BFS descendantIds</td><td>Đọc/ghi</td></tr>
+    <tr><td><code>name_en</code></td><td>TEXT</td><td>Tên hiển thị chính (name_i18n.en || name_en || name_vi || name_ja)</td><td>Ghi 3 cột cùng lúc khi tạo/sửa</td></tr>
+    <tr><td><code>name_vi</code></td><td>TEXT</td><td>Ghi cùng name_en khi tạo/sửa</td><td>UI chưa dùng riêng</td></tr>
+    <tr><td><code>name_ja</code></td><td>TEXT</td><td>Ghi cùng name_en khi tạo/sửa</td><td>UI chưa dùng riêng</td></tr>
+    <tr><td><code>emoji</code></td><td>TEXT</td><td>Tên lucide-react icon, render qua GroupIcon</td><td>Đọc/ghi</td></tr>
+    <tr><td><code>color</code></td><td>TEXT</td><td>Hex color, dùng cho gradient, icon bg, progress bar</td><td>Đọc/ghi</td></tr>
+    <tr><td><code>category_type</code></td><td>TEXT</td><td>Ánh xạ thành "type" trong store (cost_center/department/project/team/subsidiary)</td><td>Đọc/ghi</td></tr>
+    <tr><td><code>category_code</code></td><td>VARCHAR(4)</td><td>Tự sinh khi tạo: A001/AA01/AAA1/0001 theo độ sâu</td><td>Đọc/ghi, dùng để build path</td></tr>
+    <tr><td><code>path</code></td><td>TEXT</td><td>Hierarchical path dạng /A001/AA01. Tự build từ codes</td><td>Ghi + cập nhật descendants khi đổi parent</td></tr>
+    <tr><td><code>sort_order</code></td><td>SMALLINT</td><td>Tính khi tạo (max sibling + 1). Không dùng để sort hiển thị</td><td>Ghi khi INSERT, không đọc để sort</td></tr>
+    <tr><td><code>is_active</code></td><td>BOOLEAN</td><td>Phân biệt tab Active vs Archive. Mặc định true khi tạo</td><td>Đọc, chưa có UI toggle</td></tr>
+    <tr><td><code>metadata</code></td><td>JSONB</td><td>Chứa: budget_limit, keywords (array), category_code, path, is_shared, is_recurring, rules</td><td>Đọc/ghi nhiều nhất</td></tr>
+    <tr><td><code>created_at</code></td><td>TIMESTAMPTZ</td><td>Không dùng trong UI</td><td>Không hiển thị</td></tr>
+    <tr><td><code>updated_at</code></td><td>TIMESTAMPTZ</td><td>Dùng trong ArchiveStrip để hiển thị ngày lưu trữ</td><td>Đọc</td></tr>
+    <tr><td><code>name_i18n</code></td><td>JSONB (nếu có)</td><td>Ưu tiên hơn name_en khi normalize trong store</td><td>Không ghi, chỉ đọc nếu tồn tại</td></tr>
+    <tr><td><code>icon</code></td><td>TEXT (nếu có)</td><td>Không dùng trong code hiện tại</td><td>Dead column</td></tr>
+    <tr><td><code>chart_of_account_id</code></td><td>UUID FK (nếu có)</td><td>Không dùng</td><td>Dead column</td></tr>
+    <tr><td><code>is_system</code></td><td>BOOLEAN (nếu có)</td><td>Không dùng</td><td>Dead column</td></tr>
+  </table>
+
+  <!-- ── 6.2 ── -->
+  <h3 id="table-transactions">6.2 Bảng <code>transactions</code></h3>
+  <p><span class="badge badge-green">Dùng nhiều</span> Lưu ý: code dùng bảng <strong><code>transactions</code></strong> (không phải <code>transactions_v3</code>).</p>
+  <p>Câu query khi load: <code>SELECT * FROM transactions ORDER BY transaction_date DESC LIMIT 500</code>. Không filter theo ledger_id.</p>
+
+  <table>
+    <tr><th>Cột DB</th><th>Ánh xạ trong code</th><th>Dùng trong /categories</th></tr>
+    <tr><td><code>id</code></td><td><code>t.id</code></td><td>Key, tham chiếu khi bulk update</td></tr>
+    <tr><td><code>category_id</code></td><td><code>t.categoryId</code></td><td>Kiểm tra đã phân loại chưa, filter/assign trong classify</td></tr>
+    <tr><td><code>transaction_type</code></td><td><code>t.transactionType</code></td><td>Lọc 'expense'/'income'/'transfer', tính tổng chi</td></tr>
+    <tr><td><code>transaction_date</code></td><td><code>t.transactionDate</code></td><td>Filter theo tháng (startsWith YYYY-MM)</td></tr>
+    <tr><td><code>amount</code></td><td><code>t.amount</code></td><td>Tính tổng chi tiêu, hiển thị số tiền</td></tr>
+    <tr><td><code>merchant_name</code></td><td><code>t.merchantName</code></td><td>Keyword matching, hiển thị tên transaction</td></tr>
+    <tr><td><code>description</code></td><td><code>t.description</code></td><td>Keyword matching, hiển thị khi không có merchant_name</td></tr>
+    <tr><td><code>is_reconciled</code></td><td><code>t.isReconciled</code></td><td>Badge "cần xem lại", KPI "Chờ đối soát"</td></tr>
+    <tr><td><code>status</code></td><td><code>t.status</code></td><td>"pending" → cần xem lại</td></tr>
+    <tr><td><code>source</code></td><td><code>t.source</code></td><td>LinkedAccountsSection: nhóm theo nguồn (manual/csv_import/vcb/momo)</td></tr>
+    <tr><td><code>currency_code</code></td><td><code>t.currencyCode</code></td><td>Hiển thị trong transaction list</td></tr>
+    <tr><td><code>ledger_id</code></td><td>Không map</td><td>Không dùng để filter khi fetch (thiếu quan trọng)</td></tr>
+    <tr><td><code>notes</code></td><td><code>t.notes</code></td><td>Không hiển thị trong /categories</td></tr>
+    <tr><td><code>metadata</code></td><td><code>t.metadata</code></td><td>Không dùng trong /categories</td></tr>
+    <tr><td><code>updated_at</code>, <code>deleted_at</code></td><td>Không dùng trong /categories</td><td>–</td></tr>
+  </table>
+
+  <!-- ── 6.3 ── -->
+  <h3 id="table-ledgers">6.3 Bảng <code>ledgers</code></h3>
+  <p><span class="badge badge-blue">Dùng ít</span> Chỉ SELECT để lấy <code>workspace_id</code> mỗi khi cần query categories.</p>
+  <table>
+    <tr><th>Cột</th><th>Dùng</th></tr>
+    <tr><td><code>id</code></td><td>WHERE id = ledgerId</td></tr>
+    <tr><td><code>workspace_id</code></td><td>Dùng để filter categories theo workspace</td></tr>
+    <tr><td><code>name</code></td><td>Hiển thị dưới tiêu đề trang</td></tr>
+    <tr><td><code>base_currency</code></td><td>Format tiền tệ (¥, ₫, $...)</td></tr>
+    <tr><td>Các cột khác</td><td>Không dùng trong /categories</td></tr>
+  </table>
+
+  <!-- ── 6.4 ── -->
+  <h3 id="table-ledger-members">6.4 Bảng <code>ledger_members</code></h3>
+  <p><span class="badge badge-blue">Dùng trong detail view</span> Fetch khi vào <code>/categories/[id]</code>.</p>
+  <table>
+    <tr><th>Cột</th><th>Dùng</th></tr>
+    <tr><td><code>id</code></td><td>Key trong danh sách</td></tr>
+    <tr><td><code>ledger_id</code></td><td>WHERE ledger_id = currentLedger.id</td></tr>
+    <tr><td><code>user_id</code></td><td>Hiển thị fallback khi không có full_name</td></tr>
+    <tr><td><code>role</code></td><td>Hiển thị badge "chủ nhóm" khi role = 'owner'</td></tr>
+    <tr><td><code>profile</code></td><td>Join profiles, lấy full_name + avatar_url</td></tr>
+    <tr><td><code>status</code></td><td>Không dùng trong /categories</td></tr>
+    <tr><td><code>joined_at</code>, <code>last_active_at</code></td><td>Không dùng</td></tr>
+  </table>
+
+  <!-- ── 6.5 ── -->
+  <h3 id="table-profiles">6.5 Bảng <code>profiles</code></h3>
+  <p><span class="badge badge-blue">Dùng qua join</span> JOIN trong query <code>ledger_members</code>.</p>
+  <table>
+    <tr><th>Cột</th><th>Dùng</th></tr>
+    <tr><td><code>id</code></td><td>Join key</td></tr>
+    <tr><td><code>full_name</code></td><td>Initials avatar, tên thành viên</td></tr>
+    <tr><td><code>avatar_url</code></td><td>Lấy nhưng không render (dùng initials)</td></tr>
+  </table>
+
+  <!-- ── 6.6 ── -->
+  <h3 id="view-balances">6.6 View <code>category_balances</code> / <code>group_balances</code></h3>
+  <p><span class="badge badge-yellow">View tùy chọn</span> Fetch khi <code>fetchGroups()</code>. Có fallback: thử <code>category_balances</code> trước, nếu lỗi thử <code>group_balances</code>, nếu cả hai lỗi thì <code>balances = []</code>.</p>
+  <p>Kết quả chỉ dùng trong <code>BalancesSection</code> của detail view để tính <code>net_balance / members.length</code>.</p>
+  <table>
+    <tr><th>Cột kỳ vọng</th><th>Dùng</th></tr>
+    <tr><td><code>group_id</code></td><td>Match với <code>group.id</code></td></tr>
+    <tr><td><code>ledger_id</code></td><td>Filter WHERE ledger_id</td></tr>
+    <tr><td><code>net_balance</code></td><td>Chia đều cho thành viên</td></tr>
+    <tr><td><code>total_income</code></td><td>Có trong type nhưng không dùng trong UI</td></tr>
+    <tr><td><code>total_expense</code></td><td>Có trong type nhưng không dùng trong UI</td></tr>
+    <tr><td><code>name</code></td><td>Không dùng</td></tr>
+  </table>
+
+  <!-- ── 6.7 ── -->
+  <h3 id="db-recommendations">6.7 Đánh giá và đề xuất</h3>
+
+  <div class="warning">
+    <strong>🔴 Lỗi nghiêm trọng: Không filter <code>ledger_id</code> khi fetch transactions</strong><br/>
+    Query <code>SELECT * FROM transactions ORDER BY transaction_date DESC LIMIT 500</code> lấy toàn bộ transactions của hệ thống, không lọc theo ledger. Nếu người dùng có nhiều sổ cái hoặc là multi-tenant, dữ liệu từ sổ cái khác sẽ lẫn vào. Cần thêm <code>.eq('ledger_id', currentLedger.id)</code>.
+  </div>
+
+  <div class="warning">
+    <strong>🔴 Dữ liệu đa ngôn ngữ ghi trùng 3 cột</strong><br/>
+    Khi tạo/sửa nhóm, code ghi cùng một giá trị vào <code>name_en</code>, <code>name_vi</code>, <code>name_ja</code>. Tính năng đa ngôn ngữ thực sự chưa hoạt động – UI không cho nhập tên riêng theo ngôn ngữ.
+  </div>
+
+  <div class="warning">
+    <strong>🟡 <code>budget_limit</code> và <code>keywords</code> lưu trong JSONB metadata thay vì cột riêng</strong><br/>
+    Cả hai trường quan trọng này nằm trong <code>categories.metadata</code> (JSONB) thay vì cột riêng. Điều này khiến việc query, index, và validate trở nên phức tạp. Code phải fallback nhiều lần: <code>metadata.budget_limit || budget_limit</code>. Nên tách thành cột <code>budget_limit NUMERIC</code> và <code>keywords TEXT[]</code>.
+  </div>
+
+  <div class="warning">
+    <strong>🟡 View <code>category_balances</code> có thể không tồn tại</strong><br/>
+    Code có try/catch fallback sang <code>group_balances</code> rồi fallback về mảng rỗng. Không có thông báo lỗi cho người dùng. Nếu cả hai view không tồn tại, tab "Số dư" sẽ luôn hiển thị 0.
+  </div>
+
+  <div class="warning">
+    <strong>🟡 Rules trong KeywordManager không được lưu DB</strong><br/>
+    Toggle on/off quy tắc và "Thêm quy tắc" chỉ cập nhật React state local. Khi reload trang, tất cả thay đổi mất. Cần gọi <code>updateGroup(id, {metadata: {rules}})</code>.
+  </div>
+
+  <div class="tip">
+    <strong>💡 Đề xuất: Thêm cột vào bảng <code>categories</code></strong><br/>
+    Nên tách <code>budget_limit NUMERIC(20,6)</code> và <code>keywords TEXT[]</code> ra khỏi JSONB. Thêm index <code>GIN(keywords)</code> để keyword search hiệu quả hơn. Thêm cột <code>ledger_id UUID</code> để có thể query categories theo sổ cái nếu cần.
+  </div>
+
+  <div class="tip">
+    <strong>💡 Đề xuất: Bảng <code>transactions</code></strong><br/>
+    Xác nhận rõ ràng đang dùng bảng nào: <code>transactions</code> hay <code>transactions_v3</code> (cả hai đều được đề cập trong codebase). Thêm filter <code>.eq('ledger_id', ledgerId)</code> vào câu query fetch. Cân nhắc tăng limit từ 500 lên hoặc dùng pagination để đảm bảo đủ dữ liệu cho tính toán KPI.
+  </div>
+
+  <div class="tip">
+    <strong>💡 Đề xuất: Tạo view <code>category_balances</code> chính thức</strong><br/>
+    Hiện view này không đảm bảo tồn tại. Nên tạo migration để tạo view hoặc materialized view tính toán balance từ transactions theo category, đảm bảo luôn có dữ liệu cho tab Số dư.
+  </div>
+
+  <hr style="margin: 40px 0; border-color: #e2e8f0;" />
+  <p style="font-size: 12px; color: #94a3b8;">Tài liệu được tạo bằng phân tích trực tiếp source code. Không suy đoán thêm ngoài những gì có trong code.</p>
+</div>
+</body>
+</html>
