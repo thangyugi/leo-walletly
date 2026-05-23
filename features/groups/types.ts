@@ -8,9 +8,13 @@ export interface Category {
   type: GroupType
   color: string
   emoji: string
+  // Direct DB columns (not inside metadata)
   budget_limit: number
-  warning_threshold: number
   keywords: string[]
+  is_shared: boolean
+  is_recurring: boolean
+  // Legacy (still read for backward compat, but not written)
+  warning_threshold?: number
   metadata: Record<string, any>
   is_active: boolean
   categoryCode?: string
@@ -51,13 +55,14 @@ export interface CategoryBalance {
   group_id: string
   name: string
   ledger_id: string
+  month?: string
   total_income: number
   total_expense: number
   net_balance: number
+  transaction_count?: number
 }
 
 // Deprecated compatibility aliases for UI layer
 export type Group = Category
 export type GroupTreeNode = CategoryTreeNode
 export type GroupBalance = CategoryBalance
-

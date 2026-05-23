@@ -12,16 +12,11 @@ import { useTransactionsStore } from '@/stores/transactions'
 import type { Group } from './types'
 import type { Transaction } from '@/types'
 import { GroupIcon } from './group-icon'
-import { Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
-  Shield, BarChart3, TrendingDown, Filter, Search,
-  LayoutGrid, ChevronUp, Check, X, Loader2,
-} from 'lucide-react'
+import { Plus, ChevronDown, ArrowUpRight, Sun, ChevronUp, Check, X, Loader2, MoreHorizontal } from 'lucide-react'
 import { cn, slugify } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
 
-/* ─────────────────────────────────────────────────────────────
-   Currency context — provides fmt(n) + sym to all sub-components
-───────────────────────────────────────────────────────────── */
+/* ─── Currency context ─────────────────────────────────────────────────────── */
 const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string; currency: string }>({
   fmt: (n) => Math.round(n).toLocaleString('ja-JP'),
   sym: '¥',
@@ -38,35 +33,11 @@ function getDescendantIds(targetId: string, allGroups: Group[]): Set<string> {
   const queue = [targetId]
   while (queue.length > 0) {
     const currentId = queue.shift()!
-    const children = allGroups.filter(g => g.parent_id === currentId)
-    for (const child of children) {
-      if (!ids.has(child.id)) {
-        ids.add(child.id)
-        queue.push(child.id)
-      }
-    }
+    allGroups.filter(g => g.parent_id === currentId).forEach(child => {
+      if (!ids.has(child.id)) { ids.add(child.id); queue.push(child.id) }
+    })
   }
   return ids
-}
-
-function getGroupTxCount(groupId: string, allGroups: Group[], monthTxns: Transaction[]) {
-  const descendants = getDescendantIds(groupId, allGroups)
-  // Also count keyword-matched transactions that don't have a categoryId yet
-  return monthTxns.filter((t: Transaction) => t.categoryId && descendants.has(t.categoryId)).length
-}
-
-/**
- * Compute expense for a group in the given monthTxns.
- * Always uses monthTxns (not all-time balances) and includes all descendants.
- * @param groupId   - the root group id
- * @param allGroups - full flat list of categories/groups (for descendant traversal)
- * @param monthTxns - transactions already filtered to the selected month
- */
-function getGroupExpense(groupId: string, allGroups: Group[], monthTxns: Transaction[]) {
-  const descendants = getDescendantIds(groupId, allGroups)
-  return monthTxns
-    .filter((t: Transaction) => t.categoryId && descendants.has(t.categoryId) && t.transactionType === 'expense')
-    .reduce((s: number, t: Transaction) => s + Math.abs(t.amount), 0)
 }
 
 function groupGlyph(name: string) {
@@ -77,26 +48,49 @@ function groupGlyph(name: string) {
 }
 
 function typeLabel(type: string): string {
-  return (
-    ({
-      cost_center: 'Trung tâm chi phí',
-      department: 'Phòng ban',
-      project: 'Dự án',
-      team: 'Nhóm',
-      subsidiary: 'Công ty con',
-    } as Record<string, string>)[type] ?? type
-  )
+  return ({
+    cost_center: 'Trung tâm chi phí',
+    department:  'Phòng ban',
+    project:     'Dự án',
+    team:        'Nhóm',
+    subsidiary:  'Công ty con',
+  } as Record<string, string>)[type] ?? type
 }
 
 function makeGradient(color: string) {
   return `linear-gradient(135deg,${color}dd 0%,${color}99 60%,${color}66 130%)`
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Sub-components
-───────────────────────────────────────────────────────────── */
+/* ─── Server KPI data hook ─────────────────────────────────────────────────── */
+interface KpiData {
+  total_expense:     number
+  total_budget:      number
+  classified_count:  number
+  total_count:       number
+  pending_reconcile: number
+}
 
-// Reusable arrow icon for card hover
+interface StatsData {
+  category_stats:    { id: string; name: string; expense: number; tx_count: number; budget_limit: number }[]
+  top_categories:    { id: string; name: string; expense: number }[]
+  auto_classify_pct: number
+  classified_count:  number
+  total_count:       number
+}
+
+async function fetchFromApi<T>(path: string, ledgerId: string, month: string, token: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${path}?ledger_id=${ledgerId}&month=${month}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    if (!res.ok) return null
+    return res.json() as Promise<T>
+  } catch {
+    return null
+  }
+}
+
+/* ─── Reusable arrow icon ──────────────────────────────────────────────────── */
 function BnArrow({ className }: { className?: string }) {
   return (
     <div className={cn(
@@ -109,7 +103,6 @@ function BnArrow({ className }: { className?: string }) {
   )
 }
 
-// Progress bar inner element
 function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
   const colorMap: Record<string, string> = {
     ok:   'bg-[var(--color-gain-500)]',
@@ -124,28 +117,29 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
   )
 }
 
-// ── Featured card ────────────────────────────────────────────
+/* ─── FeaturedCard ─────────────────────────────────────────────────────────── */
 function FeaturedCard({
   group,
   subGroups,
   expense,
-  budget,
 }: {
   group: Group
   subGroups: Group[]
   expense: number
-  budget: number
 }) {
   const { fmt, sym, currency } = React.useContext(FmtCtx)
-  const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
+  const budget    = group.budget_limit || 0
+  const pct       = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const remaining = budget - expense
-  const glyph = groupGlyph(group.name)
-  const gradient = makeGradient(group.color || '#0f766e')
+  const glyph     = groupGlyph(group.name)
+  const gradient  = makeGradient(group.color || '#0f766e')
+  const displaySubs  = subGroups.slice(0, 3)
+  const extraCount   = Math.max(0, subGroups.length - 3)
 
   return (
     <Link
       href={`/categories/${slugify(group.name)}`}
-      className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
+      className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
     >
       <BnArrow className="bg-white/20 text-white" />
 
@@ -154,17 +148,16 @@ function FeaturedCard({
         className="relative flex items-end p-[18px_22px] text-white overflow-hidden"
         style={{ background: gradient, minHeight: 150 }}
       >
-        {/* Glyph watermark */}
         <span
           className="absolute right-[-20px] top-[-20px] font-black font-mono opacity-[0.14] leading-none select-none pointer-events-none"
           style={{ fontSize: 170 }}
         >
           {glyph}
         </span>
-        {/* Status pill */}
+        {/* Dynamic status pill */}
         <span className="absolute left-[22px] top-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm border border-white/20">
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse" />
-          Đang hoạt động
+          <span className={cn('w-1.5 h-1.5 rounded-full', group.is_active ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300')} />
+          {group.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
         </span>
         <div className="relative z-10 mt-8">
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
@@ -178,7 +171,7 @@ function FeaturedCard({
 
       {/* Body */}
       <div className="grid grid-cols-2 gap-5 p-5 flex-1">
-        {/* Left col */}
+        {/* Left */}
         <div className="flex flex-col gap-3">
           <div>
             <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Tổng chi tiêu</div>
@@ -199,14 +192,19 @@ function FeaturedCard({
           )}
         </div>
 
-        {/* Right col */}
+        {/* Right — sub-groups */}
         <div>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
-            {subGroups.length} danh mục con
+          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
+            <span>{subGroups.length} danh mục con</span>
+            {extraCount > 0 && (
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] font-mono text-[9px] border border-[var(--color-border-subtle)]">
+                <MoreHorizontal className="w-2.5 h-2.5" />+{extraCount}
+              </span>
+            )}
           </div>
-          {subGroups.length > 0 ? (
+          {displaySubs.length > 0 ? (
             <div className="flex flex-col gap-[5px] text-[11px]">
-              {subGroups.map((sg: Group) => (
+              {displaySubs.map((sg: Group) => (
                 <div key={sg.id} className="flex items-center gap-[7px]">
                   <span
                     className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] shrink-0"
@@ -215,6 +213,9 @@ function FeaturedCard({
                   <span className="text-[var(--color-text-secondary)] truncate">{sg.name}</span>
                 </div>
               ))}
+              {extraCount > 0 && (
+                <div className="text-[11px] text-[var(--color-text-quaternary)] pl-[25px]">và {extraCount} nhóm khác…</div>
+              )}
             </div>
           ) : (
             <div className="text-[11px] text-[var(--color-text-quaternary)]">Chưa có danh mục con</div>
@@ -225,17 +226,19 @@ function FeaturedCard({
   )
 }
 
-// ── Dark stat card ───────────────────────────────────────────
+/* ─── DarkStatCard ─────────────────────────────────────────────────────────── */
 function DarkStatCard({
   variant,
   classified,
   total,
   topGroups,
+  isLoading,
 }: {
   variant: 1 | 2
   classified?: number
   total?: number
   topGroups?: { name: string; expense: number }[]
+  isLoading?: boolean
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
   const isV1 = variant === 1
@@ -257,9 +260,13 @@ function DarkStatCard({
         )}
       </div>
 
-      {isV1 ? (
+      {isLoading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-5 h-5 animate-spin opacity-40" />
+        </div>
+      ) : isV1 ? (
         <>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Phân loại tự động</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Phân loại tự động (tháng này)</div>
           <div className="text-[28px] font-semibold tracking-[-0.025em] leading-tight font-tabular">
             {classified ?? 0} <span className="text-[18px] opacity-60">/ {total ?? 0}</span>
           </div>
@@ -270,13 +277,12 @@ function DarkStatCard({
           <hr className="border-white/10 my-3" />
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
             {[
-              ['Cần xem lại', String(unclassified)],
+              ['Cần xem lại',   String(unclassified)],
               ['Tổng giao dịch', String(total ?? 0)],
-              ['Đã phân loại', String(classified ?? 0)],
+              ['Đã phân loại',  String(classified ?? 0)],
             ].map(([label, val]) => (
               <div key={label} className="flex items-center">
-                <span>{label}</span>
-                <span className="flex-1" />
+                <span>{label}</span><span className="flex-1" />
                 <span className="font-semibold font-tabular opacity-100">{val}</span>
               </div>
             ))}
@@ -284,7 +290,7 @@ function DarkStatCard({
         </>
       ) : (
         <>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Danh mục chi nhiều nhất</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Danh mục chi nhiều nhất (tháng này)</div>
           <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">
             {topGroups && topGroups[0] ? topGroups[0].name : '—'}
           </div>
@@ -298,8 +304,7 @@ function DarkStatCard({
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
             {(topGroups ?? []).slice(1, 4).map((g: { name: string; expense: number }) => (
               <div key={g.name} className="flex items-center">
-                <span className="truncate">{g.name}</span>
-                <span className="flex-1" />
+                <span className="truncate">{g.name}</span><span className="flex-1" />
                 <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmt(g.expense)} {sym}</span>
               </div>
             ))}
@@ -313,7 +318,7 @@ function DarkStatCard({
   )
 }
 
-// ── Standard group card ──────────────────────────────────────
+/* ─── GroupCard ────────────────────────────────────────────────────────────── */
 function GroupCard({
   group,
   expense,
@@ -324,46 +329,38 @@ function GroupCard({
   txCount: number
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
-  const budget = group.budget_limit || 0
-  const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
-  const barClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
-  const iconBg = `${group.color}22`
-  const meta = typeLabel(group.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
+  const budget    = group.budget_limit || 0
+  const pct       = budget > 0 ? Math.round((expense / budget) * 100) : 0
+  const barClass  = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
+  const iconBg    = `${group.color}22`
+  const meta      = typeLabel(group.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
   const progressLabel = budget > 0 ? `${pct}% ngân sách` : `${txCount} giao dịch`
   const progressRight = budget > 0 ? `còn ${fmt(budget - expense)} ${sym}` : ''
-  const isOver = pct > 100
+  const isOver    = pct > 100
 
   return (
     <Link
       href={`/categories/${slugify(group.name)}`}
-      className="relative bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
+      className="relative bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
       <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
 
-      {/* Head */}
       <div className="flex items-start gap-3">
-        <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0"
-          style={{ background: iconBg }}
-        ><GroupIcon name={group.emoji} className="w-5 h-5" /></div>
+        <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: iconBg }}>
+          <GroupIcon name={group.emoji} className="w-5 h-5" />
+        </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{group.name}</div>
           <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{meta}</div>
         </div>
       </div>
 
-      {/* Amount */}
       <div>
-        <div className={cn(
-          "text-[18px] font-semibold font-tabular tracking-[-0.022em]",
-          isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]'
-        )}>
+        <div className={cn('text-[18px] font-semibold font-tabular tracking-[-0.022em]', isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]')}>
           {fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> {sym}</span>
         </div>
         <div className="flex items-center justify-between text-[11px] mt-1.5">
-          <span className={cn(
-            isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]'
-          )}>{progressLabel}</span>
+          <span className={cn(isOver ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>{progressLabel}</span>
           <span className="text-[var(--color-text-tertiary)]">{progressRight}</span>
         </div>
         <div className="h-[6px] bg-[var(--color-bg-sunken)] rounded-full mt-1 overflow-hidden">
@@ -371,18 +368,23 @@ function GroupCard({
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex items-center mt-auto pt-3 border-t border-[var(--color-border-subtle)] gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)] truncate min-w-0">
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: group.color || '#94a3b8' }} />
           {typeLabel(group.type)}
         </span>
+        {group.is_shared && (
+          <span className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">Chia sẻ</span>
+        )}
+        {group.is_recurring && (
+          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)] border border-[var(--color-info-100)]">Định kỳ</span>
+        )}
       </div>
     </Link>
   )
 }
 
-// ── Smart classify widget ────────────────────────────────────
+/* ─── SmartClassifyCard ────────────────────────────────────────────────────── */
 function SmartClassifyCard({
   pendingTxns,
   groups,
@@ -392,8 +394,9 @@ function SmartClassifyCard({
   groups: Group[]
   onApplyAll: (updates: { id: string; categoryId: string }[]) => void
 }) {
+  const { fmt, sym } = React.useContext(FmtCtx)
   const [isApplying, setIsApplying] = React.useState(false)
-  
+
   function suggestGroup(txn: Transaction): Group | undefined {
     const haystack = [txn.merchantName, txn.description].filter(Boolean).join(' ').toLowerCase()
     return groups.find((g: Group) =>
@@ -406,71 +409,130 @@ function SmartClassifyCard({
     const updates: { id: string; categoryId: string }[] = []
     pendingTxns.forEach(txn => {
       const suggested = suggestGroup(txn)
-      if (suggested) {
-        updates.push({ id: txn.id, categoryId: suggested.id })
-      }
+      if (suggested) updates.push({ id: txn.id, categoryId: suggested.id })
     })
-    
-    if (updates.length > 0) {
-      await onApplyAll(updates)
-    }
+    if (updates.length > 0) await onApplyAll(updates)
     setIsApplying(false)
   }
 
-  const displayTxns = pendingTxns.slice(0, 3)
+  const displayTxns = pendingTxns.slice(0, 4)
+
+  // Group pending by source for summary
+  const sourceBreakdown = React.useMemo(() => {
+    const map: Record<string, number> = {}
+    pendingTxns.forEach(t => {
+      const src = t.source || 'manual'
+      map[src] = (map[src] || 0) + 1
+    })
+    return Object.entries(map).slice(0, 3)
+  }, [pendingTxns])
+
+  const totalPendingAmount = pendingTxns
+    .filter(t => t.transactionType === 'expense')
+    .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+  const SOURCE_LABELS: Record<string, string> = {
+    manual: 'Thủ công', csv_import: 'CSV', bank_feed: 'Ngân hàng',
+    vcb: 'VCB', momo: 'MoMo', api: 'API', ocr_scan: 'OCR',
+  }
 
   return (
-    <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
-      {/* Arrow link indicator */}
+    <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
       <div className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[var(--color-bg-sunken)] flex items-center justify-center">
         <ArrowUpRight className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
       </div>
 
-      {/* Head */}
+      {/* Header */}
       <div className="flex items-start gap-3 pr-8">
         <div className="w-9 h-9 rounded-xl bg-[var(--color-brand-100)] flex items-center justify-center shrink-0">
           <Sun className="w-4.5 h-4.5 text-[var(--color-brand-700)]" />
         </div>
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)] leading-snug">
-            {pendingTxns.length} giao dịch mới chờ phân loại
+            {pendingTxns.length} giao dịch chờ phân loại
           </h4>
           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
-            Leo gợi ý danh mục dựa trên từ khóa đã học · xem trước trước khi áp dụng
+            Leo gợi ý danh mục dựa trên từ khóa đã học
           </p>
         </div>
       </div>
 
-      {/* Preview rows */}
+      {/* Summary stats row */}
+      {pendingTxns.length > 0 && (
+        <div className="grid grid-cols-3 gap-2">
+          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Tổng tiền</div>
+            <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)]">
+              {fmt(totalPendingAmount)} {sym}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Giao dịch</div>
+            <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">
+              {pendingTxns.length}
+            </div>
+          </div>
+          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
+            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Nguồn</div>
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {sourceBreakdown.map(([src, cnt]) => (
+                <span key={src} className="text-[10px] font-medium text-[var(--color-text-secondary)]">
+                  {SOURCE_LABELS[src] || src} ({cnt})
+                </span>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Preview rows — enhanced */}
       <div className="flex flex-col gap-1.5">
         {displayTxns.length === 0 ? (
           <div className="text-[12px] text-[var(--color-text-quaternary)] py-2 text-center">
             Tất cả giao dịch đã được phân loại
           </div>
-        ) : (
-          displayTxns.map((txn: Transaction) => {
-            const suggested = suggestGroup(txn)
-            const label = txn.merchantName || txn.description || txn.id.slice(0, 8)
-            const kw = suggested?.keywords?.[0] ?? ''
-            return (
-              <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
-                <span className="text-[var(--color-text-secondary)] min-w-0 truncate flex-1">
-                  {label}
-                  {kw && (
-                    <> · <span className="font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1 rounded">{kw}</span></>
-                  )}
-                </span>
-                {suggested && (
-                  <>
-                    <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
-                    <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
-                      <em className="not-italic flex items-center"><GroupIcon name={suggested.emoji} className="w-3.5 h-3.5" /></em> {suggested.name}
-                    </span>
-                  </>
+        ) : displayTxns.map((txn: Transaction) => {
+          const suggested = suggestGroup(txn)
+          const label = txn.merchantName || txn.description || txn.id.slice(0, 8)
+          const kw    = suggested?.keywords?.[0] ?? ''
+          const srcLabel = SOURCE_LABELS[txn.source || 'manual'] || txn.source || 'manual'
+          const amount = Math.abs(txn.amount)
+
+          return (
+            <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
+              {/* Name + keyword */}
+              <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">
+                {label}
+                {kw && (
+                  <> · <span className="font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1 rounded">{kw}</span></>
                 )}
-              </div>
-            )
-          })
+              </span>
+              {/* Source badge */}
+              <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)]">
+                {srcLabel}
+              </span>
+              {/* Amount */}
+              <span className="shrink-0 font-semibold font-tabular text-[var(--color-text-loss)]">
+                {fmt(amount)} {sym}
+              </span>
+              {/* Suggested category */}
+              {suggested ? (
+                <>
+                  <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
+                  <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
+                    <GroupIcon name={suggested.emoji} className="w-3.5 h-3.5" /> {suggested.name}
+                  </span>
+                </>
+              ) : (
+                <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)] italic">chưa có gợi ý</span>
+              )}
+            </div>
+          )
+        })}
+        {pendingTxns.length > 4 && (
+          <div className="text-[11px] text-[var(--color-text-quaternary)] text-center py-1">
+            và {pendingTxns.length - 4} giao dịch khác…
+          </div>
         )}
       </div>
 
@@ -485,24 +547,20 @@ function SmartClassifyCard({
         <span className="flex-1" />
         {pendingTxns.length > 0 && (
           <>
-            {pendingTxns.length > 3 && (
-              <Link 
+            {pendingTxns.length > 4 && (
+              <Link
                 href="/categories/classify"
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
               >
                 Xem tất cả
               </Link>
             )}
-            <button 
+            <button
               onClick={handleApplyAll}
               disabled={isApplying}
               className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer disabled:opacity-50"
             >
-              {isApplying ? (
-                <Loader2 className="w-3 h-3 animate-spin" />
-              ) : (
-                <Check className="w-3 h-3" />
-              )}
+              {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
               Áp dụng tất cả
             </button>
           </>
@@ -512,7 +570,7 @@ function SmartClassifyCard({
   )
 }
 
-// ── Add group tile ───────────────────────────────────────────
+/* ─── AddGroupTile ─────────────────────────────────────────────────────────── */
 function AddGroupTile({ onClick }: { onClick: () => void }) {
   return (
     <button
@@ -532,11 +590,11 @@ function AddGroupTile({ onClick }: { onClick: () => void }) {
   )
 }
 
-// ── Archive strip ────────────────────────────────────────────
+/* ─── ArchiveStrip ─────────────────────────────────────────────────────────── */
 function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
   if (archivedGroups.length === 0) return null
   return (
-    <div className="col-span-full bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] p-4 flex items-center gap-6 flex-wrap">
+    <div className="col-span-full bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] p-4 flex items-center gap-6 flex-wrap">
       <div className="shrink-0">
         <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Lưu trữ</div>
         <span className="inline-block mt-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{archivedGroups.length}</span>
@@ -559,19 +617,22 @@ function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
   )
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Main GroupsBentoPage
-───────────────────────────────────────────────────────────── */
+/* ─── Main GroupsBentoPage ─────────────────────────────────────────────────── */
 export function GroupsBentoPage() {
   const [activeTab, setActiveTab]   = React.useState('all')
   const [isFormOpen, setIsFormOpen] = React.useState(false)
   const [search, setSearch]         = React.useState('')
+
+  // Server-side data
+  const [kpi,       setKpi]       = React.useState<KpiData | null>(null)
+  const [stats,     setStats]     = React.useState<StatsData | null>(null)
+  const [statsLoading, setStatsLoading] = React.useState(true)
+
   const { lang } = useSettingsStore()
   const { currentLedger } = useLedgerStore()
   const { groups, isLoading, fetchGroups } = useGroupStore()
   const { transactions, syncTransactions, bulkUpdateTransactions } = useTransactionsStore()
 
-  // ── Currency formatting ───────────────────────────────────
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
   const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
   const fmt = React.useCallback(
@@ -580,7 +641,9 @@ export function GroupsBentoPage() {
   )
   const sym = currMeta.symbol
 
-  // ── Fetch data on mount ──────────────────────────────────
+  const ym = currentYearMonth()
+
+  // Fetch groups + transactions on mount
   React.useEffect(() => {
     if (currentLedger?.id) {
       fetchGroups(currentLedger.id)
@@ -588,81 +651,43 @@ export function GroupsBentoPage() {
     }
   }, [currentLedger?.id])
 
-  // ── Derived data ─────────────────────────────────────────
-  const ym = currentYearMonth()
+  // Fetch server-side KPI + stats
+  React.useEffect(() => {
+    if (!currentLedger?.id) return
+    setStatsLoading(true)
 
-  const monthTxns = React.useMemo(
-    () => transactions.filter((t: Transaction) => t.transactionDate?.startsWith(ym)),
-    [transactions, ym],
-  )
+    async function loadServerData() {
+      // Get Supabase session token for authorized API calls
+      const { supabase } = await import('@/lib/supabase')
+      const { data: { session } } = await supabase.auth.getSession()
+      const token = session?.access_token || ''
 
-  // KPI computations
-  const totalExpense = React.useMemo(
-    () => monthTxns
-      .filter((t: Transaction) => t.transactionType === 'expense')
-      .reduce((s: number, t: Transaction) => s + Math.abs(t.amount), 0),
-    [monthTxns],
-  )
+      const [kpiData, statsData] = await Promise.all([
+        fetchFromApi<KpiData>('/api/categories/kpi', currentLedger!.id, ym, token),
+        fetchFromApi<StatsData>('/api/categories/stats', currentLedger!.id, ym, token),
+      ])
 
-  const totalBudget = React.useMemo(
-    () => groups.reduce((s: number, g: Group) => s + (g.budget_limit || 0), 0),
-    [groups],
-  )
+      setKpi(kpiData)
+      setStats(statsData)
+      setStatsLoading(false)
+    }
 
-  const txnsWithCategory = React.useMemo(
-    () => transactions.filter((t: Transaction) => t.categoryId),
+    loadServerData()
+  }, [currentLedger?.id, ym])
+
+  // ── Derived: pending transactions for SmartClassifyCard ──────────────────
+  const pendingTxns = React.useMemo(
+    () => transactions.filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense'),
     [transactions],
   )
 
-  const classifyPct = transactions.length > 0
-    ? ((txnsWithCategory.length / transactions.length) * 100).toFixed(0)
-    : '0'
-
-  const pendingReconcile = React.useMemo(
-    () => transactions.filter((t: Transaction) => !t.isReconciled).length,
-    [transactions],
-  )
-
-  const kpiData = [
-    {
-      label: 'Chi tiêu tháng này',
-      value: fmt(totalExpense),
-      unit: sym,
-      sub: `${groups.filter((g: Group) => g.is_active).length} danh mục đang hoạt động`,
-      subLoss: false,
-    },
-    {
-      label: 'Ngân sách còn lại',
-      value: fmt(Math.max(0, totalBudget - totalExpense)),
-      unit: sym,
-      sub: totalBudget > 0
-        ? `${Math.round(((totalBudget - totalExpense) / totalBudget) * 100)}% ngân sách còn lại`
-        : 'Chưa đặt ngân sách',
-      subLoss: totalExpense > totalBudget,
-    },
-    {
-      label: 'Tự động phân loại',
-      value: classifyPct,
-      unit: '%',
-      sub: `${txnsWithCategory.length} / ${transactions.length} giao dịch`,
-      subLoss: false,
-    },
-    {
-      label: 'Chờ đối soát',
-      value: String(pendingReconcile),
-      unit: ' giao dịch',
-      sub: pendingReconcile > 0 ? 'Cần xem lại' : 'Đã đối soát hết',
-      subLoss: false,
-    },
-  ]
-
-  // Filter tab counts
+  // ── Filter tabs ───────────────────────────────────────────────────────────
   const tabCounts = React.useMemo(() => ({
-    all: groups.length,
-    active: groups.filter((g: Group) => g.is_active).length,
-    shared: groups.filter((g: Group) => g.metadata?.is_shared).length,
-    recurring: groups.filter((g: Group) => g.metadata?.is_recurring || g.type === 'project').length,
-    archived: groups.filter((g: Group) => !g.is_active).length,
+    all:       groups.length,
+    active:    groups.filter((g: Group) => g.is_active).length,
+    shared:    groups.filter((g: Group) => g.is_shared).length,
+    recurring: groups.filter((g: Group) => g.is_recurring || g.type === 'project').length,
+    archived:  groups.filter((g: Group) => !g.is_active).length,
   }), [groups])
 
   const filterTabs = [
@@ -673,20 +698,12 @@ export function GroupsBentoPage() {
     { value: 'archived',  label: 'Lưu trữ',        count: tabCounts.archived },
   ]
 
-  // Filtered groups per tab
   const filteredGroups = React.useMemo(() => {
     switch (activeTab) {
-      case 'all':
-      case 'active':
-        return groups.filter((g: Group) => g.is_active)
-      case 'shared':
-        return groups.filter((g: Group) => g.metadata?.is_shared)
-      case 'recurring':
-        return groups.filter((g: Group) => g.metadata?.is_recurring || g.type === 'project')
-      case 'archived':
-        return groups.filter((g: Group) => !g.is_active)
-      default:
-        return groups.filter((g: Group) => g.is_active)
+      case 'shared':    return groups.filter((g: Group) => g.is_shared)
+      case 'recurring': return groups.filter((g: Group) => g.is_recurring || g.type === 'project')
+      case 'archived':  return groups.filter((g: Group) => !g.is_active)
+      default:          return groups.filter((g: Group) => g.is_active)
     }
   }, [groups, activeTab])
 
@@ -695,52 +712,25 @@ export function GroupsBentoPage() {
     [groups],
   )
 
-  // Active groups sorted by expense desc (use groups directly for descendant traversal)
-  const activeGroups = React.useMemo(() => {
-    const active = groups.filter((g: Group) => g.is_active && !g.parent_id)
-    return [...active].sort((a: Group, b: Group) => {
-      const ea = getGroupExpense(a.id, groups, monthTxns)
-      const eb = getGroupExpense(b.id, groups, monthTxns)
+  // ── Active root groups sorted by server-side expense ─────────────────────
+  const activeRootGroups = React.useMemo(() => {
+    const roots = groups.filter((g: Group) => g.is_active && !g.parent_id)
+    if (!stats) return roots
+    return [...roots].sort((a, b) => {
+      const ea = stats.category_stats.find(s => s.id === a.id)?.expense ?? 0
+      const eb = stats.category_stats.find(s => s.id === b.id)?.expense ?? 0
       return eb - ea
     })
-  }, [groups, monthTxns])
+  }, [groups, stats])
 
-  const featuredGroup = activeGroups[0]
+  const featuredGroup    = activeRootGroups[0]
   const featuredSubGroups = featuredGroup
-    ? groups.filter((g: Group) => g.is_active && g.parent_id === featuredGroup.id).slice(0, 3)
+    ? groups.filter((g: Group) => g.is_active && g.parent_id === featuredGroup.id)
     : []
-  const featuredExpense = featuredGroup
-    ? getGroupExpense(featuredGroup.id, groups, monthTxns)
-    : 0
-  const featuredBudget = featuredGroup?.budget_limit ?? 0
+  const featuredExpense  = stats?.category_stats.find(s => s.id === featuredGroup?.id)?.expense ?? 0
 
-  // Regular group cards (active groups except featured)
-  const regularGroups = activeGroups.slice(1)
+  const regularGroups    = activeRootGroups.slice(1)
 
-  // Dark stat card data
-  const classifiedCount = txnsWithCategory.length
-  const totalTxCount = transactions.length
-
-  const topGroupsForStat = React.useMemo(() => {
-    return activeGroups.slice(0, 4).map((g: Group) => ({
-      name: g.name,
-      expense: getGroupExpense(g.id, groups, monthTxns),
-    }))
-  }, [activeGroups, groups, monthTxns])
-
-  // Smart classify: unclassified expense transactions
-  const pendingTxns = React.useMemo(
-    () => transactions
-      .filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense'),
-    [transactions],
-  )
-
-  const handleApplyAutoCategorization = async (updates: { id: string; categoryId: string }[]) => {
-    const formattedUpdates = updates.map(u => ({ id: u.id, update: { categoryId: u.categoryId } }))
-    bulkUpdateTransactions(formattedUpdates)
-  }
-
-  // ── Search filter (must be before early returns — Rules of Hooks) ──
   const searchedGroups = React.useMemo(() => {
     if (!search.trim()) return regularGroups
     const q = search.toLowerCase()
@@ -751,7 +741,45 @@ export function GroupsBentoPage() {
     )
   }, [regularGroups, search])
 
-  // ── Loading state ─────────────────────────────────────────
+  const handleApplyAutoCategorization = async (updates: { id: string; categoryId: string }[]) => {
+    bulkUpdateTransactions(updates.map(u => ({ id: u.id, update: { categoryId: u.categoryId } })))
+  }
+
+  // ── KPI strip values ──────────────────────────────────────────────────────
+  const kpiData = [
+    {
+      label: 'Chi tiêu tháng này',
+      value: kpi ? fmt(kpi.total_expense) : '—',
+      unit: kpi ? ` ${sym}` : '',
+      sub: `${groups.filter((g: Group) => g.is_active).length} danh mục đang hoạt động`,
+      subLoss: false,
+    },
+    {
+      label: 'Ngân sách còn lại',
+      value: kpi ? fmt(Math.max(0, kpi.total_budget - kpi.total_expense)) : '—',
+      unit: kpi ? ` ${sym}` : '',
+      sub: kpi && kpi.total_budget > 0
+        ? `${Math.round(((kpi.total_budget - kpi.total_expense) / kpi.total_budget) * 100)}% ngân sách còn lại`
+        : 'Chưa đặt ngân sách',
+      subLoss: kpi ? kpi.total_expense > kpi.total_budget : false,
+    },
+    {
+      label: 'Tự động phân loại (tháng)',
+      value: stats ? String(stats.auto_classify_pct) : '—',
+      unit: stats ? '%' : '',
+      sub: stats ? `${stats.classified_count} / ${stats.total_count} giao dịch` : 'Đang tải…',
+      subLoss: false,
+    },
+    {
+      label: 'Chờ đối soát',
+      value: kpi ? String(kpi.pending_reconcile) : '—',
+      unit: kpi ? ' giao dịch' : '',
+      sub: kpi ? (kpi.pending_reconcile > 0 ? 'Cần xem lại' : 'Đã đối soát hết') : 'Đang tải…',
+      subLoss: false,
+    },
+  ]
+
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
@@ -760,7 +788,6 @@ export function GroupsBentoPage() {
     )
   }
 
-  // ── Empty state ───────────────────────────────────────────
   if (groups.length === 0) {
     return (
       <div className="space-y-4 animate-fade-in">
@@ -791,9 +818,8 @@ export function GroupsBentoPage() {
           </p>
         </div>
         <span className="flex-1" />
-        {/* Search */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             type="text"
             value={search}
@@ -808,7 +834,6 @@ export function GroupsBentoPage() {
             )}
           />
         </div>
-        {/* Create button */}
         <button
           onClick={() => setIsFormOpen(true)}
           className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors"
@@ -818,23 +843,27 @@ export function GroupsBentoPage() {
         </button>
       </div>
 
-      {/* ── KPI strip ── */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-        {kpiData.map((kpi, i) => (
+      {/* ── KPI strip — server data ── */}
+      <section className="grid grid-cols-2 lg:grid-cols-4 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
+        {kpiData.map((kp, i) => (
           <div
-            key={kpi.label}
+            key={kp.label}
             className={cn(
               'px-4 lg:px-5 py-4',
               i < kpiData.length - 1 && 'border-b lg:border-b-0 lg:border-r border-[var(--color-border-subtle)]',
               i === 1 && 'border-r lg:border-r border-[var(--color-border-subtle)]',
             )}
           >
-            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">{kpi.label}</div>
-            <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-1 leading-tight">
-              {kpi.value}<span className="text-[var(--color-text-tertiary)] font-medium text-sm">{kpi.unit}</span>
-            </div>
-            <div className={cn('text-[11px] mt-0.5', kpi.subLoss ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>
-              {kpi.sub}
+            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">{kp.label}</div>
+            {statsLoading && kp.value === '—' ? (
+              <div className="h-7 w-24 rounded bg-[var(--color-bg-sunken)] animate-pulse mt-1" />
+            ) : (
+              <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-1 leading-tight">
+                {kp.value}<span className="text-[var(--color-text-tertiary)] font-medium text-sm">{kp.unit}</span>
+              </div>
+            )}
+            <div className={cn('text-[11px] mt-0.5', kp.subLoss ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>
+              {kp.sub}
             </div>
           </div>
         ))}
@@ -842,8 +871,7 @@ export function GroupsBentoPage() {
 
       {/* ── Filter row ── */}
       <div className="flex items-center gap-2.5 flex-wrap">
-        {/* Segmented control */}
-        <div className="inline-flex bg-white border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs flex-wrap gap-0.5">
+        <div className="inline-flex bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs flex-wrap gap-0.5">
           {filterTabs.map(tab => (
             <button
               key={tab.value}
@@ -858,101 +886,71 @@ export function GroupsBentoPage() {
               {tab.label}
               <span className={cn(
                 'font-mono text-[9px] rounded px-[5px] py-px',
-                activeTab === tab.value
-                  ? 'bg-white/[0.16] text-white/[0.85]'
-                  : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]',
+                activeTab === tab.value ? 'bg-white/[0.16] text-white/[0.85]' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]',
               )}>
                 {tab.count}
               </span>
             </button>
           ))}
         </div>
-
-        <span className="flex-1" />
-
-        {/* Chip: Tài khoản */}
-        <button className="inline-flex items-center gap-[5px] text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors whitespace-nowrap">
-          <Filter className="w-3 h-3" />
-          Tài khoản: tất cả
-          <ChevronDown className="w-2.5 h-2.5" />
-        </button>
-
-        {/* Chip: Sắp xếp */}
-        <button className="inline-flex items-center gap-[5px] text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors whitespace-nowrap">
-          Sắp xếp: chi tiêu cao nhất
-          <ChevronDown className="w-2.5 h-2.5" />
-        </button>
-
-        {/* View toggle: Bento */}
-        <button className="inline-flex items-center gap-[5px] text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
-          <LayoutGrid className="w-3 h-3" />
-          Bento
-        </button>
       </div>
 
       {/* ── Bento Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {/* 1. Featured — first active group by expense */}
         {featuredGroup && (
           <FeaturedCard
             group={featuredGroup}
             subGroups={featuredSubGroups}
             expense={featuredExpense}
-            budget={featuredBudget}
           />
         )}
 
-        {/* 2. Dark stat 1 — auto classify */}
         <DarkStatCard
           variant={1}
-          classified={classifiedCount}
-          total={totalTxCount}
+          classified={stats?.classified_count}
+          total={stats?.total_count}
+          isLoading={statsLoading}
         />
 
-        {/* 3. Dark stat 2 — top spending groups */}
         <DarkStatCard
           variant={2}
-          topGroups={topGroupsForStat}
+          topGroups={stats?.top_categories}
+          isLoading={statsLoading}
         />
 
-        {/* 4. Regular group cards */}
         {searchedGroups.slice(0, 2).map((g: Group) => (
           <GroupCard
             key={g.id}
             group={g}
-            expense={getGroupExpense(g.id, groups, monthTxns)}
-            txCount={getGroupTxCount(g.id, groups, monthTxns)}
+            expense={stats?.category_stats.find(s => s.id === g.id)?.expense ?? 0}
+            txCount={stats?.category_stats.find(s => s.id === g.id)?.tx_count ?? 0}
           />
         ))}
 
-        {/* 5. Smart classify (wide) */}
-        <SmartClassifyCard 
-          pendingTxns={pendingTxns} 
-          groups={groups} 
+        <SmartClassifyCard
+          pendingTxns={pendingTxns}
+          groups={groups}
           onApplyAll={handleApplyAutoCategorization}
         />
 
-        {/* 6. More group cards */}
         {searchedGroups.slice(2, 5).map((g: Group) => (
           <GroupCard
             key={g.id}
             group={g}
-            expense={getGroupExpense(g.id, groups, monthTxns)}
-            txCount={getGroupTxCount(g.id, groups, monthTxns)}
+            expense={stats?.category_stats.find(s => s.id === g.id)?.expense ?? 0}
+            txCount={stats?.category_stats.find(s => s.id === g.id)?.tx_count ?? 0}
           />
         ))}
 
-        {/* 7. Add new */}
         <AddGroupTile onClick={() => setIsFormOpen(true)} />
 
-        {/* 8. Archive strip (full width) */}
         <ArchiveStrip archivedGroups={archivedGroups} />
       </div>
 
       {/* ── Bottom insight strip ── */}
       <div
         className="flex items-center gap-3.5 p-[14px_18px] rounded-[14px] border border-[var(--color-brand-100)] shadow-[var(--shadow-card)]"
-        style={{ background: 'linear-gradient(180deg,var(--color-brand-25) 0%,white 100%)' }}
+        style={{ background: 'linear-gradient(180deg,var(--color-brand-25) 0%,var(--color-surface-default) 100%)' }}
       >
         <div className="w-9 h-9 rounded-[10px] bg-[var(--color-brand-100)] text-[var(--color-brand-700)] flex items-center justify-center shrink-0">
           <Sun className="w-4.5 h-4.5" />
@@ -965,7 +963,7 @@ export function GroupsBentoPage() {
             Ví dụ: thêm "starbucks", "highlands" vào danh mục Cà phê → tự động phân loại mọi giao dịch chứa từ này
           </div>
         </div>
-        <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors">
+        <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors">
           Tìm hiểu
         </button>
         <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">

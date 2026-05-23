@@ -54,11 +54,17 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const { data, error } = await supabase
+    const currentLedger = useLedgerStore.getState().currentLedger
+    if (!currentLedger?.id) return
+
+    let query = supabase
       .from('transactions')
       .select('*')
+      .eq('ledger_id', currentLedger.id)
       .order('transaction_date', { ascending: false })
       .limit(limit)
+
+    const { data, error } = await query
 
     if (data) {
       const mapped: Transaction[] = data.map(t => ({
