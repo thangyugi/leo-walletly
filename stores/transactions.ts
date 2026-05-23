@@ -25,6 +25,7 @@ interface TransactionsState {
   addTransaction: (txn: Partial<Transaction>) => void
   removeTransaction: (id: string) => void
   updateTransaction: (id: string, update: Partial<Transaction>) => void
+  bulkUpdateTransactions: (updates: { id: string; update: Partial<Transaction> }[]) => void
   setFilters: (filters: Partial<TransactionFilters>) => void
   setSortOption: (option: SortOption) => void
   resetFilters: () => void
@@ -219,6 +220,47 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     
     supabase.from('transactions').update(patch).eq('id', id).then(({ error }) => {
       if (error) console.error('Supabase update error —', error.message)
+    })
+  },
+
+  bulkUpdateTransactions: (updates) => {
+    set((s) => {
+      const txnMap = new Map(s.transactions.map(t => [t.id, t]))
+      for (const { id, update } of updates) {
+        const existing = txnMap.get(id)
+        if (existing) {
+          txnMap.set(id, { ...existing, ...update })
+        }
+      }
+      return { transactions: Array.from(txnMap.values()) }
+    })
+
+    // Fire and forget individual updates for now (or could use an RPC for true bulk update)
+    // To prevent hitting rate limits with too many simultaneous requests, we can batch them.
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      
+      // Instead of N roundtrips, we could do an upsert if we map all required fields, 
+      // but simple update in a loop is okay for typical auto-categorize sizes (10-100 txns).
+      // Let's do it in chunks of 10 to avoid connection pooling issues.
+      const chunked = []
+      for (let i = 0; i < updates.length; i += 10) {
+        chunked.push(updates.slice(i, i + 10))
+      }
+
+      for (const chunk of chunked) {
+        await Promise.all(chunk.map(({ id, update }) => {
+          const patch: Record<string, unknown> = {}
+          if (update.transactionDate !== undefined) patch.transaction_date = update.transactionDate
+          if (update.amount          !== undefined) patch.amount           = update.amount
+          if (update.description     !== undefined) patch.description      = update.description
+          if (update.categoryId      !== undefined) patch.category_id      = update.categoryId
+          if (update.status          !== undefined) patch.status           = update.status
+          if (update.notes           !== undefined) patch.notes            = update.notes ?? null
+          if (update.metadata        !== undefined) patch.metadata         = update.metadata ?? null
+          return supabase.from('transactions').update(patch).eq('id', id)
+        }))
+      }
     })
   },
 

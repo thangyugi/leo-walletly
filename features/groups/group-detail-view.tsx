@@ -1,11 +1,13 @@
 'use client'
 
 import * as React from 'react'
-import { cn } from '@/lib/utils'
+import Link from 'next/link'
+import { cn, slugify } from '@/lib/utils'
 import {
   ArrowLeft, Download, Plus, MoreVertical,
   Sun, Shield, ChevronLeft, ChevronRight,
   Check, X, ArrowRight, Clock, Loader2,
+  Pencil, Trash2,
 } from 'lucide-react'
 import { useGroupStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -61,6 +63,22 @@ function memberColor(index: number) {
   return MEMBER_COLORS[index % MEMBER_COLORS.length]
 }
 
+function getDescendantIds(targetId: string, allGroups: Group[]): Set<string> {
+  const ids = new Set<string>([targetId])
+  const queue = [targetId]
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    const children = allGroups.filter(g => g.parent_id === currentId)
+    for (const child of children) {
+      if (!ids.has(child.id)) {
+        ids.add(child.id)
+        queue.push(child.id)
+      }
+    }
+  }
+  return ids
+}
+
 /* ─────────────────────────────────────────────────────────────
    Types
 ───────────────────────────────────────────────────────────── */
@@ -74,9 +92,13 @@ type DetailTab = 'overview' | 'subgroups' | 'keywords' | 'transactions' | 'balan
 function HeroCover({
   group,
   members,
+  onEdit,
+  onDelete,
 }: {
   group: Group
   members: LedgerMember[]
+  onEdit: () => void
+  onDelete: () => void
 }) {
   const { sym: heroCurrency } = React.useContext(FmtCtx)
   const gradient = `linear-gradient(135deg,${group.color}ee 0%,${group.color}88 100%)`
@@ -102,7 +124,7 @@ function HeroCover({
       </span>
 
       {/* Badges */}
-      <div className="absolute right-[18px] top-4 flex items-center gap-1.5">
+      <div className="absolute right-[18px] top-4 flex items-center gap-1.5 z-20">
         {[
           { icon: <Sun className="w-2.5 h-2.5" />, label: 'Đang hoạt động' },
           { icon: <><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M3 8h18M3 16h12"/></svg></>, label: 'Tự động phân loại' },
@@ -112,6 +134,22 @@ function HeroCover({
             {b.icon} {b.label}
           </span>
         ))}
+        
+        {/* Edit and Delete Buttons */}
+        <button
+          onClick={onEdit}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur-sm transition-colors cursor-pointer text-white"
+          title="Chỉnh sửa nhóm"
+        >
+          <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={onDelete}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-red-500/80 hover:bg-red-500/100 backdrop-blur-sm transition-colors cursor-pointer text-white"
+          title="Xóa nhóm"
+        >
+          <Trash2 className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* Meta + members */}
@@ -339,37 +377,61 @@ function StatsStrip({
   )
 }
 
-// ── Sub-groups section ───────────────────────────────────────
 function SubGroupsSection({
   group,
   subGroups,
   transactions,
+  selectedMonth,
   onAddSubGroup,
   onSubGroupClick,
+  depth,
+  onEditSubGroup,
+  onDeleteSubGroup,
 }: {
   group: Group
   subGroups: Group[]
   transactions: Transaction[]
+  selectedMonth: Date
   onAddSubGroup: () => void
   onSubGroupClick: (id: string) => void
+  depth: number
+  onEditSubGroup: (sg: Group) => void
+  onDeleteSubGroup: (id: string) => void
 }) {
+  const { groups } = useGroupStore()
   const { fmt, sym } = React.useContext(FmtCtx)
   const [sortTab, setSortTab] = React.useState<'spend' | 'name'>('spend')
   const BAR_COLORS: Record<string, string> = { ok: 'bg-[var(--color-gain-500)]', warn: 'bg-[var(--color-warning-500)]' }
 
-  const totalExpense = transactions
-    .filter(t => t.categoryId === group.id && t.transactionType === 'expense')
+  const ym = React.useMemo(() => {
+    const y = selectedMonth.getFullYear()
+    const m = String(selectedMonth.getMonth() + 1).padStart(2, '0')
+    return `${y}-${m}`
+  }, [selectedMonth])
+
+  const descendantIds = React.useMemo(() => {
+    return getDescendantIds(group.id, groups)
+  }, [group.id, groups])
+
+  const monthTxns = React.useMemo(() => {
+    return transactions.filter(t => t.transactionDate?.startsWith(ym))
+  }, [transactions, ym])
+
+  const totalExpense = monthTxns
+    .filter(t => t.categoryId && descendantIds.has(t.categoryId) && t.transactionType === 'expense')
     .reduce((s, t) => s + Math.abs(t.amount), 0)
 
   function subGroupExpense(sgId: string) {
-    return transactions
-      .filter(t => t.categoryId === sgId && t.transactionType === 'expense')
+    const sgDescendants = getDescendantIds(sgId, groups)
+    return monthTxns
+      .filter(t => t.categoryId && sgDescendants.has(t.categoryId) && t.transactionType === 'expense')
       .reduce((s, t) => s + Math.abs(t.amount), 0)
   }
 
   const sgCards = subGroups.map(sg => {
     const expense = subGroupExpense(sg.id)
-    const count = transactions.filter(t => t.categoryId === sg.id).length
+    const sgDescendants = getDescendantIds(sg.id, groups)
+    const count = monthTxns.filter(t => t.categoryId && sgDescendants.has(t.categoryId)).length
     const pct = totalExpense > 0 ? Math.round((expense / totalExpense) * 100) : 0
     const barPct = sg.budget_limit > 0 ? Math.min(Math.round((expense / sg.budget_limit) * 100), 100) : 0
     const barClass = barPct >= 90 ? 'warn' : 'ok'
@@ -387,7 +449,7 @@ function SubGroupsSection({
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">Nhóm con</h3>
         <span className="text-[12px] text-[var(--color-text-tertiary)]">· {subGroups.length} mục</span>
         <span className="flex-1" />
-        <div className="inline-flex bg-[var(--color-bg-sunken)] rounded-[7px] p-0.5">
+        <div className="inline-flex bg-[var(--color-bg-sunken)] rounded-[7px] p-0.5 mr-2">
           {(['spend', 'name'] as const).map(v => (
             <button
               key={v}
@@ -401,22 +463,53 @@ function SubGroupsSection({
             </button>
           ))}
         </div>
-        <button onClick={onAddSubGroup} className="inline-flex items-center gap-1 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
-          <Plus className="w-3 h-3" /> Thêm nhóm con
-        </button>
+        {depth < 4 ? (
+          <button onClick={onAddSubGroup} className="inline-flex items-center gap-1 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
+            <Plus className="w-3 h-3" /> Thêm nhóm con
+          </button>
+        ) : (
+          <span className="text-[11px] text-[var(--color-text-quaternary)] font-medium bg-[var(--color-bg-sunken)] px-2.5 py-1 rounded-[6px]">
+            Đạt cấp tối đa (Cấp 4)
+          </span>
+        )}
       </div>
 
       {/* Sub-group grid */}
       <div className="p-[14px_18px] grid grid-cols-2 sm:grid-cols-3 gap-3">
         {sorted.map(({ sg, expense, count, pct, barPct, barClass }) => (
-          <div key={sg.id} onClick={() => onSubGroupClick(sg.id)} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group">
+          <div key={sg.id} onClick={() => onSubGroupClick(sg.id)} className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group relative">
+            
+            {/* Hover Actions */}
+            <div className="absolute right-2 top-2.5 hidden group-hover:flex items-center gap-1">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditSubGroup(sg)
+                }}
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-[var(--color-border-default)] hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] shadow-sm cursor-pointer"
+                title="Sửa nhóm"
+              >
+                <Pencil className="w-3 h-3" />
+              </button>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeleteSubGroup(sg.id)
+                }}
+                className="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-red-200 hover:bg-red-50 transition-colors text-red-500 hover:text-red-700 shadow-sm cursor-pointer"
+                title="Xóa nhóm"
+              >
+                <Trash2 className="w-3 h-3" />
+              </button>
+            </div>
+
             <div className="flex items-center gap-1.5 mb-2">
               <span
                 className="w-6 h-6 rounded-[6px] flex items-center justify-center text-sm shrink-0"
                 style={{ background: sg.color + '22' }}
               ><GroupIcon name={sg.emoji} className="w-3.5 h-3.5" /></span>
               <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate flex-1">{sg.name}</span>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{count}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] group-hover:hidden">{count}</span>
             </div>
             <div className="text-[13px] font-semibold font-tabular tracking-[-0.01em]">
               {fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> {sym} · {pct}%</span>
@@ -433,10 +526,12 @@ function SubGroupsSection({
             </div>
           </div>
         ))}
-        <button onClick={onAddSubGroup} className="p-3 border-2 border-dashed border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[80px]">
-          <Plus className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
-          <span className="text-[11px] text-[var(--color-text-quaternary)] font-medium">Tạo nhóm con</span>
-        </button>
+        {depth < 4 && (
+          <button onClick={onAddSubGroup} className="p-3 border-2 border-dashed border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[80px]">
+            <Plus className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
+            <span className="text-[11px] text-[var(--color-text-quaternary)] font-medium">Tạo nhóm con</span>
+          </button>
+        )}
       </div>
     </section>
   )
@@ -566,6 +661,11 @@ function KeywordManagerSection({
   transactions: Transaction[]
   onUpdateKeywords: (groupId: string, keywords: string[]) => void
 }) {
+  const { groups } = useGroupStore()
+  const descendantIds = React.useMemo(() => {
+    return getDescendantIds(group.id, groups)
+  }, [group.id, groups])
+
   type KwEntry = { text: string; hits: number; auto: boolean }
   type SectionState = {
     groupId: string
@@ -810,7 +910,7 @@ function KeywordManagerSection({
           </button>
           <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-transparent text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
             Chạy thử trên giao dịch chưa khớp ({
-              transactions.filter(t => t.categoryId === group.id && (t.status === 'pending' || !t.isReconciled)).length
+              transactions.filter(t => t.categoryId && descendantIds.has(t.categoryId) && (t.status === 'pending' || !t.isReconciled)).length
             })
           </button>
         </div>
@@ -837,25 +937,48 @@ function RecentTransactions({
     { value: 'review', label: 'Cần xem lại', badge: groupTxns.filter(t => t.status === 'pending' || !t.isReconciled).length },
   ] as const
 
-  const displayTxns = groupTxns.slice(0, 7)
+  // Apply tab filter
+  const filteredTxns = React.useMemo(() => {
+    switch (txTab) {
+      case 'auto':   return groupTxns.filter(t => !t.categoryId)  // keyword-matched, not yet categorized
+      case 'review': return groupTxns.filter(t => t.status === 'pending' || !t.isReconciled)
+      default:       return groupTxns
+    }
+  }, [groupTxns, txTab])
+
+  const displayTxns = filteredTxns.slice(0, 20)
 
   function txEmoji(t: Transaction): string {
-    // Use sub-group emoji if categoryId matches a sub-group
-    const sg = subGroups.find(s => s.id === t.categoryId)
+    const sg = resolveSubGroup(t)
     if (sg?.emoji) return sg.emoji
     return group.emoji || 'Folder'
   }
 
   function txAvatarBg(t: Transaction): string {
-    const sg = subGroups.find(s => s.id === t.categoryId)
+    const sg = resolveSubGroup(t)
     if (sg?.color) return sg.color + '22'
     return (group.color || '#6366f1') + '22'
   }
 
   function txKwMatch(t: Transaction): string | undefined {
     const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
-    const allKws = [...(group.keywords || []), ...subGroups.flatMap(sg => sg.keywords || [])]
+    const allKws = [
+      ...(group.keywords || []),
+      ...subGroups.flatMap(sg => sg.keywords || []),
+    ]
     return allKws.find(kw => haystack.includes(kw.toLowerCase()))
+  }
+
+  // Find which sub-group this transaction belongs to (by categoryId or keyword match)
+  function resolveSubGroup(t: Transaction): Group | undefined {
+    // Direct match by categoryId
+    const direct = subGroups.find(s => s.id === t.categoryId)
+    if (direct) return direct
+    // Keyword match: find the first sub-group whose keyword matches
+    const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
+    return subGroups.find(sg =>
+      (sg.keywords || []).some(kw => haystack.includes(kw.toLowerCase()))
+    )
   }
 
   return (
@@ -914,16 +1037,24 @@ function RecentTransactions({
               ) : (
                 <span className="text-[11px] font-medium text-[var(--color-text-quaternary)] shrink-0">tự động</span>
               )}
-              <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)] shrink-0">
-                −{fmt(Math.abs(tx.amount))} {sym}
-              </span>
+              {(() => {
+                const isIncome = tx.transactionType === 'income' || tx.transactionType === 'refund'
+                return (
+                  <span className={cn(
+                    'text-[13px] font-semibold font-tabular shrink-0',
+                    isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
+                  )}>
+                    {isIncome ? '+' : '−'}{fmt(Math.abs(tx.amount))} {sym}
+                  </span>
+                )
+              })()}
             </div>
           )
         })}
       </div>
 
       <div className="flex items-center px-[18px] py-3 border-t border-[var(--color-border-subtle)]">
-        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị {Math.min(7, groupTxns.length)} / {groupTxns.length}</span>
+        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị {displayTxns.length} / {filteredTxns.length} · Tổng {groupTxns.length} giao dịch</span>
         <span className="flex-1" />
         <button className="text-xs font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--color-bg-sunken)]">
           Xem tất cả →
@@ -1063,13 +1194,14 @@ function BalancesSection({
 /* ─────────────────────────────────────────────────────────────
    Main GroupDetailView
 ───────────────────────────────────────────────────────────── */
-export function GroupDetailView({ groupId, isNested }: { groupId: string; isNested?: boolean }) {
+export function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNested?: boolean; onClose?: () => void }) {
   const [activeTab, setActiveTab] = React.useState<DetailTab>('overview')
   const [isFormOpen, setIsFormOpen] = React.useState(false)
+  const [editingGroup, setEditingGroup] = React.useState<Group | null>(null)
   const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = React.useState(new Date())
 
-  const { groups, balances, fetchGroups, isLoading, updateGroup } = useGroupStore()
+  const { groups, balances, fetchGroups, isLoading, updateGroup, deleteGroup } = useGroupStore()
   const { transactions, syncTransactions } = useTransactionsStore()
   const { currentLedger } = useLedgerStore()
   const { members, fetchMembers } = useUserManagementStore()
@@ -1092,22 +1224,54 @@ export function GroupDetailView({ groupId, isNested }: { groupId: string; isNest
   }, [currentLedger?.id, isNested])
 
   // Derived
-  const group = groups.find(g => g.id === groupId)
-  const subGroups = groups.filter(g => g.parent_id === groupId)
+  const group = groups.find(g => g.id === groupId || slugify(g.name) === groupId)
+  const actualGroupId = group?.id || groupId
+
+  const subGroups = groups.filter(g => g.parent_id === actualGroupId)
+  const descendantIds = React.useMemo(() => {
+    return getDescendantIds(actualGroupId, groups)
+  }, [actualGroupId, groups])
+
+  const ym = React.useMemo(() => {
+    const y = selectedMonth.getFullYear()
+    const m = String(selectedMonth.getMonth() + 1).padStart(2, '0')
+    return `${y}-${m}`
+  }, [selectedMonth])
+
   const groupTxns = React.useMemo(() => {
+    // Collect ALL keywords from this group and all descendants
+    const allKeywords: { kw: string; groupId: string }[] = []
+    for (const gId of descendantIds) {
+      const g = groups.find(x => x.id === gId)
+      if (g?.keywords) {
+        for (const kw of g.keywords) {
+          if (kw.trim()) allKeywords.push({ kw: kw.trim(), groupId: gId })
+        }
+      }
+    }
+
+    function matchesKeyword(t: Transaction): boolean {
+      if (allKeywords.length === 0) return false
+      const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
+      return allKeywords.some(({ kw }) => haystack.includes(kw.toLowerCase()))
+    }
+
     return transactions
       .filter(t => {
-        if (t.categoryId !== groupId) return false
-        const tDate = new Date(t.transactionDate || (t as any).transaction_date || (t as any).date || new Date())
-        return tDate.getMonth() === selectedMonth.getMonth() && tDate.getFullYear() === selectedMonth.getFullYear()
+        // 1. Already categorized into this group or its descendants
+        if (t.categoryId && descendantIds.has(t.categoryId)) return true
+        // 2. Not yet categorized but matches a keyword of this group or descendants
+        if (!t.categoryId && matchesKeyword(t)) return true
+        return false
       })
+      .filter(t => t.transactionDate?.startsWith(ym))
       .sort((a, b) => {
         const da = String(a.transactionDate || (a as any).transaction_date || (a as any).date || '')
         const db = String(b.transactionDate || (b as any).transaction_date || (b as any).date || '')
         return db.localeCompare(da)
       })
-  }, [transactions, groupId, selectedMonth])
-  const balance = balances.find(b => b.group_id === groupId)
+  }, [transactions, descendantIds, ym, groups])
+  const balance = balances.find(b => b.group_id === actualGroupId)
 
   const totalKeywords =
     (group?.keywords?.length ?? 0) +
@@ -1116,6 +1280,47 @@ export function GroupDetailView({ groupId, isNested }: { groupId: string; isNest
   function handleUpdateKeywords(gid: string, keywords: string[]) {
     updateGroup(gid, { keywords })
   }
+
+  const ancestors = React.useMemo(() => {
+    const list: Group[] = []
+    let curr = group
+    while (curr && curr.parent_id) {
+      const parentId = curr.parent_id
+      const parent = groups.find(g => g.id === parentId)
+      if (parent) {
+        list.unshift(parent)
+        curr = parent
+      } else {
+        break
+      }
+    }
+    return list
+  }, [group, groups])
+
+  const depth = React.useMemo(() => {
+    if (!group) return 1
+    return ancestors.length + 1
+  }, [group, ancestors])
+
+  const handleDeleteGroup = React.useCallback(async (id: string, isCurrent: boolean) => {
+    if (typeof window !== 'undefined') {
+      const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa nhóm này không? Toàn bộ nhóm con cũng sẽ bị xóa.")
+      if (!confirmDelete) return
+      
+      try {
+        await deleteGroup(id)
+        if (isCurrent) {
+          if (onClose) {
+            onClose()
+          } else {
+            window.location.href = '/categories'
+          }
+        }
+      } catch (err: any) {
+        alert(err.message || "Có lỗi xảy ra khi xóa nhóm.")
+      }
+    }
+  }, [deleteGroup, onClose])
 
   // Loading / not found
   if (!group) {
@@ -1131,30 +1336,121 @@ export function GroupDetailView({ groupId, isNested }: { groupId: string; isNest
 
   return (
     <FmtCtx.Provider value={{ fmt, sym }}>
-    <div className="space-y-4 animate-fade-in pb-10">
-      {/* ── Hero card ── */}
-      <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-        <HeroCover group={group} members={members} />
-        <TabBar
-          active={activeTab}
-          onChange={setActiveTab}
-          subGroupsCount={subGroups.length}
-          keywordsCount={totalKeywords}
-          transactionsCount={groupTxns.length}
-          membersCount={members.length}
-          selectedMonth={selectedMonth}
-          onMonthChange={setSelectedMonth}
-        />
-        <StatsStrip group={group} groupTxns={groupTxns} members={members} />
+    <div className={cn(
+      "animate-fade-in flex flex-col w-full",
+      isNested ? "max-h-[85vh] h-[75vh] md:h-[80vh] overflow-hidden" : "pb-10"
+    )}>
+      {/* ── Header Area ── */}
+      <div className={cn(
+        "flex flex-col gap-4 pb-4 w-full shrink-0",
+        isNested ? "bg-[var(--color-bg-canvas)] pt-4 px-3 sm:px-5 md:px-6" : "bg-[var(--color-bg-base)] pt-2"
+      )}>
+        {/* ── Breadcrumbs ── */}
+        <div className="flex items-center justify-between px-0">
+          <div className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-text-tertiary)]">
+            <Link
+              href="/categories"
+              onClick={(e) => {
+                if (typeof window !== 'undefined' && window.location.pathname === '/categories') {
+                  e.preventDefault()
+                  window.location.href = '/categories'
+                }
+              }}
+              className="hover:text-[var(--color-text-primary)] transition-colors"
+            >
+              Danh mục
+            </Link>
+            <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+            {ancestors.map((anc) => {
+              const targetHref = `/categories/${slugify(anc.name)}`
+              return (
+                <React.Fragment key={anc.id}>
+                  {isNested && onClose && anc.id === group.parent_id ? (
+                    <button onClick={onClose} className="hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+                      {anc.name}
+                    </button>
+                  ) : (
+                    <Link
+                      href={targetHref}
+                      onClick={(e) => {
+                        if (typeof window !== 'undefined' && window.location.pathname === targetHref) {
+                          e.preventDefault()
+                          window.location.href = targetHref
+                        }
+                      }}
+                      className="hover:text-[var(--color-text-primary)] transition-colors"
+                    >
+                      {anc.name}
+                    </Link>
+                  )}
+                  <ChevronRight className="w-3.5 h-3.5 opacity-60" />
+                </React.Fragment>
+              )
+            })}
+            <span className="text-[var(--color-text-primary)]">{group.name}</span>
+          </div>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="w-10 h-10 -mr-2.5 flex items-center justify-center rounded-full hover:bg-[var(--color-border-default)] transition-colors cursor-pointer text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]"
+            >
+              <X className="w-5 h-5" strokeWidth={2} />
+            </button>
+          )}
+        </div>
+
+        {/* ── Hero card ── */}
+        <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
+          <HeroCover
+            group={group}
+            members={members}
+            onEdit={() => {
+              setEditingGroup(group)
+              setIsFormOpen(true)
+            }}
+            onDelete={() => handleDeleteGroup(group.id, true)}
+          />
+          <TabBar
+            active={activeTab}
+            onChange={setActiveTab}
+            subGroupsCount={subGroups.length}
+            keywordsCount={totalKeywords}
+            transactionsCount={groupTxns.length}
+            membersCount={members.length}
+            selectedMonth={selectedMonth}
+            onMonthChange={setSelectedMonth}
+          />
+          <StatsStrip group={group} groupTxns={groupTxns} members={members} />
+        </div>
       </div>
 
       {/* ── Tab content ── */}
+      <div className={cn(
+        "space-y-4",
+        isNested ? "overflow-y-auto flex-1 px-3 pb-3 sm:px-5 sm:pb-5 md:px-6 md:pb-6 custom-scrollbar" : ""
+      )}>
       {activeTab === 'overview' && (
         <>
           {/* Row 1: Sub-groups + Linked accounts */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div className="lg:col-span-2">
-              <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} onAddSubGroup={() => setIsFormOpen(true)} onSubGroupClick={(id) => setSelectedSubGroup(id)} />
+              <SubGroupsSection
+                group={group}
+                subGroups={subGroups}
+                transactions={transactions}
+                selectedMonth={selectedMonth}
+                onAddSubGroup={() => {
+                  setEditingGroup(null)
+                  setIsFormOpen(true)
+                }}
+                onSubGroupClick={(id) => setSelectedSubGroup(id)}
+                depth={depth}
+                onEditSubGroup={(sg) => {
+                  setEditingGroup(sg)
+                  setIsFormOpen(true)
+                }}
+                onDeleteSubGroup={(id) => handleDeleteGroup(id, false)}
+              />
             </div>
             <div>
               <LinkedAccountsSection groupTxns={groupTxns} />
@@ -1185,7 +1481,23 @@ export function GroupDetailView({ groupId, isNested }: { groupId: string; isNest
       {activeTab === 'subgroups' && (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
           <div className="lg:col-span-2">
-            <SubGroupsSection group={group} subGroups={subGroups} transactions={transactions} onAddSubGroup={() => setIsFormOpen(true)} onSubGroupClick={(id) => setSelectedSubGroup(id)} />
+            <SubGroupsSection
+              group={group}
+              subGroups={subGroups}
+              transactions={transactions}
+              selectedMonth={selectedMonth}
+              onAddSubGroup={() => {
+                setEditingGroup(null)
+                setIsFormOpen(true)
+              }}
+              onSubGroupClick={(id) => setSelectedSubGroup(id)}
+              depth={depth}
+              onEditSubGroup={(sg) => {
+                setEditingGroup(sg)
+                setIsFormOpen(true)
+              }}
+              onDeleteSubGroup={(id) => handleDeleteGroup(id, false)}
+            />
           </div>
         </div>
       )}
@@ -1228,23 +1540,36 @@ export function GroupDetailView({ groupId, isNested }: { groupId: string; isNest
         </div>
       )}
 
-      {/* Modal tạo nhóm con */}
-      <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
+      {/* Modal tạo/chỉnh sửa nhóm */}
+      <Modal
+        isOpen={isFormOpen}
+        onClose={() => {
+          setIsFormOpen(false)
+          setEditingGroup(null)
+        }}
+        className="!bg-transparent !border-0 !shadow-none max-w-3xl"
+        noPadding
+        isNested={isNested}
+      >
         <GroupForm 
           lang="vi" 
-          onClose={() => setIsFormOpen(false)} 
-          initialData={{ parent_id: group.id }} 
+          onClose={() => {
+            setIsFormOpen(false)
+            setEditingGroup(null)
+          }} 
+          initialData={editingGroup ? editingGroup : { parent_id: group.id }} 
         />
       </Modal>
 
       {/* Modal chi tiết nhóm con */}
-      <Modal isOpen={!!selectedSubGroup} onClose={() => setSelectedSubGroup(null)} className="!bg-transparent !border-0 !shadow-none max-w-5xl" noPadding>
+      <Modal isOpen={!!selectedSubGroup} onClose={() => setSelectedSubGroup(null)} className="!bg-transparent !border-0 !shadow-none max-w-5xl" noPadding isNested={isNested}>
         {selectedSubGroup && (
-          <div className="bg-[var(--color-bg-canvas)] rounded-[24px] shadow-2xl overflow-y-auto max-h-[90vh] p-2 sm:p-4 md:p-6 w-full border border-[var(--color-border-subtle)]">
-            <GroupDetailView groupId={selectedSubGroup} isNested />
+          <div className="bg-[var(--color-bg-canvas)] rounded-[24px] shadow-2xl overflow-hidden w-full border border-[var(--color-border-subtle)]">
+            <GroupDetailView groupId={selectedSubGroup} isNested onClose={() => setSelectedSubGroup(null)} />
           </div>
         )}
       </Modal>
+      </div>
     </div>
     </FmtCtx.Provider>
   )

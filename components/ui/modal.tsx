@@ -10,9 +10,10 @@ interface ModalProps {
   children: React.ReactNode
   className?: string
   noPadding?: boolean
+  isNested?: boolean
 }
 
-export function Modal({ isOpen, onClose, children, className, noPadding }: ModalProps) {
+export function Modal({ isOpen, onClose, children, className, noPadding, isNested }: ModalProps) {
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
@@ -28,7 +29,10 @@ export function Modal({ isOpen, onClose, children, className, noPadding }: Modal
   if (!isOpen || !mounted) return null
 
   const modalContent = (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+    <div className={cn(
+      "fixed inset-0 z-[9999] flex items-center justify-center p-4 animate-in fade-in duration-300",
+      isNested ? "bg-black/40" : "bg-black/60 backdrop-blur-sm"
+    )}>
       <div 
         className="absolute inset-0" 
         onClick={onClose} 

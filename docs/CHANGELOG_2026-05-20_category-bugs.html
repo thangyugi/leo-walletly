@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Changelog · 2026-05-20 · Category Bugs</title>
+<style>
+  :root {
+    --brand: #6366f1;
+    --brand-light: #e0e7ff;
+    --gain: #10b981;
+    --loss: #ef4444;
+    --warn: #f59e0b;
+    --bg: #f8fafc;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --text: #0f172a;
+    --text-sub: #64748b;
+    --code-bg: #1e293b;
+    --code-text: #e2e8f0;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  body { background: var(--bg); color: var(--text); margin: 0; padding: 32px 16px; }
+  .wrap { max-width: 860px; margin: 0 auto; }
+  header { border-bottom: 2px solid var(--brand); padding-bottom: 16px; margin-bottom: 32px; }
+  header h1 { font-size: 1.4rem; font-weight: 700; margin: 0 0 4px; }
+  header .meta { font-size: .8rem; color: var(--text-sub); }
+  .badge { display: inline-flex; align-items: center; gap: 4px; padding: 2px 9px; border-radius: 9999px; font-size: .7rem; font-weight: 600; }
+  .badge-bug { background: #fee2e2; color: #b91c1c; }
+  .badge-fix { background: #d1fae5; color: #047857; }
+  .badge-refactor { background: var(--brand-light); color: #4338ca; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 24px; margin-bottom: 20px; }
+  .card h2 { font-size: 1rem; font-weight: 700; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; }
+  .card p { font-size: .88rem; color: var(--text-sub); margin: 6px 0; line-height: 1.6; }
+  .section-label { font-size: .68rem; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-sub); margin: 18px 0 8px; }
+  ul { margin: 6px 0; padding-left: 20px; }
+  li { font-size: .88rem; color: var(--text-sub); margin-bottom: 4px; line-height: 1.55; }
+  li strong { color: var(--text); }
+  pre { background: var(--code-bg); color: var(--code-text); border-radius: 8px; padding: 14px 16px; overflow-x: auto; font-size: .78rem; line-height: 1.65; margin: 10px 0; }
+  .del { color: #fca5a5; text-decoration: line-through; }
+  .add { color: #6ee7b7; }
+  .divider { border: none; border-top: 1px solid var(--border); margin: 24px 0; }
+  .file-tag { font-family: monospace; font-size: .76rem; background: #f1f5f9; border: 1px solid var(--border); border-radius: 5px; padding: 1px 6px; color: #475569; }
+  table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+  th { text-align: left; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--text-sub); border-bottom: 1px solid var(--border); padding: 6px 8px; }
+  td { padding: 8px 8px; border-bottom: 1px solid #f1f5f9; vertical-align: top; }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>📋 Changelog — Sửa lỗi Quản lý danh mục</h1>
+    <div class="meta">
+      Version: <strong>patch</strong> &nbsp;·&nbsp;
+      Ngày: <strong>2026-05-20</strong> &nbsp;·&nbsp;
+      Phạm vi: <span class="file-tag">features/groups/groups-bento-page.tsx</span> &nbsp;
+                <span class="file-tag">features/groups/group-detail-view.tsx</span>
+    </div>
+  </header>
+
+  <!-- ── BUG 1 ── -->
+  <div class="card">
+    <h2>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-fix">FIXED</span>
+      #1 — Trang Quản lý danh mục hiển thị số liệu không đúng tháng hiện tại
+    </h2>
+    <p>
+      <strong>Root cause:</strong> Hàm <code>getGroupExpense()</code> trong <span class="file-tag">groups-bento-page.tsx</span>
+      ưu tiên giá trị <code>total_expense</code> từ <em>database view <code>category_balances</code></em> —
+      đây là số liệu lũy kế <em>all-time</em>, không phải của tháng hiện tại.
+      Ngoài ra, khi dùng <code>monthTxns</code> làm fallback, hàm chỉ match đúng
+      <code>t.categoryId === groupId</code> (direct match duy nhất) mà bỏ qua toàn bộ
+      các danh mục con trong cây phân cấp.
+    </p>
+
+    <div class="section-label">Logic trước (sai)</div>
+    <pre><span class="del">function getGroupExpense(groupId, balances, monthTxns) {</span>
+<span class="del">  const bal = balances.find(b => b.group_id === groupId)</span>
+<span class="del">  if (bal) return bal.total_expense  // ← all-time, không theo tháng!</span>
+<span class="del">  return monthTxns</span>
+<span class="del">    .filter(t => t.categoryId === groupId && t.transactionType === 'expense') // ← không tính con</span>
+<span class="del">    .reduce((s, t) => s + Math.abs(t.amount), 0)</span>
+<span class="del">}</span></pre>
+
+    <div class="section-label">Logic sau (đúng)</div>
+    <pre><span class="add">function getGroupExpense(groupId, allGroups, monthTxns) {</span>
+<span class="add">  const descendants = getDescendantIds(groupId, allGroups)   // ← toàn bộ cây con</span>
+<span class="add">  return monthTxns                                             // ← chỉ tháng hiện tại</span>
+<span class="add">    .filter(t => t.categoryId && descendants.has(t.categoryId) && t.transactionType === 'expense')</span>
+<span class="add">    .reduce((s, t) => s + Math.abs(t.amount), 0)</span>
+<span class="add">}</span></pre>
+
+    <div class="section-label">Các điểm thay đổi</div>
+    <ul>
+      <li>Xóa tham số <code>balances: GroupBalance[]</code> ra khỏi signature, thêm <code>allGroups: Group[]</code></li>
+      <li>Luôn tính từ <code>monthTxns</code> (đã lọc theo tháng) — không dùng DB view</li>
+      <li>Sử dụng <code>getDescendantIds</code> để gộp tất cả danh mục con vào tính toán</li>
+      <li>Cập nhật tất cả call-sites: <code>featuredExpense</code>, <code>topGroupsForStat</code>, <code>GroupCard</code> renders</li>
+      <li>Xóa import <code>GroupBalance</code> (unused) và <code>balances</code> khỏi store destructuring</li>
+    </ul>
+  </div>
+
+  <!-- ── BUG 2 ── -->
+  <div class="card">
+    <h2>
+      <span class="badge badge-bug">BUG</span>
+      <span class="badge badge-fix">FIXED</span>
+      #2 — Giao dịch khớp từ khóa không hiển thị trong "Hoạt động gần đây"
+    </h2>
+    <p>
+      <strong>Root cause:</strong> Trong <span class="file-tag">group-detail-view.tsx</span>,
+      <code>groupTxns</code> chỉ bao gồm giao dịch có <code>categoryId</code> đã được gán
+      vào nhóm/nhóm con (<code>t.categoryId &amp;&amp; descendantIds.has(t.categoryId)</code>).
+      Khi user thêm keyword "FamilyMartCafeLatte" vào category con "Cà phê sáng",
+      các giao dịch có tên khớp keyword nhưng <em>chưa có <code>categoryId</code></em> bị bỏ qua hoàn toàn.
+    </p>
+    <p>
+      <strong>Vấn đề thứ 2:</strong> <code>displayTxns = groupTxns.slice(0, 7)</code> không áp dụng
+      filter theo tab đang chọn (Tất cả / Tự động / Cần xem lại) — tab không có tác dụng gì.
+    </p>
+
+    <div class="section-label">Thay đổi trong groupTxns (line ~1210)</div>
+    <pre><span class="add">// Thu thập tất cả keywords từ group này và toàn bộ descendants</span>
+<span class="add">const allKeywords = []</span>
+<span class="add">for (const gId of descendantIds) {</span>
+<span class="add">  const g = groups.find(x => x.id === gId)</span>
+<span class="add">  if (g?.keywords) allKeywords.push(...g.keywords.map(kw => ({ kw, groupId: gId })))</span>
+<span class="add">}</span>
+<span class="add">function matchesKeyword(t) { ... }  // check description + merchantName</span>
+
+<span class="add">return transactions.filter(t => {</span>
+<span class="add">  // 1. Đã được gán categoryId vào group/con</span>
+<span class="add">  if (t.categoryId && descendantIds.has(t.categoryId)) return true</span>
+<span class="add">  // 2. Chưa có categoryId nhưng keyword match → hiển thị và tính vào số liệu</span>
+<span class="add">  if (!t.categoryId && matchesKeyword(t)) return true</span>
+<span class="add">  return false</span>
+<span class="add">}).filter(t => t.transactionDate?.startsWith(ym))</span></pre>
+
+    <div class="section-label">Thay đổi trong RecentTransactions</div>
+    <pre><span class="add">// Tab filter thực sự hoạt động</span>
+<span class="add">const filteredTxns = useMemo(() => {</span>
+<span class="add">  switch (txTab) {</span>
+<span class="add">    case 'auto':   return groupTxns.filter(t => !t.categoryId)   // keyword-matched chưa categorized</span>
+<span class="add">    case 'review': return groupTxns.filter(t => t.status === 'pending' || !t.isReconciled)</span>
+<span class="add">    default:       return groupTxns</span>
+<span class="add">  }</span>
+<span class="add">}, [groupTxns, txTab])</span>
+<span class="add">const displayTxns = filteredTxns.slice(0, 20)  // tăng giới hạn từ 7 → 20</span></pre>
+
+    <div class="section-label">Các điểm thay đổi khác</div>
+    <ul>
+      <li>
+        Thêm hàm <code>resolveSubGroup(t)</code>: tìm nhóm con phù hợp theo
+        <code>categoryId</code> <em>hoặc</em> keyword match — dùng để hiển thị
+        đúng emoji/màu cho giao dịch keyword-matched
+      </li>
+      <li>Cập nhật footer counter: "Hiển thị X / Y · Tổng Z giao dịch" để rõ ràng hơn</li>
+      <li>Tăng giới hạn hiển thị từ 7 lên 20 giao dịch</li>
+      <li>
+        <strong>Lưu ý:</strong> Keyword-matched transactions được <em>hiển thị và tính vào thống kê</em>
+        nhưng <code>categoryId</code> của chúng chưa thay đổi trong DB. Để cập nhật chính thức,
+        user cần dùng tính năng "Áp dụng tất cả" ở widget SmartClassify.
+      </li>
+    </ul>
+  </div>
+
+  <!-- ── Summary table ── -->
+  <div class="card">
+    <h2>📊 Tóm tắt thay đổi</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>File</th>
+          <th>Loại thay đổi</th>
+          <th>Chi tiết</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="file-tag">groups-bento-page.tsx</span></td>
+          <td><span class="badge badge-fix">BUG FIX</span></td>
+          <td><code>getGroupExpense</code>: bỏ all-time balances, tính từ monthTxns + descendantIds</td>
+        </tr>
+        <tr>
+          <td><span class="file-tag">groups-bento-page.tsx</span></td>
+          <td><span class="badge badge-refactor">REFACTOR</span></td>
+          <td>Xóa <code>GroupBalance</code> import và <code>balances</code> từ store (không còn cần)</td>
+        </tr>
+        <tr>
+          <td><span class="file-tag">group-detail-view.tsx</span></td>
+          <td><span class="badge badge-fix">BUG FIX</span></td>
+          <td><code>groupTxns</code>: bổ sung keyword-matched transactions chưa có categoryId</td>
+        </tr>
+        <tr>
+          <td><span class="file-tag">group-detail-view.tsx</span></td>
+          <td><span class="badge badge-fix">BUG FIX</span></td>
+          <td><code>RecentTransactions</code>: tab filter (Tự động / Cần xem lại) thực sự hoạt động</td>
+        </tr>
+        <tr>
+          <td><span class="file-tag">group-detail-view.tsx</span></td>
+          <td><span class="badge badge-refactor">REFACTOR</span></td>
+          <td>Thêm <code>resolveSubGroup()</code>, tăng giới hạn hiển thị 7→20, cải thiện footer counter</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <p style="font-size:.78rem;color:var(--text-sub);text-align:center;margin-top:24px">
+    Không có thay đổi nào ngoài phạm vi 2 file được yêu cầu.
+    TypeScript compile: <strong style="color:var(--gain)">✓ 0 errors</strong>
+  </p>
+</div>
+</body>
+</html>

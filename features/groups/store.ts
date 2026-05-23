@@ -2,6 +2,42 @@ import { create } from 'zustand'
 import { Category, CategoryTreeNode, CategoryBalance } from './types'
 import { supabase } from '@/lib/supabase'
 
+export function getCleanCategoryPath(category: Category, allCategories: Category[]): string {
+  const parts: string[] = [category.categoryCode || category.metadata?.category_code || '']
+  let curr = category
+  while (curr.parent_id) {
+    const parent = allCategories.find(g => g.id === curr.parent_id)
+    if (parent) {
+      parts.unshift(parent.categoryCode || parent.metadata?.category_code || '')
+      curr = parent
+    } else {
+      break
+    }
+  }
+  return '/' + parts.filter(Boolean).join('/')
+}
+
+export function getSubtreeHeight(cat: Category, allCats: Category[]): number {
+  const children = allCats.filter(c => c.parent_id === cat.id)
+  if (children.length === 0) return 1
+  return 1 + Math.max(...children.map(c => getSubtreeHeight(c, allCats)))
+}
+
+export function getCategoryDepth(cat: Category, allCats: Category[]): number {
+  let depth = 1
+  let curr = cat
+  while (curr.parent_id) {
+    const parent = allCats.find(g => g.id === curr.parent_id)
+    if (parent) {
+      depth++
+      curr = parent
+    } else {
+      break
+    }
+  }
+  return depth
+}
+
 interface CategoryState {
   categories: Category[]
   balances: CategoryBalance[]
@@ -61,15 +97,37 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         }
       }
 
-      const normalizedCategories = (categories || []).map(g => ({
-        ...g,
-        name: g.name_i18n?.en || g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
-        type: g.category_type || g.type || 'cost_center',
-        budget_limit: g.metadata?.budget_limit || g.budget_limit || 0,
-        keywords: g.metadata?.keywords || g.keywords || [],
-        categoryCode: g.metadata?.category_code || g.category_code || '',
-        path: g.path || g.metadata?.path || '',
-      }))
+      const rawCategories = categories || []
+      const normalizedCategories = rawCategories.map(g => {
+        const code = g.category_code || g.metadata?.category_code || ''
+        let cleanPath = g.path || g.metadata?.path || ''
+        
+        // Rebuild clean path recursively if it contains legacy underscores/UUIDs or dashes
+        if (cleanPath.includes('_') || cleanPath.includes('-') || !cleanPath.startsWith('/')) {
+          const parts: string[] = [code]
+          let curr = g
+          while (curr.parent_id) {
+            const parent = rawCategories.find(p => p.id === curr.parent_id)
+            if (parent) {
+              parts.unshift(parent.category_code || parent.metadata?.category_code || '')
+              curr = parent
+            } else {
+              break
+            }
+          }
+          cleanPath = '/' + parts.filter(Boolean).join('/')
+        }
+
+        return {
+          ...g,
+          name: g.name_i18n?.en || g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
+          type: g.category_type || g.type || 'cost_center',
+          budget_limit: g.metadata?.budget_limit || g.budget_limit || 0,
+          keywords: g.metadata?.keywords || g.keywords || [],
+          categoryCode: code,
+          path: cleanPath,
+        }
+      })
 
       set({ categories: normalizedCategories, balances, isLoading: false })
     } catch (err: any) {
@@ -91,8 +149,12 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         const parentCategory = get().categories.find(g => g.id === category.parent_id)
         if (parentCategory) {
           parentCode = parentCategory.categoryCode || parentCategory.metadata?.category_code || ''
-          parentPath = parentCategory.path || parentCategory.metadata?.path || ''
-          depth = parentPath ? parentPath.split('/').filter(Boolean).length : 1
+          parentPath = getCleanCategoryPath(parentCategory, get().categories)
+          depth = getCategoryDepth(parentCategory, get().categories)
+          
+          if (depth >= 4) {
+            throw new Error("Không thể tạo thêm danh mục con. Hệ thống chỉ cho phép tối đa 4 tầng danh mục (Nhóm cha > Nhóm con > Cháu > Chắt).")
+          }
         }
       }
 
@@ -192,19 +254,74 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
   updateCategory: async (id, category) => {
     try {
-      const payload = {
-        parent_id: category.parent_id || null,
-        name_en: category.name,
-        name_vi: category.name,
-        name_ja: category.name,
-        category_type: category.type,
-        color: category.color,
-        emoji: category.emoji,
-        metadata: {
-          budget_limit: category.budget_limit,
-          keywords: category.keywords,
-          ...category.metadata
+      const allCategories = get().categories
+      const existing = allCategories.find(g => g.id === id)
+      if (!existing) throw new Error('Category not found')
+
+      const hasParentIdUpdate = 'parent_id' in category
+      const parentId = hasParentIdUpdate
+        ? (category.parent_id === '' || category.parent_id === null ? null : category.parent_id)
+        : existing.parent_id
+      
+      // Calculate new path if parent changed
+      let newPath = existing.path || ''
+      const code = existing.categoryCode || ''
+      
+      if (parentId !== existing.parent_id) {
+        let parentPath = ''
+        if (parentId) {
+          const parentCategory = allCategories.find(g => g.id === parentId)
+          if (parentCategory) {
+            parentPath = getCleanCategoryPath(parentCategory, allCategories)
+            const parentDepth = getCategoryDepth(parentCategory, allCategories)
+            
+            // Calculate subtree height
+            const subtreeHeight = getSubtreeHeight(existing, allCategories)
+            if (parentDepth + subtreeHeight > 4) {
+              throw new Error("Không thể di chuyển danh mục. Việc di chuyển này sẽ làm vượt quá giới hạn tối đa 4 tầng danh mục.")
+            }
+          }
         }
+        newPath = parentPath ? `${parentPath}/${code}` : `/${code}`
+      }
+
+      const currentMetadata = existing.metadata || {}
+      const budgetLimit = 'budget_limit' in category ? category.budget_limit : (existing.budget_limit ?? currentMetadata.budget_limit)
+      const keywords = 'keywords' in category ? category.keywords : (existing.keywords ?? currentMetadata.keywords)
+      const meta = category.metadata || {}
+
+      const mergedMetadata = {
+        ...currentMetadata,
+        budget_limit: budgetLimit,
+        keywords: keywords,
+        category_code: code,
+        path: newPath,
+        ...meta
+      }
+
+      const payload: any = {
+        metadata: mergedMetadata
+      }
+
+      if (hasParentIdUpdate) {
+        payload.parent_id = parentId
+      }
+      if ('name' in category) {
+        payload.name_en = category.name
+        payload.name_vi = category.name
+        payload.name_ja = category.name
+      }
+      if ('type' in category) {
+        payload.category_type = category.type
+      }
+      if ('color' in category) {
+        payload.color = category.color
+      }
+      if ('emoji' in category) {
+        payload.emoji = category.emoji
+      }
+      if (newPath !== existing.path) {
+        payload.path = newPath
       }
 
       // Strictly update categories table
@@ -226,9 +343,46 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         categoryCode: data.metadata?.category_code || data.category_code || '',
         path: data.path || data.metadata?.path || '',
       }
-      set((state) => ({
-        categories: state.categories.map((g) => (g.id === id ? norm : g)),
-      }))
+
+      // If path changed, update all descendants in memory and database
+      let updatedDescendants: Category[] = []
+      if (newPath !== existing.path) {
+        const descendants = allCategories.filter(c => c.path && c.path.startsWith(existing.path + '/'))
+        for (const desc of descendants) {
+          const relativePart = desc.path!.substring(existing.path!.length)
+          const descNewPath = newPath + relativePart
+          
+          await supabase
+            .from('categories')
+            .update({
+              path: descNewPath,
+              metadata: {
+                ...desc.metadata,
+                path: descNewPath
+              }
+            })
+            .eq('id', desc.id)
+            
+          updatedDescendants.push({
+            ...desc,
+            path: descNewPath,
+            metadata: {
+              ...desc.metadata,
+              path: descNewPath
+            }
+          })
+        }
+      }
+
+      set((state) => {
+        const updatedCats = state.categories.map((g) => {
+          if (g.id === id) return norm
+          const matchDesc = updatedDescendants.find(d => d.id === g.id)
+          if (matchDesc) return matchDesc
+          return g
+        })
+        return { categories: updatedCats }
+      })
     } catch (err: any) {
       set({ error: err.message })
       throw err

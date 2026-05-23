@@ -19,7 +19,7 @@ function getPageLabel(pathname: string, t: any): string {
     '/transactions':    t.nav.transactions,
     '/analytics':       t.nav.analytics,
     '/calendar':        t.nav.calendar,
-    '/groups':          t.nav.groups,
+    '/categories':      t.nav.groups,
     '/recurring':       t.nav.recurring,
     '/monthly-report':  t.nav.report,
     '/scan':            t.nav.scan,

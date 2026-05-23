@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useGroupStore } from './store'
+import { useGroupStore, getCategoryDepth, getSubtreeHeight } from './store'
 import { GroupType } from '@/components/ui/group-primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -56,8 +56,9 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
         await createGroup(payload)
       }
       onClose()
-    } catch (err) {
+    } catch (err: any) {
       console.error(err)
+      alert(err.message || 'Có lỗi xảy ra khi lưu nhóm')
     } finally {
       setIsSaving(false)
     }
@@ -118,7 +119,32 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
     setFormData({ ...formData, keywords: formData.keywords.filter((k) => k !== kw) })
   }
 
-  const parentOptions = groups.filter((g) => g.id !== initialData?.id)
+  const parentOptions = React.useMemo(() => {
+    const currentId = initialData?.id
+    const currentCat = currentId ? groups.find(g => g.id === currentId) : null
+    const height = currentCat ? getSubtreeHeight(currentCat, groups) : 1
+
+    return groups.filter((g) => {
+      // Cannot select itself as parent
+      if (g.id === currentId) return false
+      
+      // Prevent circular reference
+      let curr = g
+      while (curr.parent_id) {
+        if (curr.parent_id === currentId) return false
+        const parent = groups.find(p => p.id === curr.parent_id)
+        if (parent) {
+          curr = parent
+        } else {
+          break
+        }
+      }
+
+      // Check depth constraint: depth of parent + height of subtree must be <= 4
+      const pDepth = getCategoryDepth(g, groups)
+      return (pDepth + height) <= 4
+    })
+  }, [groups, initialData])
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-white rounded-[24px] shadow-xl overflow-hidden flex flex-col max-h-[90vh]">

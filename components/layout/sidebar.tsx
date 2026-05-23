@@ -43,7 +43,7 @@ export function Sidebar() {
     { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp,     group: 'main' },
     { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays,    group: 'main' },
     { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3,       group: 'main' },
-    { href: '/groups',         label: t.nav.groups,       icon: FolderTree,      group: 'manage' },
+    { href: '/categories',     label: t.nav.groups,       icon: FolderTree,      group: 'manage' },
     { href: '/users',          label: t.nav.users,        icon: Users,           group: 'manage' },
     { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw,       group: 'manage' },
     { href: '/settings/ledger',  label: t.ledger_settings.title, icon: Settings,        group: 'settings' },

@@ -9,7 +9,7 @@ import { useGroupStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useSettingsStore } from '@/stores/settings'
 import { useTransactionsStore } from '@/stores/transactions'
-import type { Group, GroupBalance } from './types'
+import type { Group } from './types'
 import type { Transaction } from '@/types'
 import { GroupIcon } from './group-icon'
 import { Plus, ChevronDown, ArrowUpRight, Sun, Zap, Globe,
@@ -33,11 +33,39 @@ function currentYearMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-function getGroupExpense(groupId: string, balances: GroupBalance[], monthTxns: Transaction[]) {
-  const bal = balances.find((b: GroupBalance) => b.group_id === groupId)
-  if (bal) return bal.total_expense
+function getDescendantIds(targetId: string, allGroups: Group[]): Set<string> {
+  const ids = new Set<string>([targetId])
+  const queue = [targetId]
+  while (queue.length > 0) {
+    const currentId = queue.shift()!
+    const children = allGroups.filter(g => g.parent_id === currentId)
+    for (const child of children) {
+      if (!ids.has(child.id)) {
+        ids.add(child.id)
+        queue.push(child.id)
+      }
+    }
+  }
+  return ids
+}
+
+function getGroupTxCount(groupId: string, allGroups: Group[], monthTxns: Transaction[]) {
+  const descendants = getDescendantIds(groupId, allGroups)
+  // Also count keyword-matched transactions that don't have a categoryId yet
+  return monthTxns.filter((t: Transaction) => t.categoryId && descendants.has(t.categoryId)).length
+}
+
+/**
+ * Compute expense for a group in the given monthTxns.
+ * Always uses monthTxns (not all-time balances) and includes all descendants.
+ * @param groupId   - the root group id
+ * @param allGroups - full flat list of categories/groups (for descendant traversal)
+ * @param monthTxns - transactions already filtered to the selected month
+ */
+function getGroupExpense(groupId: string, allGroups: Group[], monthTxns: Transaction[]) {
+  const descendants = getDescendantIds(groupId, allGroups)
   return monthTxns
-    .filter((t: Transaction) => t.categoryId === groupId && t.transactionType === 'expense')
+    .filter((t: Transaction) => t.categoryId && descendants.has(t.categoryId) && t.transactionType === 'expense')
     .reduce((s: number, t: Transaction) => s + Math.abs(t.amount), 0)
 }
 
@@ -116,7 +144,7 @@ function FeaturedCard({
 
   return (
     <Link
-      href={`/groups/${slugify(group.name)}-${group.categoryCode || group.id}`}
+      href={`/categories/${slugify(group.name)}`}
       className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
     >
       <BnArrow className="bg-white/20 text-white" />
@@ -174,7 +202,7 @@ function FeaturedCard({
         {/* Right col */}
         <div>
           <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
-            {subGroups.length} nhóm con
+            {subGroups.length} danh mục con
           </div>
           {subGroups.length > 0 ? (
             <div className="flex flex-col gap-[5px] text-[11px]">
@@ -189,7 +217,7 @@ function FeaturedCard({
               ))}
             </div>
           ) : (
-            <div className="text-[11px] text-[var(--color-text-quaternary)]">Chưa có nhóm con</div>
+            <div className="text-[11px] text-[var(--color-text-quaternary)]">Chưa có danh mục con</div>
           )}
         </div>
       </div>
@@ -256,7 +284,7 @@ function DarkStatCard({
         </>
       ) : (
         <>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Nhóm chi nhiều nhất</div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Danh mục chi nhiều nhất</div>
           <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">
             {topGroups && topGroups[0] ? topGroups[0].name : '—'}
           </div>
@@ -307,7 +335,7 @@ function GroupCard({
 
   return (
     <Link
-      href={`/groups/${slugify(group.name)}-${group.categoryCode || group.id}`}
+      href={`/categories/${slugify(group.name)}`}
       className="relative bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
       <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
@@ -358,11 +386,13 @@ function GroupCard({
 function SmartClassifyCard({
   pendingTxns,
   groups,
+  onApplyAll,
 }: {
   pendingTxns: Transaction[]
   groups: Group[]
+  onApplyAll: (updates: { id: string; categoryId: string }[]) => void
 }) {
-  const [expanded, setExpanded] = React.useState(false)
+  const [isApplying, setIsApplying] = React.useState(false)
   
   function suggestGroup(txn: Transaction): Group | undefined {
     const haystack = [txn.merchantName, txn.description].filter(Boolean).join(' ').toLowerCase()
@@ -371,7 +401,23 @@ function SmartClassifyCard({
     )
   }
 
-  const displayTxns = expanded ? pendingTxns : pendingTxns.slice(0, 3)
+  const handleApplyAll = async () => {
+    setIsApplying(true)
+    const updates: { id: string; categoryId: string }[] = []
+    pendingTxns.forEach(txn => {
+      const suggested = suggestGroup(txn)
+      if (suggested) {
+        updates.push({ id: txn.id, categoryId: suggested.id })
+      }
+    })
+    
+    if (updates.length > 0) {
+      await onApplyAll(updates)
+    }
+    setIsApplying(false)
+  }
+
+  const displayTxns = pendingTxns.slice(0, 3)
 
   return (
     <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-white border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
@@ -390,7 +436,7 @@ function SmartClassifyCard({
             {pendingTxns.length} giao dịch mới chờ phân loại
           </h4>
           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
-            Leo gợi ý nhóm dựa trên từ khóa đã học · xem trước trước khi áp dụng
+            Leo gợi ý danh mục dựa trên từ khóa đã học · xem trước trước khi áp dụng
           </p>
         </div>
       </div>
@@ -440,15 +486,23 @@ function SmartClassifyCard({
         {pendingTxns.length > 0 && (
           <>
             {pendingTxns.length > 3 && (
-              <button 
-                onClick={() => setExpanded(!expanded)}
+              <Link 
+                href="/categories/classify"
                 className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
               >
-                {expanded ? 'Thu gọn' : 'Xem tất cả'}
-              </button>
+                Xem tất cả
+              </Link>
             )}
-            <button className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer">
-              <Check className="w-3 h-3" />
+            <button 
+              onClick={handleApplyAll}
+              disabled={isApplying}
+              className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer disabled:opacity-50"
+            >
+              {isApplying ? (
+                <Loader2 className="w-3 h-3 animate-spin" />
+              ) : (
+                <Check className="w-3 h-3" />
+              )}
               Áp dụng tất cả
             </button>
           </>
@@ -469,7 +523,7 @@ function AddGroupTile({ onClick }: { onClick: () => void }) {
         <Plus className="w-5 h-5 text-[var(--color-text-quaternary)] group-hover:text-[var(--color-brand-700)] transition-colors" />
       </div>
       <div>
-        <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">Tạo nhóm mới</h4>
+        <h4 className="text-sm font-semibold text-[var(--color-text-secondary)] group-hover:text-[var(--color-text-primary)] transition-colors">Tạo danh mục mới</h4>
         <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1 leading-relaxed">
           Hoặc bắt đầu từ template: <b>Du lịch</b>, <b>Hộ gia đình</b>, <b>Đám cưới</b>…
         </p>
@@ -514,8 +568,8 @@ export function GroupsBentoPage() {
   const [search, setSearch]         = React.useState('')
   const { lang } = useSettingsStore()
   const { currentLedger } = useLedgerStore()
-  const { groups, balances, isLoading, fetchGroups } = useGroupStore()
-  const { transactions, syncTransactions } = useTransactionsStore()
+  const { groups, isLoading, fetchGroups } = useGroupStore()
+  const { transactions, syncTransactions, bulkUpdateTransactions } = useTransactionsStore()
 
   // ── Currency formatting ───────────────────────────────────
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
@@ -574,7 +628,7 @@ export function GroupsBentoPage() {
       label: 'Chi tiêu tháng này',
       value: fmt(totalExpense),
       unit: sym,
-      sub: `${groups.filter((g: Group) => g.is_active).length} nhóm đang hoạt động`,
+      sub: `${groups.filter((g: Group) => g.is_active).length} danh mục đang hoạt động`,
       subLoss: false,
     },
     {
@@ -641,22 +695,22 @@ export function GroupsBentoPage() {
     [groups],
   )
 
-  // Active groups sorted by expense desc
+  // Active groups sorted by expense desc (use groups directly for descendant traversal)
   const activeGroups = React.useMemo(() => {
     const active = groups.filter((g: Group) => g.is_active && !g.parent_id)
     return [...active].sort((a: Group, b: Group) => {
-      const ea = getGroupExpense(a.id, balances, monthTxns)
-      const eb = getGroupExpense(b.id, balances, monthTxns)
+      const ea = getGroupExpense(a.id, groups, monthTxns)
+      const eb = getGroupExpense(b.id, groups, monthTxns)
       return eb - ea
     })
-  }, [groups, balances, monthTxns])
+  }, [groups, monthTxns])
 
   const featuredGroup = activeGroups[0]
   const featuredSubGroups = featuredGroup
     ? groups.filter((g: Group) => g.is_active && g.parent_id === featuredGroup.id).slice(0, 3)
     : []
   const featuredExpense = featuredGroup
-    ? getGroupExpense(featuredGroup.id, balances, monthTxns)
+    ? getGroupExpense(featuredGroup.id, groups, monthTxns)
     : 0
   const featuredBudget = featuredGroup?.budget_limit ?? 0
 
@@ -670,9 +724,9 @@ export function GroupsBentoPage() {
   const topGroupsForStat = React.useMemo(() => {
     return activeGroups.slice(0, 4).map((g: Group) => ({
       name: g.name,
-      expense: getGroupExpense(g.id, balances, monthTxns),
+      expense: getGroupExpense(g.id, groups, monthTxns),
     }))
-  }, [activeGroups, balances, monthTxns])
+  }, [activeGroups, groups, monthTxns])
 
   // Smart classify: unclassified expense transactions
   const pendingTxns = React.useMemo(
@@ -680,6 +734,11 @@ export function GroupsBentoPage() {
       .filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense'),
     [transactions],
   )
+
+  const handleApplyAutoCategorization = async (updates: { id: string; categoryId: string }[]) => {
+    const formattedUpdates = updates.map(u => ({ id: u.id, update: { categoryId: u.categoryId } }))
+    bulkUpdateTransactions(formattedUpdates)
+  }
 
   // ── Search filter (must be before early returns — Rules of Hooks) ──
   const searchedGroups = React.useMemo(() => {
@@ -725,7 +784,7 @@ export function GroupsBentoPage() {
       <div className="flex items-center gap-3 flex-wrap">
         <div>
           <h1 className="text-[18px] font-semibold tracking-[-0.025em] text-[var(--color-text-primary)]">
-            Quản lý nhóm
+            Quản lý danh mục
           </h1>
           <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">
             {currentLedger?.name ?? '—'} · {currency}
@@ -739,7 +798,7 @@ export function GroupsBentoPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Tìm kiếm nhóm…"
+            placeholder="Tìm kiếm danh mục…"
             className={cn(
               'pl-8 pr-3 h-9 w-52 rounded-lg border text-sm',
               'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
@@ -755,7 +814,7 @@ export function GroupsBentoPage() {
           className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors"
         >
           <Plus className="w-3.5 h-3.5" />
-          Tạo nhóm mới
+          Tạo danh mục mới
         </button>
       </div>
 
@@ -861,21 +920,25 @@ export function GroupsBentoPage() {
           <GroupCard
             key={g.id}
             group={g}
-            expense={getGroupExpense(g.id, balances, monthTxns)}
-            txCount={monthTxns.filter((t: Transaction) => t.categoryId === g.id).length}
+            expense={getGroupExpense(g.id, groups, monthTxns)}
+            txCount={getGroupTxCount(g.id, groups, monthTxns)}
           />
         ))}
 
         {/* 5. Smart classify (wide) */}
-        <SmartClassifyCard pendingTxns={pendingTxns} groups={groups} />
+        <SmartClassifyCard 
+          pendingTxns={pendingTxns} 
+          groups={groups} 
+          onApplyAll={handleApplyAutoCategorization}
+        />
 
         {/* 6. More group cards */}
         {searchedGroups.slice(2, 5).map((g: Group) => (
           <GroupCard
             key={g.id}
             group={g}
-            expense={getGroupExpense(g.id, balances, monthTxns)}
-            txCount={monthTxns.filter((t: Transaction) => t.categoryId === g.id).length}
+            expense={getGroupExpense(g.id, groups, monthTxns)}
+            txCount={getGroupTxCount(g.id, groups, monthTxns)}
           />
         ))}
 
@@ -896,10 +959,10 @@ export function GroupsBentoPage() {
         </div>
         <div className="flex-1 min-w-0">
           <div className="text-[13px] font-semibold tracking-[-0.005em] text-[var(--color-text-primary)]">
-            Đặt từ khóa cho nhóm giúp tự động phân loại 95% giao dịch trong tương lai
+            Đặt từ khóa cho danh mục giúp tự động phân loại 95% giao dịch trong tương lai
           </div>
           <div className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">
-            Ví dụ: thêm "starbucks", "highlands" vào nhóm Cà phê → tự động phân loại mọi giao dịch chứa từ này
+            Ví dụ: thêm "starbucks", "highlands" vào danh mục Cà phê → tự động phân loại mọi giao dịch chứa từ này
           </div>
         </div>
         <button className="shrink-0 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors">

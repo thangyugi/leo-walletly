@@ -21,7 +21,7 @@ export function MobileHeader() {
     { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp     },
     { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays    },
     { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3       },
-    { href: '/groups',         label: t.nav.groups,       icon: Tag             },
+    { href: '/categories',     label: t.nav.groups,       icon: Tag             },
     { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw       },
     { href: '/monthly-report', label: t.nav.report,       icon: FileText        },
     { href: '/scan',           label: t.nav.scan,         icon: ScanLine        },
