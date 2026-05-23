@@ -324,7 +324,7 @@ function CategoryCard({
   txCount: number
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
-  const budget    = group.budget_limit || 0
+  const budget    = category.budget_limit || 0
   const pct       = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const barClass  = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
   const iconBg    = `${category.color}22`
