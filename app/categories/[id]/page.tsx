@@ -1,10 +1,10 @@
 'use client'
 
 import { use } from 'react'
-import { GroupDetailView } from '@/features/groups/group-detail-view'
+import { CategoryDetailView } from '@/features/categories/category-detail-view'
 
-export default function GroupDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function CategoryDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const groupId = id.length > 36 ? id.slice(-36) : id
-  return <GroupDetailView groupId={groupId} />
+  const categoryId = id.length > 36 ? id.slice(-36) : id
+  return <CategoryDetailView categoryId={categoryId} />
 }

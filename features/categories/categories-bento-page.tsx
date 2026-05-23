@@ -4,15 +4,15 @@ import * as React from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
-import { GroupForm } from './group-form'
-import { useGroupStore } from './store'
+import { CategoryForm } from './category-form'
+import { useCategoryStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useSettingsStore } from '@/stores/settings'
 import { useTransactionsStore } from '@/stores/transactions'
-import type { Group } from './types'
+import type { Category } from './types'
 import type { Transaction } from '@/types'
-import { GroupIcon } from './group-icon'
-import { Plus, ChevronDown, ArrowUpRight, Sun, ChevronUp, Check, X, Loader2, MoreHorizontal } from 'lucide-react'
+import { CategoryIcon } from './category-icon'
+import { Plus, ChevronDown, ArrowUpRight, Sun, ChevronUp, Check, X, Loader2 } from 'lucide-react'
 import { cn, slugify } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
 
@@ -28,19 +28,19 @@ function currentYearMonth() {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
 }
 
-function getDescendantIds(targetId: string, allGroups: Group[]): Set<string> {
+function getDescendantIds(targetId: string, allCategories: Category[]): Set<string> {
   const ids = new Set<string>([targetId])
   const queue = [targetId]
   while (queue.length > 0) {
     const currentId = queue.shift()!
-    allGroups.filter(g => g.parent_id === currentId).forEach(child => {
+    allCategories.filter(c => c.parent_id === currentId).forEach(child => {
       if (!ids.has(child.id)) { ids.add(child.id); queue.push(child.id) }
     })
   }
   return ids
 }
 
-function groupGlyph(name: string) {
+function categoryGlyph(name: string) {
   const words = name.trim().split(/\s+/)
   return words.length >= 2
     ? (words[0][0] + words[words.length - 1][0]).toUpperCase()
@@ -119,26 +119,26 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
 
 /* ─── FeaturedCard ─────────────────────────────────────────────────────────── */
 function FeaturedCard({
-  group,
-  subGroups,
+  category,
+  subCategories,
   expense,
 }: {
-  group: Group
-  subGroups: Group[]
+  category: Category
+  subCategories: Category[]
   expense: number
 }) {
   const { fmt, sym, currency } = React.useContext(FmtCtx)
-  const budget    = group.budget_limit || 0
+  const budget    = category.budget_limit || 0
   const pct       = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const remaining = budget - expense
-  const glyph     = groupGlyph(group.name)
-  const gradient  = makeGradient(group.color || '#0f766e')
-  const displaySubs  = subGroups.slice(0, 3)
-  const extraCount   = Math.max(0, subGroups.length - 3)
+  const glyph     = categoryGlyph(category.name)
+  const gradient  = makeGradient(category.color || '#0f766e')
+  const displaySubs  = subCategories.slice(0, 3)
+  const extraCount   = Math.max(0, subCategories.length - 3)
 
   return (
     <Link
-      href={`/categories/${slugify(group.name)}`}
+      href={`/categories/${slugify(category.name)}`}
       className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col"
     >
       <BnArrow className="bg-white/20 text-white" />
@@ -156,16 +156,16 @@ function FeaturedCard({
         </span>
         {/* Dynamic status pill */}
         <span className="absolute left-[22px] top-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm border border-white/20">
-          <span className={cn('w-1.5 h-1.5 rounded-full', group.is_active ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300')} />
-          {group.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
+          <span className={cn('w-1.5 h-1.5 rounded-full', category.is_active ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300')} />
+          {category.is_active ? 'Đang hoạt động' : 'Không hoạt động'}
         </span>
         <div className="relative z-10 mt-8">
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
-            <span><GroupIcon name={group.emoji} className="w-4 h-4 inline-block mr-1" />{typeLabel(group.type)}</span>
+            <span><CategoryIcon name={category.emoji} className="w-4 h-4 inline-block mr-1" />{typeLabel(category.type)}</span>
             <span className="opacity-50">·</span>
             <span>{currency}</span>
           </div>
-          <h3 className="text-[22px] font-semibold tracking-[-0.025em] mt-1 leading-tight">{group.name}</h3>
+          <h3 className="text-[22px] font-semibold tracking-[-0.025em] mt-1 leading-tight">{category.name}</h3>
         </div>
       </div>
 
@@ -192,29 +192,24 @@ function FeaturedCard({
           )}
         </div>
 
-        {/* Right — sub-groups */}
+        {/* Right — sub-categories (max 3 trực tiếp + "N khác") */}
         <div>
-          <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
-            <span>{subGroups.length} danh mục con</span>
-            {extraCount > 0 && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] font-mono text-[9px] border border-[var(--color-border-subtle)]">
-                <MoreHorizontal className="w-2.5 h-2.5" />+{extraCount}
-              </span>
-            )}
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">
+            {subCategories.length} danh mục con
           </div>
           {displaySubs.length > 0 ? (
             <div className="flex flex-col gap-[5px] text-[11px]">
-              {displaySubs.map((sg: Group) => (
-                <div key={sg.id} className="flex items-center gap-[7px]">
+              {displaySubs.map((sc: Category) => (
+                <div key={sc.id} className="flex items-center gap-[7px]">
                   <span
                     className="w-[18px] h-[18px] rounded-[5px] flex items-center justify-center text-[10px] shrink-0"
-                    style={{ background: `${sg.color}22` }}
-                  ><GroupIcon name={sg.emoji} className="w-2.5 h-2.5" /></span>
-                  <span className="text-[var(--color-text-secondary)] truncate">{sg.name}</span>
+                    style={{ background: `${sc.color}22` }}
+                  ><CategoryIcon name={sc.emoji} className="w-2.5 h-2.5" /></span>
+                  <span className="text-[var(--color-text-secondary)] truncate">{sc.name}</span>
                 </div>
               ))}
               {extraCount > 0 && (
-                <div className="text-[11px] text-[var(--color-text-quaternary)] pl-[25px]">và {extraCount} nhóm khác…</div>
+                <div className="text-[11px] text-[var(--color-text-quaternary)] pl-[25px]">và {extraCount} danh mục khác</div>
               )}
             </div>
           ) : (
@@ -231,13 +226,13 @@ function DarkStatCard({
   variant,
   classified,
   total,
-  topGroups,
+  topCategories,
   isLoading,
 }: {
   variant: 1 | 2
   classified?: number
   total?: number
-  topGroups?: { name: string; expense: number }[]
+  topCategories?: { name: string; expense: number }[]
   isLoading?: boolean
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
@@ -292,23 +287,23 @@ function DarkStatCard({
         <>
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Danh mục chi nhiều nhất (tháng này)</div>
           <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">
-            {topGroups && topGroups[0] ? topGroups[0].name : '—'}
+            {topCategories && topCategories[0] ? topCategories[0].name : '—'}
           </div>
-          {topGroups && topGroups[0] && (
+          {topCategories && topCategories[0] && (
             <div className="flex items-center gap-1 text-[11px] font-medium mt-1 text-[var(--color-loss-400)]">
               <ChevronDown className="w-3 h-3" />
-              {fmt(topGroups[0].expense)} {sym}
+              {fmt(topCategories[0].expense)} {sym}
             </div>
           )}
           <hr className="border-white/10 my-3" />
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
-            {(topGroups ?? []).slice(1, 4).map((g: { name: string; expense: number }) => (
+            {(topCategories ?? []).slice(1, 4).map((g: { name: string; expense: number }) => (
               <div key={g.name} className="flex items-center">
                 <span className="truncate">{g.name}</span><span className="flex-1" />
                 <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmt(g.expense)} {sym}</span>
               </div>
             ))}
-            {(!topGroups || topGroups.length <= 1) && (
+            {(!topCategories || topCategories.length <= 1) && (
               <div className="text-[var(--color-text-quaternary)]">Chưa có dữ liệu</div>
             )}
           </div>
@@ -318,13 +313,13 @@ function DarkStatCard({
   )
 }
 
-/* ─── GroupCard ────────────────────────────────────────────────────────────── */
-function GroupCard({
-  group,
+/* ─── CategoryCard ─────────────────────────────────────────────────────────── */
+function CategoryCard({
+  category,
   expense,
   txCount,
 }: {
-  group: Group
+  category: Category
   expense: number
   txCount: number
 }) {
@@ -332,25 +327,25 @@ function GroupCard({
   const budget    = group.budget_limit || 0
   const pct       = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const barClass  = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
-  const iconBg    = `${group.color}22`
-  const meta      = typeLabel(group.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
+  const iconBg    = `${category.color}22`
+  const meta      = typeLabel(category.type) + (txCount > 0 ? ` · ${txCount} giao dịch` : '')
   const progressLabel = budget > 0 ? `${pct}% ngân sách` : `${txCount} giao dịch`
   const progressRight = budget > 0 ? `còn ${fmt(budget - expense)} ${sym}` : ''
   const isOver    = pct > 100
 
   return (
     <Link
-      href={`/categories/${slugify(group.name)}`}
+      href={`/categories/${slugify(category.name)}`}
       className="relative bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
       <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
 
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: iconBg }}>
-          <GroupIcon name={group.emoji} className="w-5 h-5" />
+          <CategoryIcon name={category.emoji} className="w-5 h-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{group.name}</div>
+          <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{category.name}</div>
           <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{meta}</div>
         </div>
       </div>
@@ -370,13 +365,13 @@ function GroupCard({
 
       <div className="flex items-center mt-auto pt-3 border-t border-[var(--color-border-subtle)] gap-2">
         <span className="inline-flex items-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)] truncate min-w-0">
-          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: group.color || '#94a3b8' }} />
-          {typeLabel(group.type)}
+          <span className="w-2 h-2 rounded-full shrink-0" style={{ background: category.color || '#94a3b8' }} />
+          {typeLabel(category.type)}
         </span>
-        {group.is_shared && (
+        {category.is_shared && (
           <span className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">Chia sẻ</span>
         )}
-        {group.is_recurring && (
+        {category.is_recurring && (
           <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)] border border-[var(--color-info-100)]">Định kỳ</span>
         )}
       </div>
@@ -387,20 +382,22 @@ function GroupCard({
 /* ─── SmartClassifyCard ────────────────────────────────────────────────────── */
 function SmartClassifyCard({
   pendingTxns,
-  groups,
+  categories,
+  pendingGroupCount,
   onApplyAll,
 }: {
   pendingTxns: Transaction[]
-  groups: Group[]
+  categories: Category[]
+  pendingGroupCount: number
   onApplyAll: (updates: { id: string; categoryId: string }[]) => void
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
   const [isApplying, setIsApplying] = React.useState(false)
 
-  function suggestGroup(txn: Transaction): Group | undefined {
+  function suggestCategory(txn: Transaction): Category | undefined {
     const haystack = [txn.merchantName, txn.description].filter(Boolean).join(' ').toLowerCase()
-    return groups.find((g: Group) =>
-      (g.keywords ?? []).some((kw: string) => haystack.includes(kw.toLowerCase()))
+    return categories.find((c: Category) =>
+      (c.keywords ?? []).some((kw: string) => haystack.includes(kw.toLowerCase()))
     )
   }
 
@@ -408,7 +405,7 @@ function SmartClassifyCard({
     setIsApplying(true)
     const updates: { id: string; categoryId: string }[] = []
     pendingTxns.forEach(txn => {
-      const suggested = suggestGroup(txn)
+      const suggested = suggestCategory(txn)
       if (suggested) updates.push({ id: txn.id, categoryId: suggested.id })
     })
     if (updates.length > 0) await onApplyAll(updates)
@@ -417,16 +414,6 @@ function SmartClassifyCard({
 
   const displayTxns = pendingTxns.slice(0, 4)
 
-  // Group pending by source for summary
-  const sourceBreakdown = React.useMemo(() => {
-    const map: Record<string, number> = {}
-    pendingTxns.forEach(t => {
-      const src = t.source || 'manual'
-      map[src] = (map[src] || 0) + 1
-    })
-    return Object.entries(map).slice(0, 3)
-  }, [pendingTxns])
-
   const totalPendingAmount = pendingTxns
     .filter(t => t.transactionType === 'expense')
     .reduce((s, t) => s + Math.abs(t.amount), 0)
@@ -434,6 +421,9 @@ function SmartClassifyCard({
   const SOURCE_LABELS: Record<string, string> = {
     manual: 'Thủ công', csv_import: 'CSV', bank_feed: 'Ngân hàng',
     vcb: 'VCB', momo: 'MoMo', api: 'API', ocr_scan: 'OCR',
+    paypay: 'PayPay', rakuten: 'Rakuten', suica: 'Suica', icoca: 'ICOCA',
+    smbc: 'SMBC', mufg: 'MUFG', au_pay: 'au PAY', line_pay: 'LINE Pay',
+    seven_bank: '7Bank', jp_post: 'JP Post', epos: 'EPOS', d_payment: 'd払い',
   }
 
   return (
@@ -449,66 +439,32 @@ function SmartClassifyCard({
         </div>
         <div>
           <h4 className="text-sm font-semibold text-[var(--color-text-primary)] leading-snug">
-            {pendingTxns.length} giao dịch chờ phân loại
+            {pendingGroupCount} nhóm · {pendingTxns.length} giao dịch chờ phân loại
           </h4>
           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
-            Leo gợi ý danh mục dựa trên từ khóa đã học
+            Tổng chi tiêu chưa phân loại: <span className="font-semibold">{fmt(totalPendingAmount)} {sym}</span>
           </p>
         </div>
       </div>
 
-      {/* Summary stats row */}
-      {pendingTxns.length > 0 && (
-        <div className="grid grid-cols-3 gap-2">
-          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
-            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Tổng tiền</div>
-            <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)]">
-              {fmt(totalPendingAmount)} {sym}
-            </div>
-          </div>
-          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
-            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Giao dịch</div>
-            <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">
-              {pendingTxns.length}
-            </div>
-          </div>
-          <div className="p-2.5 rounded-[9px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)]">
-            <div className="text-[10px] text-[var(--color-text-quaternary)] uppercase tracking-wide font-semibold mb-0.5">Nguồn</div>
-            <div className="flex flex-wrap gap-1 mt-0.5">
-              {sourceBreakdown.map(([src, cnt]) => (
-                <span key={src} className="text-[10px] font-medium text-[var(--color-text-secondary)]">
-                  {SOURCE_LABELS[src] || src} ({cnt})
-                </span>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Preview rows — enhanced */}
+      {/* Preview rows — source badge per row */}
       <div className="flex flex-col gap-1.5">
         {displayTxns.length === 0 ? (
           <div className="text-[12px] text-[var(--color-text-quaternary)] py-2 text-center">
             Tất cả giao dịch đã được phân loại
           </div>
         ) : displayTxns.map((txn: Transaction) => {
-          const suggested = suggestGroup(txn)
+          const suggested = suggestCategory(txn)
           const label = txn.merchantName || txn.description || txn.id.slice(0, 8)
-          const kw    = suggested?.keywords?.[0] ?? ''
-          const srcLabel = SOURCE_LABELS[txn.source || 'manual'] || txn.source || 'manual'
+          const srcLabel = SOURCE_LABELS[txn.source || 'manual'] || txn.source || '—'
           const amount = Math.abs(txn.amount)
 
           return (
             <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
-              {/* Name + keyword */}
-              <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">
-                {label}
-                {kw && (
-                  <> · <span className="font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1 rounded">{kw}</span></>
-                )}
-              </span>
+              {/* Name */}
+              <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{label}</span>
               {/* Source badge */}
-              <span className="shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)]">
+              <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
                 {srcLabel}
               </span>
               {/* Amount */}
@@ -517,14 +473,12 @@ function SmartClassifyCard({
               </span>
               {/* Suggested category */}
               {suggested ? (
-                <>
-                  <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
-                  <span className="text-[var(--color-text-secondary)] shrink-0 flex items-center gap-1">
-                    <GroupIcon name={suggested.emoji} className="w-3.5 h-3.5" /> {suggested.name}
-                  </span>
-                </>
+                <span className="shrink-0 flex items-center gap-1 text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-1.5 py-0.5 rounded-md">
+                  <CategoryIcon name={suggested.emoji} className="w-3 h-3" />
+                  <span className="text-[10px] font-medium">{suggested.name}</span>
+                </span>
               ) : (
-                <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)] italic">chưa có gợi ý</span>
+                <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)] italic">—</span>
               )}
             </div>
           )
@@ -570,8 +524,8 @@ function SmartClassifyCard({
   )
 }
 
-/* ─── AddGroupTile ─────────────────────────────────────────────────────────── */
-function AddGroupTile({ onClick }: { onClick: () => void }) {
+/* ─── AddCategoryTile ──────────────────────────────────────────────────────── */
+function AddCategoryTile({ onClick }: { onClick: () => void }) {
   return (
     <button
       onClick={onClick}
@@ -591,18 +545,18 @@ function AddGroupTile({ onClick }: { onClick: () => void }) {
 }
 
 /* ─── ArchiveStrip ─────────────────────────────────────────────────────────── */
-function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
-  if (archivedGroups.length === 0) return null
+function ArchiveStrip({ archivedCategories }: { archivedCategories: Category[] }) {
+  if (archivedCategories.length === 0) return null
   return (
     <div className="col-span-full bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] p-4 flex items-center gap-6 flex-wrap">
       <div className="shrink-0">
         <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">Lưu trữ</div>
-        <span className="inline-block mt-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{archivedGroups.length}</span>
+        <span className="inline-block mt-1 font-mono text-[11px] font-semibold px-2 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{archivedCategories.length}</span>
       </div>
       <div className="flex items-center gap-4 flex-1 flex-wrap min-w-0">
-        {archivedGroups.map((item: Group) => (
+        {archivedCategories.map((item: Category) => (
           <div key={item.id} className="flex items-center gap-2 text-xs text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] cursor-pointer transition-colors">
-            <span className="text-base flex items-center"><GroupIcon name={item.emoji} className="w-4 h-4" /></span>
+            <span className="text-base flex items-center"><CategoryIcon name={item.emoji} className="w-4 h-4" /></span>
             <span className="font-medium">{item.name}</span>
             <span className="font-mono text-[10px] text-[var(--color-text-quaternary)]">
               {new Date(item.updated_at).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })}
@@ -617,8 +571,8 @@ function ArchiveStrip({ archivedGroups }: { archivedGroups: Group[] }) {
   )
 }
 
-/* ─── Main GroupsBentoPage ─────────────────────────────────────────────────── */
-export function GroupsBentoPage() {
+/* ─── Main CategoriesBentoPage ─────────────────────────────────────────────── */
+export function CategoriesBentoPage() {
   const [activeTab, setActiveTab]   = React.useState('all')
   const [isFormOpen, setIsFormOpen] = React.useState(false)
   const [search, setSearch]         = React.useState('')
@@ -630,7 +584,7 @@ export function GroupsBentoPage() {
 
   const { lang } = useSettingsStore()
   const { currentLedger } = useLedgerStore()
-  const { groups, isLoading, fetchGroups } = useGroupStore()
+  const { categories, isLoading, fetchCategories } = useCategoryStore()
   const { transactions, syncTransactions, bulkUpdateTransactions } = useTransactionsStore()
 
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
@@ -643,10 +597,10 @@ export function GroupsBentoPage() {
 
   const ym = currentYearMonth()
 
-  // Fetch groups + transactions on mount
+  // Fetch categories + transactions on mount
   React.useEffect(() => {
     if (currentLedger?.id) {
-      fetchGroups(currentLedger.id)
+      fetchCategories(currentLedger.id)
       syncTransactions(500)
     }
   }, [currentLedger?.id])
@@ -657,7 +611,6 @@ export function GroupsBentoPage() {
     setStatsLoading(true)
 
     async function loadServerData() {
-      // Get Supabase session token for authorized API calls
       const { supabase } = await import('@/lib/supabase')
       const { data: { session } } = await supabase.auth.getSession()
       const token = session?.access_token || ''
@@ -675,20 +628,37 @@ export function GroupsBentoPage() {
     loadServerData()
   }, [currentLedger?.id, ym])
 
-  // ── Derived: pending transactions for SmartClassifyCard ──────────────────
+  // ── Derived: pending transactions — same filter as classify-page ──────────
   const pendingTxns = React.useMemo(
-    () => transactions.filter((t: Transaction) => !t.categoryId && t.transactionType === 'expense'),
+    () => transactions.filter(
+      (t: Transaction) => !t.categoryId &&
+        t.transactionType !== 'transfer' &&
+        t.transactionType !== 'asset_transfer',
+    ),
     [transactions],
   )
 
+  // ── Pending group count (grouped by merchant — mirrors classify-page) ─────
+  const pendingGroupCount = React.useMemo(() => {
+    const seen = new Set<string>()
+    pendingTxns.forEach(t => {
+      const label = t.merchantName || t.description || t.id.slice(0, 8)
+      const key = label.toLowerCase().trim() + '|' + (
+        t.transactionType === 'income' || t.transactionType === 'refund' ? 'in' : 'out'
+      )
+      seen.add(key)
+    })
+    return seen.size
+  }, [pendingTxns])
+
   // ── Filter tabs ───────────────────────────────────────────────────────────
   const tabCounts = React.useMemo(() => ({
-    all:       groups.length,
-    active:    groups.filter((g: Group) => g.is_active).length,
-    shared:    groups.filter((g: Group) => g.is_shared).length,
-    recurring: groups.filter((g: Group) => g.is_recurring || g.type === 'project').length,
-    archived:  groups.filter((g: Group) => !g.is_active).length,
-  }), [groups])
+    all:       categories.length,
+    active:    categories.filter((c: Category) => c.is_active).length,
+    shared:    categories.filter((c: Category) => c.is_shared).length,
+    recurring: categories.filter((c: Category) => c.is_recurring || c.type === 'project').length,
+    archived:  categories.filter((c: Category) => !c.is_active).length,
+  }), [categories])
 
   const filterTabs = [
     { value: 'all',       label: 'Tất cả',         count: tabCounts.all },
@@ -698,48 +668,48 @@ export function GroupsBentoPage() {
     { value: 'archived',  label: 'Lưu trữ',        count: tabCounts.archived },
   ]
 
-  const filteredGroups = React.useMemo(() => {
+  const filteredCategories = React.useMemo(() => {
     switch (activeTab) {
-      case 'shared':    return groups.filter((g: Group) => g.is_shared)
-      case 'recurring': return groups.filter((g: Group) => g.is_recurring || g.type === 'project')
-      case 'archived':  return groups.filter((g: Group) => !g.is_active)
-      default:          return groups.filter((g: Group) => g.is_active)
+      case 'shared':    return categories.filter((c: Category) => c.is_shared)
+      case 'recurring': return categories.filter((c: Category) => c.is_recurring || c.type === 'project')
+      case 'archived':  return categories.filter((c: Category) => !c.is_active)
+      default:          return categories.filter((c: Category) => c.is_active)
     }
-  }, [groups, activeTab])
+  }, [categories, activeTab])
 
-  const archivedGroups = React.useMemo(
-    () => groups.filter((g: Group) => !g.is_active && !g.parent_id),
-    [groups],
+  const archivedCategories = React.useMemo(
+    () => categories.filter((c: Category) => !c.is_active && !c.parent_id),
+    [categories],
   )
 
-  // ── Active root groups sorted by server-side expense ─────────────────────
-  const activeRootGroups = React.useMemo(() => {
-    const roots = groups.filter((g: Group) => g.is_active && !g.parent_id)
+  // ── Active root categories sorted by server-side expense ──────────────────
+  const activeRootCategories = React.useMemo(() => {
+    const roots = categories.filter((c: Category) => c.is_active && !c.parent_id)
     if (!stats) return roots
     return [...roots].sort((a, b) => {
       const ea = stats.category_stats.find(s => s.id === a.id)?.expense ?? 0
       const eb = stats.category_stats.find(s => s.id === b.id)?.expense ?? 0
       return eb - ea
     })
-  }, [groups, stats])
+  }, [categories, stats])
 
-  const featuredGroup    = activeRootGroups[0]
-  const featuredSubGroups = featuredGroup
-    ? groups.filter((g: Group) => g.is_active && g.parent_id === featuredGroup.id)
+  const featuredCategory    = activeRootCategories[0]
+  const featuredSubCategories = featuredCategory
+    ? categories.filter((c: Category) => c.is_active && c.parent_id === featuredCategory.id)
     : []
-  const featuredExpense  = stats?.category_stats.find(s => s.id === featuredGroup?.id)?.expense ?? 0
+  const featuredExpense  = stats?.category_stats.find(s => s.id === featuredCategory?.id)?.expense ?? 0
 
-  const regularGroups    = activeRootGroups.slice(1)
+  const regularCategories    = activeRootCategories.slice(1)
 
-  const searchedGroups = React.useMemo(() => {
-    if (!search.trim()) return regularGroups
+  const searchedCategories = React.useMemo(() => {
+    if (!search.trim()) return regularCategories
     const q = search.toLowerCase()
-    return regularGroups.filter((g: Group) =>
-      g.name.toLowerCase().includes(q) ||
-      g.type.toLowerCase().includes(q) ||
-      (g.keywords ?? []).some((kw: string) => kw.toLowerCase().includes(q))
+    return regularCategories.filter((c: Category) =>
+      c.name.toLowerCase().includes(q) ||
+      c.type.toLowerCase().includes(q) ||
+      (c.keywords ?? []).some((kw: string) => kw.toLowerCase().includes(q))
     )
-  }, [regularGroups, search])
+  }, [regularCategories, search])
 
   const handleApplyAutoCategorization = async (updates: { id: string; categoryId: string }[]) => {
     bulkUpdateTransactions(updates.map(u => ({ id: u.id, update: { categoryId: u.categoryId } })))
@@ -751,7 +721,7 @@ export function GroupsBentoPage() {
       label: 'Chi tiêu tháng này',
       value: kpi ? fmt(kpi.total_expense) : '—',
       unit: kpi ? ` ${sym}` : '',
-      sub: `${groups.filter((g: Group) => g.is_active).length} danh mục đang hoạt động`,
+      sub: `${categories.filter((c: Category) => c.is_active).length} danh mục đang hoạt động`,
       subLoss: false,
     },
     {
@@ -788,16 +758,16 @@ export function GroupsBentoPage() {
     )
   }
 
-  if (groups.length === 0) {
+  if (categories.length === 0) {
     return (
       <div className="space-y-4 animate-fade-in">
         <div className="flex items-center justify-center min-h-[400px]">
           <div className="max-w-sm w-full">
-            <AddGroupTile onClick={() => setIsFormOpen(true)} />
+            <AddCategoryTile onClick={() => setIsFormOpen(true)} />
           </div>
         </div>
         <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
-          <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
+          <CategoryForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
         </Modal>
       </div>
     )
@@ -897,10 +867,10 @@ export function GroupsBentoPage() {
 
       {/* ── Bento Grid ── */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {featuredGroup && (
+        {featuredCategory && (
           <FeaturedCard
-            group={featuredGroup}
-            subGroups={featuredSubGroups}
+            category={featuredCategory}
+            subCategories={featuredSubCategories}
             expense={featuredExpense}
           />
         )}
@@ -914,37 +884,38 @@ export function GroupsBentoPage() {
 
         <DarkStatCard
           variant={2}
-          topGroups={stats?.top_categories}
+          topCategories={stats?.top_categories}
           isLoading={statsLoading}
         />
 
-        {searchedGroups.slice(0, 2).map((g: Group) => (
-          <GroupCard
-            key={g.id}
-            group={g}
-            expense={stats?.category_stats.find(s => s.id === g.id)?.expense ?? 0}
-            txCount={stats?.category_stats.find(s => s.id === g.id)?.tx_count ?? 0}
+        {searchedCategories.slice(0, 2).map((c: Category) => (
+          <CategoryCard
+            key={c.id}
+            category={c}
+            expense={stats?.category_stats.find(s => s.id === c.id)?.expense ?? 0}
+            txCount={stats?.category_stats.find(s => s.id === c.id)?.tx_count ?? 0}
           />
         ))}
 
         <SmartClassifyCard
           pendingTxns={pendingTxns}
-          groups={groups}
+          categories={categories}
+          pendingGroupCount={pendingGroupCount}
           onApplyAll={handleApplyAutoCategorization}
         />
 
-        {searchedGroups.slice(2, 5).map((g: Group) => (
-          <GroupCard
-            key={g.id}
-            group={g}
-            expense={stats?.category_stats.find(s => s.id === g.id)?.expense ?? 0}
-            txCount={stats?.category_stats.find(s => s.id === g.id)?.tx_count ?? 0}
+        {searchedCategories.slice(2, 5).map((c: Category) => (
+          <CategoryCard
+            key={c.id}
+            category={c}
+            expense={stats?.category_stats.find(s => s.id === c.id)?.expense ?? 0}
+            txCount={stats?.category_stats.find(s => s.id === c.id)?.tx_count ?? 0}
           />
         ))}
 
-        <AddGroupTile onClick={() => setIsFormOpen(true)} />
+        <AddCategoryTile onClick={() => setIsFormOpen(true)} />
 
-        <ArchiveStrip archivedGroups={archivedGroups} />
+        <ArchiveStrip archivedCategories={archivedCategories} />
       </div>
 
       {/* ── Bottom insight strip ── */}
@@ -971,9 +942,9 @@ export function GroupsBentoPage() {
         </button>
       </div>
 
-      {/* Create group modal */}
+      {/* Create category modal */}
       <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
-        <GroupForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
+        <CategoryForm lang={lang as any} onClose={() => setIsFormOpen(false)} />
       </Modal>
     </div>
     </FmtCtx.Provider>

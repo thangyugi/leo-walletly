@@ -1,7 +1,7 @@
 'use client'
 
-import { GroupsBentoPage } from '@/features/groups/groups-bento-page'
+import { CategoriesBentoPage } from '@/features/categories/categories-bento-page'
 
-export default function GroupsPage() {
-  return <GroupsBentoPage />
+export default function CategoriesPage() {
+  return <CategoriesBentoPage />
 }

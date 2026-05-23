@@ -17,9 +17,9 @@ import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
 import type { LedgerMember } from '@/features/user-management/types'
 import { CURRENCY_META } from '@/lib/money'
-import { GroupIcon } from './group-icon'
+import { CategoryIcon as GroupIcon } from './category-icon'
 import { Modal } from '@/components/ui/modal'
-import { GroupForm } from './group-form'
+import { CategoryForm as GroupForm } from './category-form'
 
 /* ─────────────────────────────────────────────────────────────
    Currency context
@@ -1194,7 +1194,11 @@ function BalancesSection({
 /* ─────────────────────────────────────────────────────────────
    Main GroupDetailView
 ───────────────────────────────────────────────────────────── */
-export function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNested?: boolean; onClose?: () => void }) {
+export function CategoryDetailView({ categoryId: groupId, isNested, onClose }: { categoryId: string; isNested?: boolean; onClose?: () => void }) {
+  return <GroupDetailView groupId={groupId} isNested={isNested} onClose={onClose} />
+}
+
+function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNested?: boolean; onClose?: () => void }) {
   const [activeTab, setActiveTab] = React.useState<DetailTab>('overview')
   const [isFormOpen, setIsFormOpen] = React.useState(false)
   const [editingGroup, setEditingGroup] = React.useState<Group | null>(null)

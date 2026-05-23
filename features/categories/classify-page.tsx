@@ -3,10 +3,10 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useTransactionsStore } from '@/stores/transactions'
-import { useGroupStore } from '@/features/groups/store'
+import { useGroupStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import type { Transaction } from '@/types'
-import type { Group } from '@/features/groups/types'
+import type { Group } from './types'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft, Check, CheckCheck, Loader2, Search,

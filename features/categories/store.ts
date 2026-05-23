@@ -40,7 +40,9 @@ function getLetterPrefix(code: string): string {
  *   depth 0 (root):      {2-letter-acronym}{6 digits}     → MS000001
  *   depth 1:             {parent-letters}{2-acronym}{4 digits} → MSDC0001
  *   depth 2:             {parent-letters}{2-acronym}{2 digits} → MSDCCP01
- *   depth 3+ (deepest):  {6 digits}                       → 000001
+ *   depth 3+ (deepest):  {parent-6-letters}{2 digits}      → MSDCCP01
+ *
+ * All codes are exactly 8 characters.
  */
 export function generateCategoryCode(
   name: string,
@@ -52,29 +54,35 @@ export function generateCategoryCode(
   const parentLetters = parentCode ? getLetterPrefix(parentCode) : ''
 
   if (depth === 0) {
+    // acronym(2) + digits(6) = 8 chars
     for (let i = 1; i <= 999999; i++) {
       const c = `${acronym}${String(i).padStart(6, '0')}`
       if (!existingCodes.has(c)) return c
     }
   } else if (depth === 1) {
+    // parent_letters(2) + acronym(2) + digits(4) = 8 chars
+    const prefix = parentLetters.slice(0, 2)
     for (let i = 1; i <= 9999; i++) {
-      const c = `${parentLetters}${acronym}${String(i).padStart(4, '0')}`
+      const c = `${prefix}${acronym}${String(i).padStart(4, '0')}`
       if (!existingCodes.has(c)) return c
     }
   } else if (depth === 2) {
+    // parent_letters(4) + acronym(2) + digits(2) = 8 chars
+    const prefix = parentLetters.slice(0, 4)
     for (let i = 1; i <= 99; i++) {
-      const c = `${parentLetters}${acronym}${String(i).padStart(2, '0')}`
+      const c = `${prefix}${acronym}${String(i).padStart(2, '0')}`
       if (!existingCodes.has(c)) return c
     }
   } else {
-    // depth 3+: pure number
-    for (let i = 1; i <= 999999; i++) {
-      const c = String(i).padStart(6, '0')
+    // depth 3+: parent_letters(6) + digits(2) = 8 chars
+    const prefix = parentLetters.slice(0, 6)
+    for (let i = 1; i <= 99; i++) {
+      const c = `${prefix}${String(i).padStart(2, '0')}`
       if (!existingCodes.has(c)) return c
     }
   }
-  // Fallback: timestamp suffix
-  return `${acronym}${Date.now().toString().slice(-6)}`
+  // Fallback: always 8 chars
+  return `${(acronym + parentLetters).slice(0, 6)}${String(Date.now()).slice(-2)}`
 }
 
 // ─── Path helpers ────────────────────────────────────────────────────────────

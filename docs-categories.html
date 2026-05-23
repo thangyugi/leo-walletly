@@ -52,7 +52,8 @@
   <p class="meta">
     Ngày phân tích: 2026-05-23 · Nguồn: phân tích trực tiếp từ source code &nbsp;·&nbsp;
     <span class="badge badge-gray">v1.0.0</span> Tài liệu gốc &nbsp;
-    <span class="badge badge-blue">v2.0.0</span> Cập nhật 2026-05-23 — major rewrite, schema migration, server-side APIs
+    <span class="badge badge-blue">v2.0.0</span> Cập nhật 2026-05-23 — major rewrite, schema migration, server-side APIs &nbsp;
+    <span class="badge badge-purple">v2.1.0</span> Cập nhật 2026-05-23 — rename group→category, fix toggle UI, 8-char codes, SmartClassifyCard, bento fixes
     &nbsp;·&nbsp; <a href="#changelog" style="color:#2563eb;">→ Xem Changelog</a>
   </p>
 
@@ -1184,10 +1185,150 @@ let query = supabase
   </table>
 </div>
 
+<!-- ── v2.1.0 ─────────────────────────────────────────── -->
+<div style="background:#fff;border:2px solid #7c3aed;border-radius:12px;padding:24px 28px;margin:24px 0;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <span style="font-size:22px;font-weight:800;color:#6d28d9;">v2.1.0</span>
+    <span class="badge badge-purple">Refactor + Fixes</span>
+    <span class="meta" style="margin:0;">2026-05-23 · Nhánh <code>claude/affectionate-bohr-SPRYu</code></span>
+  </div>
+
+  <!-- 1. Folder rename -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:0;">📁 1. Đổi tên folder: <code>features/groups/</code> → <code>features/categories/</code></h3>
+  <p>Toàn bộ folder <code>features/groups/</code> được đổi tên và nội dung file được refactor theo quy chuẩn "category" thay vì "group".</p>
+  <table>
+    <thead><tr><th>File cũ</th><th>File mới</th><th>Thay đổi bên trong</th></tr></thead>
+    <tbody>
+      <tr><td><code>features/groups/store.ts</code></td><td><code>features/categories/store.ts</code></td><td>Export chính <code>useCategoryStore</code>, compat alias <code>useGroupStore</code> + <code>buildGroupTree</code></td></tr>
+      <tr><td><code>features/groups/types.ts</code></td><td><code>features/categories/types.ts</code></td><td>Type chính <code>Category</code>, compat alias <code>Group = Category</code>, <code>GroupBalance = CategoryBalance</code></td></tr>
+      <tr><td><code>features/groups/group-icon.tsx</code></td><td><code>features/categories/category-icon.tsx</code></td><td>Component chính <code>CategoryIcon</code>, compat alias <code>GroupIcon = CategoryIcon</code></td></tr>
+      <tr><td><code>features/groups/group-form.tsx</code></td><td><code>features/categories/category-form.tsx</code></td><td>Component chính <code>CategoryForm</code>, compat alias <code>GroupForm = CategoryForm</code>; <code>ParentTreeDropdown</code> được export ra ngoài</td></tr>
+      <tr><td><code>features/groups/groups-bento-page.tsx</code></td><td><code>features/categories/categories-bento-page.tsx</code></td><td>Export chính <code>CategoriesBentoPage</code> (tất cả biến nội bộ đổi sang <code>category/categories</code>)</td></tr>
+      <tr><td><code>features/groups/group-detail-view.tsx</code></td><td><code>features/categories/category-detail-view.tsx</code></td><td>Thêm export <code>CategoryDetailView</code>; imports fix từ <code>./group-icon</code>, <code>./group-form</code></td></tr>
+      <tr><td><code>features/groups/category-explorer.tsx</code></td><td><code>features/categories/category-explorer.tsx</code></td><td>Import <code>GroupForm</code> fix từ <code>./group-form</code> → <code>./category-form</code></td></tr>
+      <tr><td><code>features/groups/classify-page.tsx</code></td><td><code>features/categories/classify-page.tsx</code></td><td>Imports fix từ <code>@/features/groups/store</code> và <code>@/features/groups/types</code> → relative path</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 2. App routes -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🛣️ 2. Cập nhật app routes</h3>
+  <table>
+    <thead><tr><th>File route</th><th>Thay đổi</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/categories/page.tsx</code></td><td>Import <code>CategoriesBentoPage</code> từ <code>@/features/categories/categories-bento-page</code></td></tr>
+      <tr><td><code>app/categories/classify/page.tsx</code></td><td>Import <code>ClassifyPage</code> từ <code>@/features/categories/classify-page</code></td></tr>
+      <tr><td><code>app/categories/[id]/page.tsx</code></td><td>Import <code>CategoryDetailView</code> từ <code>@/features/categories/category-detail-view</code>; đổi prop <code>groupId</code> → <code>categoryId</code></td></tr>
+    </tbody>
+  </table>
+
+  <!-- 3. Toggle fix -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔘 3. Fix bug Toggle switch (double-fire) trong CategoryForm</h3>
+  <p><strong>File:</strong> <code>features/categories/category-form.tsx</code></p>
+  <p><strong>Root cause:</strong> Wrapper là <code>&lt;label&gt;</code> — khi click vào text, <code>&lt;label&gt;</code> re-click <code>&lt;button&gt;</code>, gây double-fire → toggle trở về trạng thái ban đầu.</p>
+  <div class="section-box">
+    <h4>Trước (bị lỗi)</h4>
+    <pre><code>&lt;label&gt; ← wrapper là label
+  &lt;button type="button" onClick={toggle}&gt;...&lt;/button&gt;
+  &lt;span&gt;{label text}&lt;/span&gt;  ← click text → label fires → button.click() AGAIN
+&lt;/label&gt;</code></pre>
+    <h4>Sau (đã fix)</h4>
+    <pre><code>&lt;div&gt; ← wrapper đổi sang div
+  &lt;button type="button" role="switch" onClick={toggle}&gt;...&lt;/button&gt;
+  &lt;span&gt;{label text}&lt;/span&gt;
+&lt;/div&gt;</code></pre>
+    <p>Knob position: <code>top-0.5 left-0.5</code>, off = <code>translate-x-0</code>, on = <code>translate-x-4</code></p>
+  </div>
+
+  <!-- 4. Remove technical explanations -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🗑️ 4. Xóa text giải thích kỹ thuật trong CategoryForm</h3>
+  <p><strong>File:</strong> <code>features/categories/category-form.tsx</code></p>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Xóa <code>&lt;p&gt;</code> tag: <em>"Giới hạn chi tiêu mỗi tháng. Lưu vào cột budget_limit (không dùng metadata)."</em></li>
+    <li>Xóa <code>&lt;span&gt;</code>: <em>"— lưu vào cột keywords[]"</em> trong label Keywords</li>
+  </ul>
+
+  <!-- 5. 8-char category codes -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔤 5. Category code = luôn 8 ký tự ở mọi độ sâu</h3>
+  <p><strong>File:</strong> <code>features/categories/store.ts</code> — hàm <code>generateCategoryCode()</code></p>
+  <table>
+    <thead><tr><th>Depth</th><th>Công thức</th><th>Kết quả</th></tr></thead>
+    <tbody>
+      <tr><td>0 (root)</td><td><code>acronym(2) + digits(6)</code></td><td>8 chars</td></tr>
+      <tr><td>1</td><td><code>parent.slice(0,2) + acronym(2) + digits(4)</code></td><td>8 chars</td></tr>
+      <tr><td>2</td><td><code>parent.slice(0,4) + acronym(2) + digits(2)</code></td><td>8 chars</td></tr>
+      <tr><td>3+</td><td><code>parent.slice(0,6) + digits(2)</code></td><td>8 chars (fix: trước đây depth 3+ chỉ có 6 chars)</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 6. FeaturedCard subgroup list -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📋 6. FeaturedCard – danh sách subgroup (max 3 + "N danh mục khác")</h3>
+  <p><strong>File:</strong> <code>features/categories/categories-bento-page.tsx</code> — component <code>FeaturedCard</code></p>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Xóa badge <code>&lt;MoreHorizontal /&gt; +N</code> trong header</li>
+    <li>Header chỉ hiện: <code>{subCategories.length} danh mục con</code></li>
+    <li>List hiện tối đa 3 item: <code>displaySubs.slice(0,3)</code></li>
+    <li>Khi có nhiều hơn 3: thêm dòng text <em>"và {extraCount} danh mục khác"</em> trong list</li>
+  </ul>
+
+  <!-- 7. SmartClassifyCard -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🤖 7. SmartClassifyCard – fixes</h3>
+  <p><strong>File:</strong> <code>features/categories/categories-bento-page.tsx</code></p>
+  <div class="section-box">
+    <h4>7.1 Source badge – hiện tên thực tế thay vì key</h4>
+    <p>Mở rộng <code>SOURCE_LABELS</code> với 12 nhà cung cấp Nhật: <code>paypay</code> → "PayPay", <code>rakuten</code> → "Rakuten", <code>suica</code> → "Suica", <code>icoca</code> → "ICOCA", <code>smbc</code> → "SMBC", <code>mufg</code> → "MUFG", <code>au_pay</code> → "au PAY", <code>line_pay</code> → "LINE Pay", <code>seven_bank</code> → "7Bank", <code>jp_post</code> → "JP Post", <code>epos</code> → "EPOS", <code>d_payment</code> → "d払い"</p>
+    <h4>7.2 Header count — nhất quán với classify-page</h4>
+    <p>Header giờ hiện: <code>{pendingGroupCount} nhóm · {pendingTxns.length} giao dịch chờ phân loại</code></p>
+    <p><code>pendingGroupCount</code> được tính bằng cách group theo key <code>merchantLabel|direction</code> — đúng với logic classify-page.</p>
+    <h4>7.3 Xóa summary stats grid</h4>
+    <p>Grid 3 cột (total, avg, sources) đã được xóa khỏi SmartClassifyCard để tránh trùng lặp với classify-page.</p>
+    <h4>7.4 Props mới</h4>
+    <pre><code>interface SmartClassifyCardProps {
+  pendingTxns: Transaction[]
+  categories: Category[]       // thay groups: Group[]
+  pendingGroupCount: number    // mới — được tính từ CategoriesBentoPage
+  onApplyAll: (updates: ...) => void
+}</code></pre>
+  </div>
+
+  <!-- 8. pendingTxns filter fix -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🐛 8. Fix bug: count không nhất quán giữa SmartClassifyCard và classify-page</h3>
+  <p><strong>Root cause:</strong> SmartClassifyCard filter cũ chỉ lấy <code>transactionType === 'expense'</code>, trong khi classify-page filter loại bỏ <code>transfer</code> và <code>asset_transfer</code> (bao gồm cả <code>income</code>, <code>refund</code>).</p>
+  <div class="section-box">
+    <h4>Filter cũ (sai)</h4>
+    <pre><code>transactions.filter(t => !t.categoryId && t.transactionType === 'expense')</code></pre>
+    <h4>Filter mới (đồng bộ với classify-page)</h4>
+    <pre><code>transactions.filter(t =>
+  !t.categoryId &&
+  t.transactionType !== 'transfer' &&
+  t.transactionType !== 'asset_transfer'
+)</code></pre>
+  </div>
+
+  <!-- 9. ArchiveStrip rename -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🗂️ 9. ArchiveStrip — đổi prop và type</h3>
+  <p><strong>File:</strong> <code>features/categories/categories-bento-page.tsx</code></p>
+  <p>Đổi <code>archivedGroups: Group[]</code> → <code>archivedCategories: Category[]</code>; sử dụng <code>CategoryIcon</code> thay vì <code>GroupIcon</code>.</p>
+
+  <!-- 10. Backward compat -->
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔄 10. Backward compatibility aliases</h3>
+  <p>Tất cả file renamed đều export thêm alias tên cũ để không phá vỡ các import khác trong codebase:</p>
+  <table>
+    <thead><tr><th>File</th><th>Export mới (canonical)</th><th>Alias cũ (compat)</th></tr></thead>
+    <tbody>
+      <tr><td><code>store.ts</code></td><td><code>useCategoryStore</code>, <code>buildCategoryTree</code></td><td><code>useGroupStore</code>, <code>buildGroupTree</code></td></tr>
+      <tr><td><code>types.ts</code></td><td><code>Category</code>, <code>CategoryBalance</code>, <code>CategoryTreeNode</code></td><td><code>Group</code>, <code>GroupBalance</code>, <code>GroupTreeNode</code></td></tr>
+      <tr><td><code>category-icon.tsx</code></td><td><code>CategoryIcon</code></td><td><code>GroupIcon</code></td></tr>
+      <tr><td><code>category-form.tsx</code></td><td><code>CategoryForm</code></td><td><code>GroupForm</code></td></tr>
+      <tr><td><code>category-detail-view.tsx</code></td><td><code>CategoryDetailView</code></td><td><code>GroupDetailView</code> (internal, không export)</td></tr>
+    </tbody>
+  </table>
+</div>
+
 <hr style="margin: 40px 0; border-color: #e2e8f0;" />
 <p style="font-size: 12px; color: #94a3b8; padding: 0 0 40px;">
   v1.0.0 — Tài liệu khởi tạo (phân tích source code) &nbsp;|&nbsp;
-  v2.0.0 — 2026-05-23 — Major: server-side APIs, schema migration, component rewrite, bug fixes
+  v2.0.0 — 2026-05-23 — Major: server-side APIs, schema migration, component rewrite, bug fixes &nbsp;|&nbsp;
+  v2.1.0 — 2026-05-23 — Refactor: rename group→category, toggle fix, 8-char codes, SmartClassifyCard improvements, bento grid fixes
 </p>
 </div>
 </body>

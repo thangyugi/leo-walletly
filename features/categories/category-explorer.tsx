@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Modal } from '@/components/ui/modal'
 import { SegmentedControl } from '@/components/ui/tabs'
-import { GroupForm } from './group-form'
+import { CategoryForm as GroupForm } from './category-form'
 import {
   Plus, Settings2, Trash2, FolderTree,
   TrendingUp, TrendingDown, Wallet, Tag,

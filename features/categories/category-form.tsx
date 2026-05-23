@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import { useGroupStore, getCategoryDepth, getSubtreeHeight } from './store'
+import { useCategoryStore, getCategoryDepth, getSubtreeHeight } from './store'
 import { GroupType } from '@/components/ui/group-primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -10,11 +10,11 @@ import { getTranslations, Lang } from '@/lib/i18n'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { PRESET_ICONS, GroupIcon } from './group-icon'
+import { PRESET_ICONS, CategoryIcon } from './category-icon'
 import { Modal } from '@/components/ui/modal'
-import type { Group } from './types'
+import type { Category } from './types'
 
-interface GroupFormProps {
+interface CategoryFormProps {
   lang?:        Lang
   onClose:      () => void
   initialData?: any
@@ -51,23 +51,23 @@ const GROUP_TYPES: { value: GroupType; label: string }[] = [
 // ─── Tree parent picker ──────────────────────────────────────────────────────
 
 interface TreeNodeItemProps {
-  group: Group
+  category: Category
   depth: number
   selected: string
   onSelect: (id: string) => void
   children: React.ReactNode
 }
 
-function TreeNodeItem({ group, depth, selected, onSelect, children }: TreeNodeItemProps) {
+function TreeNodeItem({ category, depth, selected, onSelect, children }: TreeNodeItemProps) {
   const [open, setOpen] = React.useState(depth < 2)
   const hasChildren = React.Children.count(children) > 0
-  const isSelected = selected === group.id
+  const isSelected = selected === category.id
 
   return (
     <div>
       <button
         type="button"
-        onClick={() => onSelect(group.id)}
+        onClick={() => onSelect(category.id)}
         className={cn(
           'w-full flex items-center gap-2 px-3 py-[7px] rounded-[8px] text-[13px] text-left transition-colors cursor-pointer',
           isSelected
@@ -91,11 +91,11 @@ function TreeNodeItem({ group, depth, selected, onSelect, children }: TreeNodeIt
         )}
         <span
           className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0"
-          style={{ background: isSelected ? 'rgba(255,255,255,0.2)' : `${group.color}22` }}
+          style={{ background: isSelected ? 'rgba(255,255,255,0.2)' : `${category.color}22` }}
         >
-          <GroupIcon name={group.emoji} className="w-3.5 h-3.5" />
+          <CategoryIcon name={category.emoji} className="w-3.5 h-3.5" />
         </span>
-        <span className="flex-1 min-w-0 truncate">{group.name}</span>
+        <span className="flex-1 min-w-0 truncate">{category.name}</span>
         {isSelected && <Check className="w-3.5 h-3.5 shrink-0" />}
       </button>
       {hasChildren && open && <div>{children}</div>}
@@ -104,40 +104,39 @@ function TreeNodeItem({ group, depth, selected, onSelect, children }: TreeNodeIt
 }
 
 function renderTree(
-  nodes: Group[],
-  allGroups: Group[],
+  nodes: Category[],
+  allCategories: Category[],
   depth: number,
   selected: string,
   onSelect: (id: string) => void,
 ): React.ReactNode {
-  return nodes.map(g => {
-    const children = allGroups.filter(c => c.parent_id === g.id)
+  return nodes.map(cat => {
+    const children = allCategories.filter(c => c.parent_id === cat.id)
     return (
-      <TreeNodeItem key={g.id} group={g} depth={depth} selected={selected} onSelect={onSelect}>
-        {renderTree(children, allGroups, depth + 1, selected, onSelect)}
+      <TreeNodeItem key={cat.id} category={cat} depth={depth} selected={selected} onSelect={onSelect}>
+        {renderTree(children, allCategories, depth + 1, selected, onSelect)}
       </TreeNodeItem>
     )
   })
 }
 
-function ParentTreeDropdown({
+export function ParentTreeDropdown({
   value,
   onChange,
   options,
-  allGroups,
+  allCategories,
   disabled,
 }: {
   value: string
   onChange: (id: string) => void
-  options: Group[]
-  allGroups: Group[]
+  options: Category[]
+  allCategories: Category[]
   disabled?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
 
-  const selectedGroup = allGroups.find(g => g.id === value)
-  const rootOptions = options.filter(g => !g.parent_id || !options.find(p => p.id === g.parent_id && p.parent_id == null))
+  const selectedCategory = allCategories.find(c => c.id === value)
 
   // Build tree from valid options
   const rootNodes = options.filter(g => !options.find(o => o.id === g.parent_id))
@@ -165,18 +164,18 @@ function ParentTreeDropdown({
           disabled && 'opacity-50 cursor-not-allowed',
         )}
       >
-        {selectedGroup ? (
+        {selectedCategory ? (
           <>
             <span
               className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0"
-              style={{ background: `${selectedGroup.color}22` }}
+              style={{ background: `${selectedCategory.color}22` }}
             >
-              <GroupIcon name={selectedGroup.emoji} className="w-3.5 h-3.5" />
+              <CategoryIcon name={selectedCategory.emoji} className="w-3.5 h-3.5" />
             </span>
-            <span className="flex-1 truncate">{selectedGroup.name}</span>
+            <span className="flex-1 truncate">{selectedCategory.name}</span>
           </>
         ) : (
-          <span className="flex-1 text-[var(--color-text-placeholder)]">-- Không có nhóm cha --</span>
+          <span className="flex-1 text-[var(--color-text-placeholder)]">-- Không có danh mục cha --</span>
         )}
         <ChevronDown className={cn('w-4 h-4 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </button>
@@ -211,7 +210,7 @@ function ParentTreeDropdown({
             {renderTree(rootNodes, options, 0, value, (id) => { onChange(id); setOpen(false) })}
             {rootNodes.length === 0 && (
               <p className="text-[12px] text-[var(--color-text-quaternary)] text-center py-3">
-                Không có nhóm nào khả dụng
+                Không có danh mục nào khả dụng
               </p>
             )}
           </div>
@@ -223,10 +222,10 @@ function ParentTreeDropdown({
 
 // ─── Main form ───────────────────────────────────────────────────────────────
 
-export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps) {
+export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryFormProps) {
   getTranslations(lang)
   const { currentLedger } = useLedgerStore()
-  const { groups, createGroup, updateGroup } = useGroupStore()
+  const { categories, createCategory, updateCategory } = useCategoryStore()
 
   const [formData, setFormData] = React.useState({
     name:         initialData?.name          || '',
@@ -247,13 +246,13 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
   const performSave = async (payload: any) => {
     try {
       if (initialData?.id) {
-        await updateGroup(initialData.id, payload)
+        await updateCategory(initialData.id, payload)
       } else {
-        await createGroup(payload)
+        await createCategory(payload)
       }
       onClose()
     } catch (err: any) {
-      alert(err.message || 'Có lỗi xảy ra khi lưu nhóm')
+      alert(err.message || 'Có lỗi xảy ra khi lưu danh mục')
     } finally {
       setIsSaving(false)
     }
@@ -282,15 +281,15 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
 
     // Budget validation
     if (payload.parent_id && payload.budget_limit > 0) {
-      const parentGroup = groups.find(g => g.id === payload.parent_id)
-      if (parentGroup && parentGroup.budget_limit > 0) {
-        const otherSubs = groups.filter(g => g.parent_id === payload.parent_id && g.id !== initialData?.id)
-        const otherBudgets = otherSubs.reduce((acc, g) => acc + (g.budget_limit || 0), 0)
+      const parentCat = categories.find(c => c.id === payload.parent_id)
+      if (parentCat && parentCat.budget_limit > 0) {
+        const otherSubs = categories.filter(c => c.parent_id === payload.parent_id && c.id !== initialData?.id)
+        const otherBudgets = otherSubs.reduce((acc, c) => acc + (c.budget_limit || 0), 0)
         const total = otherBudgets + payload.budget_limit
-        if (total > parentGroup.budget_limit) {
+        if (total > parentCat.budget_limit) {
           setIsSaving(false)
           setBudgetWarning({
-            message: `Tổng ngân sách các nhóm con (${total.toLocaleString()}) vượt quá ngân sách nhóm cha "${parentGroup.name}" (${parentGroup.budget_limit.toLocaleString()}). Vẫn tiếp tục lưu?`,
+            message: `Tổng ngân sách các danh mục con (${total.toLocaleString()}) vượt quá ngân sách danh mục cha "${parentCat.name}" (${parentCat.budget_limit.toLocaleString()}). Vẫn tiếp tục lưu?`,
             payload,
           })
           return
@@ -315,23 +314,23 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
 
   const parentOptions = React.useMemo(() => {
     const currentId = initialData?.id
-    const currentCat = currentId ? groups.find(g => g.id === currentId) : null
-    const height = currentCat ? getSubtreeHeight(currentCat, groups) : 1
+    const currentCat = currentId ? categories.find(c => c.id === currentId) : null
+    const height = currentCat ? getSubtreeHeight(currentCat, categories) : 1
 
-    return groups.filter((g) => {
-      if (g.id === currentId) return false
+    return categories.filter((c) => {
+      if (c.id === currentId) return false
       // Prevent circular reference
-      let curr = g
+      let curr = c
       while (curr.parent_id) {
         if (curr.parent_id === currentId) return false
         const parent = groups.find(p => p.id === curr.parent_id)
         if (parent) curr = parent
         else break
       }
-      const pDepth = getCategoryDepth(g, groups)
+      const pDepth = getCategoryDepth(c, categories)
       return (pDepth + height) <= 4
     })
-  }, [groups, initialData])
+  }, [categories, initialData])
 
   // Icon grid split into rows of 8
   const iconRows: string[][] = []
@@ -346,10 +345,10 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
       <div className="flex items-center justify-between px-8 py-6 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            {initialData?.id ? 'Cập nhật nhóm' : 'Tạo nhóm mới'}
+            {initialData?.id ? 'Cập nhật danh mục' : 'Tạo danh mục mới'}
           </h2>
           <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-            {initialData?.id ? 'Chỉnh sửa thông tin nhóm của bạn' : 'Thiết lập nhóm phân loại mới cho sổ cái'}
+            {initialData?.id ? 'Chỉnh sửa thông tin danh mục' : 'Thiết lập danh mục phân loại mới cho sổ cái'}
           </p>
         </div>
         <button
@@ -400,13 +399,13 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
           {/* Custom tree parent picker */}
           <div>
             <label className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">
-              Nhóm cha (nếu có)
+              Danh mục cha (nếu có)
             </label>
             <ParentTreeDropdown
               value={formData.parent_id}
               onChange={(id) => setFormData({ ...formData, parent_id: id })}
               options={parentOptions}
-              allGroups={groups}
+              allCategories={categories}
             />
           </div>
         </div>
@@ -414,30 +413,32 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
         {/* ── Flags ── */}
         <div className="flex items-center gap-6">
           {[
-            { key: 'is_shared',    label: 'Chia sẻ nhóm',  hint: 'Nhiều người dùng chung' },
+            { key: 'is_shared',    label: 'Chia sẻ danh mục',  hint: 'Nhiều người dùng chung' },
             { key: 'is_recurring', label: 'Định kỳ hàng tháng', hint: 'Chi phí cố định mỗi tháng' },
           ].map(flag => (
-            <label key={flag.key} className="flex items-center gap-3 cursor-pointer group select-none">
+            <div key={flag.key} className="flex items-center gap-3 select-none">
               <button
                 type="button"
-                onClick={() => setFormData(prev => ({ ...prev, [flag.key]: !prev[flag.key as keyof typeof prev] }))}
+                onClick={() => setFormData(prev => ({ ...prev, [flag.key]: !(prev as any)[flag.key] }))}
                 className={cn(
-                  'relative w-9 h-5 rounded-full transition-colors shrink-0',
+                  'relative w-9 h-5 rounded-full transition-colors shrink-0 cursor-pointer',
                   (formData as any)[flag.key]
                     ? 'bg-[var(--color-interactive-primary)]'
                     : 'bg-[var(--color-border-strong)]',
                 )}
+                aria-checked={(formData as any)[flag.key]}
+                role="switch"
               >
                 <span className={cn(
-                  'absolute top-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
-                  (formData as any)[flag.key] ? 'translate-x-4' : 'translate-x-0.5',
+                  'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
+                  (formData as any)[flag.key] ? 'translate-x-4' : 'translate-x-0',
                 )} />
               </button>
               <span className="min-w-0">
                 <span className="text-sm font-medium text-[var(--color-text-primary)] block">{flag.label}</span>
                 <span className="text-[11px] text-[var(--color-text-quaternary)]">{flag.hint}</span>
               </span>
-            </label>
+            </div>
           ))}
         </div>
 
@@ -465,7 +466,7 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
                   )}
                   style={formData.emoji === iconName ? { color: formData.color, borderColor: formData.color } : {}}
                 >
-                  <GroupIcon name={iconName} className="w-4.5 h-4.5" />
+                  <CategoryIcon name={iconName} className="w-4.5 h-4.5" />
                 </button>
               ))}
             </div>
@@ -499,10 +500,10 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
                 className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
                 style={{ background: `${formData.color}22` }}
               >
-                <GroupIcon name={formData.emoji} className="w-5 h-5" style={{ color: formData.color } as React.CSSProperties} />
+                <CategoryIcon name={formData.emoji} className="w-5 h-5" style={{ color: formData.color } as React.CSSProperties} />
               </div>
               <div>
-                <div className="text-sm font-semibold text-[var(--color-text-primary)]">{formData.name || 'Tên nhóm'}</div>
+                <div className="text-sm font-semibold text-[var(--color-text-primary)]">{formData.name || 'Tên danh mục'}</div>
                 <div className="text-[11px] text-[var(--color-text-tertiary)]">{formData.color}</div>
               </div>
             </div>
@@ -510,16 +511,13 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
         </div>
 
         {/* ── Budget ── */}
-        <div className="space-y-1.5">
+        <div>
           <NumberInput
             label="Ngân sách hàng tháng"
             value={formData.budget_limit}
             onChange={(val) => setFormData({ ...formData, budget_limit: val })}
             placeholder="0"
           />
-          <p className="text-xs text-[var(--color-text-tertiary)]">
-            Giới hạn chi tiêu mỗi tháng. Lưu vào cột <code className="font-mono bg-[var(--color-bg-sunken)] px-1 rounded">budget_limit</code> (không dùng metadata).
-          </p>
         </div>
 
         {/* ── Keywords ── */}
@@ -527,7 +525,6 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
           <label className="text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-2">
             <TagIcon className="w-4 h-4" />
             Từ khóa tự động phân loại
-            <span className="font-normal text-[11px] text-[var(--color-text-quaternary)]">— lưu vào cột keywords[]</span>
           </label>
           <div className="flex gap-2.5">
             <input
@@ -584,7 +581,7 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
           disabled={isSaving || !formData.name.trim()}
           className="h-11 px-8 rounded-xl text-sm font-semibold cursor-pointer"
         >
-          {isSaving ? 'Đang lưu…' : (initialData?.id ? 'Lưu thay đổi' : 'Tạo nhóm')}
+          {isSaving ? 'Đang lưu…' : (initialData?.id ? 'Lưu thay đổi' : 'Tạo danh mục')}
         </Button>
       </div>
 
@@ -643,3 +640,6 @@ export function GroupForm({ lang = 'ja', onClose, initialData }: GroupFormProps)
     </form>
   )
 }
+
+// Compatibility alias
+export const GroupForm = CategoryForm

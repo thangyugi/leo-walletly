@@ -23,10 +23,13 @@ const LUCIDE_ICONS: Record<string, React.ElementType> = {
 
 export const PRESET_ICONS = Object.keys(LUCIDE_ICONS)
 
-export function GroupIcon({ name, className }: { name: string; className?: string }) {
+export function CategoryIcon({ name, className }: { name: string; className?: string }) {
   const Icon = LUCIDE_ICONS[name]
   if (!Icon) {
     return <span className={className} style={{ display: 'inline-block', lineHeight: 1 }}>{name || '📁'}</span>
   }
   return <Icon className={className} />
 }
+
+// Compatibility alias for legacy imports
+export const GroupIcon = CategoryIcon
