@@ -17,12 +17,10 @@
     code { font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; color: #0f172a; }
     pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.7; margin: 10px 0; }
     pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
-
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
     th { background: #f1f5f9; color: #374151; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #e2e8f0; }
     td { padding: 7px 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #475569; }
     tr:nth-child(even) td { background: #f8fafc; }
-
     .badge { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 9999px; padding: 1px 8px; }
     .badge-green  { background: #dcfce7; color: #166534; }
     .badge-blue   { background: #dbeafe; color: #1e40af; }
@@ -30,7 +28,6 @@
     .badge-red    { background: #fee2e2; color: #991b1b; }
     .badge-gray   { background: #f1f5f9; color: #475569; }
     .badge-purple { background: #f3e8ff; color: #6b21a8; }
-
     .section-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 14px 0; }
     .route-tag { display: inline-block; font-family: monospace; font-size: 12px; background: #1e293b; color: #94a3b8; border-radius: 6px; padding: 2px 8px; }
     .warning { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #92400e; font-size: 13px; }
@@ -59,46 +56,33 @@
     <h3 style="margin-top:0">Mục lục</h3>
     <ul>
       <li><a href="#routes">1. Cấu trúc route</a></li>
-      <li><a href="#overview">2. Tổng quan trang</a></li>
-      <li><a href="#state">3. State quản lý</a></li>
-      <li><a href="#helpers">4. Hàm tiện ích</a></li>
-      <li><a href="#components">5. Các component</a>
+      <li><a href="#main-page">2. Màn hình chính <code>/transactions</code></a>
         <ul>
-          <li><a href="#pageheader">5.1 PageHeader + actions</a></li>
-          <li><a href="#datenavigator">5.2 DateNavigator</a></li>
-          <li><a href="#sort-dropdown">5.3 SortDropdown</a></li>
-          <li><a href="#stat-cards">5.4 StatCard (4 thẻ thống kê)</a></li>
-          <li><a href="#filterbar">5.5 FilterBar</a></li>
-          <li><a href="#bulkbar">5.6 BulkBar</a></li>
-          <li><a href="#table-header">5.7 Column Header (bảng)</a></li>
-          <li><a href="#txn-row">5.8 TxnTableRow</a></li>
-          <li><a href="#date-group-header">5.9 DateGroupHeader</a></li>
-          <li><a href="#footer-totals">5.10 Footer tổng hợp</a></li>
-          <li><a href="#pagination">5.11 Phân trang (Pagination)</a></li>
-          <li><a href="#detail-panel">5.12 DetailPanel (portal)</a></li>
-          <li><a href="#edit-modal">5.13 TransactionEditModal</a></li>
+          <li><a href="#header">2.1 PageHeader + Actions</a></li>
+          <li><a href="#stat-cards">2.2 Stat Cards (4 thẻ thống kê)</a></li>
+          <li><a href="#filterbar">2.3 FilterBar</a></li>
+          <li><a href="#bulkbar">2.4 BulkBar</a></li>
+          <li><a href="#table">2.5 Bảng giao dịch</a></li>
+          <li><a href="#pagination">2.6 Phân trang</a></li>
         </ul>
       </li>
-      <li><a href="#store">6. Store – useTransactionsStore</a>
+      <li><a href="#sort-dropdown">3. SortDropdown</a></li>
+      <li><a href="#detail-panel">4. DetailPanel (portal)</a></li>
+      <li><a href="#edit-modal">5. TransactionEditModal</a></li>
+      <li><a href="#db-section">6. Database – phân tích đầy đủ</a>
         <ul>
-          <li><a href="#store-state">6.1 State</a></li>
-          <li><a href="#store-filters">6.2 Filters</a></li>
-          <li><a href="#store-actions">6.3 Actions</a></li>
-          <li><a href="#store-supabase">6.4 Supabase sync</a></li>
+          <li><a href="#table-transactions-db">6.1 Bảng <code>transactions</code></a></li>
+          <li><a href="#store-analysis">6.2 Store <code>useTransactionsStore</code></a></li>
+          <li><a href="#db-recommendations">6.3 Đánh giá và đề xuất</a></li>
         </ul>
       </li>
-      <li><a href="#dataflow">7. Luồng dữ liệu</a></li>
-      <li><a href="#responsive">8. Responsive</a></li>
-      <li><a href="#changelog">9. Changelog</a></li>
     </ul>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <h2 id="routes">1. Cấu trúc route</h2>
   <table>
-    <tr>
-      <th>Route</th><th>File nguồn</th><th>Component render</th><th>Ghi chú</th>
-    </tr>
+    <tr><th>Route</th><th>File nguồn</th><th>Component render</th><th>Ghi chú</th></tr>
     <tr>
       <td><code>/transactions</code></td>
       <td><code>app/transactions/page.tsx</code></td>
@@ -109,597 +93,654 @@
       <td>—</td>
       <td><code>stores/transactions.ts</code></td>
       <td><code>useTransactionsStore</code></td>
-      <td>Zustand store, 309 dòng</td>
+      <td>Zustand store, 309 dòng, toàn bộ state + Supabase sync</td>
     </tr>
     <tr>
       <td>—</td>
       <td><code>components/ui/transaction-edit-modal.tsx</code></td>
       <td><code>TransactionEditModal</code></td>
-      <td>Modal chỉnh sửa giao dịch (portal)</td>
+      <td>Modal chỉnh sửa, render qua portal</td>
     </tr>
     <tr>
       <td>—</td>
       <td><code>components/ui/date-range-picker.tsx</code></td>
-      <td><code>DateNavigator</code></td>
-      <td>Bộ chọn khoảng ngày</td>
+      <td><code>DateNavigator, defaultPickerValue</code></td>
+      <td>Bộ chọn khoảng ngày với nhiều mode</td>
     </tr>
   </table>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="overview">2. Tổng quan trang</h2>
-  <p>Trang <code>/transactions</code> là trung tâm quản lý tất cả giao dịch tài chính. Bố cục từ trên xuống:</p>
+  <h2 id="main-page">2. Màn hình chính <span class="route-tag">/transactions</span></h2>
+  <p>Khi load: dùng dữ liệu đã có trong <code>useTransactionsStore</code> (đồng bộ bởi <code>syncTransactions()</code> gọi ở app-level). Không fetch riêng khi vào trang.</p>
+  <p>Biến derived state quan trọng:</p>
+  <ul style="margin: 6px 0 10px 20px; color:#475569;">
+    <li><code>sorted</code>: <code>getFiltered()</code> → lọc theo <code>picker</code> date range → sort theo <code>sortOption</code></li>
+    <li><code>paginated</code>: <code>sorted.slice((page-1)*30, page*30)</code></li>
+    <li><code>groupedByDate</code>: nhóm <code>paginated</code> theo ngày (chỉ khi sort là <code>dateDesc</code> hoặc <code>dateAsc</code>)</li>
+    <li><code>totals / prevTotals</code>: tổng thu/chi kỳ này và kỳ trước (để tính trend)</li>
+  </ul>
 
+  <!-- ── 2.1 ── -->
+  <h3 id="header">2.1 PageHeader + Actions</h3>
   <div class="section-box">
-    <ol style="padding-left:18px; color:#475569; font-size:13px; line-height:2;">
-      <li><strong>PageHeader</strong>: tiêu đề + số giao dịch + DateNavigator + SortDropdown + nút Import + nút Xóa tất cả</li>
-      <li><strong>4 StatCard</strong>: Tổng thu vào / Tổng chi ra / Số lượng giao dịch / Chi tiêu trung bình</li>
-      <li><strong>FilterBar</strong>: thanh tìm kiếm + bộ lọc mở rộng (5 trường)</li>
-      <li><strong>BulkBar</strong>: thanh thao tác hàng loạt (khi có giao dịch được chọn)</li>
-      <li><strong>Bảng giao dịch</strong>: header cột + rows nhóm theo ngày (hoặc phẳng) + footer tổng</li>
-      <li><strong>Pagination</strong>: phân trang (30 giao dịch / trang)</li>
-      <li><strong>DetailPanel</strong>: panel chi tiết (portal, cạnh phải màn hình, có thể toàn màn hình)</li>
-      <li><strong>TransactionEditModal</strong>: modal chỉnh sửa (portal)</li>
-    </ol>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="state">3. State quản lý</h2>
-  <p>State local của <code>TransactionsPage</code>:</p>
-  <table>
-    <tr>
-      <th>State</th><th>Kiểu</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>picker</code></td>
-      <td><code>PickerValue</code></td>
-      <td>Khoảng ngày đang chọn (mặc định: tháng hiện tại theo <code>defaultPickerValue(lang)</code>)</td>
-    </tr>
-    <tr>
-      <td><code>editingTxn</code></td>
-      <td><code>Transaction | null</code></td>
-      <td>Giao dịch đang được chỉnh sửa trong <code>TransactionEditModal</code></td>
-    </tr>
-    <tr>
-      <td><code>detailTxn</code></td>
-      <td><code>Transaction | null</code></td>
-      <td>Giao dịch đang xem chi tiết trong <code>DetailPanel</code></td>
-    </tr>
-    <tr>
-      <td><code>selected</code></td>
-      <td><code>Set&lt;string&gt;</code></td>
-      <td>Set id các giao dịch được tick trên trang hiện tại</td>
-    </tr>
-    <tr>
-      <td><code>page</code></td>
-      <td><code>number</code></td>
-      <td>Trang hiện tại (bắt đầu từ 1). Reset về 1 khi <code>sorted.length</code> hoặc <code>picker</code> thay đổi</td>
-    </tr>
-  </table>
-
-  <p>State từ store (<code>useTransactionsStore</code>):</p>
-  <table>
-    <tr>
-      <th>State</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>transactions</code></td>
-      <td>Toàn bộ giao dịch trong ledger hiện tại</td>
-    </tr>
-    <tr>
-      <td><code>sortOption</code></td>
-      <td>Cách sắp xếp hiện tại (lưu trong store, persist qua navigate)</td>
-    </tr>
-    <tr>
-      <td><code>filters</code></td>
-      <td>Bộ lọc: search, provider, category, dateFrom, dateTo, type</td>
-    </tr>
-  </table>
-
-  <p><strong>Derived state (useMemo):</strong></p>
-  <table>
-    <tr>
-      <th>Biến</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>sorted</code></td>
-      <td><code>getFiltered()</code> → lọc theo <code>picker</code> date range → sắp xếp theo <code>sortOption</code></td>
-    </tr>
-    <tr>
-      <td><code>prev</code></td>
-      <td>Khoảng thời gian kỳ trước (tính từ <code>getPrevPeriod(picker)</code>)</td>
-    </tr>
-    <tr>
-      <td><code>prevSorted</code></td>
-      <td>Giao dịch trong kỳ trước (dùng để so sánh xu hướng)</td>
-    </tr>
-    <tr>
-      <td><code>totals</code></td>
-      <td><code>{ income, expense }</code> của kỳ hiện tại</td>
-    </tr>
-    <tr>
-      <td><code>prevTotals</code></td>
-      <td><code>{ income, expense }</code> của kỳ trước</td>
-    </tr>
-    <tr>
-      <td><code>avgExpense</code></td>
-      <td>Chi tiêu trung bình / giao dịch expense</td>
-    </tr>
-    <tr>
-      <td><code>paginated</code></td>
-      <td>Slice <code>sorted[(page-1)*30 .. page*30]</code></td>
-    </tr>
-    <tr>
-      <td><code>groupedByDate</code></td>
-      <td>Nhóm <code>paginated</code> theo ngày (chỉ khi sort là <code>dateDesc</code> hoặc <code>dateAsc</code>)</td>
-    </tr>
-    <tr>
-      <td><code>totalPages</code></td>
-      <td><code>Math.ceil(sorted.length / 30)</code></td>
-    </tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="helpers">4. Hàm tiện ích</h2>
-  <table>
-    <tr>
-      <th>Hàm</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>getPrevPeriod(picker)</code></td>
-      <td>Tính khoảng thời gian kỳ trước có cùng độ dài. VD: tháng 5 → tháng 4, tuần này → tuần trước</td>
-    </tr>
-    <tr>
-      <td><code>pct(curr, prev)</code></td>
-      <td>Tính % thay đổi: <code>(curr - prev) / |prev| × 100</code>. Trả về <code>null</code> nếu prev = 0</td>
-    </tr>
-    <tr>
-      <td><code>getTrendVsLabel(picker, lang, t)</code></td>
-      <td>Trả về chuỗi "vs tháng trước", "vs ngày hôm qua"… theo mode và ngôn ngữ</td>
-    </tr>
-    <tr>
-      <td><code>getInitials(text)</code></td>
-      <td>2 chữ cái đầu viết hoa từ mô tả (VD: "Starbucks Coffee" → "SC")</td>
-    </tr>
-    <tr>
-      <td><code>fmtDateDMY(d)</code></td>
-      <td>Định dạng ngày <code>YYYY-MM-DD</code> → <code>DD/MM/YYYY</code> (với fallback an toàn)</td>
-    </tr>
-  </table>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="components">5. Các component</h2>
-
-  <h3 id="pageheader">5.1 PageHeader + actions</h3>
-  <div class="section-box">
-    <p>Tiêu đề: <strong>"Giao dịch"</strong> + subtitle hiển thị tổng số giao dịch trong store.</p>
-    <p>Actions (hàng ngang, bên phải):</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li><strong>DateNavigator</strong>: bộ chọn khoảng ngày</li>
-      <li><strong>SortDropdown</strong>: chọn cách sắp xếp</li>
-      <li><strong>Nút Import</strong>: link đến <code>/import</code>, icon <code>Upload</code></li>
-      <li><strong>Nút Xóa tất cả</strong>: icon <code>Trash2</code>, màu đỏ, chỉ hiện khi có giao dịch. Hiển thị <code>confirm()</code> trước khi <code>clearAll()</code></li>
-    </ul>
-  </div>
-
-  <h3 id="datenavigator">5.2 DateNavigator</h3>
-  <div class="section-box">
-    <p>Component từ <code>components/ui/date-range-picker.tsx</code>.</p>
-    <p>Kiểu <code>PickerValue</code>:</p>
-    <pre><code>interface PickerValue {
-  mode:  'day' | 'month' | 'quarter' | 'year' | 'custom'
-  start: string   // YYYY-MM-DD
-  end:   string   // YYYY-MM-DD
-}</code></pre>
-    <p>Hỗ trợ điều hướng ← → qua từng ngày/tháng/quý/năm, chọn custom range.</p>
-    <p>Mặc định: <code>defaultPickerValue(lang)</code> → tháng hiện tại.</p>
-  </div>
-
-  <h3 id="sort-dropdown">5.3 SortDropdown</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>value: SortOption, onChange: (v: SortOption) =&gt; void</code></p>
-    <p>Dropdown tùy chỉnh (không dùng <code>&lt;select&gt;</code> native). Đóng khi click ngoài (<code>mousedown</code>).</p>
-    <p><strong>6 tùy chọn sắp xếp:</strong></p>
     <table>
-      <tr><th>value</th><th>Nhãn</th><th>Icon</th></tr>
-      <tr><td><code>dateDesc</code></td><td>Mới nhất</td><td>ArrowDown</td></tr>
-      <tr><td><code>dateAsc</code></td><td>Cũ nhất</td><td>ArrowUp</td></tr>
-      <tr><td><code>amountDesc</code></td><td>Số tiền cao → thấp</td><td>ArrowDown</td></tr>
-      <tr><td><code>amountAsc</code></td><td>Số tiền thấp → cao</td><td>ArrowUp</td></tr>
-      <tr><td><code>nameAsc</code></td><td>Tên A → Z</td><td>ArrowUp</td></tr>
-      <tr><td><code>category</code></td><td>Danh mục</td><td>—</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tiêu đề "Giao dịch"</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Từ <code>t.transactions.title</code>. Subtitle: <code>transactions.length + " " + t.dashboard.recentCount</code> — số giao dịch <strong>toàn bộ trong store</strong>, không phải số đang lọc.</td>
+      </tr>
+      <tr>
+        <td>DateNavigator</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Thay đổi <code>picker</code> (PickerValue: mode + start + end). Lọc <code>sorted</code> theo <code>tx.transactionDate &gt;= picker.start &amp;&amp; &lt;= picker.end</code>. Mặc định: tháng hiện tại (<code>defaultPickerValue(lang)</code>). Khi thay đổi: <code>page</code> reset về 1 qua <code>useEffect</code>.</td>
+      </tr>
+      <tr>
+        <td>SortDropdown</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Gọi <code>setSortOption(v)</code> — lưu vào store (persist qua navigate). Xem chi tiết tại mục 3.</td>
+      </tr>
+      <tr>
+        <td>Nút "Import" (Upload icon)</td>
+        <td><span class="interactive-label">Link điều hướng</span></td>
+        <td><code>&lt;Link href="/import"&gt;</code></td>
+      </tr>
+      <tr>
+        <td>Nút Xóa tất cả (Trash2, màu đỏ)</td>
+        <td><span class="interactive-label">Tương tác – xóa DB</span></td>
+        <td>Chỉ hiện khi <code>transactions.length &gt; 0</code>. <code>window.confirm()</code> → nếu xác nhận → <code>clearAll()</code>: xóa toàn bộ giao dịch ledger hiện tại (Zustand + Supabase DELETE).</td>
+      </tr>
     </table>
-    <p>Lưu <code>sortOption</code> vào store (persist qua navigate): <code>setSortOption(v)</code>.</p>
-    <p>Logic sắp xếp thực tế trong <code>sorted useMemo</code> ở <code>TransactionsPage</code>.</p>
   </div>
 
-  <h3 id="stat-cards">5.4 StatCard (4 thẻ thống kê)</h3>
+  <!-- ── 2.2 ── -->
+  <h3 id="stat-cards">2.2 Stat Cards (4 thẻ thống kê)</h3>
   <div class="section-box">
-    <p>Layout: <code>grid-cols-2 lg:grid-cols-4</code>. Mỗi thẻ hiển thị:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Label (chữ nhỏ hoa)</li>
-      <li>Giá trị chính (số lớn, màu xanh/đỏ)</li>
-      <li>Sub (phụ): thông tin bổ sung</li>
-      <li>Trend (xu hướng): ↑/↓ + % so với kỳ trước + label kỳ so sánh</li>
-    </ul>
-    <p>4 thẻ:</p>
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị.</span> Grid <code>grid-cols-2 lg:grid-cols-4</code>. Tất cả tính client-side từ <code>sorted</code> và <code>prevSorted</code>.</p>
     <table>
       <tr><th>Thẻ</th><th>Giá trị chính</th><th>Trend</th><th>Màu</th></tr>
       <tr>
         <td>Tổng thu vào</td>
         <td><code>+totals.income</code></td>
-        <td><code>pct(income, prevIncome)</code></td>
-        <td>Xanh lá (gain)</td>
+        <td><code>pct(income, prevIncome)%</code> so với kỳ trước</td>
+        <td>Xanh lá (<code>--color-text-gain</code>)</td>
       </tr>
       <tr>
         <td>Tổng chi ra</td>
         <td><code>−totals.expense</code></td>
-        <td><code>pct(expense, prevExpense)</code></td>
-        <td>Đỏ (loss)</td>
+        <td><code>pct(expense, prevExpense)%</code></td>
+        <td>Đỏ (<code>--color-text-loss</code>), <code>isLoss=true</code></td>
       </tr>
       <tr>
-        <td>Số lượng giao dịch</td>
+        <td>Số lượng GD</td>
         <td><code>sorted.length</code></td>
-        <td>—</td>
+        <td>Sub: "X chi ra · Y thu vào"</td>
         <td>—</td>
       </tr>
       <tr>
-        <td>Chi tiêu trung bình</td>
-        <td><code>−avgExpense</code> (hoặc —)</td>
-        <td>—</td>
-        <td>Đỏ (nếu &gt; 0)</td>
+        <td>Chi tiêu TB / GD</td>
+        <td><code>−avgExpense</code> (hoặc "—")</td>
+        <td>Sub: tổng số GD expense</td>
+        <td>Đỏ nếu <code>avgExpense &gt; 0</code></td>
       </tr>
     </table>
-    <p><code>trendVsLabel</code>: chuỗi so sánh (VD: "vs tháng trước") tính từ <code>getTrendVsLabel(picker, lang, t)</code>.</p>
+    <p>Trend label: <code>getTrendVsLabel(picker, lang, t)</code> → "vs tháng trước", "vs ngày hôm qua"… theo mode DateNavigator và ngôn ngữ.</p>
+    <p>Kỳ trước (<code>prevSorted</code>): tính qua <code>getPrevPeriod(picker)</code> — khoảng thời gian cùng độ dài trước <code>picker.start</code>.</p>
   </div>
 
-  <h3 id="filterbar">5.5 FilterBar</h3>
+  <!-- ── 2.3 ── -->
+  <h3 id="filterbar">2.3 FilterBar</h3>
   <div class="section-box">
-    <p>Đọc/ghi trực tiếp <code>useTransactionsStore().filters</code> qua <code>setFilters()</code>.</p>
+    <p>Đọc/ghi <code>useTransactionsStore().filters</code> qua <code>setFilters(partial)</code>. Expanded state local (<code>useState(false)</code>).</p>
+
     <h4>Hàng trên: Tìm kiếm + toggle bộ lọc</h4>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Input tìm kiếm (<code>filters.search</code>): tìm theo <code>description</code> và <code>notes</code> (trong store)</li>
-      <li>Nút Filter: toggle mở rộng bộ lọc, có badge đếm số filter đang active (<code>activeCount</code>)</li>
-      <li>Nút Clear: hiện khi có bất kỳ filter nào active → <code>resetFilters()</code></li>
-    </ul>
-    <h4>Hàng mở rộng: 5 bộ lọc (grid 2–3–5 cột)</h4>
     <table>
-      <tr><th>Trường</th><th>State</th><th>Loại UI</th><th>Tùy chọn</th></tr>
-      <tr><td>Loại giao dịch</td><td><code>filters.type</code></td><td>Select</td><td>Tất cả / Chi ra / Thu vào / Chuyển khoản</td></tr>
-      <tr><td>Tài khoản/Nguồn</td><td><code>filters.provider</code></td><td>Select</td><td>Tất cả + danh sách PROVIDERS</td></tr>
-      <tr><td>Danh mục</td><td><code>filters.category</code></td><td>Select</td><td>Tất cả + danh sách CATEGORIES</td></tr>
-      <tr><td>Từ ngày</td><td><code>filters.dateFrom</code></td><td>Input date</td><td>YYYY-MM-DD</td></tr>
-      <tr><td>Đến ngày</td><td><code>filters.dateTo</code></td><td>Input date</td><td>YYYY-MM-DD</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Input tìm kiếm</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setFilters({ search: e.target.value })</code>. <code>getFiltered()</code> tìm trong <code>description</code> và <code>notes</code> (case-insensitive).</td>
+      </tr>
+      <tr>
+        <td>Nút Filter (icon Filter)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Toggle <code>expanded</code>. Badge đếm số filter đang active (<code>activeCount</code>). Khi có filter active: viền brand.</td>
+      </tr>
+      <tr>
+        <td>Nút Clear (icon X)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Chỉ hiện khi <code>hasActive</code> (<code>filters.search || activeCount &gt; 0</code>). Gọi <code>resetFilters()</code>.</td>
+      </tr>
+    </table>
+
+    <h4>Hàng mở rộng: 5 bộ lọc (<code>grid-cols-2 sm:grid-cols-3 lg:grid-cols-5</code>)</h4>
+    <table>
+      <tr><th>Trường</th><th>Loại</th><th>State</th><th>Tùy chọn</th></tr>
+      <tr>
+        <td>Loại giao dịch</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>filters.type</code></td>
+        <td>Tất cả / Chi ra / Thu vào / Chuyển khoản</td>
+      </tr>
+      <tr>
+        <td>Tài khoản/Nguồn</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>filters.provider</code></td>
+        <td>Tất cả + danh sách PROVIDERS</td>
+      </tr>
+      <tr>
+        <td>Danh mục</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>filters.category</code></td>
+        <td>Tất cả + danh sách CATEGORIES</td>
+      </tr>
+      <tr>
+        <td>Từ ngày</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>filters.dateFrom</code></td>
+        <td>Input type="date", YYYY-MM-DD</td>
+      </tr>
+      <tr>
+        <td>Đến ngày</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>filters.dateTo</code></td>
+        <td>Input type="date", YYYY-MM-DD</td>
+      </tr>
     </table>
     <div class="warning">
-      <strong>Lưu ý:</strong> Filter <code>dateFrom/dateTo</code> trong <code>FilterBar</code> khác với <code>picker</code> trong <code>DateNavigator</code>. DateNavigator lọc ở component level (<code>sorted</code> useMemo), còn FilterBar lọc ở store level (<code>getFiltered()</code>). Hai bộ lọc này độc lập và áp dụng song song.
+      <strong>⚠️ Filter provider chưa kết nối trong getFiltered()</strong><br/>
+      <code>filters.provider</code> được lưu và hiển thị trong FilterBar nhưng <code>getFiltered()</code> trong store không có logic lọc theo <code>provider</code>. Thay đổi filter provider không ảnh hưởng đến danh sách giao dịch.
+    </div>
+    <div class="warning">
+      <strong>⚠️ Hai bộ lọc ngày độc lập song song</strong><br/>
+      <code>filters.dateFrom/dateTo</code> (FilterBar) lọc ở store level trong <code>getFiltered()</code>. <code>picker</code> (DateNavigator) lọc ở component level. Cả hai áp dụng đồng thời (AND), có thể gây nhầm lẫn khi kết quả là 0 giao dịch.
     </div>
   </div>
 
-  <h3 id="bulkbar">5.6 BulkBar</h3>
+  <!-- ── 2.4 ── -->
+  <h3 id="bulkbar">2.4 BulkBar</h3>
   <div class="section-box">
-    <p><strong>Props:</strong> <code>count: number, total: number, onClear: () =&gt; void, onDelete: () =&gt; void</code></p>
     <p>Hiển thị khi <code>selected.size &gt; 0</code>. Nền brand (tím xanh), animate slide-in-up.</p>
-    <p>Nội dung: "N đã chọn · N/total" + các nút thao tác.</p>
-    <p><strong>Nút thao tác:</strong></p>
     <table>
-      <tr><th>Nút</th><th>Trạng thái</th><th>Hành vi</th></tr>
-      <tr><td>Đổi tài khoản</td><td><em class="not-impl">Disabled (chưa triển khai)</em></td><td>—</td></tr>
-      <tr><td>Đổi danh mục</td><td><em class="not-impl">Disabled (chưa triển khai)</em></td><td>—</td></tr>
-      <tr><td>Xóa</td><td>Active</td><td><code>confirm()</code> → <code>deleteSelected()</code></td></tr>
-      <tr><td>✕ Đóng</td><td>Active</td><td><code>setSelected(new Set())</code></td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Đếm đã chọn</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>"N đã chọn · N/total"</td>
+      </tr>
+      <tr>
+        <td>Nút "Đổi tài khoản"</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Disabled (<code>disabled</code> attribute), <code>opacity-60 cursor-not-allowed</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút "Đổi danh mục"</td>
+        <td><span class="not-impl">Chưa implement</span></td>
+        <td>Disabled, không có handler.</td>
+      </tr>
+      <tr>
+        <td>Nút "Xóa"</td>
+        <td><span class="interactive-label">Tương tác – xóa DB</span></td>
+        <td><code>window.confirm()</code> → <code>deleteSelected()</code>: gọi <code>removeTransaction(id)</code> cho từng id trong <code>selected</code> → xóa local + Supabase DELETE. Reset <code>selected</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút ✕ Đóng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setSelected(new Set())</code></td>
+      </tr>
     </table>
-    <p><code>deleteSelected()</code>: gọi <code>removeTransaction(id)</code> cho từng id trong <code>selected</code> → xóa local + Supabase.</p>
   </div>
 
-  <h3 id="table-header">5.7 Column Header (bảng)</h3>
+  <!-- ── 2.5 ── -->
+  <h3 id="table">2.5 Bảng giao dịch</h3>
   <div class="section-box">
-    <p>Chỉ hiển thị trên <code>sm+</code> (ẩn trên mobile). Grid 9 cột:</p>
-    <p><code>grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto]</code></p>
+    <h4>Column Header (chỉ hiện ≥ sm)</h4>
+    <p>Grid 9 cột: <code>grid-cols-[auto_auto_1fr_auto_auto_auto_auto_auto_auto]</code></p>
     <table>
-      <tr><th>Cột</th><th>Nhãn</th><th>Ghi chú</th></tr>
-      <tr><td>1</td><td>Checkbox chọn tất cả</td><td>3 trạng thái: all/partial/none. Toggle tất cả trong trang hiện tại</td></tr>
-      <tr><td>2</td><td>—</td><td>Cột avatar (rộng cố định w-8)</td></tr>
-      <tr><td>3</td><td>Nội dung</td><td>flex-1</td></tr>
-      <tr><td>4</td><td>Ngày</td><td>—</td></tr>
-      <tr><td>5</td><td>Người dùng</td><td>—</td></tr>
-      <tr><td>6</td><td>Danh mục</td><td>—</td></tr>
-      <tr><td>7</td><td>Tài khoản/Nguồn</td><td>Ẩn trên &lt; lg</td></tr>
-      <tr><td>8</td><td>Số tiền</td><td>Căn phải</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Checkbox chọn tất cả (3 trạng thái)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>All checked (<code>CheckSquare</code>), partial (<code>Minus</code>), none (<code>Square</code>). Click → <code>toggleAll()</code> — chỉ toggle giao dịch trong <strong>trang hiện tại</strong> (<code>paginated</code>), không toggle toàn bộ <code>sorted</code>.</td>
+      </tr>
+      <tr>
+        <td>Header cột (Nội dung, Ngày, Người dùng, Danh mục, Tài khoản, Số tiền)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Labels từ i18n. Cột "Tài khoản" ẩn trên &lt; lg.</td>
+      </tr>
     </table>
-  </div>
 
-  <h3 id="txn-row">5.8 TxnTableRow</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>txn: Transaction, checked: boolean, onCheck: (id) =&gt; void, onView: (txn) =&gt; void</code></p>
-    <p>Click vào hàng → <code>onView(txn)</code> mở <code>DetailPanel</code>. Click vào checkbox → toggle chọn (stopPropagation).</p>
-    <p>Layout: cùng grid 9 cột với header.</p>
-    <p>Nội dung từng cột:</p>
+    <h4 style="margin-top:14px;">TxnTableRow – mỗi hàng giao dịch</h4>
     <table>
-      <tr><th>Cột</th><th>Nội dung</th><th>Responsive</th></tr>
-      <tr><td>Checkbox</td><td>CheckSquare / Square icon</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Avatar</td><td>2 chữ cái viết tắt (getInitials), nền xám</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Nội dung</td><td>description (truncate) + ngày (ẩn sm trở lên)</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Ngày</td><td>DD/MM/YYYY, font-mono</td><td>Ẩn trên mobile</td></tr>
-      <tr><td>Người dùng</td><td>Avatar tròn "LT" màu #059669</td><td>Ẩn trên mobile</td></tr>
-      <tr><td>Danh mục</td><td>Emoji + label (badge xám) hoặc —</td><td>Ẩn trên mobile</td></tr>
-      <tr><td>Tài khoản</td><td>Provider label (badge màu thương hiệu) hoặc —</td><td>Ẩn trên &lt; lg</td></tr>
-      <tr><td>Số tiền</td><td>± số tiền, font-tabular</td><td>Luôn hiển thị</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Click vào hàng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>onView(txn)</code> → <code>setDetailTxn(txn); setEditingTxn(null)</code> → mở DetailPanel.</td>
+      </tr>
+      <tr>
+        <td>Checkbox hàng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>e.stopPropagation()</code> + <code>toggleOne(txn.id)</code>. Nền hàng đổi sang <code>--color-status-info-bg</code> khi checked.</td>
+      </tr>
+      <tr>
+        <td>Avatar (2 chữ initials)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>getInitials(txn.description)</code>. Nền xám (<code>#6b7280</code>, 12% opacity), chữ xám. Không dùng màu từ category/provider.</td>
+      </tr>
+      <tr>
+        <td>Mô tả + ngày (mobile)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>txn.description</code> (truncate). Ngày hiện dưới mô tả chỉ trên mobile (ẩn ≥ sm).</td>
+      </tr>
+      <tr>
+        <td>Ngày (cột riêng, ≥ sm)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>fmtDateDMY(txn.transactionDate)</code> → DD/MM/YYYY, font-mono.</td>
+      </tr>
+      <tr>
+        <td>Người dùng (≥ sm)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Avatar tròn initials "LT" màu #059669. Hardcode <code>DEFAULT_USER = { initials: 'LT', color: '#059669' }</code>. Chưa dùng data thực.</td>
+      </tr>
+      <tr>
+        <td>Danh mục (≥ sm)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Emoji + label từ <code>CATEGORIES.find(c.value === txn.categoryId)</code>. Badge xám nhạt. Nếu không có: "—".</td>
+      </tr>
+      <tr>
+        <td>Tài khoản/Nguồn (≥ lg)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Provider label từ <code>PROVIDERS.find(p.value === txn.paymentInstrumentId)</code>. Badge màu thương hiệu provider. Nếu không có: "—".</td>
+      </tr>
+      <tr>
+        <td>Số tiền</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Expense: <code>−amount</code> màu <code>--color-text-loss</code> (đỏ). Income: <code>+amount</code> màu <code>--color-text-gain</code> (xanh lá). Font-tabular.</td>
+      </tr>
     </table>
-    <p>Màu số tiền: <code>text-[var(--color-text-loss)]</code> (đỏ) cho expense, <code>text-[var(--color-text-gain)]</code> (xanh) cho income.</p>
-    <p>Nền hàng: <code>--color-status-info-bg</code> (xanh nhạt) khi checked, <code>--color-bg-sunken</code> (xám) khi hover.</p>
+
+    <h4 style="margin-top:14px;">DateGroupHeader – dải phân cách ngày</h4>
+    <p>Chỉ render khi <code>groupedByDate !== null</code> (sort là <code>dateDesc</code> hoặc <code>dateAsc</code>).</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Label ngày + thứ</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>fmtDateDMY(date) + " (" + weekday + ")"</code>. Weekday bản địa hóa qua <code>toLocaleDateString(lang, { weekday: 'short' })</code>.</td>
+      </tr>
+      <tr>
+        <td>Tổng thu/chi ngày</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Thu: <code>+income</code> xanh. Chi: <code>−expense</code> đỏ. Net = income − expense. Chỉ hiển thị thu/chi nếu &gt; 0.</td>
+      </tr>
+    </table>
+
+    <h4 style="margin-top:14px;">Footer bảng</h4>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tổng số đang hiển thị</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>sorted.length + " " + t.transactions.shown</code></td>
+      </tr>
+      <tr>
+        <td>Tổng đã chọn (nếu có)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>"· N đã chọn · ±tổng" — hiện inline khi <code>selected.size &gt; 0</code>. Tổng tính từ <code>sorted.filter(selected).sum(amount)</code> (kể dấu âm/dương).</td>
+      </tr>
+      <tr>
+        <td>Tổng chi / tổng thu kỳ</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>−totals.expense</code> (đỏ) + <code>+totals.income</code> (xanh), góc phải.</td>
+      </tr>
+    </table>
   </div>
 
-  <h3 id="date-group-header">5.9 DateGroupHeader</h3>
+  <!-- ── 2.6 ── -->
+  <h3 id="pagination">2.6 Phân trang (Pagination)</h3>
   <div class="section-box">
-    <p><strong>Props:</strong> <code>date: string, expense: number, income: number</code></p>
-    <p>Dải phân cách giữa các nhóm ngày. Hiển thị khi <code>sortOption</code> là <code>'dateDesc'</code> hoặc <code>'dateAsc'</code>.</p>
-    <p>Nội dung: ngày (DD/MM/YYYY + thứ viết tắt theo ngôn ngữ) + tổng thu/chi/net của ngày đó.</p>
-    <pre><code>// Định dạng ngày có thứ:
-const wd = d.toLocaleDateString(lang === 'vi' ? 'vi-VN' : 'ja-JP', { weekday: 'short' })
-const label = `${fmtDateDMY(date)} (${wd})`</code></pre>
-    <p>Net = income − expense: xanh nếu ≥ 0, đỏ nếu &lt; 0.</p>
-    <p>Chỉ hiển thị thu/chi nếu &gt; 0 (tránh hiện "−0").</p>
-  </div>
-
-  <h3 id="footer-totals">5.10 Footer tổng hợp</h3>
-  <div class="section-box">
-    <p>Nằm cuối bảng (<code>border-t</code>, nền sunken). Hiển thị:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Bên trái: tổng số giao dịch đang hiển thị + (nếu có chọn) số đã chọn và tổng giá trị</li>
-      <li>Bên phải: <code>−totals.expense</code> (đỏ) + <code>+totals.income</code> (xanh)</li>
-    </ul>
-    <p>Tổng giá trị chọn (<code>selectedTotal</code>): tính từ <code>sorted.filter(selected.has(id)).sum(amount)</code>, bao gồm cả dấu âm/dương tự nhiên của amount.</p>
-  </div>
-
-  <h3 id="pagination">5.11 Phân trang (Pagination)</h3>
-  <div class="section-box">
-    <p>Hiển thị khi <code>totalPages &gt; 1</code>. Gồm:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Thông tin: "Trang X / Y · Z giao dịch"</li>
-      <li>Nút ← → để chuyển trang (disabled khi ở trang đầu/cuối)</li>
-      <li>Nút số trang: hiển thị tối đa 5 trang, dùng window sliding để luôn hiện trang hiện tại ở giữa</li>
-    </ul>
-    <pre><code>const offset = Math.max(0, Math.min(page - 3, totalPages - 5))
-const p = offset + i + 1   // i từ 0 đến 4</code></pre>
-    <p>Kích thước trang: <code>PAGE_SIZE = 30</code> (hằng số cố định).</p>
-    <p><code>page</code> reset về 1 mỗi khi <code>sorted.length</code> hoặc <code>picker</code> thay đổi (qua <code>useEffect</code>).</p>
-  </div>
-
-  <h3 id="detail-panel">5.12 DetailPanel (portal)</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>txn: Transaction, onClose: () =&gt; void, onEdit: () =&gt; void</code></p>
-    <p>Render bằng <code>createPortal(panel, document.body)</code> — thoát khỏi DOM tree để tránh bị cắt bởi overflow.</p>
-    <p><strong>Layout:</strong></p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Mobile: panel trượt từ dưới lên (rounded-top)</li>
-      <li>Desktop (sm+): panel cạnh phải toàn chiều cao (<code>sm:w-[420px] sm:h-full border-l</code>)</li>
-      <li>Toàn màn hình: khi nhấn icon Maximize → <code>w-full h-full</code></li>
-    </ul>
-    <p><strong>Header panel:</strong> nút Edit (bút) / Maximize-Minimize / Đóng (X)</p>
-    <p><strong>Nội dung:</strong></p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Avatar tròn (initials 2 chữ) + số tiền lớn (±, màu xanh/đỏ) + mô tả</li>
-      <li>Danh sách trường: Ngày / Danh mục / Tài khoản / Loại / Ghi chú (nếu có)</li>
-      <li>Nếu có <code>txn.metadata</code>: hiển thị JSON raw (collapsible, font-mono, max-h-60 overflow-y)</li>
-    </ul>
-    <p><strong>Footer:</strong> nút Chỉnh sửa → <code>onEdit()</code> mở <code>TransactionEditModal</code>, đóng panel.</p>
-    <p>Overlay đen mờ (<code>bg-black/20</code>) phía sau, click vào đóng panel.</p>
-  </div>
-
-  <h3 id="edit-modal">5.13 TransactionEditModal</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>txn: Transaction, onClose: () =&gt; void</code></p>
-    <p>Component từ <code>components/ui/transaction-edit-modal.tsx</code> (portal riêng).</p>
-    <p>Cho phép chỉnh sửa: ngày, mô tả, số tiền, danh mục, ghi chú.</p>
-    <p>Lưu qua <code>useTransactionsStore().updateTransaction(id, update)</code> → cập nhật local + patch Supabase.</p>
+    <p>Hiển thị khi <code>totalPages &gt; 1</code>. Kích thước trang: <code>PAGE_SIZE = 30</code> (hằng số cố định).</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Thông tin trang</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>"Trang X / Y · Z giao dịch"</td>
+      </tr>
+      <tr>
+        <td>Nút ← (prev)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setPage(p =&gt; p - 1)</code>. Disabled khi <code>page &lt;= 1</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút số trang (tối đa 5)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Window sliding: <code>offset = Math.max(0, Math.min(page-3, totalPages-5))</code> → trang hiện tại luôn ở giữa khi có đủ trang. Trang hiện tại: nền brand.</td>
+      </tr>
+      <tr>
+        <td>Nút → (next)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setPage(p =&gt; p + 1)</code>. Disabled khi <code>page &gt;= totalPages</code>.</td>
+      </tr>
+    </table>
+    <p><code>page</code> reset về 1 khi <code>sorted.length</code> hoặc <code>picker</code> thay đổi (qua <code>useEffect([sorted.length, picker])</code>).</p>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="store">6. Store – <code>useTransactionsStore</code></h2>
-  <p>Định nghĩa trong <code>stores/transactions.ts</code>. Sử dụng Zustand (không persist localStorage — dữ liệu đồng bộ từ Supabase mỗi session).</p>
+  <h2 id="sort-dropdown">3. SortDropdown</h2>
+  <p>Component inline trong <code>page.tsx</code>. Props: <code>value: SortOption, onChange: (v: SortOption) =&gt; void</code>.</p>
+  <div class="section-box">
+    <p>Dropdown tùy chỉnh (không dùng <code>&lt;select&gt;</code> native). Đóng khi click ngoài (<code>mousedown</code> listener).</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Trigger button</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Toggle <code>open</code>. Hiện: icon <code>ArrowUpDown</code> + "Sắp xếp theo" (ẩn mobile) + tên sort hiện tại + <code>ChevronDown</code> (xoay 180° khi mở).</td>
+      </tr>
+      <tr>
+        <td>Dropdown panel (khi open)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>position: absolute; right-0; top-full</code>. 6 tùy chọn sắp xếp.</td>
+      </tr>
+    </table>
+    <p><strong>6 tùy chọn sắp xếp:</strong></p>
+    <table>
+      <tr><th>SortOption</th><th>Nhãn</th><th>Icon</th><th>Logic sort</th></tr>
+      <tr><td><code>dateDesc</code></td><td>Mới nhất (mặc định)</td><td>ArrowDown</td><td><code>b.transactionDate.localeCompare(a.transactionDate)</code></td></tr>
+      <tr><td><code>dateAsc</code></td><td>Cũ nhất</td><td>ArrowUp</td><td><code>a.transactionDate.localeCompare(b.transactionDate)</code></td></tr>
+      <tr><td><code>amountDesc</code></td><td>Số tiền cao → thấp</td><td>ArrowDown</td><td><code>Math.abs(b.amount) - Math.abs(a.amount)</code></td></tr>
+      <tr><td><code>amountAsc</code></td><td>Số tiền thấp → cao</td><td>ArrowUp</td><td><code>Math.abs(a.amount) - Math.abs(b.amount)</code></td></tr>
+      <tr><td><code>nameAsc</code></td><td>Tên A → Z</td><td>ArrowUp</td><td><code>(a.description || '').localeCompare(b.description || '')</code></td></tr>
+      <tr><td><code>category</code></td><td>Danh mục</td><td>—</td><td><code>(a.categoryId || '').localeCompare(b.categoryId || '')</code></td></tr>
+    </table>
+    <p><code>setSortOption(v)</code> lưu vào Zustand store — persistent qua điều hướng. Chỉ <code>dateDesc</code> và <code>dateAsc</code> kích hoạt GroupedByDate render.</p>
+  </div>
 
-  <h3 id="store-state">6.1 State</h3>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="detail-panel">4. DetailPanel (portal)</h2>
+  <p>Mở khi <code>detailTxn !== null &amp;&amp; !editingTxn</code>. Render qua <code>createPortal(panel, document.body)</code>.</p>
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Overlay đen mờ (bg-black/20)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Click → <code>onClose()</code>: <code>setDetailTxn(null)</code>.</td>
+      </tr>
+      <tr>
+        <td>Panel (right sidebar)</td>
+        <td><span class="static-label">Layout</span></td>
+        <td>Mobile: slide từ dưới (<code>rounded-t-2xl</code>). Desktop (sm+): cạnh phải toàn chiều cao (<code>w-[420px]</code>). Toàn màn hình: <code>w-full h-full</code> khi <code>fullscreen = true</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút Edit (bút)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>onEdit()</code>: <code>setEditingTxn(detailTxn); setDetailTxn(null)</code> → đóng panel, mở EditModal.</td>
+      </tr>
+      <tr>
+        <td>Nút Maximize/Minimize</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Toggle <code>fullscreen</code>. Icon thay đổi: <code>Maximize2</code> ↔ <code>Minimize2</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút X đóng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>onClose()</code></td>
+      </tr>
+      <tr>
+        <td>Avatar + số tiền lớn</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Avatar tròn (initials). Số tiền 3xl, đỏ/xanh. Mô tả bên dưới.</td>
+      </tr>
+      <tr>
+        <td>Danh sách trường thông tin</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Ngày / Danh mục / Tài khoản / Loại / Ghi chú (nếu có). Mỗi trường là 1 dòng với label xám + giá trị.</td>
+      </tr>
+      <tr>
+        <td>Raw metadata (nếu có)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Chỉ hiện khi <code>txn.metadata &amp;&amp; Object.keys(txn.metadata).length &gt; 0</code>. Font-mono, <code>max-h-60 overflow-y-auto</code>. Tiêu đề "Dữ liệu gốc".</td>
+      </tr>
+      <tr>
+        <td>Footer nút "Chỉnh sửa"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Variant primary, gọi <code>onEdit()</code> → mở TransactionEditModal.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="edit-modal">5. TransactionEditModal</h2>
+  <p>Mở khi <code>editingTxn !== null</code>. Component từ <code>components/ui/transaction-edit-modal.tsx</code>, render qua portal riêng.</p>
+  <div class="section-box">
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Các field chỉnh sửa</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Ngày, mô tả, số tiền, danh mục, ghi chú.</td>
+      </tr>
+      <tr>
+        <td>Nút Lưu</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>Gọi <code>updateTransaction(id, update)</code>: cập nhật Zustand local + PATCH Supabase (chỉ các trường có trong <code>update</code>).</td>
+      </tr>
+      <tr>
+        <td>Nút Hủy / Đóng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>onClose()</code>: <code>setEditingTxn(null)</code>.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="db-section">6. Database – phân tích đầy đủ</h2>
+
+  <!-- ── 6.1 ── -->
+  <h3 id="table-transactions-db">6.1 Bảng <code>transactions</code></h3>
+  <p><span class="badge badge-green">Dùng nhiều</span> Bảng chính cho toàn bộ trang /transactions. Đọc (fetch), ghi (import), cập nhật (edit), xóa.</p>
   <table>
-    <tr>
-      <th>Trường</th><th>Kiểu</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>transactions</code></td>
-      <td><code>Transaction[]</code></td>
-      <td>Toàn bộ giao dịch. Khởi tạo rỗng (<code>[]</code>)</td>
-    </tr>
-    <tr>
-      <td><code>filters</code></td>
-      <td><code>TransactionFilters</code></td>
-      <td>Bộ lọc hiện tại. Mặc định: tất cả trường là "all" / rỗng</td>
-    </tr>
-    <tr>
-      <td><code>sortOption</code></td>
-      <td><code>SortOption</code></td>
-      <td>Cách sắp xếp. Mặc định: <code>'dateDesc'</code></td>
-    </tr>
+    <tr><th>Cột DB</th><th>TypeScript field</th><th>Dùng trong code</th><th>Ghi chú</th></tr>
+    <tr><td><code>id</code></td><td><code>t.id</code></td><td>Key trong Zustand, xóa theo id, dedup khi import</td><td>UUID</td></tr>
+    <tr><td><code>ledger_id</code></td><td><code>t.ledgerId</code></td><td>Filter trong <code>syncTransactions()</code>, xóa hàng loạt trong <code>clearAll()</code></td><td>UUID FK</td></tr>
+    <tr><td><code>workspace_id</code></td><td><code>t.workspaceId</code></td><td>Ghi khi import/tạo mới</td><td>UUID FK</td></tr>
+    <tr><td><code>organization_id</code></td><td><code>t.organizationId</code></td><td>Ghi khi import/tạo mới</td><td>UUID FK</td></tr>
+    <tr><td><code>transaction_date</code></td><td><code>t.transactionDate</code></td><td>Filter theo picker date range, sort, group by date</td><td>TEXT (YYYY-MM-DD)</td></tr>
+    <tr><td><code>transaction_type</code></td><td><code>t.transactionType</code></td><td>Filter type (expense/income/transfer), tính totals, màu số tiền</td><td>'expense'|'income'|'transfer'|'asset_transfer'</td></tr>
+    <tr><td><code>amount</code></td><td><code>t.amount</code></td><td>Tính totals, StatCard, sort amountDesc/Asc, tổng chọn</td><td>NUMERIC — âm cho expense</td></tr>
+    <tr><td><code>currency_code</code></td><td><code>t.currencyCode</code></td><td>Hiển thị trong DetailPanel (<code>formatMoney(amount, currencyCode)</code>)</td><td>TEXT, VD: 'JPY', 'VND'</td></tr>
+    <tr><td><code>description</code></td><td><code>t.description</code></td><td>Hiển thị trong row, tìm kiếm (search filter), initials avatar</td><td>TEXT nullable</td></tr>
+    <tr><td><code>notes</code></td><td><code>t.notes</code></td><td>Tìm kiếm (search filter), hiển thị trong DetailPanel</td><td>TEXT nullable</td></tr>
+    <tr><td><code>payment_instrument_id</code></td><td><code>t.paymentInstrumentId</code></td><td>Filter provider (FilterBar), badge tài khoản trong row và DetailPanel</td><td>TEXT = provider value</td></tr>
+    <tr><td><code>category_id</code></td><td><code>t.categoryId</code></td><td>Filter category (FilterBar), badge danh mục trong row và DetailPanel, cập nhật khi edit/classify</td><td>UUID FK nullable</td></tr>
+    <tr><td><code>status</code></td><td><code>t.status</code></td><td>Ghi khi import (<code>'posted'</code>). Không lọc hiển thị theo status.</td><td>'pending'|'posted'|'cleared'</td></tr>
+    <tr><td><code>source</code></td><td><code>t.source</code></td><td>Nhóm trong LinkedAccountsSection (trang /categories). Không dùng trong /transactions.</td><td>'manual'|'csv_import'|...</td></tr>
+    <tr><td><code>is_reconciled</code></td><td><code>t.isReconciled</code></td><td>KPI "Chờ đối soát" trong /categories. Không dùng trong /transactions.</td><td>BOOLEAN</td></tr>
+    <tr><td><code>metadata</code></td><td><code>t.metadata</code></td><td>Hiển thị "Dữ liệu gốc" trong DetailPanel. Lưu raw CSV row khi import.</td><td>JSONB</td></tr>
+    <tr><td><code>merchant_name</code></td><td><code>t.merchantName</code></td><td>Keyword matching trong /categories. Không dùng trực tiếp trong /transactions.</td><td>TEXT nullable</td></tr>
+    <tr><td><code>created_at</code>, <code>updated_at</code></td><td><code>t.createdAt</code>, <code>t.updatedAt</code></td><td>Không hiển thị trong /transactions</td><td>TIMESTAMPTZ</td></tr>
+    <tr><td><code>deleted_at</code></td><td><code>t.deletedAt</code></td><td>Không dùng trong UI (soft delete chưa implement)</td><td>TIMESTAMPTZ nullable</td></tr>
   </table>
 
-  <h3 id="store-filters">6.2 Filters (<code>TransactionFilters</code>)</h3>
-  <pre><code>interface TransactionFilters {
-  search:   string                                              // tìm kiếm text
-  provider: PaymentProvider | 'all'                            // lọc theo nguồn
-  category: LegacyCategory | 'all'                             // lọc theo danh mục
-  dateFrom: string                                             // YYYY-MM-DD
-  dateTo:   string                                             // YYYY-MM-DD
-  type:     'expense' | 'income' | 'transfer' | 'all'         // loại giao dịch
-}</code></pre>
-  <p><code>getFiltered()</code> áp dụng tất cả filters (AND logic) và sort mặc định <code>dateDesc</code>:</p>
-  <pre><code>// Thứ tự kiểm tra trong getFiltered():
-1. search → tìm trong description + notes (case-insensitive)
+  <!-- ── 6.2 ── -->
+  <h3 id="store-analysis">6.2 Store <code>useTransactionsStore</code></h3>
+  <p>File: <code>stores/transactions.ts</code>. Zustand, không persist localStorage.</p>
+
+  <div class="section-box">
+    <h4>State</h4>
+    <table>
+      <tr><th>Trường</th><th>Kiểu</th><th>Mặc định</th></tr>
+      <tr><td><code>transactions</code></td><td><code>Transaction[]</code></td><td><code>[]</code></td></tr>
+      <tr><td><code>filters</code></td><td><code>TransactionFilters</code></td><td>Tất cả = 'all' / rỗng</td></tr>
+      <tr><td><code>sortOption</code></td><td><code>SortOption</code></td><td><code>'dateDesc'</code></td></tr>
+    </table>
+
+    <h4 style="margin-top:12px;">Actions và Supabase behavior</h4>
+    <table>
+      <tr><th>Action</th><th>Zustand</th><th>Supabase</th></tr>
+      <tr>
+        <td><code>addTransactions(txns)</code></td>
+        <td>Dedup theo id (Set), append mới vào state</td>
+        <td><code>upsert</code> (on conflict: id) — cho phép re-import</td>
+      </tr>
+      <tr>
+        <td><code>addTransaction(txn)</code></td>
+        <td>Sinh id mới, append</td>
+        <td><code>insert</code></td>
+      </tr>
+      <tr>
+        <td><code>removeTransaction(id)</code></td>
+        <td>Filter bỏ id</td>
+        <td><code>DELETE WHERE id = ?</code></td>
+      </tr>
+      <tr>
+        <td><code>updateTransaction(id, update)</code></td>
+        <td>Map + spread update</td>
+        <td>PATCH (chỉ các trường có trong <code>update</code>): date, amount, description, categoryId, status, notes, metadata</td>
+      </tr>
+      <tr>
+        <td><code>bulkUpdateTransactions(updates[])</code></td>
+        <td>Map qua txnMap</td>
+        <td>Batch 10 / lần: <code>Promise.all</code> trong chunk, lặp qua chunks tuần tự</td>
+      </tr>
+      <tr>
+        <td><code>clearAll()</code></td>
+        <td>Set <code>transactions = []</code></td>
+        <td><code>DELETE WHERE ledger_id = ?</code> — lấy ledger_id từ <code>txns[0].ledgerId</code></td>
+      </tr>
+      <tr>
+        <td><code>syncTransactions(limit=1000)</code></td>
+        <td>Replace toàn bộ state</td>
+        <td><code>SELECT * WHERE ledger_id = ? ORDER BY transaction_date DESC LIMIT ?</code></td>
+      </tr>
+      <tr>
+        <td><code>getFiltered()</code></td>
+        <td>Filter in-memory (không async)</td>
+        <td>Không gọi DB</td>
+      </tr>
+      <tr>
+        <td><code>setFilters(partial)</code></td>
+        <td>Merge filters</td>
+        <td>Không gọi DB</td>
+      </tr>
+      <tr>
+        <td><code>resetFilters()</code></td>
+        <td>Reset về DEFAULT_FILTERS</td>
+        <td>Không gọi DB</td>
+      </tr>
+    </table>
+
+    <h4 style="margin-top:12px;"><code>getFiltered()</code> — Logic lọc</h4>
+    <pre><code>// Thứ tự AND trong getFiltered():
+1. search → description + notes (case-insensitive, || logic)
 2. category !== 'all' → txn.categoryId === filters.category
 3. dateFrom → txn.transactionDate >= dateFrom
-4. dateTo → txn.transactionDate <= dateTo
-5. type → txn.transactionType === type</code></pre>
+4. dateTo   → txn.transactionDate <= dateTo
+5. type     → txn.transactionType === type
+// Sau đó: sort mặc định dateDesc (không dùng sortOption — sort ở component)</code></pre>
+    <p><strong>Lưu ý:</strong> <code>getFiltered()</code> trả về kết quả đã sort <code>dateDesc</code>. Sort theo <code>sortOption</code> được thực hiện lại trong <code>sorted useMemo</code> ở <code>TransactionsPage</code> — không xung đột vì JS sort có thể sort lại.</p>
+  </div>
+
+  <!-- ── 6.3 ── -->
+  <h3 id="db-recommendations">6.3 Đánh giá và đề xuất</h3>
+
+  <div class="warning">
+    <strong>🔴 Filter <code>filters.provider</code> chưa được kết nối</strong><br/>
+    FilterBar cho phép chọn provider nhưng <code>getFiltered()</code> không có logic lọc theo <code>filters.provider</code>. Người dùng thay đổi filter provider nhưng danh sách không thay đổi. Cần thêm điều kiện vào <code>getFiltered()</code>: <code>if (filters.provider !== 'all' &amp;&amp; t.paymentInstrumentId !== filters.provider) return false</code>.
+  </div>
+
+  <div class="warning">
+    <strong>🟡 Người dùng hardcode — chưa có multi-user</strong><br/>
+    <code>DEFAULT_USER = { initials: 'LT', color: '#059669' }</code> hardcode trong file. Column "Người dùng" luôn hiện "LT". Cần integrate với <code>ledger_members + profiles</code> (đã có trong /categories detail view).
+  </div>
+
+  <div class="warning">
+    <strong>🟡 <code>clearAll()</code> phụ thuộc vào <code>txns[0].ledgerId</code></strong><br/>
+    Nếu <code>transactions</code> state rỗng, <code>clearAll()</code> early return — không xóa được DB. Nếu giao dịch đầu tiên có <code>ledgerId</code> sai, sẽ xóa nhầm ledger. Nên lấy <code>ledgerId</code> từ <code>useLedgerStore.currentLedger.id</code> thay vì từ data.
+  </div>
+
   <div class="tip">
-    <strong>Lưu ý:</strong> <code>filters.provider</code> được định nghĩa trong <code>TransactionFilters</code> nhưng hiện tại <code>getFiltered()</code> chưa lọc theo provider — FilterBar cung cấp UI nhưng logic chưa được kết nối trong store.
+    <strong>💡 Đề xuất: Thêm filter provider vào <code>getFiltered()</code></strong><br/>
+    <pre><code>if (filters.provider !== 'all' && t.paymentInstrumentId !== filters.provider) return false</code></pre>
+    Thêm ngay sau điều kiện <code>filters.category</code> hiện tại.
   </div>
 
-  <h3 id="store-actions">6.3 Actions</h3>
+  <div class="tip">
+    <strong>💡 Đề xuất: Pagination reset khi filter thay đổi</strong><br/>
+    Hiện tại <code>page</code> chỉ reset khi <code>sorted.length</code> hoặc <code>picker</code> thay đổi. Khi thay đổi filter (provider, category, type), length thay đổi → <code>sorted.length</code> thay đổi → page reset tự động. OK về logic nhưng nên explicit: thêm <code>filters</code> vào dependency array của useEffect reset page.
+  </div>
+
+  <hr style="margin: 40px 0; border-color: #e2e8f0;" />
+  <p style="font-size: 12px; color: #94a3b8;">Tài liệu được tạo bằng phân tích trực tiếp source code. Không suy đoán thêm ngoài những gì có trong code.</p>
+</div>
+
+<!-- ============================================================
+     SECTION: CHANGELOG / QUẢN LÝ PHIÊN BẢN
+     ============================================================ -->
+<div class="container" style="margin-top: 0; padding-top: 0;">
+<hr style="border: 0; border-top: 4px solid #3b82f6; margin: 0 0 40px;" />
+
+<h1 id="changelog" style="color:#1d4ed8;">📋 Changelog – Quản lý phiên bản</h1>
+<p class="meta">Ghi chép mọi thay đổi liên quan đến trang <code>/transactions</code> trên nhánh <code>claude/affectionate-bohr-SPRYu</code>.</p>
+
+<!-- ── v1.0.0 ─────────────────────────────────────────── -->
+<div style="background:#fff;border:2px solid #16a34a;border-radius:12px;padding:24px 28px;margin:24px 0;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <span style="font-size:22px;font-weight:800;color:#15803d;">v1.0.0</span>
+    <span class="badge badge-green">Tài liệu gốc</span>
+    <span class="meta" style="margin:0;">2026-05-24 · Nhánh <code>claude/affectionate-bohr-SPRYu</code></span>
+  </div>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:0;">📄 1. Khởi tạo tài liệu</h3>
+  <p>Phân tích và tài liệu hóa toàn bộ trang <code>/transactions</code> từ source code (<code>app/transactions/page.tsx</code> – 833 dòng, <code>stores/transactions.ts</code> – 309 dòng).</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📊 2. Tổng hợp file phân tích</h3>
   <table>
-    <tr>
-      <th>Action</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>addTransactions(txns)</code></td>
-      <td>Thêm mảng giao dịch (từ import). Dedup theo id. Gắn ledgerId/workspaceId. Upsert Supabase.</td>
-    </tr>
-    <tr>
-      <td><code>addTransaction(txn)</code></td>
-      <td>Thêm 1 giao dịch (nhập thủ công). Tạo id mới. Insert Supabase.</td>
-    </tr>
-    <tr>
-      <td><code>removeTransaction(id)</code></td>
-      <td>Xóa theo id. Delete Supabase.</td>
-    </tr>
-    <tr>
-      <td><code>updateTransaction(id, update)</code></td>
-      <td>Cập nhật partial. Patch Supabase (chỉ các trường trong <code>update</code>).</td>
-    </tr>
-    <tr>
-      <td><code>bulkUpdateTransactions(updates[])</code></td>
-      <td>Cập nhật nhiều giao dịch cùng lúc (dùng cho auto-categorize). Batch 10 request/lần để tránh quá tải.</td>
-    </tr>
-    <tr>
-      <td><code>setFilters(partial)</code></td>
-      <td>Merge partial vào filters hiện tại.</td>
-    </tr>
-    <tr>
-      <td><code>setSortOption(option)</code></td>
-      <td>Đặt cách sắp xếp.</td>
-    </tr>
-    <tr>
-      <td><code>resetFilters()</code></td>
-      <td>Đặt lại filters về <code>DEFAULT_FILTERS</code>.</td>
-    </tr>
-    <tr>
-      <td><code>clearAll()</code></td>
-      <td>Xóa toàn bộ giao dịch của ledger hiện tại. Delete Supabase theo <code>ledger_id</code>.</td>
-    </tr>
-    <tr>
-      <td><code>getFiltered()</code></td>
-      <td>Trả về mảng giao dịch đã lọc (không sắp xếp theo sortOption — sort thực hiện ở component).</td>
-    </tr>
-    <tr>
-      <td><code>syncTransactions(limit?)</code></td>
-      <td>Fetch từ Supabase (mặc định 1000 giao dịch mới nhất của ledger hiện tại). Replace toàn bộ state.</td>
-    </tr>
+    <thead><tr><th>File</th><th>Nội dung phân tích</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/transactions/page.tsx</code></td><td>Toàn bộ UI, state, luồng, tất cả component nội bộ (SortDropdown, FilterBar, StatCard, BulkBar, TxnTableRow, DateGroupHeader, DetailPanel)</td></tr>
+      <tr><td><code>stores/transactions.ts</code></td><td>State, TransactionFilters interface, SortOption type, 10 actions, getFiltered(), Supabase sync, field mapping camelCase↔snake_case</td></tr>
+      <tr><td><code>components/ui/transaction-edit-modal.tsx</code></td><td>Modal chỉnh sửa (portal)</td></tr>
+      <tr><td><code>components/ui/date-range-picker.tsx</code></td><td>DateNavigator, PickerValue, defaultPickerValue()</td></tr>
+      <tr><td><code>lib/constants.ts</code></td><td>PROVIDERS, CATEGORIES — dùng để resolve labels trong row/DetailPanel</td></tr>
+    </tbody>
   </table>
 
-  <h3 id="store-supabase">6.4 Supabase sync</h3>
-  <div class="section-box">
-    <p><strong>Bảng:</strong> <code>transactions</code></p>
-    <p>Ánh xạ camelCase ↔ snake_case:</p>
-    <table>
-      <tr><th>TypeScript field</th><th>Supabase column</th></tr>
-      <tr><td><code>transactionDate</code></td><td><code>transaction_date</code></td></tr>
-      <tr><td><code>transactionType</code></td><td><code>transaction_type</code></td></tr>
-      <tr><td><code>paymentInstrumentId</code></td><td><code>payment_instrument_id</code></td></tr>
-      <tr><td><code>categoryId</code></td><td><code>category_id</code></td></tr>
-      <tr><td><code>ledgerId</code></td><td><code>ledger_id</code></td></tr>
-      <tr><td><code>workspaceId</code></td><td><code>workspace_id</code></td></tr>
-      <tr><td><code>organizationId</code></td><td><code>organization_id</code></td></tr>
-      <tr><td><code>currencyCode</code></td><td><code>currency_code</code></td></tr>
-      <tr><td><code>merchantName</code></td><td><code>merchant_name</code></td></tr>
-      <tr><td><code>isReconciled</code></td><td><code>is_reconciled</code></td></tr>
-      <tr><td><code>metadata</code></td><td><code>metadata</code> (jsonb)</td></tr>
-    </table>
-    <p><strong>addTransactions:</strong> dùng <code>upsert</code> (on conflict: id). Phù hợp để re-import không bị trùng.</p>
-    <p><strong>updateTransaction:</strong> <code>PATCH</code> chỉ các trường có trong <code>update</code> object.</p>
-    <p><strong>bulkUpdateTransactions:</strong> vòng lặp chunk 10, dùng <code>Promise.all</code> trong mỗi chunk.</p>
-    <p><strong>clearAll:</strong> <code>DELETE WHERE ledger_id = ?</code> — xóa tất cả giao dịch của ledger, không xóa ledger khác.</p>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="dataflow">7. Luồng dữ liệu</h2>
-
-  <div class="section-box">
-    <h4>Tải dữ liệu</h4>
-    <pre><code>App khởi động
-  → syncTransactions()  (gọi từ app-level, không nằm trong TransactionsPage)
-    → Supabase: SELECT * FROM transactions WHERE ledger_id = ? ORDER BY date DESC LIMIT 1000
-    → set({ transactions: mapped[] })</code></pre>
-
-    <h4 style="margin-top:12px;">Lọc và hiển thị</h4>
-    <pre><code>FilterBar → setFilters(partial) → store.filters thay đổi
-DateNavigator → setPicker(v) → picker local thay đổi
-SortDropdown → setSortOption(v) → store.sortOption thay đổi
-
-sorted = useMemo(() => {
-  const base = getFiltered()                        // áp dụng store.filters
-               .filter(tx => tx.date in picker)     // áp dụng DateNavigator
-  return base.sort(sortOption)                      // sắp xếp
-}, [getFiltered, sortOption, picker])
-
-paginated = sorted.slice((page-1)*30, page*30)
-groupedByDate = nhóm paginated theo ngày (nếu sort là date)</code></pre>
-
-    <h4 style="margin-top:12px;">Xem chi tiết</h4>
-    <pre><code>Click TxnTableRow → onView(txn) → setDetailTxn(txn)
-  → DetailPanel render (portal, slide từ phải)
-  → Click Chỉnh sửa → setEditingTxn(txn); setDetailTxn(null)
-    → TransactionEditModal render (portal)
-    → Save → updateTransaction(id, patch) → patch Supabase</code></pre>
-
-    <h4 style="margin-top:12px;">Chọn hàng loạt</h4>
-    <pre><code>Click checkbox hàng → toggleOne(id)
-Click checkbox header → toggleAll() (chỉ trang hiện tại)
-selected.size > 0 → BulkBar hiển thị
-Click Xóa → confirm() → deleteSelected()
-  → forEach id: removeTransaction(id) → Supabase DELETE</code></pre>
-  </div>
-
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="responsive">8. Responsive</h2>
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🐛 3. Vấn đề phát hiện khi phân tích</h3>
   <table>
-    <tr>
-      <th>Breakpoint</th><th>Thay đổi giao diện</th>
-    </tr>
-    <tr>
-      <td><strong>mobile</strong> (&lt; sm)</td>
-      <td>
-        — Ẩn column header<br>
-        — TxnTableRow: hiển thị 4 cột (checkbox, avatar, nội dung + ngày, số tiền)<br>
-        — DetailPanel: slide từ dưới (rounded-t-2xl)<br>
-        — SortDropdown: ẩn text "Sắp xếp theo"<br>
-        — BulkBar: các nút wrap<br>
-        — FilterBar mở rộng: 2 cột
-      </td>
-    </tr>
-    <tr>
-      <td><strong>sm</strong> (≥ 640px)</td>
-      <td>
-        — Column header xuất hiện<br>
-        — TxnTableRow: thêm cột Ngày, Người dùng, Danh mục<br>
-        — DetailPanel: slide từ phải, 420px rộng, toàn chiều cao<br>
-        — FilterBar mở rộng: 3 cột
-      </td>
-    </tr>
-    <tr>
-      <td><strong>lg</strong> (≥ 1024px)</td>
-      <td>
-        — StatCard: 4 cột (thay vì 2)<br>
-        — TxnTableRow: thêm cột Tài khoản<br>
-        — FilterBar mở rộng: 5 cột
-      </td>
-    </tr>
+    <thead><tr><th>Vấn đề</th><th>Mức độ</th><th>File</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>Filter <code>filters.provider</code> không kết nối trong <code>getFiltered()</code></td>
+        <td><span class="badge badge-red">🔴 Chức năng không hoạt động</span></td>
+        <td><code>stores/transactions.ts</code></td>
+      </tr>
+      <tr>
+        <td>Người dùng "LT" hardcode, không dùng data thực</td>
+        <td><span class="badge badge-yellow">🟡 UX</span></td>
+        <td><code>app/transactions/page.tsx</code></td>
+      </tr>
+      <tr>
+        <td><code>clearAll()</code> lấy <code>ledgerId</code> từ <code>txns[0]</code> — dễ lỗi</td>
+        <td><span class="badge badge-yellow">🟡 Tiềm ẩn</span></td>
+        <td><code>stores/transactions.ts</code></td>
+      </tr>
+      <tr>
+        <td>BulkBar: "Đổi tài khoản" và "Đổi danh mục" disabled, chưa implement</td>
+        <td><span class="badge badge-gray">ℹ Thiếu tính năng</span></td>
+        <td><code>app/transactions/page.tsx</code></td>
+      </tr>
+    </tbody>
   </table>
+</div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="changelog">9. Changelog</h2>
-  <div class="section-box">
-    <h4><span class="badge badge-green">v1.0.0</span> — 2026-05-24 (Tài liệu gốc)</h4>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Phân tích và tài liệu hóa toàn bộ trang <code>/transactions</code> và <code>useTransactionsStore</code> từ source code</li>
-      <li>Bao gồm: tất cả 13 component, 8 actions store, luồng dữ liệu, Supabase mapping, responsive behavior</li>
-    </ul>
-  </div>
-
+<hr style="margin: 40px 0; border-color: #e2e8f0;" />
+<p style="font-size: 12px; color: #94a3b8; padding: 0 0 40px;">
+  v1.0.0 — 2026-05-24 — Tài liệu khởi tạo: phân tích source code trang /transactions và useTransactionsStore
+</p>
 </div>
 </body>
 </html>

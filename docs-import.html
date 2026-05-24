@@ -17,12 +17,10 @@
     code { font-family: 'SF Mono', 'Fira Mono', monospace; font-size: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 4px; padding: 1px 5px; color: #0f172a; }
     pre { background: #0f172a; color: #e2e8f0; padding: 14px 16px; border-radius: 8px; overflow-x: auto; font-size: 12px; line-height: 1.7; margin: 10px 0; }
     pre code { background: none; border: none; padding: 0; color: inherit; font-size: inherit; }
-
     table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
     th { background: #f1f5f9; color: #374151; font-weight: 600; text-align: left; padding: 8px 12px; border: 1px solid #e2e8f0; }
     td { padding: 7px 12px; border: 1px solid #e2e8f0; vertical-align: top; color: #475569; }
     tr:nth-child(even) td { background: #f8fafc; }
-
     .badge { display: inline-block; font-size: 11px; font-weight: 600; border-radius: 9999px; padding: 1px 8px; }
     .badge-green  { background: #dcfce7; color: #166534; }
     .badge-blue   { background: #dbeafe; color: #1e40af; }
@@ -30,7 +28,6 @@
     .badge-red    { background: #fee2e2; color: #991b1b; }
     .badge-gray   { background: #f1f5f9; color: #475569; }
     .badge-purple { background: #f3e8ff; color: #6b21a8; }
-
     .section-box { background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px 22px; margin: 14px 0; }
     .route-tag { display: inline-block; font-family: monospace; font-size: 12px; background: #1e293b; color: #94a3b8; border-radius: 6px; padding: 2px 8px; }
     .warning { background: #fffbeb; border: 1px solid #fbbf24; border-radius: 8px; padding: 10px 14px; margin: 10px 0; color: #92400e; font-size: 13px; }
@@ -59,537 +56,613 @@
     <h3 style="margin-top:0">Mục lục</h3>
     <ul>
       <li><a href="#routes">1. Cấu trúc route</a></li>
-      <li><a href="#overview">2. Tổng quan luồng import</a></li>
-      <li><a href="#state">3. State quản lý</a></li>
-      <li><a href="#components">4. Các component</a>
+      <li><a href="#step1">2. Bước 1 – Thiết lập <code>/import</code></a>
         <ul>
-          <li><a href="#stepbar">4.1 StepBar</a></li>
-          <li><a href="#provider-card">4.2 ProviderCard</a></li>
-          <li><a href="#region-tabs">4.3 Tab khu vực (RegionTabs)</a></li>
-          <li><a href="#file-drop">4.4 Khu vực kéo-thả file (FileDrop)</a></li>
-          <li><a href="#autodetect-banner">4.5 Banner tự động nhận diện (AutoDetect)</a></li>
-          <li><a href="#col-mapping">4.6 Ánh xạ cột CSV (ColSelect)</a></li>
-          <li><a href="#error-banner">4.7 Thông báo lỗi (ErrorBanner)</a></li>
-          <li><a href="#preview-table">4.8 Bảng xem trước (PreviewTable)</a></li>
-          <li><a href="#preview-row">4.9 Hàng xem trước (PreviewRow)</a></li>
-          <li><a href="#summary-strip">4.10 Tóm tắt tài chính (SummaryStrip)</a></li>
-          <li><a href="#bulk-toolbar">4.11 Thanh chọn tất cả + đếm</a></li>
-          <li><a href="#confirm-footer">4.12 Footer xác nhận import</a></li>
-          <li><a href="#success-banner">4.13 Banner thành công</a></li>
+          <li><a href="#header-stepbar">2.1 PageHeader + StepBar</a></li>
+          <li><a href="#region-tabs">2.2 Tab khu vực (RegionTabs)</a></li>
+          <li><a href="#provider-grid">2.3 Lưới nhà cung cấp (ProviderCard)</a></li>
+          <li><a href="#file-drop">2.4 Khu vực kéo-thả file (FileDrop)</a></li>
+          <li><a href="#autodetect">2.5 Banner tự động nhận diện (AutoDetect)</a></li>
+          <li><a href="#col-mapping">2.6 Ánh xạ cột CSV (ColSelect)</a></li>
+          <li><a href="#error-banner">2.7 Thông báo lỗi (ErrorBanner)</a></li>
         </ul>
       </li>
+      <li><a href="#step2">3. Bước 2 – Xem trước &amp; xác nhận (Review)</a>
+        <ul>
+          <li><a href="#summary-strip">3.1 Tóm tắt tài chính (SummaryStrip)</a></li>
+          <li><a href="#bulk-toolbar">3.2 Thanh chọn + đếm</a></li>
+          <li><a href="#preview-table">3.3 Bảng xem trước (PreviewTable / PreviewRow)</a></li>
+          <li><a href="#confirm-footer">3.4 Footer xác nhận (ConfirmFooter)</a></li>
+        </ul>
+      </li>
+      <li><a href="#success">4. Banner thành công</a></li>
       <li><a href="#providers">5. Danh sách nhà cung cấp (PROVIDERS)</a></li>
-      <li><a href="#parsers">6. Parser &amp; tự động nhận diện</a>
+      <li><a href="#parsers">6. Parser engine</a>
         <ul>
-          <li><a href="#auto-detect">6.1 autoDetectProvider()</a></li>
-          <li><a href="#detect-cols">6.2 detectColumnsFromCSV()</a></li>
-          <li><a href="#parse-file">6.3 parseFile()</a></li>
+          <li><a href="#auto-detect-fn">6.1 <code>autoDetectProvider()</code></a></li>
+          <li><a href="#detect-cols-fn">6.2 <code>detectColumnsFromCSV()</code></a></li>
+          <li><a href="#parse-file-fn">6.3 <code>parseFile()</code></a></li>
         </ul>
       </li>
-      <li><a href="#dataflow">7. Luồng dữ liệu</a></li>
-      <li><a href="#store">8. Kết nối Store (useTransactionsStore)</a></li>
-      <li><a href="#changelog">9. Changelog</a></li>
+      <li><a href="#state">7. State quản lý</a></li>
+      <li><a href="#dataflow">8. Luồng dữ liệu</a></li>
+      <li><a href="#db-section">9. Database – phân tích bảng liên quan</a>
+        <ul>
+          <li><a href="#table-transactions-import">9.1 Bảng <code>transactions</code></a></li>
+        </ul>
+      </li>
     </ul>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <h2 id="routes">1. Cấu trúc route</h2>
   <table>
-    <tr>
-      <th>Route</th><th>File nguồn</th><th>Component render</th><th>Ghi chú</th>
-    </tr>
+    <tr><th>Route</th><th>File nguồn</th><th>Component render</th><th>Ghi chú</th></tr>
     <tr>
       <td><code>/import</code></td>
       <td><code>app/import/page.tsx</code></td>
       <td><code>ImportPage</code></td>
-      <td>Client component, 671 dòng</td>
+      <td>Client component, 671 dòng, toàn bộ logic trong 1 file</td>
     </tr>
     <tr>
       <td>—</td>
       <td><code>features/import/parsers.ts</code></td>
       <td><code>parseFile, detectColumnsFromCSV, autoDetectProvider</code></td>
-      <td>Parser engine cho CSV + PDF</td>
+      <td>Parser engine, import từ page</td>
     </tr>
   </table>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="overview">2. Tổng quan luồng import</h2>
-  <p>Trang <code>/import</code> cung cấp quy trình nhập giao dịch từ file CSV hoặc PDF theo 2 bước:</p>
-
-  <div class="section-box">
-    <h4>Bước 1 — Setup (Thiết lập)</h4>
-    <ol style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Người dùng chọn <strong>khu vực</strong> (Nhật Bản 🇯🇵 / Việt Nam 🇻🇳 / Toàn cầu 🌐)</li>
-      <li>Chọn <strong>nhà cung cấp</strong> phù hợp từ danh sách <code>IMPORT_PROVIDERS</code></li>
-      <li>Kéo-thả hoặc click để chọn file <strong>CSV / PDF</strong></li>
-      <li>Hệ thống tự động nhận diện provider từ header CSV → hiển thị banner gợi ý</li>
-      <li>Nếu là <code>generic_csv</code>: hiển thị UI <strong>ánh xạ cột</strong> cho ngày/mô tả/số tiền</li>
-    </ol>
-    <h4 style="margin-top:12px;">Bước 2 — Review (Xem trước)</h4>
-    <ol style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Bảng xem trước liệt kê tất cả giao dịch được parse</li>
-      <li>Người dùng tick/bỏ tick từng giao dịch (mặc định: tất cả được chọn)</li>
-      <li>SummaryStrip hiển thị tổng thu/chi/cân đối</li>
-      <li>Nhấn "Nhập X giao dịch" → <code>addTransactions()</code> vào Zustand store + upsert Supabase</li>
-      <li>Banner thành công xuất hiện, cung cấp nút "Nhập thêm" để reset</li>
-    </ol>
-  </div>
-
-  <div class="tip">
-    <strong>Lưu ý:</strong> Biến <code>step</code> được tính tự động:
-    <code>step = result &amp;&amp; !confirmed ? 'review' : 'setup'</code>.
-    Không có state <code>step</code> riêng — nó phụ thuộc vào <code>result</code> và <code>confirmed</code>.
-  </div>
+  <p>Trang import có 2 bước, được xác định bởi biến computed <code>step</code>:</p>
+  <pre><code>const step: PageStep = result && !confirmed ? 'review' : 'setup'</code></pre>
+  <p>Không có state <code>step</code> riêng — tự động chuyển bước khi <code>result</code> hoặc <code>confirmed</code> thay đổi.</p>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="state">3. State quản lý</h2>
-  <p>Tất cả state nằm trong component <code>ImportPage</code> (không dùng Zustand cho UI import):</p>
-  <table>
-    <tr>
-      <th>State</th><th>Kiểu dữ liệu</th><th>Giá trị ban đầu</th><th>Mô tả</th>
-    </tr>
-    <tr>
-      <td><code>region</code></td>
-      <td><code>'jp' | 'vn' | 'global'</code></td>
-      <td><code>'jp'</code></td>
-      <td>Khu vực đang chọn để lọc danh sách provider</td>
-    </tr>
-    <tr>
-      <td><code>provider</code></td>
-      <td><code>PaymentProvider</code></td>
-      <td><code>'rakuten_pay'</code></td>
-      <td>Provider hiện tại được chọn</td>
-    </tr>
-    <tr>
-      <td><code>dragging</code></td>
-      <td><code>boolean</code></td>
-      <td><code>false</code></td>
-      <td>Đang kéo file vào vùng drop hay không</td>
-    </tr>
-    <tr>
-      <td><code>loading</code></td>
-      <td><code>boolean</code></td>
-      <td><code>false</code></td>
-      <td>Đang parse file</td>
-    </tr>
-    <tr>
-      <td><code>file</code></td>
-      <td><code>File | null</code></td>
-      <td><code>null</code></td>
-      <td>File đã chọn</td>
-    </tr>
-    <tr>
-      <td><code>result</code></td>
-      <td><code>ImportResult | null</code></td>
-      <td><code>null</code></td>
-      <td>Kết quả parse: danh sách giao dịch + lỗi</td>
-    </tr>
-    <tr>
-      <td><code>error</code></td>
-      <td><code>string | null</code></td>
-      <td><code>null</code></td>
-      <td>Chuỗi lỗi hiển thị cho người dùng</td>
-    </tr>
-    <tr>
-      <td><code>detected</code></td>
-      <td><code>PaymentProvider | null</code></td>
-      <td><code>null</code></td>
-      <td>Provider được tự động nhận diện từ CSV headers</td>
-    </tr>
-    <tr>
-      <td><code>mapping</code></td>
-      <td><code>ColumnMapping | null</code></td>
-      <td><code>null</code></td>
-      <td>Ánh xạ cột tự động phát hiện (chỉ dùng với generic_csv)</td>
-    </tr>
-    <tr>
-      <td><code>userMapping</code></td>
-      <td><code>Partial&lt;ColumnMapping&gt;</code></td>
-      <td><code>{}</code></td>
-      <td>Ghi đè ánh xạ cột do người dùng chỉnh thủ công</td>
-    </tr>
-    <tr>
-      <td><code>confirmed</code></td>
-      <td><code>boolean</code></td>
-      <td><code>false</code></td>
-      <td>Đã xác nhận import thành công</td>
-    </tr>
-    <tr>
-      <td><code>selected</code></td>
-      <td><code>Set&lt;string&gt;</code></td>
-      <td><code>new Set()</code></td>
-      <td>Set chứa id các giao dịch được tick (mặc định: tất cả)</td>
-    </tr>
-    <tr>
-      <td><code>showErrors</code></td>
-      <td><code>boolean</code></td>
-      <td><code>false</code></td>
-      <td>Toggle hiển thị danh sách cảnh báo parse</td>
-    </tr>
-  </table>
+  <h2 id="step1">2. Bước 1 – Thiết lập <span class="route-tag">/import</span></h2>
+  <p>Khi <code>step === 'setup'</code>: hiển thị tab khu vực, lưới provider, và vùng drag-drop file. Các component dưới đây luôn visible (không phụ thuộc bước).</p>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="components">4. Các component</h2>
-
-  <h3 id="stepbar">4.1 StepBar</h3>
+  <!-- ── 2.1 ── -->
+  <h3 id="header-stepbar">2.1 PageHeader + StepBar</h3>
   <div class="section-box">
-    <p><strong>Props:</strong> <code>step: PageStep, file: File | null, provider: PaymentProvider, t: any</code></p>
-    <p>Thanh chỉ báo tiến trình gồm 2 bước: <strong>Thiết lập</strong> và <strong>Xem trước</strong>, nối bởi mũi tên <code>ArrowRight</code>.</p>
-    <p>Mỗi bước có trạng thái:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li><strong>done</strong> (bước 1 đã hoàn tất): nền xanh nhạt, số được thay bằng ✓, hiển thị tên provider + tên file rút gọn</li>
-      <li><strong>current</strong> (bước đang hoạt động): nền brand-600 (tím xanh), chữ trắng</li>
-      <li><strong>upcoming</strong>: nền xám, chữ mờ</li>
-    </ul>
-  </div>
-
-  <h3 id="provider-card">4.2 ProviderCard</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>p: ProviderMeta, selected: boolean, onClick: () =&gt; void, lang: string</code></p>
-    <p>Card hiển thị thông tin một nhà cung cấp:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Avatar hình vuông màu thương hiệu, hiển thị chữ viết tắt (<code>initials</code>)</li>
-      <li>Tên provider (<code>label</code>)</li>
-      <li>Mô tả ngắn theo ngôn ngữ hiện tại (<code>descVi / descJa / descEn</code>)</li>
-      <li>Badges định dạng file hỗ trợ (<code>CSV</code>, <code>PDF</code>)</li>
-    </ul>
-    <p>Khi được chọn: viền và nền theo màu thương hiệu của provider (<code>p.color</code>).</p>
-    <pre><code>// Border + background khi selected:
-style={selected ? { borderColor: p.color, backgroundColor: `${p.color}10` } : {}}</code></pre>
-  </div>
-
-  <h3 id="region-tabs">4.3 Tab khu vực (RegionTabs)</h3>
-  <div class="section-box">
-    <p>3 tab nằm ngang: <strong>🇯🇵 Nhật Bản</strong> / <strong>🇻🇳 Việt Nam</strong> / <strong>🌐 Toàn cầu</strong></p>
-    <p>Khi chuyển tab: lọc lại <code>filteredProviders</code> và tự động chọn provider đầu tiên trong danh sách.</p>
-    <p>Logic lọc:</p>
-    <pre><code>const filteredProviders = IMPORT_PROVIDERS.filter((p) =>
-  region === 'global' ? true : p.region === region || p.region === 'global'
-)</code></pre>
-    <p>Tab "Toàn cầu" hiển thị tất cả provider.</p>
-  </div>
-
-  <h3 id="file-drop">4.4 Khu vực kéo-thả file (FileDrop)</h3>
-  <div class="section-box">
-    <p>Vùng <code>div</code> lớn chiếm toàn bộ chiều ngang, hỗ trợ:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li><strong>Click</strong> → mở hộp thoại chọn file (<code>fileInputRef.current?.click()</code>)</li>
-      <li><strong>Drag &amp; Drop</strong> → <code>onDrop</code> lấy file từ <code>e.dataTransfer.files[0]</code></li>
-    </ul>
-    <p>3 trạng thái hình ảnh:</p>
     <table>
-      <tr><th>Trạng thái</th><th>Border</th><th>Nền</th></tr>
-      <tr><td>Đang kéo (<code>dragging</code>)</td><td>brand-500</td><td>brand-50</td></tr>
-      <tr><td>Đang xử lý (<code>loading</code>)</td><td>border-border</td><td>surface-alt + cursor-wait</td></tr>
-      <tr><td>Bình thường</td><td>border-border (hover: brand-300)</td><td>white</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tiêu đề trang</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Từ <code>t.import.title</code> và <code>t.import.subtitle</code> qua i18n.</td>
+      </tr>
+      <tr>
+        <td>StepBar – Bước 1 "Thiết lập"</td>
+        <td><span class="static-label">Tĩnh – chỉ báo</span></td>
+        <td>Hiển thị trạng thái <strong>current</strong> (nền brand-600, trắng) khi ở bước 1. Khi chuyển sang bước 2: trạng thái <strong>done</strong> (nền xanh nhạt, số thay bằng ✓), hiện tên provider + tên file rút gọn (≤16 ký tự).</td>
+      </tr>
+      <tr>
+        <td>StepBar – Bước 2 "Xem trước"</td>
+        <td><span class="static-label">Tĩnh – chỉ báo</span></td>
+        <td>Trạng thái <strong>upcoming</strong> (nền xám) khi ở bước 1. Trạng thái <strong>current</strong> khi <code>result</code> có data và <code>!confirmed</code>.</td>
+      </tr>
+      <tr>
+        <td>Mũi tên ArrowRight giữa 2 bước</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Decorator, không có chức năng.</td>
+      </tr>
     </table>
-    <p>Khi <code>loading</code>: hiển thị spinner thay cho icon <code>Upload</code>.</p>
-    <p><code>&lt;input type="file"&gt;</code> ẩn (<code>className="sr-only"</code>), <code>accept</code> được tạo từ <code>providerMeta?.fileTypes</code>.</p>
   </div>
 
-  <h3 id="autodetect-banner">4.5 Banner tự động nhận diện (AutoDetect)</h3>
+  <!-- ── 2.2 ── -->
+  <h3 id="region-tabs">2.2 Tab khu vực (RegionTabs)</h3>
+  <div class="section-box">
+    <p>Chỉ hiển thị khi <code>step === 'setup'</code>. 3 tab ngang trong container nền surface-alt.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Tab 🇯🇵 Nhật Bản</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>region = 'jp'</code> → lọc providers có <code>region === 'jp'</code> hoặc <code>'global'</code>. Tự động chọn provider đầu tiên trong kết quả lọc.</td>
+      </tr>
+      <tr>
+        <td>Tab 🇻🇳 Việt Nam</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>region = 'vn'</code> → lọc providers có <code>region === 'vn'</code> hoặc <code>'global'</code>.</td>
+      </tr>
+      <tr>
+        <td>Tab 🌐 Toàn cầu</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>region = 'global'</code> → hiển thị <strong>tất cả</strong> providers không phân biệt region.</td>
+      </tr>
+    </table>
+    <p>Logic lọc: <code>IMPORT_PROVIDERS.filter(p =&gt; region === 'global' ? true : p.region === region || p.region === 'global')</code></p>
+  </div>
+
+  <!-- ── 2.3 ── -->
+  <h3 id="provider-grid">2.3 Lưới nhà cung cấp (ProviderCard)</h3>
+  <div class="section-box">
+    <p>Chỉ hiển thị khi <code>step === 'setup'</code>. Grid responsive: 1 cột → 2 cột (sm) → 3 cột (lg).</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>ProviderCard – Click chọn</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Đặt <code>provider = p.value</code>. Card đang chọn: viền và nền theo <code>p.color</code> (<code>borderColor: p.color, backgroundColor: `${p.color}10`</code>).</td>
+      </tr>
+      <tr>
+        <td>Avatar hình vuông</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Nền màu <code>p.color</code>, chữ viết tắt <code>p.initials</code> (VD: "RP" cho Rakuten Pay).</td>
+      </tr>
+      <tr>
+        <td>Tên provider</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>p.label</code></td>
+      </tr>
+      <tr>
+        <td>Mô tả ngắn</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>p.descVi / p.descJa / p.descEn</code> theo ngôn ngữ hiện tại.</td>
+      </tr>
+      <tr>
+        <td>Badge định dạng file</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Hiển thị từng file type trong <code>p.fileTypes</code> (VD: <code>CSV</code>, <code>PDF</code>). Uppercase.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.4 ── -->
+  <h3 id="file-drop">2.4 Khu vực kéo-thả file (FileDrop)</h3>
+  <div class="section-box">
+    <p>Chỉ hiển thị khi <code>step === 'setup'</code>. Vùng <code>div</code> lớn, border dashed.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Click vào vùng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>fileInputRef.current?.click()</code> → mở hộp thoại chọn file. Bị disable khi <code>loading = true</code>.</td>
+      </tr>
+      <tr>
+        <td>Kéo file vào (Drag over)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>onDragOver</code>: đặt <code>dragging = true</code> → border đổi sang brand-500, nền brand-50. <code>onDragLeave</code>: reset <code>dragging = false</code>.</td>
+      </tr>
+      <tr>
+        <td>Thả file (Drop)</td>
+        <td><span class="interactive-label">Tương tác – xử lý file</span></td>
+        <td><code>onDrop</code>: lấy <code>e.dataTransfer.files[0]</code> → gọi <code>processFile(f)</code>.</td>
+      </tr>
+      <tr>
+        <td><code>&lt;input type="file"&gt;</code> ẩn</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>className="sr-only"</code>. <code>accept</code> được tạo từ <code>providerMeta?.fileTypes.map(t =&gt; `.${t}`).join(',')</code>. <code>onChange</code>: gọi <code>processFile(f)</code>.</td>
+      </tr>
+      <tr>
+        <td>Icon Upload / Spinner</td>
+        <td><span class="static-label">Tĩnh – trạng thái</span></td>
+        <td>Khi <code>!loading</code>: icon <code>Upload</code>. Khi <code>loading</code>: spinner tròn border-brand-500.</td>
+      </tr>
+      <tr>
+        <td>Text hướng dẫn + hint AI</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Text từ i18n: "Kéo thả file vào đây", định dạng hỗ trợ. Dòng cuối: icon <code>Sparkles</code> + "Tự động nhận diện định dạng".</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ── 2.5 ── -->
+  <h3 id="autodetect">2.5 Banner tự động nhận diện (AutoDetect)</h3>
   <div class="section-box">
     <p>Hiển thị khi: <code>detected !== null &amp;&amp; detected !== provider</code> (phát hiện provider khác với provider đang chọn).</p>
-    <p>Nội dung: icon <code>Sparkles</code> + thông báo provider được phát hiện + nút <strong>Xác nhận</strong> để áp dụng.</p>
-    <p>Nhấn Xác nhận: <code>setProvider(detected); setDetected(null)</code></p>
-    <div class="tip">Hệ thống đọc 4KB đầu của file, phân tích headers CSV để tự động nhận diện — không cần người dùng chọn thủ công.</div>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Banner (nền brand-50, viền brand-200)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Icon <code>Sparkles</code> + tên provider được phát hiện tự động (<code>PROVIDERS.find(p.value === detected)?.label</code>).</td>
+      </tr>
+      <tr>
+        <td>Nút "Xác nhận"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setProvider(detected); setDetected(null)</code> — áp dụng provider tự động phát hiện.</td>
+      </tr>
+    </table>
+    <p>Cơ chế: đọc 4KB đầu file → decode headers → gọi <code>autoDetectProvider(headers)</code> → nếu kết quả khác <code>provider</code> hiện tại → đặt <code>detected</code>.</p>
   </div>
 
-  <h3 id="col-mapping">4.6 Ánh xạ cột CSV (ColSelect)</h3>
+  <!-- ── 2.6 ── -->
+  <h3 id="col-mapping">2.6 Ánh xạ cột CSV (ColSelect)</h3>
   <div class="section-box">
     <p>Chỉ hiển thị khi: <code>mapping !== null &amp;&amp; provider === 'generic_csv' &amp;&amp; step === 'setup'</code></p>
-    <p>Component <code>ColSelect</code>: <code>label + &lt;select&gt;</code> native, options là tất cả headers của CSV.</p>
-    <p>3 trường ánh xạ:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li><strong>Ngày</strong> (<code>dateCol</code>)</li>
-      <li><strong>Mô tả</strong> (<code>descCol</code>)</li>
-      <li><strong>Số tiền</strong> (<code>amountCol</code>) — hoặc nếu không có: <strong>Ghi nợ</strong> (<code>debitCol</code>) + <strong>Ghi có</strong> (<code>creditCol</code>)</li>
-    </ul>
-    <p>Sau khi điều chỉnh: nhấn nút <strong>Parse lại</strong> → gọi <code>reParseWithMapping()</code>.</p>
-    <p>Logic xử lý: <code>userMapping</code> ghi đè lên <code>mapping</code> (auto-detect), merge khi truyền vào <code>parseFile()</code>.</p>
-  </div>
-
-  <h3 id="error-banner">4.7 Thông báo lỗi (ErrorBanner)</h3>
-  <div class="section-box">
-    <p>Hiển thị khi <code>error !== null</code>. Nền đỏ nhạt, icon <code>AlertCircle</code>.</p>
-    <p>Lỗi nhiều dòng được split bởi <code>\n</code>, mỗi dòng là một <code>&lt;p&gt;</code>.</p>
-    <p>Nút X đóng banner: <code>setError(null)</code>.</p>
-  </div>
-
-  <h3 id="preview-table">4.8 Bảng xem trước (PreviewTable)</h3>
-  <div class="section-box">
-    <p>Hiển thị khi: <code>result &amp;&amp; result.transactions.length &gt; 0 &amp;&amp; !confirmed</code></p>
-    <p>Bảng <code>&lt;table&gt;</code> có <code>max-h-[400px] overflow-y-auto</code> (cuộn dọc). Header cố định bằng <code>sticky top-0</code>.</p>
-    <p><strong>Các cột:</strong></p>
     <table>
-      <tr><th>Cột</th><th>Nội dung</th><th>Responsive</th></tr>
-      <tr><td>Checkbox</td><td>Tick/bỏ tick từng giao dịch</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Ngày</td><td>Ngày giao dịch (dd/MM/yyyy)</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Loại</td><td>Badge tiền vào / chi ra</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Nội dung</td><td>Mô tả giao dịch (truncate 180px)</td><td>Luôn hiển thị</td></tr>
-      <tr><td>Danh mục</td><td>Emoji + tên danh mục (nếu có)</td><td>Ẩn trên mobile</td></tr>
-      <tr><td>Số tiền</td><td>±Số tiền (màu xanh/đỏ)</td><td>Luôn hiển thị</td></tr>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Header (icon Globe + tiêu đề)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Tiêu đề "Ánh xạ cột" + gợi ý nhỏ bên phải.</td>
+      </tr>
+      <tr>
+        <td>ColSelect "Ngày" (<code>dateCol</code>)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>&lt;select&gt;</code> native, options = tất cả headers CSV. Thay đổi → <code>setUserMapping(m =&gt; ({...m, dateCol: v}))</code>.</td>
+      </tr>
+      <tr>
+        <td>ColSelect "Mô tả" (<code>descCol</code>)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Tương tự dateCol.</td>
+      </tr>
+      <tr>
+        <td>ColSelect "Số tiền" (<code>amountCol</code>)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Hiện khi <code>mapping.amountCol !== null</code>. Khi chọn: reset <code>debitCol/creditCol = null</code>.</td>
+      </tr>
+      <tr>
+        <td>ColSelect "Ghi nợ" (<code>debitCol</code>) + "Ghi có" (<code>creditCol</code>)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Hiện khi <code>mapping.amountCol === null</code>. Dành cho file có 2 cột riêng. Khi chọn: reset <code>amountCol = null</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút "Parse lại"</td>
+        <td><span class="interactive-label">Tương tác – xử lý file</span></td>
+        <td>Gọi <code>reParseWithMapping()</code>: parse lại file với <code>userMapping</code> hiện tại. Disabled khi <code>loading</code>.</td>
+      </tr>
+    </table>
+    <p>Logic merge: <code>userMapping</code> ghi đè lên <code>mapping</code> (auto-detect). Cả hai được truyền vào <code>parseFile(file, 'generic_csv', userMapping)</code>.</p>
+  </div>
+
+  <!-- ── 2.7 ── -->
+  <h3 id="error-banner">2.7 Thông báo lỗi (ErrorBanner)</h3>
+  <div class="section-box">
+    <p>Hiển thị khi: <code>error !== null</code>. Nền red-50, viền red-200.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Icon <code>AlertCircle</code> + nội dung lỗi</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Lỗi nhiều dòng: split bởi <code>\n</code>, mỗi dòng là một <code>&lt;p&gt;</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút X đóng</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td><code>setError(null)</code></td>
+      </tr>
     </table>
   </div>
 
-  <h3 id="preview-row">4.9 Hàng xem trước (PreviewRow)</h3>
-  <div class="section-box">
-    <p><strong>Props:</strong> <code>tx: Transaction, checked: boolean, onToggle: () =&gt; void, t: any</code></p>
-    <p>Khi không được tick (<code>!checked</code>): opacity 40% — giao dịch sẽ không được import.</p>
-    <p>Badge loại:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Thu vào: <code>TrendingUp</code> + nền brand-50, chữ brand-700</li>
-      <li>Chi ra: <code>TrendingDown</code> + nền red-50, chữ red-600</li>
-    </ul>
-    <p>Số tiền: xanh lá (<code>text-brand-600</code>) cho income, đỏ (<code>text-red-500</code>) cho expense.</p>
-  </div>
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="step2">3. Bước 2 – Xem trước &amp; xác nhận <span class="route-tag">review</span></h2>
+  <p>Hiển thị khi: <code>result &amp;&amp; result.transactions.length &gt; 0 &amp;&amp; !confirmed</code>. Bố cục trong một card trắng duy nhất.</p>
 
-  <h3 id="summary-strip">4.10 Tóm tắt tài chính (SummaryStrip)</h3>
+  <!-- ── 3.1 ── -->
+  <h3 id="summary-strip">3.1 Tóm tắt tài chính (SummaryStrip)</h3>
   <div class="section-box">
-    <p>4 ô thống kê nằm ngang (grid chia 4, chia cách bằng đường dọc), hiển thị phía trên bảng:</p>
+    <p><strong>Loại:</strong> <span class="static-label">Tĩnh – chỉ hiển thị.</span> 4 ô chia cột, viền dọc phân cách. Tính toán bằng IIFE trong JSX, không có state riêng.</p>
     <table>
-      <tr><th>Ô</th><th>Nội dung</th><th>Màu</th></tr>
-      <tr><td>Tổng số</td><td>Số lượng giao dịch được parse</td><td>text-primary (đen)</td></tr>
-      <tr><td>Thu vào</td><td>Tổng số tiền income (+)</td><td>brand-600 (xanh lá)</td></tr>
-      <tr><td>Chi ra</td><td>Tổng số tiền expense (−)</td><td>red-500 (đỏ)</td></tr>
-      <tr><td>Cân đối</td><td>Thu − Chi (net)</td><td>Xanh nếu ≥ 0, Đỏ nếu &lt; 0</td></tr>
+      <tr><th>Ô</th><th>Tính từ đâu</th><th>Màu</th></tr>
+      <tr><td>Tổng giao dịch</td><td><code>txns.length</code></td><td>text-primary</td></tr>
+      <tr><td>Thu vào</td><td><code>txns.filter(income).sum(amount)</code></td><td>brand-600 (xanh lá)</td></tr>
+      <tr><td>Chi ra</td><td><code>txns.filter(expense).sum(Math.abs(amount))</code></td><td>red-500 (đỏ)</td></tr>
+      <tr><td>Cân đối (net)</td><td><code>income − expense</code></td><td>Xanh lá nếu ≥ 0, Đỏ nếu &lt; 0</td></tr>
     </table>
-    <p>Được tính trực tiếp trong JSX (<code>IIFE</code>), không có state riêng.</p>
   </div>
 
-  <h3 id="bulk-toolbar">4.11 Thanh chọn tất cả + đếm</h3>
+  <!-- ── 3.2 ── -->
+  <h3 id="bulk-toolbar">3.2 Thanh chọn + đếm</h3>
   <div class="section-box">
-    <p>Nằm giữa SummaryStrip và bảng. Gồm:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Checkbox chọn tất cả: 3 trạng thái — all checked (xanh đặc), partial (xanh nhạt + dấu −), unchecked (trắng)</li>
-      <li>Đếm: <code>selectedCount / result.transactions.length đã chọn</code></li>
-      <li>Nút hiển thị số cảnh báo parse (nếu có), toggle <code>showErrors</code></li>
-      <li>Nút Reset (góc phải): gọi <code>handleReset()</code></li>
-    </ul>
-    <p>Khi <code>showErrors</code>: vùng mở rộng hiển thị danh sách cảnh báo (nền amber-50, cuộn tối đa 112px).</p>
+    <p>Nằm giữa SummaryStrip và bảng xem trước.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Checkbox chọn tất cả (3 trạng thái)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>All checked (brand-600 đặc), partial (<code>selectedCount &gt; 0 &lt; total</code>: brand-200 + dấu −), unchecked (trắng). Click → <code>toggleAll()</code> → toggle toàn bộ giao dịch.</td>
+      </tr>
+      <tr>
+        <td>Đếm đã chọn</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>selectedCount / result.transactions.length đã chọn</code></td>
+      </tr>
+      <tr>
+        <td>Nút cảnh báo parse</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Chỉ hiện khi <code>result.errors.length &gt; 0</code>. Click → toggle <code>showErrors</code>. Text: "N cảnh báo".</td>
+      </tr>
+      <tr>
+        <td>Vùng danh sách cảnh báo (mở rộng)</td>
+        <td><span class="static-label">Tĩnh khi mở</span></td>
+        <td>Hiện khi <code>showErrors</code>. Nền amber-50, mỗi lỗi là một <code>&lt;p&gt;</code>. Tối đa 112px height, cuộn dọc.</td>
+      </tr>
+      <tr>
+        <td>Nút Reset (icon RotateCcw)</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Gọi <code>handleReset()</code> → xóa toàn bộ state và quay về bước 1.</td>
+      </tr>
+    </table>
   </div>
 
-  <h3 id="confirm-footer">4.12 Footer xác nhận import</h3>
+  <!-- ── 3.3 ── -->
+  <h3 id="preview-table">3.3 Bảng xem trước (PreviewTable / PreviewRow)</h3>
   <div class="section-box">
-    <p>Nằm dưới cùng của bảng xem trước. Responsive (flex-col trên mobile, flex-row trên tablet+).</p>
-    <p>Bên trái: thông báo số giao dịch sẽ được import, hoặc "Hãy chọn ít nhất 1 giao dịch".</p>
-    <p>Bên phải: nút <strong>Reset</strong> (secondary) + nút <strong>Nhập N giao dịch</strong> (primary, disabled khi <code>selectedCount === 0</code>).</p>
-    <p>Khi nhấn Nhập:</p>
-    <pre><code>function handleConfirm() {
-  const toAdd = result.transactions.filter((tx) => selected.has(tx.id))
-  addTransactions(toAdd)   // Zustand store + Supabase upsert
-  setConfirmed(true)
-}</code></pre>
+    <p>Bảng <code>&lt;table&gt;</code> có <code>max-h-[400px] overflow-y-auto</code>. Header cố định bằng <code>sticky top-0 bg-surface-alt z-10</code>.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Header bảng (tất cả cột)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Cột: Checkbox / Ngày / Loại / Nội dung / Danh mục (ẩn mobile) / Số tiền.</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Checkbox</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Click → <code>toggleRow(tx.id)</code>. Khi không tick: toàn hàng <code>opacity-40</code> (sẽ không được import).</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Ngày</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>fmtDate(tx.transactionDate)</code> → <code>DD/MM/YYYY</code>.</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Badge loại</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Thu vào: <code>TrendingUp</code> + nền brand-50, chữ brand-700. Chi ra: <code>TrendingDown</code> + nền red-50, chữ red-600.</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Nội dung</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td><code>tx.description</code>, truncate tối đa 180px.</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Danh mục</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Emoji + tên từ <code>CATEGORIES.find(c.value === tx.categoryId)</code>. Ẩn trên mobile.</td>
+      </tr>
+      <tr>
+        <td>PreviewRow – Số tiền</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Xanh lá (<code>text-brand-600</code>) cho income: <code>+amount</code>. Đỏ (<code>text-red-500</code>) cho expense: <code>−amount</code>.</td>
+      </tr>
+    </table>
   </div>
 
-  <h3 id="success-banner">4.13 Banner thành công</h3>
+  <!-- ── 3.4 ── -->
+  <h3 id="confirm-footer">3.4 Footer xác nhận (ConfirmFooter)</h3>
   <div class="section-box">
-    <p>Hiển thị khi <code>confirmed === true</code>. Thay thế hoàn toàn bảng xem trước.</p>
-    <p>Nền brand-50, icon <code>CheckCircle2</code> màu brand-600.</p>
-    <p>Thông báo: "Đã nhập X giao dịch thành công!" + gợi ý xem Dashboard.</p>
-    <p>Nút <strong>Nhập thêm</strong>: gọi <code>handleReset()</code> để reset toàn bộ state.</p>
+    <p>Nằm cuối card, border-t. Responsive: flex-col trên mobile, flex-row trên sm+.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Text thông báo (trái)</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>Khi <code>selectedCount &gt; 0</code>: "Sẽ nhập X giao dịch". Khi 0: "Hãy chọn ít nhất 1 giao dịch" (màu muted).</td>
+      </tr>
+      <tr>
+        <td>Nút "Reset"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Variant secondary. Gọi <code>handleReset()</code>.</td>
+      </tr>
+      <tr>
+        <td>Nút "Nhập N giao dịch"</td>
+        <td><span class="interactive-label">Tương tác – ghi DB</span></td>
+        <td>Variant primary, size lg. Disabled khi <code>selectedCount === 0</code>. Click → <code>handleConfirm()</code>: lọc theo <code>selected</code> Set → <code>addTransactions(toAdd)</code> → Zustand + Supabase upsert → <code>setConfirmed(true)</code>.</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="success">4. Banner thành công</h2>
+  <div class="section-box">
+    <p>Hiển thị khi: <code>confirmed === true</code>. Thay thế hoàn toàn bảng xem trước. Nền brand-50, viền brand-200.</p>
+    <table>
+      <tr><th>Element</th><th>Loại</th><th>Chi tiết</th></tr>
+      <tr>
+        <td>Icon <code>CheckCircle2</code> + tiêu đề</td>
+        <td><span class="static-label">Tĩnh</span></td>
+        <td>"Đã nhập X giao dịch thành công!" + gợi ý xem Dashboard. X = <code>selectedCount</code> tại thời điểm xác nhận.</td>
+      </tr>
+      <tr>
+        <td>Nút "Nhập thêm"</td>
+        <td><span class="interactive-label">Tương tác</span></td>
+        <td>Gọi <code>handleReset()</code>: reset toàn bộ state (file, result, confirmed, selected, mapping...) + xóa value input file.</td>
+      </tr>
+    </table>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
   <h2 id="providers">5. Danh sách nhà cung cấp (PROVIDERS)</h2>
-  <p>Định nghĩa trong <code>lib/constants.ts</code>. Chỉ các provider có <code>fileTypes.length &gt; 0</code> mới xuất hiện trong trang import (<code>IMPORT_PROVIDERS</code>).</p>
+  <p>Định nghĩa trong <code>lib/constants.ts</code>. <code>IMPORT_PROVIDERS = PROVIDERS.filter(p =&gt; p.fileTypes.length &gt; 0)</code> — chỉ provider có file mới xuất hiện trong trang import.</p>
   <table>
-    <tr>
-      <th>value</th><th>label</th><th>Khu vực</th><th>File hỗ trợ</th><th>Mô tả (Vi)</th>
-    </tr>
-    <tr>
-      <td><code>rakuten_pay</code></td>
-      <td>Rakuten Pay</td>
-      <td>🇯🇵 jp</td>
-      <td>csv, pdf</td>
-      <td>Lịch sử giao dịch Rakuten Pay CSV / PDF</td>
-    </tr>
-    <tr>
-      <td><code>paypay</code></td>
-      <td>PayPay</td>
-      <td>🇯🇵 jp</td>
-      <td>csv, pdf</td>
-      <td>Lịch sử giao dịch PayPay CSV / PDF</td>
-    </tr>
-    <tr>
-      <td><code>paypay_card</code></td>
-      <td>PayPayカード</td>
-      <td>🇯🇵 jp</td>
-      <td>csv</td>
-      <td>Sao kê thẻ PayPay CSV</td>
-    </tr>
-    <tr>
-      <td><code>smbc</code></td>
-      <td>三井住友銀行</td>
-      <td>🇯🇵 jp</td>
-      <td>csv</td>
-      <td>Sao kê tài khoản Sumitomo Mitsui CSV</td>
-    </tr>
-    <tr>
-      <td><code>mufg</code></td>
-      <td>三菱UFJ銀行</td>
-      <td>🇯🇵 jp</td>
-      <td>csv</td>
-      <td>Sao kê tài khoản MUFG CSV</td>
-    </tr>
-    <tr>
-      <td><code>vcb</code></td>
-      <td>Vietcombank</td>
-      <td>🇻🇳 vn</td>
-      <td>csv</td>
-      <td>Sao kê tài khoản Vietcombank CSV</td>
-    </tr>
-    <tr>
-      <td><code>mbbank</code></td>
-      <td>MB Bank</td>
-      <td>🇻🇳 vn</td>
-      <td>csv</td>
-      <td>Lịch sử giao dịch MB Bank CSV</td>
-    </tr>
-    <tr>
-      <td><code>generic_csv</code></td>
-      <td>CSV汎用</td>
-      <td>🌐 global</td>
-      <td>csv</td>
-      <td>CSV bất kỳ (tự động nhận diện cột)</td>
-    </tr>
-    <tr>
-      <td><code>manual</code></td>
-      <td>手動入力</td>
-      <td>🌐 global</td>
-      <td><em class="not-impl">— (không import file)</em></td>
-      <td>Nhập thủ công</td>
-    </tr>
-    <tr>
-      <td><code>ai_scan</code></td>
-      <td>AI Scan</td>
-      <td>🌐 global</td>
-      <td><em class="not-impl">— (không import file)</em></td>
-      <td>Quét hóa đơn bằng AI</td>
-    </tr>
+    <tr><th>value</th><th>label</th><th>Khu vực</th><th>File</th><th>Mô tả (Vi)</th></tr>
+    <tr><td><code>rakuten_pay</code></td><td>Rakuten Pay</td><td>🇯🇵 jp</td><td>csv, pdf</td><td>Lịch sử giao dịch Rakuten Pay CSV / PDF</td></tr>
+    <tr><td><code>paypay</code></td><td>PayPay</td><td>🇯🇵 jp</td><td>csv, pdf</td><td>Lịch sử giao dịch PayPay CSV / PDF</td></tr>
+    <tr><td><code>paypay_card</code></td><td>PayPayカード</td><td>🇯🇵 jp</td><td>csv</td><td>Sao kê thẻ PayPay CSV</td></tr>
+    <tr><td><code>smbc</code></td><td>三井住友銀行</td><td>🇯🇵 jp</td><td>csv</td><td>Sao kê tài khoản Sumitomo Mitsui CSV</td></tr>
+    <tr><td><code>mufg</code></td><td>三菱UFJ銀行</td><td>🇯🇵 jp</td><td>csv</td><td>Sao kê tài khoản MUFG CSV</td></tr>
+    <tr><td><code>vcb</code></td><td>Vietcombank</td><td>🇻🇳 vn</td><td>csv</td><td>Sao kê tài khoản Vietcombank CSV</td></tr>
+    <tr><td><code>mbbank</code></td><td>MB Bank</td><td>🇻🇳 vn</td><td>csv</td><td>Lịch sử giao dịch MB Bank CSV</td></tr>
+    <tr><td><code>generic_csv</code></td><td>CSV汎用</td><td>🌐 global</td><td>csv</td><td>CSV bất kỳ (tự động nhận diện cột)</td></tr>
+    <tr><td><code>manual</code></td><td>手動入力</td><td>🌐 global</td><td><span class="not-impl">— (không import)</span></td><td>Nhập thủ công (không có trong IMPORT_PROVIDERS)</td></tr>
+    <tr><td><code>ai_scan</code></td><td>AI Scan</td><td>🌐 global</td><td><span class="not-impl">— (không import)</span></td><td>Quét hóa đơn AI (không có trong IMPORT_PROVIDERS)</td></tr>
   </table>
 
-  <div class="warning">
-    <strong>⚠️ Provider không có file:</strong> <code>manual</code> và <code>ai_scan</code> bị lọc ra khỏi <code>IMPORT_PROVIDERS</code> nên không xuất hiện trong trang import.
-  </div>
-
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="parsers">6. Parser &amp; tự động nhận diện</h2>
-  <p>Module <code>features/import/parsers.ts</code> xuất 3 hàm chính:</p>
+  <h2 id="parsers">6. Parser engine</h2>
+  <p>Module <code>features/import/parsers.ts</code>. Được import và gọi trực tiếp trong <code>processFile()</code> và <code>reParseWithMapping()</code>.</p>
 
-  <h3 id="auto-detect">6.1 <code>autoDetectProvider(headers: string[]): PaymentProvider | null</code></h3>
+  <h3 id="auto-detect-fn">6.1 <code>autoDetectProvider(headers: string[]): PaymentProvider | null</code></h3>
   <div class="section-box">
-    <p>Nhận mảng header CSV, so khớp với pattern đặc trưng của từng provider, trả về <code>PaymentProvider</code> hoặc <code>null</code> nếu không nhận diện được.</p>
-    <p>Ví dụ:</p>
-    <pre><code>// PayPay thường có header "利用日","利用金額"
-// SMBC có "取引年月日","お引き出し金額"
-// Vietcombank có "Ngay GD","So tien"</code></pre>
-    <p>Được gọi trong <code>processFile()</code> sau khi đọc 4KB đầu file (trước khi parse toàn bộ).</p>
+    <p>Nhận mảng header CSV (đã split theo dòng đầu tiên), khớp với pattern đặc trưng từng provider.</p>
+    <table>
+      <tr><th>Provider</th><th>Pattern header nhận diện</th></tr>
+      <tr><td>PayPay</td><td>"利用日", "利用金額"</td></tr>
+      <tr><td>Rakuten Pay</td><td>"利用日時", "決済金額"</td></tr>
+      <tr><td>SMBC</td><td>"取引年月日", "お引き出し金額"</td></tr>
+      <tr><td>MUFG</td><td>"日付", "摘要", "お支払い金額"</td></tr>
+      <tr><td>Vietcombank</td><td>"Ngay GD", "So tien"</td></tr>
+      <tr><td>MB Bank</td><td>"Ngày GD", "Giá trị"</td></tr>
+    </table>
+    <p>Trả về <code>null</code> nếu không nhận diện được → không hiện banner AutoDetect.</p>
   </div>
 
-  <h3 id="detect-cols">6.2 <code>detectColumnsFromCSV(csv: string): ColumnMapping</code></h3>
+  <h3 id="detect-cols-fn">6.2 <code>detectColumnsFromCSV(csv: string): ColumnMapping</code></h3>
   <div class="section-box">
-    <p>Phân tích CSV và tự động nhận diện cột: ngày, mô tả, số tiền (hoặc debit/credit riêng).</p>
-    <p>Trả về <code>ColumnMapping</code>:</p>
+    <p>Phân tích file CSV và tự động tìm cột phù hợp. Trả về interface:</p>
     <pre><code>interface ColumnMapping {
-  headers:   string[]
-  dateCol:   string | null
-  descCol:   string | null
+  headers:   string[]        // tất cả tên cột
+  dateCol:   string | null   // tên cột ngày
+  descCol:   string | null   // tên cột mô tả
   amountCol: string | null   // null nếu dùng debit/credit riêng
-  debitCol:  string | null
-  creditCol: string | null
+  debitCol:  string | null   // tên cột ghi nợ
+  creditCol: string | null   // tên cột ghi có
 }</code></pre>
-    <p>Người dùng có thể ghi đè qua UI <code>ColSelect</code> → lưu vào <code>userMapping</code>.</p>
+    <p>Người dùng ghi đè qua UI ColSelect → lưu vào <code>userMapping</code> (Partial&lt;ColumnMapping&gt;).</p>
   </div>
 
-  <h3 id="parse-file">6.3 <code>parseFile(file: File, provider: PaymentProvider, mapping?: Partial&lt;ColumnMapping&gt;): Promise&lt;ImportResult&gt;</code></h3>
+  <h3 id="parse-file-fn">6.3 <code>parseFile(file: File, provider: PaymentProvider, mapping?: Partial&lt;ColumnMapping&gt;): Promise&lt;ImportResult&gt;</code></h3>
   <div class="section-box">
-    <p>Hàm async chính: nhận File + provider + mapping tùy chọn, trả về <code>ImportResult</code>:</p>
     <pre><code>interface ImportResult {
   success:      boolean
-  transactions: Transaction[]
-  errors:       string[]       // danh sách cảnh báo (không chặn import)
+  transactions: Transaction[]  // giao dịch đã parse (kể cả khi có lỗi)
+  errors:       string[]       // cảnh báo (không chặn import)
 }</code></pre>
-    <p>Xử lý encoding:</p>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Kiểm tra BOM UTF-8 (bytes: <code>EF BB BF</code>)</li>
-      <li>Nếu có BOM hoặc decode UTF-8 sạch → dùng UTF-8</li>
-      <li>Ngược lại → thử Shift-JIS (cho file CSV Nhật Bản)</li>
-    </ul>
-    <p>PDF: xử lý bằng thư viện PDF.js hoặc tương đương, logic parse theo provider.</p>
-    <div class="warning">
-      <strong>Lưu ý:</strong> Encoding detection được thực hiện trong <code>processFile()</code> (ở <code>page.tsx</code>), không nằm trong parser engine.
-    </div>
+    <p>Xử lý encoding (thực hiện trong <code>processFile()</code> trước khi gọi parser):</p>
+    <table>
+      <tr><th>Điều kiện</th><th>Encoding</th></tr>
+      <tr><td>Byte đầu là BOM UTF-8 (EF BB BF)</td><td>UTF-8, bỏ BOM</td></tr>
+      <tr><td>Decode Shift-JIS có ký tự lạ</td><td>UTF-8</td></tr>
+      <tr><td>Mặc định (file JP)</td><td>Shift-JIS</td></tr>
+    </table>
+    <p>Sau khi có text sạch: gọi <code>parseFile(f, activeProvider, userMapping)</code>. Kết quả: tất cả giao dịch được chọn mặc định (<code>setSelected(new Set(res.transactions.map(tx =&gt; tx.id)))</code>).</p>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="dataflow">7. Luồng dữ liệu</h2>
+  <h2 id="state">7. State quản lý</h2>
+  <p>Toàn bộ state local trong <code>ImportPage</code>, không dùng Zustand cho import UI:</p>
+  <table>
+    <tr><th>State</th><th>Kiểu</th><th>Mô tả</th></tr>
+    <tr><td><code>region</code></td><td><code>'jp' | 'vn' | 'global'</code></td><td>Khu vực đang chọn, init: <code>'jp'</code></td></tr>
+    <tr><td><code>provider</code></td><td><code>PaymentProvider</code></td><td>Provider hiện tại, init: <code>'rakuten_pay'</code></td></tr>
+    <tr><td><code>dragging</code></td><td><code>boolean</code></td><td>Đang kéo file vào vùng drop</td></tr>
+    <tr><td><code>loading</code></td><td><code>boolean</code></td><td>Đang parse file</td></tr>
+    <tr><td><code>file</code></td><td><code>File | null</code></td><td>File đã chọn</td></tr>
+    <tr><td><code>result</code></td><td><code>ImportResult | null</code></td><td>Kết quả parse: danh sách giao dịch + lỗi</td></tr>
+    <tr><td><code>error</code></td><td><code>string | null</code></td><td>Chuỗi lỗi hiển thị trong ErrorBanner</td></tr>
+    <tr><td><code>detected</code></td><td><code>PaymentProvider | null</code></td><td>Provider tự động phát hiện, khác <code>provider</code></td></tr>
+    <tr><td><code>mapping</code></td><td><code>ColumnMapping | null</code></td><td>Auto-detect column mapping (chỉ generic_csv)</td></tr>
+    <tr><td><code>userMapping</code></td><td><code>Partial&lt;ColumnMapping&gt;</code></td><td>Ghi đè thủ công lên auto-mapping, init: <code>{}</code></td></tr>
+    <tr><td><code>confirmed</code></td><td><code>boolean</code></td><td>Đã xác nhận import thành công</td></tr>
+    <tr><td><code>selected</code></td><td><code>Set&lt;string&gt;</code></td><td>Set id các giao dịch được tick</td></tr>
+    <tr><td><code>showErrors</code></td><td><code>boolean</code></td><td>Toggle danh sách cảnh báo parse</td></tr>
+  </table>
 
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 id="dataflow">8. Luồng dữ liệu</h2>
   <div class="section-box">
     <h4>Luồng xử lý file (processFile)</h4>
-    <pre><code>User chọn file
+    <pre><code>User kéo-thả / click chọn file
   → processFile(f: File)
-    → Đặt loading = true, reset các state liên quan
+    → setLoading(true), reset: result, error, confirmed, detected, mapping, userMapping, selected
+    → setFile(f)
     → Đọc 4KB đầu → detect encoding (UTF-8 vs Shift-JIS)
-    → Parse header → autoDetectProvider(headers)
-      → Nếu phát hiện provider khác: setDetected() → hiển thị banner
+    → Parse headers → autoDetectProvider(headers)
+      → Nếu phát hiện provider khác: setDetected() → hiện AutoDetect banner
     → Nếu generic_csv: detectColumnsFromCSV() → setMapping()
     → parseFile(f, activeProvider, userMapping) → ImportResult
     → setResult(res)
-    → setSelected(all tx ids)   // mặc định chọn tất cả
-    → loading = false</code></pre>
+    → setSelected(new Set(tất cả tx.id))   // mặc định chọn hết
+    → setLoading(false)</code></pre>
 
-    <h4 style="margin-top:12px;">Luồng xác nhận import (handleConfirm)</h4>
+    <h4 style="margin-top:12px;">Luồng xác nhận (handleConfirm)</h4>
     <pre><code>User nhấn "Nhập N giao dịch"
   → handleConfirm()
-    → Lọc result.transactions theo selected (Set)
+    → toAdd = result.transactions.filter(tx => selected.has(tx.id))
     → addTransactions(toAdd)
-      → Zustand: thêm vào state (dedup theo id)
-      → Supabase: upsert vào bảng transactions
+      → Zustand: dedup theo id, append state
+      → Supabase: upsert vào bảng transactions (fire-and-forget)
     → setConfirmed(true)
   → Banner thành công hiển thị</code></pre>
 
     <h4 style="margin-top:12px;">Luồng reset (handleReset)</h4>
     <pre><code>handleReset()
-  → setFile(null)
-  → setResult(null), setError(null), setConfirmed(false)
+  → setFile(null), setResult(null), setError(null), setConfirmed(false)
   → setDetected(null), setMapping(null), setUserMapping({})
   → setSelected(new Set())
-  → fileInputRef.current.value = ''  // xóa input file</code></pre>
+  → fileInputRef.current.value = ''   // bắt buộc để input accept file mới</code></pre>
   </div>
 
   <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="store">8. Kết nối Store (<code>useTransactionsStore</code>)</h2>
-  <p>Trang import chỉ sử dụng 1 action từ store:</p>
+  <h2 id="db-section">9. Database – phân tích bảng liên quan</h2>
+
+  <h3 id="table-transactions-import">9.1 Bảng <code>transactions</code></h3>
+  <p><span class="badge badge-green">Ghi khi import</span> Trang import chỉ ghi vào bảng này — không đọc, không xóa.</p>
   <table>
-    <tr>
-      <th>Action</th><th>Khi gọi</th><th>Hành vi</th>
-    </tr>
-    <tr>
-      <td><code>addTransactions(txns)</code></td>
-      <td>Khi xác nhận import</td>
-      <td>
-        1. Gắn <code>ledgerId</code>, <code>workspaceId</code>, <code>organizationId</code> từ <code>currentLedger</code><br>
-        2. Dedup theo <code>id</code> — không thêm giao dịch đã tồn tại<br>
-        3. Append vào <code>state.transactions</code><br>
-        4. Async upsert vào Supabase bảng <code>transactions</code>
-      </td>
-    </tr>
+    <tr><th>Cột DB</th><th>TypeScript field</th><th>Nguồn khi import</th></tr>
+    <tr><td><code>id</code></td><td><code>t.id</code></td><td>Sinh từ parser (<code>generateId()</code>)</td></tr>
+    <tr><td><code>ledger_id</code></td><td><code>t.ledgerId</code></td><td>Lấy từ <code>useLedgerStore.currentLedger.id</code> trong <code>addTransactions()</code></td></tr>
+    <tr><td><code>workspace_id</code></td><td><code>t.workspaceId</code></td><td><code>currentLedger.workspace_id</code></td></tr>
+    <tr><td><code>organization_id</code></td><td><code>t.organizationId</code></td><td><code>currentLedger.organization_id</code></td></tr>
+    <tr><td><code>transaction_date</code></td><td><code>t.transactionDate</code></td><td>Parse từ cột ngày CSV/PDF</td></tr>
+    <tr><td><code>transaction_type</code></td><td><code>t.transactionType</code></td><td>Parser suy diễn từ dấu số tiền (âm = expense, dương = income)</td></tr>
+    <tr><td><code>amount</code></td><td><code>t.amount</code></td><td>Parse từ cột số tiền. Số âm cho expense.</td></tr>
+    <tr><td><code>currency_code</code></td><td><code>t.currencyCode</code></td><td>Hardcode <code>'JPY'</code> nếu không có trong file</td></tr>
+    <tr><td><code>description</code></td><td><code>t.description</code></td><td>Parse từ cột mô tả/merchant</td></tr>
+    <tr><td><code>payment_instrument_id</code></td><td><code>t.paymentInstrumentId</code></td><td>Giá trị <code>provider</code> (VD: <code>'rakuten_pay'</code>)</td></tr>
+    <tr><td><code>category_id</code></td><td><code>t.categoryId</code></td><td><code>null</code> khi mới import (chờ phân loại)</td></tr>
+    <tr><td><code>source</code></td><td><code>t.source</code></td><td><code>'manual'</code> nếu không có (có thể là <code>'csv_import'</code>)</td></tr>
+    <tr><td><code>status</code></td><td><code>t.status</code></td><td><code>'posted'</code> mặc định</td></tr>
+    <tr><td><code>metadata</code></td><td><code>t.metadata</code></td><td>JSONB chứa dữ liệu gốc từ file CSV (raw row)</td></tr>
   </table>
+
+  <div class="warning">
+    <strong>🟡 Upsert dùng <code>id</code> làm conflict key</strong><br/>
+    <code>addTransactions()</code> dùng Supabase <code>upsert</code>. Nếu import cùng file 2 lần, ID giống nhau → row bị ghi đè (không tạo bản ghi mới). Đây là behavior mong muốn để tránh trùng, nhưng cần chú ý nếu parser sinh ID không deterministic.
+  </div>
+
+  <div class="warning">
+    <strong>🔴 <code>ledger_id</code> phụ thuộc vào <code>currentLedger</code> khi import</strong><br/>
+    Nếu <code>currentLedger</code> là <code>null</code> tại thời điểm <code>addTransactions()</code> (race condition khi load), <code>ledger_id</code> sẽ là chuỗi rỗng <code>''</code>. Có <code>console.warn</code> nhưng không chặn luồng import.
+  </div>
+
   <div class="tip">
-    <strong>Dedup:</strong> <code>addTransactions</code> kiểm tra <code>Set(existing ids)</code> → chỉ thêm <code>fresh</code> transactions. Tránh trùng lặp khi import cùng file nhiều lần.
+    <strong>💡 <code>source</code> field nên ghi <code>'csv_import'</code> thay vì <code>'manual'</code></strong><br/>
+    Trang /categories dùng <code>t.source</code> để nhóm LinkedAccounts. Nếu import CSV ghi <code>source = 'manual'</code>, dữ liệu sẽ bị nhóm nhầm vào "Nhập thủ công" thay vì "CSV Import".
   </div>
 
-  <!-- ═══════════════════════════════════════════════════════ -->
-  <h2 id="changelog">9. Changelog</h2>
-  <div class="section-box">
-    <h4><span class="badge badge-green">v1.0.0</span> — 2026-05-24 (Tài liệu gốc)</h4>
-    <ul style="padding-left:18px; color:#475569; font-size:13px;">
-      <li>Phân tích và tài liệu hóa toàn bộ trang <code>/import</code> từ source code</li>
-      <li>Bao gồm: luồng 2 bước, tất cả component, danh sách provider, parser engine, luồng dữ liệu, kết nối store</li>
-    </ul>
+  <hr style="margin: 40px 0; border-color: #e2e8f0;" />
+  <p style="font-size: 12px; color: #94a3b8;">Tài liệu được tạo bằng phân tích trực tiếp source code. Không suy đoán thêm ngoài những gì có trong code.</p>
+</div>
+
+<!-- ============================================================
+     SECTION: CHANGELOG / QUẢN LÝ PHIÊN BẢN
+     ============================================================ -->
+<div class="container" style="margin-top: 0; padding-top: 0;">
+<hr style="border: 0; border-top: 4px solid #3b82f6; margin: 0 0 40px;" />
+
+<h1 id="changelog" style="color:#1d4ed8;">📋 Changelog – Quản lý phiên bản</h1>
+<p class="meta">Ghi chép mọi thay đổi liên quan đến trang <code>/import</code> trên nhánh <code>claude/affectionate-bohr-SPRYu</code>.</p>
+
+<!-- ── v1.0.0 ─────────────────────────────────────────── -->
+<div style="background:#fff;border:2px solid #16a34a;border-radius:12px;padding:24px 28px;margin:24px 0;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <span style="font-size:22px;font-weight:800;color:#15803d;">v1.0.0</span>
+    <span class="badge badge-green">Tài liệu gốc</span>
+    <span class="meta" style="margin:0;">2026-05-24 · Nhánh <code>claude/affectionate-bohr-SPRYu</code></span>
   </div>
 
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:0;">📄 1. Khởi tạo tài liệu</h3>
+  <p>Phân tích và tài liệu hóa toàn bộ trang <code>/import</code> từ source code (<code>app/import/page.tsx</code> – 671 dòng).</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📊 2. Tổng hợp file phân tích</h3>
+  <table>
+    <thead><tr><th>File</th><th>Nội dung phân tích</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/import/page.tsx</code></td><td>Toàn bộ UI, state, luồng xử lý, tất cả component nội bộ</td></tr>
+      <tr><td><code>features/import/parsers.ts</code></td><td>3 hàm export: autoDetectProvider, detectColumnsFromCSV, parseFile</td></tr>
+      <tr><td><code>lib/constants.ts</code></td><td>PROVIDERS array: 10 entries với region, fileTypes, màu, mô tả</td></tr>
+      <tr><td><code>stores/transactions.ts</code></td><td>addTransactions(): dedup, ledgerId gắn, Supabase upsert</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr style="margin: 40px 0; border-color: #e2e8f0;" />
+<p style="font-size: 12px; color: #94a3b8; padding: 0 0 40px;">
+  v1.0.0 — 2026-05-24 — Tài liệu khởi tạo: phân tích source code trang /import
+</p>
 </div>
 </body>
 </html>
