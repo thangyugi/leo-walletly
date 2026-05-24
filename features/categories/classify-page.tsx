@@ -103,13 +103,20 @@ function ClassifyCategoryPicker({
     return () => document.removeEventListener('mousedown', onDown)
   }, [open])
 
-  // Close on scroll / resize (position would drift)
+  // Close on scroll outside dropdown / resize (position would drift)
   React.useEffect(() => {
     if (!open) return
-    const close = () => setOpen(false)
-    window.addEventListener('scroll', close, true)
-    window.addEventListener('resize', close)
-    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close) }
+    const onScroll = (e: Event) => {
+      if (dropRef.current?.contains(e.target as Node)) return   // scroll inside dropdown — keep open
+      setOpen(false)
+    }
+    const onResize = () => setOpen(false)
+    window.addEventListener('scroll', onScroll, true)
+    window.addEventListener('resize', onResize)
+    return () => {
+      window.removeEventListener('scroll', onScroll, true)
+      window.removeEventListener('resize', onResize)
+    }
   }, [open])
 
   return (
