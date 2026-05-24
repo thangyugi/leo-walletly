@@ -10,9 +10,10 @@ import type { Group } from './types'
 import { Button } from '@/components/ui/button'
 import {
   ArrowLeft, Check, CheckCheck, Loader2, Search,
-  Save, Zap, ChevronDown, ChevronUp, TrendingDown, TrendingUp,
+  Save, Zap, ChevronDown, ChevronUp,
   ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown,
 } from 'lucide-react'
+import { CategoryIcon } from './category-icon'
 import { cn } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
 import { format } from 'date-fns'
@@ -131,10 +132,10 @@ function ClassifyCategoryPicker({
         {selected ? (
           <>
             <span
-              className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
+              className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0"
               style={{ background: `${selected.color}22` }}
             >
-              {selected.emoji || '📁'}
+              <CategoryIcon name={selected.emoji} className="w-3.5 h-3.5" />
             </span>
             <span className="flex-1 truncate text-[13px] font-medium text-[var(--color-text-primary)]">
               {selected.name}
@@ -151,7 +152,7 @@ function ClassifyCategoryPicker({
         <div
           ref={dropRef}
           style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
-          className="rounded-xl border shadow-xl overflow-hidden bg-[var(--color-surface-default)] border-[var(--color-border-default)]"
+          className="rounded-xl border shadow-xl bg-[var(--color-surface-default)] border-[var(--color-border-default)]"
         >
           {/* Clear */}
           <div className="p-1.5 border-b border-[var(--color-border-subtle)]">
@@ -187,10 +188,10 @@ function ClassifyCategoryPicker({
                   )}
                 >
                   <span
-                    className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 text-sm"
+                    className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0"
                     style={{ background: value === parent.id ? 'rgba(255,255,255,0.2)' : `${parent.color}22` }}
                   >
-                    {parent.emoji || '📁'}
+                    <CategoryIcon name={parent.emoji} className="w-3.5 h-3.5" />
                   </span>
                   <span className="flex-1 truncate text-left">{parent.name}</span>
                   {value === parent.id && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
@@ -210,10 +211,10 @@ function ClassifyCategoryPicker({
                     )}
                   >
                     <span
-                      className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
+                      className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0"
                       style={{ background: `${child.color}22` }}
                     >
-                      {child.emoji || '📁'}
+                      <CategoryIcon name={child.emoji} className="w-3 h-3" />
                     </span>
                     <span className="flex-1 truncate text-left">{child.name}</span>
                     {value === child.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
@@ -760,26 +761,10 @@ export function ClassifyPage() {
                   !isApplied && 'hover:bg-[var(--color-bg-sunken)]',
                 )}>
 
-                  {/* Status dot */}
-                  <div className={cn(
-                    'w-6 h-6 rounded-full flex items-center justify-center shrink-0 transition-all',
-                    isApplied
-                      ? 'bg-[var(--color-gain-100)] text-[var(--color-gain-700)]'
-                      : 'bg-[var(--color-bg-sunken)] text-transparent border border-[var(--color-border-default)]',
-                  )}>
-                    <Check className="w-3.5 h-3.5" />
-                  </div>
-
-                  {/* Direction icon */}
-                  <div className={cn(
-                    'w-7 h-7 rounded-lg flex items-center justify-center shrink-0',
-                    grp.isIncome ? 'bg-[var(--color-gain-50)]' : 'bg-[var(--color-loss-50)]',
-                  )}>
-                    {grp.isIncome
-                      ? <TrendingUp className="w-3.5 h-3.5 text-[var(--color-gain-600)]" />
-                      : <TrendingDown className="w-3.5 h-3.5 text-[var(--color-loss-600)]" />
-                    }
-                  </div>
+                  {/* Applied indicator — thin left border instead of a separate element */}
+                  {isApplied && (
+                    <span className="w-1.5 h-6 rounded-full bg-[var(--color-gain-500)] shrink-0" />
+                  )}
 
                   {/* Info */}
                   <div className="flex-1 min-w-0">
