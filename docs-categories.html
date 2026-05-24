@@ -53,7 +53,8 @@
     Ngày phân tích: 2026-05-23 · Nguồn: phân tích trực tiếp từ source code &nbsp;·&nbsp;
     <span class="badge badge-gray">v1.0.0</span> Tài liệu gốc &nbsp;
     <span class="badge badge-blue">v2.0.0</span> Cập nhật 2026-05-23 — major rewrite, schema migration, server-side APIs &nbsp;
-    <span class="badge badge-purple">v2.1.0</span> Cập nhật 2026-05-23 — rename group→category, fix toggle UI, 8-char codes, SmartClassifyCard, bento fixes
+    <span class="badge badge-purple">v2.1.0</span> Cập nhật 2026-05-23 — rename group→category, toggle fix, 8-char codes, SmartClassifyCard, bento fixes &nbsp;
+    <span class="badge badge-green">v2.2.0</span> Cập nhật 2026-05-24 — classify-page: month nav, summary stats, tree picker, sort fix, red amounts, source badges
     &nbsp;·&nbsp; <a href="#changelog" style="color:#2563eb;">→ Xem Changelog</a>
   </p>
 
@@ -1324,11 +1325,81 @@ let query = supabase
   </table>
 </div>
 
+<!-- ── v2.2.0 ─────────────────────────────────────────── -->
+<div style="background:#fff;border:2px solid #16a34a;border-radius:12px;padding:24px 28px;margin:24px 0;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <span style="font-size:22px;font-weight:800;color:#15803d;">v2.2.0</span>
+    <span class="badge badge-green">Feature</span>
+    <span class="meta" style="margin:0;">2026-05-24 · Nhánh <code>claude/affectionate-bohr-SPRYu</code></span>
+  </div>
+  <p><strong>File:</strong> <code>features/categories/classify-page.tsx</code> — rewrite toàn bộ trang phân loại giao dịch.</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:0;">📅 1. Month navigation — điều hướng theo tháng</h3>
+  <p>Thêm thanh điều hướng tháng/năm trong header với:</p>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Nút <code>← ChevronLeft</code> / <code>ChevronRight →</code> để di chuyển tháng trước/sau</li>
+    <li>Nút label <code>Tháng M/YYYY</code> có thể click để mở <strong>MonthPicker popup</strong></li>
+    <li>MonthPicker: grid 4×3 tháng (T1–T12) + điều hướng năm riêng (← 2025 →)</li>
+    <li>State: <code>selectedYear</code>, <code>selectedMonth</code> (1-indexed), <code>isMonthPickerOpen</code></li>
+    <li><code>pendingTxns</code> lọc theo <code>t.transactionDate.startsWith(monthKey)</code></li>
+    <li>Empty state khi không có giao dịch trong tháng: hướng dẫn dùng mũi tên để chuyển tháng</li>
+    <li>Component <code>MonthPicker</code> dùng <code>useEffect</code> + <code>mousedown</code> để đóng khi click ngoài</li>
+  </ul>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📊 2. Summary stats grid — 4 chỉ số nhanh</h3>
+  <p>Grid 4 ô thêm vào giữa header và progress bar:</p>
+  <table>
+    <thead><tr><th>Ô</th><th>Nội dung</th><th>Màu</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td>Chi tiêu chưa phân loại (tháng)</td><td><code>--color-text-loss</code> (đỏ)</td></tr>
+      <tr><td>2</td><td>Tiền vào chưa phân loại (tháng)</td><td><code>--color-text-gain</code> (xanh)</td></tr>
+      <tr><td>3</td><td>Số nhóm giao dịch</td><td>Default</td></tr>
+      <tr><td>4</td><td>Nguồn chính (top source + count, other sources as chips)</td><td>Default</td></tr>
+    </tbody>
+  </table>
+  <p>Computed trong <code>summaryStats</code> useMemo: expense, income, topSources array.</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🌲 3. ClassifyCategoryPicker — tree dropdown thay native &lt;select&gt;</h3>
+  <p>Component <code>ClassifyCategoryPicker</code> inline trong classify-page.tsx:</p>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Trigger: <code>h-9 rounded-lg border</code>, hiện emoji + tên danh mục đã chọn (hoặc placeholder)</li>
+    <li>Dropdown: floating panel với "Chưa chọn" + tree 2 cấp (parent → indented children)</li>
+    <li>Parent: bg brand-500 khi selected; children: bg brand-100 khi selected</li>
+    <li>Props: <code>value, onChange, disabled, groups: Group[], hierarchical: HierarchicalGroup[]</code></li>
+    <li>Đóng khi click ngoài (mousedown listener), z-index 50</li>
+  </ul>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📈 4. Sort — sắp xếp theo totalAmount giảm dần</h3>
+  <p>Trước: <code>sort(b.transactions.length - a.transactions.length)</code> (nhiều giao dịch nhất lên đầu)</p>
+  <p>Sau: <code>sort by b.totalAmount - a.totalAmount</code> (tổng tiền lớn nhất lên đầu), tie-break bởi count</p>
+  <p>Các giao dịch trong mỗi group: sort theo <code>transactionDate desc</code> (mới nhất lên đầu), đồng bộ với SmartClassifyCard.</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔴 5. Màu đỏ cho số tiền âm (expense)</h3>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Group total: <code>grp.isIncome ? gain : <strong>loss</strong></code> (trước đó là <code>primary</code> cho expense)</li>
+    <li>Expanded sub-row amount: <code>grp.isIncome ? gain : <strong>loss</strong></code> (trước đó là <code>primary</code>)</li>
+  </ul>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🏷️ 6. Source badge trong expanded sub-list</h3>
+  <p>Thêm <code>SOURCE_LABELS</code> map (giống SmartClassifyCard, 20 nguồn) vào classify-page.</p>
+  <p>Mỗi row trong expanded view hiện thêm source badge: <code>rounded-full bg-raised border text-secondary</code>.</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔧 7. Các thay đổi kỹ thuật khác</h3>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Thêm import: <code>ChevronLeft, ChevronRight, CalendarDays</code> từ lucide-react</li>
+    <li>Type <code>HierarchicalGroup = Group &amp; &#123; children: Group[] &#125;</code> defined inline</li>
+    <li><code>allPendingTxns</code> = tất cả pending (không lọc tháng); <code>pendingTxns</code> = filtered by month</li>
+    <li>Progress bar label đổi thành "Tiến độ phân loại tháng này"</li>
+    <li>Empty state có icon <code>CalendarDays</code> + hướng dẫn dùng mũi tên</li>
+  </ul>
+</div>
+
 <hr style="margin: 40px 0; border-color: #e2e8f0;" />
 <p style="font-size: 12px; color: #94a3b8; padding: 0 0 40px;">
   v1.0.0 — Tài liệu khởi tạo (phân tích source code) &nbsp;|&nbsp;
   v2.0.0 — 2026-05-23 — Major: server-side APIs, schema migration, component rewrite, bug fixes &nbsp;|&nbsp;
-  v2.1.0 — 2026-05-23 — Refactor: rename group→category, toggle fix, 8-char codes, SmartClassifyCard improvements, bento grid fixes
+  v2.1.0 — 2026-05-23 — Refactor: rename group→category, toggle fix, 8-char codes, SmartClassifyCard improvements, bento grid fixes &nbsp;|&nbsp;
+  v2.2.0 — 2026-05-24 — classify-page: month navigation, summary stats grid, tree category picker, sort by amount, red for expenses, source badges in expand
 </p>
 </div>
 </body>

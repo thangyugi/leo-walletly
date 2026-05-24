@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import {
   ArrowLeft, Check, CheckCheck, Loader2, Search,
   Save, Zap, ChevronDown, ChevronUp, TrendingDown, TrendingUp,
+  ChevronLeft, ChevronRight, CalendarDays,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
@@ -25,35 +26,257 @@ type TxnGroup = {
   totalAmount: number
 }
 
+type HierarchicalGroup = Group & { children: Group[] }
+
 // ── Smart keyword extractor ─────────────────────────────────────
 function extractSmartKeywords(label: string): string[] {
   const set = new Set<string>()
   const clean = label.trim()
-
-  // Add full label if short enough to be meaningful
   if (clean.length >= 2 && clean.length <= 25) set.add(clean.toLowerCase())
-
-  // Split on common separators: dash, en-dash, dot, slash, space, Japanese separators
   const parts = clean
     .split(/[\s\-–・|/\\,、。·]+/)
     .map(s => s.trim())
     .filter(s => s.length >= 2)
-
   parts.forEach(p => set.add(p.toLowerCase()))
-
-  // Also add consecutive two-part combos (e.g. "FamilyMart Cafe" from 3-part name)
   for (let i = 0; i < parts.length - 1; i++) {
     const combo = `${parts[i]} ${parts[i + 1]}`
     if (combo.length <= 30) set.add(combo.toLowerCase())
   }
-
-  // Filter noise: pure numbers, single chars, Japanese building suffixes
   return Array.from(set).filter(k => {
     if (k.length < 2) return false
     if (/^\d+$/.test(k)) return false
     if (/^[号館棟店舗]+$/.test(k)) return false
     return true
   })
+}
+
+// ── Source labels ───────────────────────────────────────────────
+const SOURCE_LABELS: Record<string, string> = {
+  manual: 'Thủ công', csv_import: 'CSV', bank_feed: 'Ngân hàng',
+  vcb: 'VCB', momo: 'MoMo', api: 'API', ocr_scan: 'OCR',
+  paypay: 'PayPay', rakuten: 'Rakuten', suica: 'Suica', icoca: 'ICOCA',
+  smbc: 'SMBC', mufg: 'MUFG', au_pay: 'au PAY', line_pay: 'LINE Pay',
+  seven_bank: '7Bank', jp_post: 'JP Post', epos: 'EPOS', d_payment: 'd払い',
+}
+
+// ── Compact category picker (tree-style) ────────────────────────
+function ClassifyCategoryPicker({
+  value,
+  onChange,
+  disabled,
+  groups,
+  hierarchical,
+}: {
+  value: string
+  onChange: (id: string) => void
+  disabled?: boolean
+  groups: Group[]
+  hierarchical: HierarchicalGroup[]
+}) {
+  const [open, setOpen] = React.useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+  const selected = groups.find(g => g.id === value)
+
+  React.useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  return (
+    <div ref={ref} className="relative flex-1 sm:w-56">
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => !disabled && setOpen(v => !v)}
+        className={cn(
+          'w-full h-9 px-3 rounded-lg border text-left flex items-center gap-2 transition-colors',
+          disabled && 'opacity-50 cursor-not-allowed',
+          !disabled && open && 'border-[var(--color-border-focus)] ring-2 ring-[var(--color-brand-100)]',
+          !disabled && !open && 'hover:border-[var(--color-border-focus)]',
+          selected
+            ? 'border-[var(--color-interactive-primary)] bg-[var(--color-brand-25)]'
+            : 'border-[var(--color-border-default)] bg-white',
+        )}
+      >
+        {selected ? (
+          <>
+            <span
+              className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
+              style={{ background: `${selected.color}22` }}
+            >
+              {selected.emoji || '📁'}
+            </span>
+            <span className="flex-1 truncate text-[13px] font-medium text-[var(--color-text-primary)]">
+              {selected.name}
+            </span>
+          </>
+        ) : (
+          <span className="flex-1 text-[12px] text-[var(--color-text-placeholder)]">
+            -- Chọn danh mục --
+          </span>
+        )}
+        <ChevronDown className={cn(
+          'w-3.5 h-3.5 text-[var(--color-text-quaternary)] transition-transform shrink-0',
+          open && 'rotate-180',
+        )} />
+      </button>
+
+      {open && (
+        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 rounded-xl border shadow-lg overflow-hidden bg-[var(--color-surface-default)] border-[var(--color-border-default)]">
+          {/* Clear */}
+          <div className="p-1.5 border-b border-[var(--color-border-subtle)]">
+            <button
+              type="button"
+              onClick={() => { onChange(''); setOpen(false) }}
+              className={cn(
+                'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[7px] text-[12px] transition-colors cursor-pointer',
+                !value
+                  ? 'bg-[var(--color-brand-500)] text-white'
+                  : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
+              )}
+            >
+              <span className="w-5 h-5 rounded-[5px] flex items-center justify-center bg-[var(--color-bg-sunken)] text-[10px]">—</span>
+              <span>Chưa chọn</span>
+              {!value && <Check className="w-3 h-3 ml-auto" />}
+            </button>
+          </div>
+
+          {/* Tree */}
+          <div className="p-1.5 max-h-56 overflow-y-auto">
+            {hierarchical.map(parent => (
+              <div key={parent.id}>
+                <button
+                  type="button"
+                  onClick={() => { onChange(parent.id); setOpen(false) }}
+                  className={cn(
+                    'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-[7px] text-[12px] font-medium transition-colors cursor-pointer',
+                    value === parent.id
+                      ? 'bg-[var(--color-brand-500)] text-white'
+                      : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
+                  )}
+                >
+                  <span
+                    className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
+                    style={{ background: value === parent.id ? 'rgba(255,255,255,0.2)' : `${parent.color}22` }}
+                  >
+                    {parent.emoji || '📁'}
+                  </span>
+                  <span className="flex-1 truncate text-left">{parent.name}</span>
+                  {value === parent.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
+                </button>
+                {parent.children.map(child => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => { onChange(child.id); setOpen(false) }}
+                    className={cn(
+                      'w-full flex items-center gap-2 pl-6 pr-2.5 py-[6px] rounded-[7px] text-[12px] transition-colors cursor-pointer',
+                      value === child.id
+                        ? 'bg-[var(--color-brand-100)] text-[var(--color-brand-700)] font-medium'
+                        : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
+                    )}
+                  >
+                    <span
+                      className="w-4 h-4 rounded-[4px] flex items-center justify-center shrink-0 text-[10px]"
+                      style={{ background: `${child.color}22` }}
+                    >
+                      {child.emoji || '📁'}
+                    </span>
+                    <span className="flex-1 truncate text-left">{child.name}</span>
+                    {value === child.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
+                  </button>
+                ))}
+              </div>
+            ))}
+            {hierarchical.length === 0 && (
+              <p className="text-[12px] text-[var(--color-text-quaternary)] text-center py-3">
+                Không có danh mục nào
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Month picker popover ────────────────────────────────────────
+const MONTH_LABELS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12']
+
+function MonthPicker({
+  selectedYear,
+  selectedMonth,
+  onSelect,
+  onClose,
+}: {
+  selectedYear: number
+  selectedMonth: number
+  onSelect: (year: number, month: number) => void
+  onClose: () => void
+}) {
+  const [pickerYear, setPickerYear] = React.useState(selectedYear)
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  React.useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [onClose])
+
+  return (
+    <div
+      ref={ref}
+      className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg p-3 w-56"
+    >
+      {/* Year nav */}
+      <div className="flex items-center justify-between mb-2.5">
+        <button
+          type="button"
+          onClick={() => setPickerYear(y => y - 1)}
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors"
+        >
+          <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+        </button>
+        <span className="text-sm font-semibold text-[var(--color-text-primary)]">{pickerYear}</span>
+        <button
+          type="button"
+          onClick={() => setPickerYear(y => y + 1)}
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors"
+        >
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
+        </button>
+      </div>
+
+      {/* Month grid */}
+      <div className="grid grid-cols-4 gap-1">
+        {MONTH_LABELS.map((lbl, i) => {
+          const m = i + 1
+          const isActive = pickerYear === selectedYear && m === selectedMonth
+          return (
+            <button
+              key={m}
+              type="button"
+              onClick={() => { onSelect(pickerYear, m); onClose() }}
+              className={cn(
+                'py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer',
+                isActive
+                  ? 'bg-[var(--color-brand-500)] text-white'
+                  : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
+              )}
+            >
+              {lbl}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
 }
 
 // ── Main component ──────────────────────────────────────────────
@@ -63,17 +286,31 @@ export function ClassifyPage() {
   const { groups, updateGroup } = useGroupStore()
   const { transactions, bulkUpdateTransactions } = useTransactionsStore()
 
+  // ── Month navigation ──────────────────────────────────────────
+  const now = new Date()
+  const [selectedYear,  setSelectedYear]  = React.useState(now.getFullYear())
+  const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1)
+  const [isMonthPickerOpen, setIsMonthPickerOpen] = React.useState(false)
+
+  function prevMonth() {
+    if (selectedMonth === 1) { setSelectedYear(y => y - 1); setSelectedMonth(12) }
+    else setSelectedMonth(m => m - 1)
+  }
+  function nextMonth() {
+    if (selectedMonth === 12) { setSelectedYear(y => y + 1); setSelectedMonth(1) }
+    else setSelectedMonth(m => m + 1)
+  }
+
+  const monthLabel = `Tháng ${selectedMonth}/${selectedYear}`
+  const monthKey   = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
+
   const [search, setSearch] = React.useState('')
-  // groupKey → categoryId
-  const [selectedCats, setSelectedCats] = React.useState<Record<string, string>>({})
-  // groupKey → true (applied to DB)
-  const [appliedKeys, setAppliedKeys] = React.useState<Set<string>>(new Set())
-  // groupKey → true (loading)
-  const [applyingKeys, setApplyingKeys] = React.useState<Set<string>>(new Set())
-  // groupKey → true (expanded)
-  const [expandedKeys, setExpandedKeys] = React.useState<Set<string>>(new Set())
-  const [isConfirming, setIsConfirming] = React.useState(false)
-  const [isDirty, setIsDirty] = React.useState(false)
+  const [selectedCats,  setSelectedCats]  = React.useState<Record<string, string>>({})
+  const [appliedKeys,   setAppliedKeys]   = React.useState<Set<string>>(new Set())
+  const [applyingKeys,  setApplyingKeys]  = React.useState<Set<string>>(new Set())
+  const [expandedKeys,  setExpandedKeys]  = React.useState<Set<string>>(new Set())
+  const [isConfirming,  setIsConfirming]  = React.useState(false)
+  const [isDirty,       setIsDirty]       = React.useState(false)
 
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
   const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
@@ -83,7 +320,8 @@ export function ClassifyPage() {
   )
   const sym = currMeta.symbol
 
-  const pendingTxns = React.useMemo(
+  // ── All pending (for global counts / month list) ──────────────
+  const allPendingTxns = React.useMemo(
     () => transactions.filter(
       (t: Transaction) => !t.categoryId &&
         t.transactionType !== 'transfer' &&
@@ -91,6 +329,34 @@ export function ClassifyPage() {
     ),
     [transactions],
   )
+
+  // ── Pending filtered to selected month ────────────────────────
+  const pendingTxns = React.useMemo(
+    () => allPendingTxns.filter(t => t.transactionDate?.startsWith(monthKey)),
+    [allPendingTxns, monthKey],
+  )
+
+  // ── Summary stats for selected month ─────────────────────────
+  const summaryStats = React.useMemo(() => {
+    const expense = pendingTxns
+      .filter(t => t.transactionType !== 'income' && t.transactionType !== 'refund')
+      .reduce((s, t) => s + Math.abs(t.amount), 0)
+    const income = pendingTxns
+      .filter(t => t.transactionType === 'income' || t.transactionType === 'refund')
+      .reduce((s, t) => s + Math.abs(t.amount), 0)
+
+    const srcMap: Record<string, number> = {}
+    pendingTxns.forEach(t => {
+      const src = t.source || 'manual'
+      srcMap[src] = (srcMap[src] || 0) + 1
+    })
+    const topSources = Object.entries(srcMap)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([src, count]) => ({ label: SOURCE_LABELS[src] || src, count }))
+
+    return { expense, income, topSources }
+  }, [pendingTxns])
 
   const suggestGroup = React.useCallback(
     (label: string): Group | undefined => {
@@ -102,7 +368,7 @@ export function ClassifyPage() {
     [groups],
   )
 
-  // Build groups: key = normalizedLabel + "|" + direction
+  // ── Build txn groups — sorted by totalAmount desc, then count ─
   const txnGroups = React.useMemo<TxnGroup[]>(() => {
     const q = search.trim().toLowerCase()
     const filtered = q
@@ -123,10 +389,23 @@ export function ClassifyPage() {
       g.transactions.push(t)
       g.totalAmount += Math.abs(t.amount)
     }
-    return Array.from(map.values()).sort((a, b) => b.transactions.length - a.transactions.length)
+
+    // Sort each group's transactions by date descending
+    map.forEach(g => {
+      g.transactions.sort((a, b) =>
+        (b.transactionDate ?? '').localeCompare(a.transactionDate ?? ''),
+      )
+    })
+
+    // Sort groups: totalAmount desc, then count desc
+    return Array.from(map.values()).sort((a, b) =>
+      b.totalAmount !== a.totalAmount
+        ? b.totalAmount - a.totalAmount
+        : b.transactions.length - a.transactions.length,
+    )
   }, [pendingTxns, search])
 
-  // Pre-fill suggestions per group
+  // ── Pre-fill keyword suggestions ──────────────────────────────
   React.useEffect(() => {
     const patch: Record<string, string> = {}
     txnGroups.forEach(g => {
@@ -141,10 +420,10 @@ export function ClassifyPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txnGroups.length, suggestGroup])
 
-  const hierarchicalGroups = React.useMemo(() => {
-    const active = groups.filter(g => g.is_active)
-    const parents = active.filter(g => !g.parent_id)
-    return parents.map(p => ({ ...p, children: active.filter(c => c.parent_id === p.id) }))
+  const hierarchicalGroups = React.useMemo<HierarchicalGroup[]>(() => {
+    const active = groups.filter((g: Group) => g.is_active)
+    const parents = active.filter((g: Group) => !g.parent_id)
+    return parents.map(p => ({ ...p, children: active.filter((c: Group) => c.parent_id === p.id) }))
   }, [groups])
 
   const appliedTxCount = React.useMemo(() => {
@@ -161,7 +440,6 @@ export function ClassifyPage() {
     return n
   }, [selectedCats, appliedKeys, txnGroups])
 
-  // Apply a single group → bulk update all its txns + add keywords to category
   const handleApplyGroup = async (gKey: string) => {
     const categoryId = selectedCats[gKey]
     if (!categoryId) return
@@ -169,19 +447,15 @@ export function ClassifyPage() {
     if (!grp) return
 
     setApplyingKeys(prev => new Set(prev).add(gKey))
-
     const updates = grp.transactions.map(t => ({ id: t.id, update: { categoryId } }))
     await bulkUpdateTransactions(updates)
 
-    // Smart keyword update
-    const cat = groups.find(g => g.id === categoryId)
+    const cat = groups.find((g: Group) => g.id === categoryId)
     if (cat) {
       const newKws = extractSmartKeywords(grp.label)
       const existing = cat.keywords || []
       const merged = Array.from(new Set([...existing, ...newKws]))
-      if (merged.length > existing.length) {
-        await updateGroup(categoryId, { keywords: merged })
-      }
+      if (merged.length > existing.length) await updateGroup(categoryId, { keywords: merged })
     }
 
     setAppliedKeys(prev => new Set(prev).add(gKey))
@@ -203,7 +477,7 @@ export function ClassifyPage() {
     })
     if (updates.length > 0) await bulkUpdateTransactions(updates)
     for (const { catId, label } of kws) {
-      const cat = groups.find(g => g.id === catId)
+      const cat = groups.find((g: Group) => g.id === catId)
       if (cat) {
         const merged = Array.from(new Set([...(cat.keywords || []), ...extractSmartKeywords(label)]))
         if (merged.length > (cat.keywords || []).length) await updateGroup(catId, { keywords: merged })
@@ -220,12 +494,10 @@ export function ClassifyPage() {
       return n
     })
 
-  const chevronSvg = `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2364748b'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E")`
-
   return (
     <div className="max-w-4xl mx-auto space-y-5 animate-fade-in pb-20">
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center gap-3 flex-wrap">
         <button
           onClick={() => router.push('/categories')}
@@ -233,6 +505,7 @@ export function ClassifyPage() {
         >
           <ArrowLeft className="w-5 h-5 text-[var(--color-text-secondary)]" />
         </button>
+
         <div className="min-w-0">
           <h1 className="text-[20px] font-semibold tracking-[-0.025em] text-[var(--color-text-primary)]">
             Phân loại giao dịch
@@ -244,7 +517,42 @@ export function ClassifyPage() {
             )}
           </p>
         </div>
+
         <div className="flex-1" />
+
+        {/* Month navigator */}
+        <div className="relative flex items-center gap-1">
+          <button
+            onClick={prevMonth}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors"
+          >
+            <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+
+          <button
+            onClick={() => setIsMonthPickerOpen(v => !v)}
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors text-sm font-medium text-[var(--color-text-primary)] min-w-[130px] justify-center"
+          >
+            <CalendarDays className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+            {monthLabel}
+          </button>
+
+          <button
+            onClick={nextMonth}
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors"
+          >
+            <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
+          </button>
+
+          {isMonthPickerOpen && (
+            <MonthPicker
+              selectedYear={selectedYear}
+              selectedMonth={selectedMonth}
+              onSelect={(y, m) => { setSelectedYear(y); setSelectedMonth(m) }}
+              onClose={() => setIsMonthPickerOpen(false)}
+            />
+          )}
+        </div>
 
         <button
           onClick={handleSaveTemp}
@@ -274,12 +582,66 @@ export function ClassifyPage() {
         </Button>
       </div>
 
-      {/* Progress */}
+      {/* ── Summary stats grid ── */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          {
+            label: 'Chi tiêu chưa phân loại',
+            value: fmt(summaryStats.expense),
+            unit: sym,
+            color: 'var(--color-text-loss)',
+            icon: TrendingDown,
+          },
+          {
+            label: 'Tiền vào chưa phân loại',
+            value: fmt(summaryStats.income),
+            unit: sym,
+            color: 'var(--color-text-gain)',
+            icon: TrendingUp,
+          },
+          {
+            label: 'Số nhóm giao dịch',
+            value: String(txnGroups.length),
+            unit: ' nhóm',
+            color: 'var(--color-text-primary)',
+            icon: null,
+          },
+          {
+            label: 'Nguồn chính',
+            value: summaryStats.topSources[0]?.label ?? '—',
+            unit: summaryStats.topSources[0] ? ` (${summaryStats.topSources[0].count})` : '',
+            color: 'var(--color-text-primary)',
+            icon: null,
+          },
+        ].map((stat, i) => (
+          <div
+            key={i}
+            className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 shadow-[var(--shadow-card)]"
+          >
+            <p className="text-[11px] text-[var(--color-text-tertiary)] mb-1">{stat.label}</p>
+            <p className="text-[15px] font-semibold font-tabular" style={{ color: stat.color }}>
+              {stat.value}
+              <span className="text-[11px] font-medium opacity-70">{stat.unit}</span>
+            </p>
+            {i === 3 && summaryStats.topSources.length > 1 && (
+              <div className="flex gap-1 mt-1 flex-wrap">
+                {summaryStats.topSources.slice(1).map(s => (
+                  <span key={s.label} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">
+                    {s.label} {s.count}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* ── Progress ── */}
       {pendingTxns.length > 0 && (
         <div className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 flex items-center gap-4 shadow-[var(--shadow-card)]">
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between text-[11px] text-[var(--color-text-tertiary)] mb-1.5">
-              <span>Tiến độ phân loại</span>
+              <span>Tiến độ phân loại tháng này</span>
               <span className="font-mono font-semibold text-[var(--color-text-primary)]">
                 {appliedTxCount + pendingApplyCount} / {pendingTxns.length}
               </span>
@@ -305,7 +667,7 @@ export function ClassifyPage() {
         </div>
       )}
 
-      {/* List */}
+      {/* ── List ── */}
       <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
         {/* Search */}
         <div className="p-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/50">
@@ -324,7 +686,11 @@ export function ClassifyPage() {
         {/* Groups */}
         <div className="divide-y divide-[var(--color-border-subtle)]">
           {txnGroups.length === 0 ? (
-            <div className="p-8 text-center text-[var(--color-text-quaternary)] text-sm">Không có giao dịch nào</div>
+            <div className="p-10 text-center">
+              <CalendarDays className="w-8 h-8 text-[var(--color-text-quaternary)] mx-auto mb-2" />
+              <p className="text-sm text-[var(--color-text-tertiary)]">Không có giao dịch chưa phân loại trong {monthLabel}</p>
+              <p className="text-xs text-[var(--color-text-quaternary)] mt-1">Dùng mũi tên ← → để xem tháng khác</p>
+            </div>
           ) : txnGroups.map(grp => {
             const isApplied  = appliedKeys.has(grp.key)
             const isBusy     = applyingKeys.has(grp.key)
@@ -390,11 +756,11 @@ export function ClassifyPage() {
                     </div>
                   </div>
 
-                  {/* Total amount */}
+                  {/* Total amount — red for expense */}
                   <div className="text-right shrink-0">
                     <p className={cn(
                       'text-sm font-bold font-tabular',
-                      grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]',
+                      grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
                     )}>
                       {sign} {fmt(grp.totalAmount)} <span className="text-[11px] font-medium opacity-70">{sym}</span>
                     </p>
@@ -403,31 +769,14 @@ export function ClassifyPage() {
 
                   {/* Controls */}
                   <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                    {/* Category select */}
-                    <select
+                    {/* Category tree picker */}
+                    <ClassifyCategoryPicker
                       value={selected}
-                      onChange={e => { setSelectedCats(prev => ({ ...prev, [grp.key]: e.target.value })); setIsDirty(true) }}
+                      onChange={id => { setSelectedCats(prev => ({ ...prev, [grp.key]: id })); setIsDirty(true) }}
                       disabled={isApplied || isBusy}
-                      className={cn(
-                        'h-9 rounded-lg border text-sm px-3 pr-8 appearance-none bg-no-repeat outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors flex-1 sm:w-52',
-                        isApplied
-                          ? 'border-[var(--color-gain-200)] bg-[var(--color-gain-25)] text-[var(--color-gain-700)] cursor-not-allowed'
-                          : selected
-                            ? 'border-[var(--color-interactive-primary)] bg-[var(--color-brand-25)]'
-                            : 'border-[var(--color-border-default)] bg-white',
-                      )}
-                      style={{ backgroundImage: chevronSvg, backgroundPosition: 'right 0.5rem center', backgroundSize: '1.1em 1.1em' }}
-                    >
-                      <option value="">-- Chọn danh mục --</option>
-                      {hierarchicalGroups.map(parent => (
-                        <optgroup key={parent.id} label={parent.name}>
-                          <option value={parent.id}>{parent.name} (Chung)</option>
-                          {parent.children.map(child => (
-                            <option key={child.id} value={child.id}>↳ {child.name}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
+                      groups={groups}
+                      hierarchical={hierarchicalGroups}
+                    />
 
                     {/* Apply / Applied */}
                     {isApplied ? (
@@ -471,6 +820,7 @@ export function ClassifyPage() {
                       let fDate = t.transactionDate
                       try { fDate = format(new Date(t.transactionDate), 'dd/MM/yyyy') } catch { /* keep */ }
                       const tSign = grp.isIncome ? '+' : '−'
+                      const srcLabel = SOURCE_LABELS[t.source || 'manual'] || t.source || '—'
                       return (
                         <div
                           key={t.id}
@@ -483,12 +833,15 @@ export function ClassifyPage() {
                           <span className="flex-1 text-[var(--color-text-secondary)] truncate">
                             {t.merchantName || t.description || t.id.slice(0, 12)}
                           </span>
+                          <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
+                            {srcLabel}
+                          </span>
                           <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-sunken)] px-1.5 py-0.5 rounded-md border border-[var(--color-border-subtle)] shrink-0">
                             {fDate}
                           </span>
                           <span className={cn(
                             'font-mono font-semibold shrink-0',
-                            grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]',
+                            grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
                           )}>
                             {tSign} {fmt(Math.abs(t.amount))} {sym}
                           </span>
