@@ -323,7 +323,7 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
       let curr = c
       while (curr.parent_id) {
         if (curr.parent_id === currentId) return false
-        const parent = groups.find(p => p.id === curr.parent_id)
+        const parent = categories.find(p => p.id === curr.parent_id)
         if (parent) curr = parent
         else break
       }
