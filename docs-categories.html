@@ -54,7 +54,8 @@
     <span class="badge badge-gray">v1.0.0</span> Tài liệu gốc &nbsp;
     <span class="badge badge-blue">v2.0.0</span> Cập nhật 2026-05-23 — major rewrite, schema migration, server-side APIs &nbsp;
     <span class="badge badge-purple">v2.1.0</span> Cập nhật 2026-05-23 — rename group→category, toggle fix, 8-char codes, SmartClassifyCard, bento fixes &nbsp;
-    <span class="badge badge-green">v2.2.0</span> Cập nhật 2026-05-24 — classify-page: month nav, summary stats, tree picker, sort fix, red amounts, source badges
+    <span class="badge badge-green">v2.2.0</span> Cập nhật 2026-05-24 — classify-page: month nav, summary stats, tree picker, sort fix, red amounts, source badges &nbsp;
+    <span class="badge badge-green">v2.3.0</span> Cập nhật 2026-05-24 — classify-page: fix dropdown overflow (fixed pos), sort by date default, sort controls UI, latestDate field
     &nbsp;·&nbsp; <a href="#changelog" style="color:#2563eb;">→ Xem Changelog</a>
   </p>
 
@@ -1325,6 +1326,65 @@ let query = supabase
   </table>
 </div>
 
+<!-- ── v2.3.0 ─────────────────────────────────────────── -->
+<div style="background:#fff;border:2px solid #16a34a;border-radius:12px;padding:24px 28px;margin:24px 0;">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
+    <span style="font-size:22px;font-weight:800;color:#15803d;">v2.3.0</span>
+    <span class="badge badge-green">Bug Fix + Feature</span>
+    <span class="meta" style="margin:0;">2026-05-24 · Nhánh <code>claude/affectionate-bohr-SPRYu</code></span>
+  </div>
+  <p><strong>File:</strong> <code>features/categories/classify-page.tsx</code></p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;margin-top:0;">🐛 1. Fix dropdown overflow — position:fixed thay vì position:absolute</h3>
+  <p><strong>Root cause:</strong> <code>ClassifyCategoryPicker</code> dùng <code>position: absolute; left: 0; right: 0</code> nhưng container cha có <code>overflow: hidden</code> → dropdown bị clip mất.</p>
+  <div class="section-box">
+    <h4>Cũ (bị clip)</h4>
+    <pre><code>// Dropdown absolute bên trong overflow:hidden container
+&lt;div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 ..."&gt;</code></pre>
+    <h4>Mới (fix — dùng getBoundingClientRect)</h4>
+    <pre><code>const handleToggle = () => {
+  if (!open && btnRef.current) {
+    const r = btnRef.current.getBoundingClientRect()
+    setDropPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 232) })
+  }
+  setOpen(v => !v)
+}
+// Dropdown render với position:fixed tính từ viewport
+&lt;div style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}&gt;</code></pre>
+    <p>Thêm listener <code>scroll</code> + <code>resize</code> để close dropdown khi viewport thay đổi (tránh drift).</p>
+  </div>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">📅 2. Default sort = "Gần nhất" (newest date first)</h3>
+  <p>Trước: default sort là <code>totalAmount desc</code>. Sau: default = <code>'date'</code>.</p>
+  <p>Thêm field <code>latestDate: string</code> vào <code>TxnGroup</code>: track max <code>transactionDate</code> trong group.</p>
+  <pre><code>if (!g.latestDate || (t.transactionDate ?? '') > g.latestDate) {
+  g.latestDate = t.transactionDate ?? ''
+}</code></pre>
+  <p>Sort mode <code>'date'</code>: <code>arr.sort((a, b) => b.latestDate.localeCompare(a.latestDate))</code></p>
+  <p>Hiển thị ngày gần nhất <code>dd/MM</code> dạng inline trong group label row (mờ, làm context cho user).</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔀 3. Sort controls UI trong toolbar</h3>
+  <p>Toolbar search + sort cùng hàng, 3 nút toggle:</p>
+  <table>
+    <thead><tr><th>Mode</th><th>Label</th><th>Logic</th></tr></thead>
+    <tbody>
+      <tr><td><code>date</code></td><td>Gần nhất ✓ (default)</td><td><code>b.latestDate.localeCompare(a.latestDate)</code></td></tr>
+      <tr><td><code>amount</code></td><td>Số tiền</td><td><code>b.totalAmount - a.totalAmount</code>, tie-break count</td></tr>
+      <tr><td><code>count</code></td><td>Nhiều nhất</td><td><code>b.count - a.count</code>, tie-break amount</td></tr>
+    </tbody>
+  </table>
+  <p>Icon <code>ArrowUpDown</code> từ lucide-react đặt trước nút sort để user nhận biết context.</p>
+
+  <h3 style="color:#0f172a;border-bottom:1px solid #e2e8f0;padding-bottom:6px;">🔧 4. Chi tiết kỹ thuật khác</h3>
+  <ul style="padding-left:18px;color:#475569;">
+    <li>Type <code>SortMode = 'date' | 'amount' | 'count'</code> thêm vào file</li>
+    <li><code>SORT_OPTIONS</code> constant array ngoài component (tránh re-create mỗi render)</li>
+    <li>Dropdown picker: trigger dùng <code>ref={btnRef}</code>; dropdown dùng <code>ref={dropRef}</code>; outside-click check cả hai ref</li>
+    <li>Dropdown tree: parent icon size tăng lên <code>w-6 h-6</code> (nhất quán với ParentTreeDropdown trong category-form)</li>
+    <li>Thêm import <code>ArrowUpDown</code> từ lucide-react</li>
+  </ul>
+</div>
+
 <!-- ── v2.2.0 ─────────────────────────────────────────── -->
 <div style="background:#fff;border:2px solid #16a34a;border-radius:12px;padding:24px 28px;margin:24px 0;">
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;">
@@ -1399,7 +1459,8 @@ let query = supabase
   v1.0.0 — Tài liệu khởi tạo (phân tích source code) &nbsp;|&nbsp;
   v2.0.0 — 2026-05-23 — Major: server-side APIs, schema migration, component rewrite, bug fixes &nbsp;|&nbsp;
   v2.1.0 — 2026-05-23 — Refactor: rename group→category, toggle fix, 8-char codes, SmartClassifyCard improvements, bento grid fixes &nbsp;|&nbsp;
-  v2.2.0 — 2026-05-24 — classify-page: month navigation, summary stats grid, tree category picker, sort by amount, red for expenses, source badges in expand
+  v2.2.0 — 2026-05-24 — classify-page: month navigation, summary stats grid, tree category picker, sort by amount, red for expenses, source badges in expand &nbsp;|&nbsp;
+  v2.3.0 — 2026-05-24 — classify-page: fix dropdown overflow (position:fixed + getBoundingClientRect), default sort = date newest first, sort controls (Gần nhất / Số tiền / Nhiều nhất), latestDate field in TxnGroup
 </p>
 </div>
 </body>

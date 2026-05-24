@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button'
 import {
   ArrowLeft, Check, CheckCheck, Loader2, Search,
   Save, Zap, ChevronDown, ChevronUp, TrendingDown, TrendingUp,
-  ChevronLeft, ChevronRight, CalendarDays,
+  ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
@@ -24,9 +24,11 @@ type TxnGroup = {
   isIncome: boolean
   transactions: Transaction[]
   totalAmount: number
+  latestDate: string   // most recent transactionDate in the group
 }
 
 type HierarchicalGroup = Group & { children: Group[] }
+type SortMode = 'date' | 'amount' | 'count'
 
 // ── Smart keyword extractor ─────────────────────────────────────
 function extractSmartKeywords(label: string): string[] {
@@ -59,7 +61,8 @@ const SOURCE_LABELS: Record<string, string> = {
   seven_bank: '7Bank', jp_post: 'JP Post', epos: 'EPOS', d_payment: 'd払い',
 }
 
-// ── Compact category picker (tree-style) ────────────────────────
+// ── Fixed-position category picker ─────────────────────────────
+// Uses getBoundingClientRect + position:fixed to escape overflow:hidden parents
 function ClassifyCategoryPicker({
   value,
   onChange,
@@ -74,24 +77,47 @@ function ClassifyCategoryPicker({
   hierarchical: HierarchicalGroup[]
 }) {
   const [open, setOpen] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+  const [dropPos, setDropPos] = React.useState<{ top: number; left: number; width: number } | null>(null)
+  const btnRef  = React.useRef<HTMLButtonElement>(null)
+  const dropRef = React.useRef<HTMLDivElement>(null)
   const selected = groups.find(g => g.id === value)
 
+  const handleToggle = () => {
+    if (disabled) return
+    if (!open && btnRef.current) {
+      const r = btnRef.current.getBoundingClientRect()
+      setDropPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 232) })
+    }
+    setOpen(v => !v)
+  }
+
+  // Close on outside click
   React.useEffect(() => {
     if (!open) return
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!btnRef.current?.contains(t) && !dropRef.current?.contains(t)) setOpen(false)
     }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
+    document.addEventListener('mousedown', onDown)
+    return () => document.removeEventListener('mousedown', onDown)
+  }, [open])
+
+  // Close on scroll / resize (position would drift)
+  React.useEffect(() => {
+    if (!open) return
+    const close = () => setOpen(false)
+    window.addEventListener('scroll', close, true)
+    window.addEventListener('resize', close)
+    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', close) }
   }, [open])
 
   return (
-    <div ref={ref} className="relative flex-1 sm:w-56">
+    <div className="relative flex-1 sm:w-56">
+      {/* Trigger */}
       <button
+        ref={btnRef}
         type="button"
-        disabled={disabled}
-        onClick={() => !disabled && setOpen(v => !v)}
+        onClick={handleToggle}
         className={cn(
           'w-full h-9 px-3 rounded-lg border text-left flex items-center gap-2 transition-colors',
           disabled && 'opacity-50 cursor-not-allowed',
@@ -115,18 +141,18 @@ function ClassifyCategoryPicker({
             </span>
           </>
         ) : (
-          <span className="flex-1 text-[12px] text-[var(--color-text-placeholder)]">
-            -- Chọn danh mục --
-          </span>
+          <span className="flex-1 text-[12px] text-[var(--color-text-placeholder)]">-- Chọn danh mục --</span>
         )}
-        <ChevronDown className={cn(
-          'w-3.5 h-3.5 text-[var(--color-text-quaternary)] transition-transform shrink-0',
-          open && 'rotate-180',
-        )} />
+        <ChevronDown className={cn('w-3.5 h-3.5 text-[var(--color-text-quaternary)] transition-transform shrink-0', open && 'rotate-180')} />
       </button>
 
-      {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+4px)] z-50 rounded-xl border shadow-lg overflow-hidden bg-[var(--color-surface-default)] border-[var(--color-border-default)]">
+      {/* Dropdown — fixed position to escape overflow:hidden ancestors */}
+      {open && dropPos && (
+        <div
+          ref={dropRef}
+          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
+          className="rounded-xl border shadow-xl overflow-hidden bg-[var(--color-surface-default)] border-[var(--color-border-default)]"
+        >
           {/* Clear */}
           <div className="p-1.5 border-b border-[var(--color-border-subtle)]">
             <button
@@ -139,49 +165,52 @@ function ClassifyCategoryPicker({
                   : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
               )}
             >
-              <span className="w-5 h-5 rounded-[5px] flex items-center justify-center bg-[var(--color-bg-sunken)] text-[10px]">—</span>
-              <span>Chưa chọn</span>
-              {!value && <Check className="w-3 h-3 ml-auto" />}
+              <span className="w-5 h-5 rounded-[5px] flex items-center justify-center bg-[var(--color-bg-sunken)] text-[10px] shrink-0">—</span>
+              <span className="flex-1 text-left">Chưa chọn</span>
+              {!value && <Check className="w-3 h-3 shrink-0" />}
             </button>
           </div>
 
           {/* Tree */}
-          <div className="p-1.5 max-h-56 overflow-y-auto">
+          <div className="p-1.5 max-h-60 overflow-y-auto">
             {hierarchical.map(parent => (
               <div key={parent.id}>
+                {/* Parent row */}
                 <button
                   type="button"
                   onClick={() => { onChange(parent.id); setOpen(false) }}
                   className={cn(
-                    'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-[7px] text-[12px] font-medium transition-colors cursor-pointer',
+                    'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-[7px] text-[13px] font-medium transition-colors cursor-pointer',
                     value === parent.id
                       ? 'bg-[var(--color-brand-500)] text-white'
                       : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
                   )}
                 >
                   <span
-                    className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
+                    className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 text-sm"
                     style={{ background: value === parent.id ? 'rgba(255,255,255,0.2)' : `${parent.color}22` }}
                   >
                     {parent.emoji || '📁'}
                   </span>
                   <span className="flex-1 truncate text-left">{parent.name}</span>
-                  {value === parent.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
+                  {value === parent.id && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
                 </button>
+
+                {/* Children */}
                 {parent.children.map(child => (
                   <button
                     key={child.id}
                     type="button"
                     onClick={() => { onChange(child.id); setOpen(false) }}
                     className={cn(
-                      'w-full flex items-center gap-2 pl-6 pr-2.5 py-[6px] rounded-[7px] text-[12px] transition-colors cursor-pointer',
+                      'w-full flex items-center gap-2 pl-7 pr-2.5 py-[6px] rounded-[7px] text-[12px] transition-colors cursor-pointer',
                       value === child.id
-                        ? 'bg-[var(--color-brand-100)] text-[var(--color-brand-700)] font-medium'
+                        ? 'bg-[var(--color-brand-100)] text-[var(--color-brand-800)] font-semibold'
                         : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
                     )}
                   >
                     <span
-                      className="w-4 h-4 rounded-[4px] flex items-center justify-center shrink-0 text-[10px]"
+                      className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0 text-xs"
                       style={{ background: `${child.color}22` }}
                     >
                       {child.emoji || '📁'}
@@ -234,12 +263,11 @@ function MonthPicker({
       ref={ref}
       className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg p-3 w-56"
     >
-      {/* Year nav */}
       <div className="flex items-center justify-between mb-2.5">
         <button
           type="button"
           onClick={() => setPickerYear(y => y - 1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
         >
           <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
         </button>
@@ -247,13 +275,11 @@ function MonthPicker({
         <button
           type="button"
           onClick={() => setPickerYear(y => y + 1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors"
+          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
         >
           <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
         </button>
       </div>
-
-      {/* Month grid */}
       <div className="grid grid-cols-4 gap-1">
         {MONTH_LABELS.map((lbl, i) => {
           const m = i + 1
@@ -278,6 +304,13 @@ function MonthPicker({
     </div>
   )
 }
+
+// ── Sort mode labels ────────────────────────────────────────────
+const SORT_OPTIONS: { value: SortMode; label: string }[] = [
+  { value: 'date',   label: 'Gần nhất' },
+  { value: 'amount', label: 'Số tiền'  },
+  { value: 'count',  label: 'Nhiều nhất' },
+]
 
 // ── Main component ──────────────────────────────────────────────
 export function ClassifyPage() {
@@ -304,13 +337,16 @@ export function ClassifyPage() {
   const monthLabel = `Tháng ${selectedMonth}/${selectedYear}`
   const monthKey   = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
 
-  const [search, setSearch] = React.useState('')
-  const [selectedCats,  setSelectedCats]  = React.useState<Record<string, string>>({})
-  const [appliedKeys,   setAppliedKeys]   = React.useState<Set<string>>(new Set())
-  const [applyingKeys,  setApplyingKeys]  = React.useState<Set<string>>(new Set())
-  const [expandedKeys,  setExpandedKeys]  = React.useState<Set<string>>(new Set())
-  const [isConfirming,  setIsConfirming]  = React.useState(false)
-  const [isDirty,       setIsDirty]       = React.useState(false)
+  // ── Sort mode — default: date (newest first) ──────────────────
+  const [sortBy, setSortBy] = React.useState<SortMode>('date')
+
+  const [search,       setSearch]       = React.useState('')
+  const [selectedCats, setSelectedCats] = React.useState<Record<string, string>>({})
+  const [appliedKeys,  setAppliedKeys]  = React.useState<Set<string>>(new Set())
+  const [applyingKeys, setApplyingKeys] = React.useState<Set<string>>(new Set())
+  const [expandedKeys, setExpandedKeys] = React.useState<Set<string>>(new Set())
+  const [isConfirming, setIsConfirming] = React.useState(false)
+  const [isDirty,      setIsDirty]      = React.useState(false)
 
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
   const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
@@ -320,7 +356,7 @@ export function ClassifyPage() {
   )
   const sym = currMeta.symbol
 
-  // ── All pending (for global counts / month list) ──────────────
+  // ── All pending (used for month-selector context only) ────────
   const allPendingTxns = React.useMemo(
     () => transactions.filter(
       (t: Transaction) => !t.categoryId &&
@@ -336,7 +372,7 @@ export function ClassifyPage() {
     [allPendingTxns, monthKey],
   )
 
-  // ── Summary stats for selected month ─────────────────────────
+  // ── Summary stats ─────────────────────────────────────────────
   const summaryStats = React.useMemo(() => {
     const expense = pendingTxns
       .filter(t => t.transactionType !== 'income' && t.transactionType !== 'refund')
@@ -344,7 +380,6 @@ export function ClassifyPage() {
     const income = pendingTxns
       .filter(t => t.transactionType === 'income' || t.transactionType === 'refund')
       .reduce((s, t) => s + Math.abs(t.amount), 0)
-
     const srcMap: Record<string, number> = {}
     pendingTxns.forEach(t => {
       const src = t.source || 'manual'
@@ -354,7 +389,6 @@ export function ClassifyPage() {
       .sort((a, b) => b[1] - a[1])
       .slice(0, 3)
       .map(([src, count]) => ({ label: SOURCE_LABELS[src] || src, count }))
-
     return { expense, income, topSources }
   }, [pendingTxns])
 
@@ -368,7 +402,7 @@ export function ClassifyPage() {
     [groups],
   )
 
-  // ── Build txn groups — sorted by totalAmount desc, then count ─
+  // ── Build + sort txn groups ───────────────────────────────────
   const txnGroups = React.useMemo<TxnGroup[]>(() => {
     const q = search.trim().toLowerCase()
     const filtered = q
@@ -377,33 +411,50 @@ export function ClassifyPage() {
         )
       : pendingTxns
 
+    // Build map: key = label|direction
     const map = new Map<string, TxnGroup>()
     for (const t of filtered) {
       const label = t.merchantName || t.description || t.id.slice(0, 8)
       const isIncome = t.transactionType === 'income' || t.transactionType === 'refund'
       const key = label.toLowerCase().trim() + '|' + (isIncome ? 'in' : 'out')
       if (!map.has(key)) {
-        map.set(key, { key, label, isIncome, transactions: [], totalAmount: 0 })
+        map.set(key, { key, label, isIncome, transactions: [], totalAmount: 0, latestDate: '' })
       }
       const g = map.get(key)!
       g.transactions.push(t)
       g.totalAmount += Math.abs(t.amount)
+      if (!g.latestDate || (t.transactionDate ?? '') > g.latestDate) {
+        g.latestDate = t.transactionDate ?? ''
+      }
     }
 
-    // Sort each group's transactions by date descending
+    // Sort each group's transactions by date desc (newest first)
     map.forEach(g => {
       g.transactions.sort((a, b) =>
         (b.transactionDate ?? '').localeCompare(a.transactionDate ?? ''),
       )
     })
 
-    // Sort groups: totalAmount desc, then count desc
-    return Array.from(map.values()).sort((a, b) =>
-      b.totalAmount !== a.totalAmount
-        ? b.totalAmount - a.totalAmount
-        : b.transactions.length - a.transactions.length,
-    )
-  }, [pendingTxns, search])
+    const arr = Array.from(map.values())
+
+    // Sort groups by selected mode
+    if (sortBy === 'date') {
+      arr.sort((a, b) => b.latestDate.localeCompare(a.latestDate))
+    } else if (sortBy === 'amount') {
+      arr.sort((a, b) =>
+        b.totalAmount !== a.totalAmount ? b.totalAmount - a.totalAmount : b.transactions.length - a.transactions.length,
+      )
+    } else {
+      // count
+      arr.sort((a, b) =>
+        b.transactions.length !== a.transactions.length
+          ? b.transactions.length - a.transactions.length
+          : b.totalAmount - a.totalAmount,
+      )
+    }
+
+    return arr
+  }, [pendingTxns, search, sortBy])
 
   // ── Pre-fill keyword suggestions ──────────────────────────────
   React.useEffect(() => {
@@ -524,14 +575,14 @@ export function ClassifyPage() {
         <div className="relative flex items-center gap-1">
           <button
             onClick={prevMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors cursor-pointer"
           >
             <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
           </button>
 
           <button
             onClick={() => setIsMonthPickerOpen(v => !v)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors text-sm font-medium text-[var(--color-text-primary)] min-w-[130px] justify-center"
+            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors text-sm font-medium text-[var(--color-text-primary)] min-w-[130px] justify-center cursor-pointer"
           >
             <CalendarDays className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
             {monthLabel}
@@ -539,7 +590,7 @@ export function ClassifyPage() {
 
           <button
             onClick={nextMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors"
+            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors cursor-pointer"
           >
             <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
           </button>
@@ -585,43 +636,15 @@ export function ClassifyPage() {
       {/* ── Summary stats grid ── */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          {
-            label: 'Chi tiêu chưa phân loại',
-            value: fmt(summaryStats.expense),
-            unit: sym,
-            color: 'var(--color-text-loss)',
-            icon: TrendingDown,
-          },
-          {
-            label: 'Tiền vào chưa phân loại',
-            value: fmt(summaryStats.income),
-            unit: sym,
-            color: 'var(--color-text-gain)',
-            icon: TrendingUp,
-          },
-          {
-            label: 'Số nhóm giao dịch',
-            value: String(txnGroups.length),
-            unit: ' nhóm',
-            color: 'var(--color-text-primary)',
-            icon: null,
-          },
-          {
-            label: 'Nguồn chính',
-            value: summaryStats.topSources[0]?.label ?? '—',
-            unit: summaryStats.topSources[0] ? ` (${summaryStats.topSources[0].count})` : '',
-            color: 'var(--color-text-primary)',
-            icon: null,
-          },
+          { label: 'Chi tiêu chưa phân loại', value: fmt(summaryStats.expense), unit: sym, color: 'var(--color-text-loss)' },
+          { label: 'Tiền vào chưa phân loại', value: fmt(summaryStats.income),  unit: sym, color: 'var(--color-text-gain)' },
+          { label: 'Số nhóm giao dịch', value: String(txnGroups.length), unit: ' nhóm', color: 'var(--color-text-primary)' },
+          { label: 'Nguồn chính', value: summaryStats.topSources[0]?.label ?? '—', unit: summaryStats.topSources[0] ? ` (${summaryStats.topSources[0].count})` : '', color: 'var(--color-text-primary)' },
         ].map((stat, i) => (
-          <div
-            key={i}
-            className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 shadow-[var(--shadow-card)]"
-          >
+          <div key={i} className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 shadow-[var(--shadow-card)]">
             <p className="text-[11px] text-[var(--color-text-tertiary)] mb-1">{stat.label}</p>
             <p className="text-[15px] font-semibold font-tabular" style={{ color: stat.color }}>
-              {stat.value}
-              <span className="text-[11px] font-medium opacity-70">{stat.unit}</span>
+              {stat.value}<span className="text-[11px] font-medium opacity-70">{stat.unit}</span>
             </p>
             {i === 3 && summaryStats.topSources.length > 1 && (
               <div className="flex gap-1 mt-1 flex-wrap">
@@ -669,9 +692,11 @@ export function ClassifyPage() {
 
       {/* ── List ── */}
       <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-        {/* Search */}
-        <div className="p-4 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/50">
-          <div className="relative max-w-sm">
+
+        {/* Search + Sort toolbar */}
+        <div className="p-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/50 flex items-center gap-3 flex-wrap">
+          {/* Search */}
+          <div className="relative flex-1 min-w-[160px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-quaternary)]" />
             <input
               type="text"
@@ -680,6 +705,26 @@ export function ClassifyPage() {
               placeholder="Tìm tên giao dịch..."
               className="pl-9 pr-3 h-9 w-full rounded-lg border text-sm bg-white text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
             />
+          </div>
+
+          {/* Sort controls */}
+          <div className="flex items-center gap-1 shrink-0">
+            <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)] mr-0.5" />
+            {SORT_OPTIONS.map(opt => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setSortBy(opt.value)}
+                className={cn(
+                  'h-8 px-2.5 rounded-lg text-[12px] font-medium transition-colors cursor-pointer',
+                  sortBy === opt.value
+                    ? 'bg-[var(--color-brand-500)] text-white shadow-sm'
+                    : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] border border-transparent hover:border-[var(--color-border-default)]',
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -699,6 +744,12 @@ export function ClassifyPage() {
             const suggested  = suggestGroup(grp.label)
             const count      = grp.transactions.length
             const sign       = grp.isIncome ? '+' : '−'
+
+            // Compact date display for the group's latest transaction
+            let latestDateDisplay = ''
+            try {
+              if (grp.latestDate) latestDateDisplay = format(new Date(grp.latestDate), 'dd/MM')
+            } catch { /* skip */ }
 
             return (
               <div key={grp.key} className={cn(isApplied ? 'bg-[var(--color-gain-25)]' : '')}>
@@ -741,6 +792,9 @@ export function ClassifyPage() {
                         ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-gain-50)] text-[var(--color-gain-700)]">Tiền vào</span>
                         : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-loss-50)] text-[var(--color-loss-700)]">Chi tiêu</span>
                       }
+                      {latestDateDisplay && (
+                        <span className="text-[10px] text-[var(--color-text-quaternary)]">{latestDateDisplay}</span>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       {suggested && !selected && (
@@ -756,7 +810,7 @@ export function ClassifyPage() {
                     </div>
                   </div>
 
-                  {/* Total amount — red for expense */}
+                  {/* Total amount */}
                   <div className="text-right shrink-0">
                     <p className={cn(
                       'text-sm font-bold font-tabular',
@@ -769,7 +823,6 @@ export function ClassifyPage() {
 
                   {/* Controls */}
                   <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                    {/* Category tree picker */}
                     <ClassifyCategoryPicker
                       value={selected}
                       onChange={id => { setSelectedCats(prev => ({ ...prev, [grp.key]: id })); setIsDirty(true) }}
@@ -778,7 +831,6 @@ export function ClassifyPage() {
                       hierarchical={hierarchicalGroups}
                     />
 
-                    {/* Apply / Applied */}
                     {isApplied ? (
                       <span className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[12px] font-semibold shrink-0 bg-[var(--color-gain-100)] text-[var(--color-gain-700)]">
                         <Check className="w-3.5 h-3.5" />Đã lưu
@@ -799,10 +851,9 @@ export function ClassifyPage() {
                       </button>
                     )}
 
-                    {/* Expand toggle */}
                     <button
                       onClick={() => toggleExpand(grp.key)}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors shrink-0"
+                      className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors shrink-0 cursor-pointer"
                       title={isExpanded ? 'Thu gọn' : 'Xem chi tiết giao dịch'}
                     >
                       {isExpanded
