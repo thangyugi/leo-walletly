@@ -13,10 +13,10 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useCategoryStore, resolveCategoryId } from '@/features/categories/store'
 import { cn } from '@/lib/utils'
-import { CATEGORIES } from '@/lib/constants'
 import { formatMoney } from '@/lib/money'
-import type { LegacyCategory as Category, ReceiptItem, Transaction } from '@/types'
+import type { ReceiptItem, Transaction } from '@/types'
 
 type ScanState = 'idle' | 'previewing' | 'scanning' | 'confirming' | 'error' | 'saved'
 
@@ -24,7 +24,7 @@ interface ScanResult {
   storeName: string
   totalAmount: number
   date: string
-  category: Category
+  category: string
   items?: ReceiptItem[]
 }
 
@@ -32,7 +32,7 @@ interface ScanForm {
   description: string
   amount: string
   date: string
-  category: Category
+  category: string
   note: string
   isExpense: boolean
 }
@@ -116,6 +116,7 @@ export default function ScanPage() {
   const { addTransaction } = useTransactionsStore()
   const { lang }           = useSettingsStore()
   const { t }              = useTranslation()
+  const { categories }     = useCategoryStore()
 
   const L = (ja: string, vi: string, en: string) =>
     lang === 'ja' ? ja : lang === 'vi' ? vi : en
@@ -130,7 +131,7 @@ export default function ScanPage() {
     description: '',
     amount: '',
     date: new Date().toISOString().split('T')[0],
-    category: 'food',
+    category: '',
     note: '',
     isExpense: true,
   })
@@ -198,7 +199,7 @@ export default function ScanPage() {
         description: result.storeName  ?? '',
         amount:      String(Math.abs(result.totalAmount ?? 0)),
         date:        result.date       ?? new Date().toISOString().split('T')[0],
-        category:    result.category   ?? 'other',
+        category:    resolveCategoryId(result.category, categories) ?? categories[0]?.id ?? '',
         note:        '',
         isExpense:   true,
       })
@@ -219,7 +220,7 @@ export default function ScanPage() {
       amount:          amt,
       transactionType: form.isExpense ? 'expense' : 'income',
       categoryId:      form.category,
-      paymentInstrumentId: 'ai-scan', // This should probably be a real ID from the new schema
+      paymentInstrumentId: 'ai-scan',
       notes:           form.note || undefined,
     } as Partial<Transaction>)
     
@@ -239,7 +240,7 @@ export default function ScanPage() {
       description: '',
       amount: '',
       date: new Date().toISOString().split('T')[0],
-      category: 'food',
+      category: categories[0]?.id ?? '',
       note: '',
       isExpense: true,
     })
@@ -248,10 +249,12 @@ export default function ScanPage() {
   }
 
   const amtNum = parseFloat(form.amount.replace(/,/g, '')) || 0
+  const isFormDisabled = !form.description || amtNum <= 0 || !form.category
 
-  const catLabels = CATEGORIES.map((c) => ({
-    ...c,
-    label: (t.categories as any)[c.value] ?? c.label,
+  const catLabels = categories.map((c) => ({
+    value: c.id,
+    label: c.name,
+    emoji: c.emoji || '📦',
   }))
 
   return (
@@ -577,7 +580,7 @@ export default function ScanPage() {
                 size="lg"
                 icon={<Save />}
                 onClick={handleSave}
-                disabled={!form.description || amtNum <= 0}
+                disabled={isFormDisabled}
               >
                 {L('取引を保存する', 'Lưu vào hệ thống', 'Save Transaction')}
               </Button>

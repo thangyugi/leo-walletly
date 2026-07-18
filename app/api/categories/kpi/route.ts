@@ -68,12 +68,19 @@ export async function GET(req: NextRequest) {
   // 2. Total budget from root categories
   const { data: cats } = await supabase
     .from('categories')
-    .select('budget_limit, is_active, parent_id')
+    .select(`
+      is_active, parent_id,
+      category_budgets!left ( amount )
+    `)
     .eq('workspace_id', ledger.workspace_id)
     .eq('is_active', true)
     .is('parent_id', null)
+    .eq('category_budgets.ledger_id', ledgerId)
 
-  const totalBudget = (cats || []).reduce((s, c) => s + Number(c.budget_limit || 0), 0)
+  const totalBudget = (cats || []).reduce((s, c) => {
+    const amount = (c.category_budgets as any)?.[0]?.amount || 0
+    return s + Number(amount)
+  }, 0)
 
   return NextResponse.json({
     total_expense:     totalExpense,

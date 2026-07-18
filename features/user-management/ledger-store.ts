@@ -36,12 +36,15 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
       const { data: members, error: memberError } = await supabase
         .from('ledger_members')
-        .select('*, ledger:ledgers(*)')
+        .select('*, ledger:ledgers(*, workspace:workspaces(organization_id))')
         .eq('user_id', user.id)
 
       if (memberError) throw memberError
 
-      const ledgers = members?.map((m: any) => m.ledger) || []
+      const ledgers = members?.map((m: any) => ({
+        ...m.ledger,
+        organization_id: m.ledger?.workspace?.organization_id || m.ledger?.workspace?.[0]?.organization_id
+      })) || []
       
       // Get last used ledger from localStorage
       const lastId = typeof window !== 'undefined' ? localStorage.getItem('lastLedgerId') : null

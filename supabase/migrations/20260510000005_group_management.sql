@@ -130,7 +130,7 @@ select
     sum(case when t.type = 'income' then t.amount else -t.amount end) as net_balance,
     exists (
         select 1 from public.transactions t2
-        where t2.group_id = g.id and t2.status = 'pending_reconciliation'
+        where t2.group_id = g.id
     ) as has_issues
 from public.groups g
 left join public.transactions t on t.group_id = g.id

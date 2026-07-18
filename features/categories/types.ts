@@ -12,7 +12,6 @@ export interface Category {
   budget_limit: number
   keywords: string[]
   is_shared: boolean
-  is_recurring: boolean
   // Legacy (still read for backward compat, but not written)
   warning_threshold?: number
   metadata: Record<string, any>
@@ -32,18 +31,12 @@ export interface Category {
 export function getLocalizedName(
   category: {
     name?: string;
-    name_en?: string;
-    name_vi?: string;
-    name_ja?: string;
     name_i18n?: Record<string, string>;
   },
   lang: string
 ): string {
   if (category.name_i18n?.[lang]) return category.name_i18n[lang];
-  if (lang === 'en' && category.name_en) return category.name_en;
-  if (lang === 'vi' && category.name_vi) return category.name_vi;
-  if (lang === 'ja' && category.name_ja) return category.name_ja;
-  return category.name_en || category.name_vi || category.name_ja || category.name || 'Unnamed';
+  return category.name || 'Unnamed';
 }
 
 export interface CategoryTreeNode extends Category {

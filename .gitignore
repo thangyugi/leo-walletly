@@ -2,3 +2,11 @@
 node_modules/
 .env
 .env.local
+.codegraph/
+
+# Build artifacts
+*.tsbuildinfo
+
+# Supabase internals
+supabase/.temp/
+supabase/.branches/

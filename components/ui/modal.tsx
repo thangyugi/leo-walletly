@@ -39,7 +39,7 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
       />
       <div 
         className={cn(
-          'relative w-full max-w-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300',
+          'relative w-full max-w-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-2xl animate-in zoom-in-95 duration-300',
           className
         )}
       >

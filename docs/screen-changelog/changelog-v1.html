@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leo Walletly - Database Schema Analysis v1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+  <script>mermaid.initialize({startOnLoad:true, theme:'default', er:{layoutDirection:'TB'}, securityLevel:'loose'});</script>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #ffffff;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-secondary: #475569;
+      --primary: #2563eb;
+      --th-bg: #f1f5f9;
+      --code-bg: #eef2ff;
+      --code-color: #3730a3;
+      --keep: #16a34a;
+      --keep-bg: #f0fdf4;
+      --remove: #dc2626;
+      --remove-bg: #fef2f2;
+      --modify: #d97706;
+      --modify-bg: #fffbeb;
+      --review: #7c3aed;
+      --review-bg: #f5f3ff;
+      --merge: #0891b2;
+      --merge-bg: #ecfeff;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.6; }
+    .container { max-width: 1500px; margin: 0 auto; padding: 2rem; }
+
+    /* HEADER */
+    header { text-align: center; padding: 2rem 0 1.5rem; border-bottom: 3px solid var(--primary); margin-bottom: 2rem; }
+    header h1 { font-size: 2rem; color: var(--primary); }
+    header p { color: var(--text-secondary); margin-top: .5rem; }
+
+    /* NAV */
+    nav.toc { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem; }
+    nav.toc h2 { font-size: 1.1rem; margin-bottom: 1rem; color: var(--primary); }
+    nav.toc ul { list-style: none; columns: 3; gap: 1rem; }
+    nav.toc li { margin-bottom: .4rem; }
+    nav.toc a { text-decoration: none; color: var(--primary); font-size: .9rem; }
+    nav.toc a:hover { text-decoration: underline; }
+
+    /* SECTIONS */
+    h2.section-title { font-size: 1.5rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: .5rem; margin: 2.5rem 0 1rem; }
+    h3.module-title { font-size: 1.15rem; color: var(--text-secondary); margin: 1.5rem 0 .75rem; padding-left: .5rem; border-left: 4px solid var(--primary); }
+
+    /* CARDS & MERMAID */
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .mermaid { display: flex; justify-content: center; overflow-x: auto; padding: 1rem 0; }
+    .mermaid svg { max-width: 100%; }
+
+    /* DETAILS (COLLAPSIBLE TABLES) */
+    details { margin-bottom: .75rem; border: 1px solid var(--border); border-radius: 6px; background: var(--card); overflow: hidden; }
+    summary { font-weight: 600; padding: .85rem 1rem; cursor: pointer; background: var(--th-bg); display: flex; justify-content: space-between; align-items: center; font-size: .95rem; user-select: none; }
+    summary:hover { background: #e2e8f0; }
+    details[open] summary { border-bottom: 1px solid var(--border); }
+    .table-wrap { overflow-x: auto; }
+
+    /* TABLES */
+    table { width: 100%; border-collapse: collapse; font-size: .875rem; }
+    th, td { text-align: left; padding: .6rem .75rem; border-bottom: 1px solid var(--border); vertical-align: top; }
+    th { background: var(--th-bg); color: var(--text-secondary); font-weight: 600; white-space: nowrap; position: sticky; top: 0; }
+    tr:last-child td { border-bottom: none; }
+    td:first-child { font-family: 'Fira Code', monospace; font-size: .85rem; white-space: nowrap; }
+
+    /* BADGES */
+    .pk { color: #16a34a; font-weight: 700; border: 1.5px solid #16a34a; padding: 1px 5px; border-radius: 4px; font-size: .7rem; }
+    .fk { color: #dc2626; font-weight: 700; border: 1.5px solid #dc2626; padding: 1px 5px; border-radius: 4px; font-size: .7rem; }
+    .uq { color: #7c3aed; font-weight: 700; border: 1.5px solid #7c3aed; padding: 1px 5px; border-radius: 4px; font-size: .7rem; }
+    .chk { color: #0891b2; font-weight: 700; border: 1.5px solid #0891b2; padding: 1px 5px; border-radius: 4px; font-size: .7rem; }
+    code { font-family: 'Fira Code', monospace; background: var(--code-bg); color: var(--code-color); padding: .15rem .35rem; border-radius: 3px; font-size: .85em; }
+
+    /* ADVICE BADGES */
+    .advice { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; white-space: nowrap; }
+    .advice.keep { background: var(--keep-bg); color: var(--keep); }
+    .advice.remove { background: var(--remove-bg); color: var(--remove); }
+    .advice.modify { background: var(--modify-bg); color: var(--modify); }
+    .advice.review { background: var(--review-bg); color: var(--review); }
+    .advice.merge { background: var(--merge-bg); color: var(--merge); }
+
+    /* LEGEND */
+    .legend { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 1rem; background: var(--card); border: 1px solid var(--border); border-radius: 8px; }
+    .legend-item { display: flex; align-items: center; gap: .4rem; font-size: .85rem; }
+
+    /* STATS */
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; text-align: center; }
+    .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--primary); }
+    .stat-card .label { font-size: .85rem; color: var(--text-secondary); }
+
+    @media (max-width: 768px) {
+      nav.toc ul { columns: 1; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    /* TABS */
+    .tabs { display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 2px solid var(--border); overflow-x: auto; }
+    .tab-btn { padding: .75rem 1.5rem; border: none; background: none; font-size: 1rem; font-weight: 600; color: var(--text-secondary); cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+    .tab-btn.active { color: var(--primary); border-bottom-color: var(--primary); }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="openTab('v1', event)">Changelog V1 (Schema Analysis)</button>
+    <button class="tab-btn" onclick="openTab('v2', event)">Changelog V2 (i18n Migration)</button>
+    <button class="tab-btn" onclick="openTab('v3', event)">Changelog V3 (Category Domain)</button>
+    <button class="tab-btn active" onclick="openTab('v4', event)">Changelog V4 (UX Refactor)</button>
+  </div>
+
+  <div id="v1" class="tab-content active">
+
+  <header>
+    <h1>📊 Leo Walletly — Database Schema Analysis</h1>
+    <p>Version 1.0 &bull; Ngày phân tích: 20/06/2026 &bull; Tổng cộng: 50 bảng</p>
+  </header>
+
+  <!-- STATS -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="num">50</div><div class="label">Tables</div></div>
+    <div class="stat-card"><div class="num">~500+</div><div class="label">Columns</div></div>
+    <div class="stat-card"><div class="num">~80+</div><div class="label">Foreign Keys</div></div>
+    <div class="stat-card"><div class="num">8</div><div class="label">Modules</div></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend">
+    <div class="legend-item"><span class="pk">PK</span> Khóa chính</div>
+    <div class="legend-item"><span class="fk">FK</span> Khóa ngoại</div>
+    <div class="legend-item"><span class="uq">UQ</span> Duy nhất</div>
+    <div class="legend-item"><span class="chk">CHK</span> Ràng buộc</div>
+    <div class="legend-item"><span class="advice keep">✅ GIỮ</span> Cột tốt, giữ nguyên</div>
+    <div class="legend-item"><span class="advice remove">🗑 BỎ</span> Nên xóa / Không cần</div>
+    <div class="legend-item"><span class="advice modify">⚠️ SỬA</span> Cần thay đổi</div>
+    <div class="legend-item"><span class="advice review">🔍 XEM LẠI</span> Cần đánh giá thêm</div>
+    <div class="legend-item"><span class="advice merge">🔗 GỘP</span> Nên gộp với cột/bảng khác</div>
+  </div>
+
+  <!-- TABLE OF CONTENTS -->
+  <nav class="toc">
+    <h2>📑 Mục Lục Nhanh (50 bảng)</h2>
+    <ul>
+      <li><a href="#profiles">profiles</a></li>
+      <li><a href="#organizations">organizations</a></li>
+      <li><a href="#workspaces">workspaces</a></li>
+      <li><a href="#ledgers">ledgers</a></li>
+      <li><a href="#organization_members">organization_members</a></li>
+      <li><a href="#household_members">household_members</a></li>
+      <li><a href="#ledger_members">ledger_members</a></li>
+      <li><a href="#invitations">invitations</a></li>
+      <li><a href="#device_verifications">device_verifications</a></li>
+      <li><a href="#groups">groups</a></li>
+      <li><a href="#chart_of_accounts">chart_of_accounts</a></li>
+      <li><a href="#financial_accounts">financial_accounts</a></li>
+      <li><a href="#payment_instruments">payment_instruments</a></li>
+      <li><a href="#funding_sources">funding_sources</a></li>
+      <li><a href="#settlement_profiles">settlement_profiles</a></li>
+      <li><a href="#categories">categories</a></li>
+      <li><a href="#tags">tags</a></li>
+      <li><a href="#accounting_periods">accounting_periods</a></li>
+      <li><a href="#transactions">transactions</a></li>
+      <li><a href="#transaction_splits">transaction_splits</a></li>
+      <li><a href="#transaction_participants">transaction_participants</a></li>
+      <li><a href="#expense_allocations">expense_allocations</a></li>
+      <li><a href="#dimensions">dimensions</a></li>
+      <li><a href="#dimension_values">dimension_values</a></li>
+      <li><a href="#transaction_dimensions">transaction_dimensions</a></li>
+      <li><a href="#transaction_attachments">transaction_attachments</a></li>
+      <li><a href="#transaction_tags">transaction_tags</a></li>
+      <li><a href="#recurring_transactions">recurring_transactions</a></li>
+      <li><a href="#receipt_documents">receipt_documents</a></li>
+      <li><a href="#receipt_line_items">receipt_line_items</a></li>
+      <li><a href="#receipt_ocr_jobs">receipt_ocr_jobs</a></li>
+      <li><a href="#receipt_ocr_results">receipt_ocr_results</a></li>
+      <li><a href="#import_jobs">import_jobs</a></li>
+      <li><a href="#import_batches">import_batches</a></li>
+      <li><a href="#import_rows">import_rows</a></li>
+      <li><a href="#import_matches">import_matches</a></li>
+      <li><a href="#import_errors">import_errors</a></li>
+      <li><a href="#bank_statement_imports">bank_statement_imports</a></li>
+      <li><a href="#bank_statement_rows">bank_statement_rows</a></li>
+      <li><a href="#journal_entries">journal_entries</a></li>
+      <li><a href="#journal_lines">journal_lines</a></li>
+      <li><a href="#exchange_rates">exchange_rates</a></li>
+      <li><a href="#reconciliation_sessions">reconciliation_sessions</a></li>
+      <li><a href="#reconciliation_items">reconciliation_items</a></li>
+      <li><a href="#approval_workflows">approval_workflows</a></li>
+      <li><a href="#category_rules">category_rules</a></li>
+      <li><a href="#category_templates">category_templates</a></li>
+      <li><a href="#audit_logs">audit_logs</a></li>
+      <li><a href="#activity_logs">activity_logs</a></li>
+      <li><a href="#analytics_snapshots">analytics_snapshots</a></li>
+    </ul>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- SECTION 1: ER DIAGRAMS -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 class="section-title">1. Sơ Đồ Quan Hệ (Entity Relationship Diagrams)</h2>
+
+  <div class="card">
+    <h3 class="module-title">1.1 Cấu Trúc Phân Cấp Chính (Tenancy Hierarchy)</h3>
+    <p style="margin-bottom:1rem;color:var(--text-secondary)">Dữ liệu được phân tách theo 3 cấp: Organization → Workspace → Ledger. Mọi dữ liệu tài chính đều thuộc về 1 Ledger.</p>
+    <div class="mermaid">
+erDiagram
+    AUTH_USERS ||--|| PROFILES : "1:1 Supabase Auth"
+    PROFILES ||--o{ DEVICE_VERIFICATIONS : "has devices"
+    PROFILES ||--o{ ORGANIZATION_MEMBERS : "joins orgs"
+    PROFILES ||--o{ LEDGER_MEMBERS : "joins ledgers"
+    ORGANIZATIONS ||--o{ ORGANIZATION_MEMBERS : "has members"
+    ORGANIZATIONS ||--o{ HOUSEHOLD_MEMBERS : "has household"
+    ORGANIZATIONS ||--o{ WORKSPACES : "contains"
+    WORKSPACES ||--o{ LEDGERS : "contains"
+    LEDGERS ||--o{ LEDGER_MEMBERS : "has access"
+    LEDGERS ||--o{ INVITATIONS : "sends invites"
+    LEDGERS ||--o{ GROUPS : "organizes"
+    GROUPS ||--o{ GROUPS : "parent-child"
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="module-title">1.2 Hệ Thống Tài Khoản & Phương Thức Thanh Toán</h3>
+    <p style="margin-bottom:1rem;color:var(--text-secondary)">Liên kết giữa Sổ cái → Tài khoản ngân hàng → Phương thức thanh toán → Nguồn tiền → Hồ sơ thanh toán.</p>
+    <div class="mermaid">
+erDiagram
+    WORKSPACES ||--o{ CHART_OF_ACCOUNTS : "defines COA"
+    CHART_OF_ACCOUNTS ||--o{ CHART_OF_ACCOUNTS : "parent-child"
+    LEDGERS ||--o{ FINANCIAL_ACCOUNTS : "has bank accounts"
+    FINANCIAL_ACCOUNTS }o--o| CHART_OF_ACCOUNTS : "maps to COA"
+    LEDGERS ||--o{ PAYMENT_INSTRUMENTS : "has payment methods"
+    PAYMENT_INSTRUMENTS }o--o| FINANCIAL_ACCOUNTS : "linked to"
+    LEDGERS ||--o{ FUNDING_SOURCES : "has funding"
+    FUNDING_SOURCES }o--o| FINANCIAL_ACCOUNTS : "funded by"
+    FUNDING_SOURCES }o--o| PAYMENT_INSTRUMENTS : "via instrument"
+    LEDGERS ||--o{ SETTLEMENT_PROFILES : "settlement rules"
+    SETTLEMENT_PROFILES }|--|| PAYMENT_INSTRUMENTS : "for instrument"
+    SETTLEMENT_PROFILES }|--|| FUNDING_SOURCES : "pays from"
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="module-title">1.3 Giao Dịch & Các Bảng Liên Quan</h3>
+    <p style="margin-bottom:1rem;color:var(--text-secondary)">Bảng transactions là trung tâm. Giao dịch liên kết tới danh mục, phương thức thanh toán, hóa đơn, tags, splits, allocations, dimensions.</p>
+    <div class="mermaid">
+erDiagram
+    TRANSACTIONS }|--|| ORGANIZATIONS : "belongs to"
+    TRANSACTIONS }|--|| WORKSPACES : "belongs to"
+    TRANSACTIONS }|--|| LEDGERS : "recorded in"
+    TRANSACTIONS }o--o| CATEGORIES : "classified"
+    TRANSACTIONS }o--o| PAYMENT_INSTRUMENTS : "paid via"
+    TRANSACTIONS }o--o| FUNDING_SOURCES : "funded by"
+    TRANSACTIONS }o--o| FINANCIAL_ACCOUNTS : "settlement acct"
+    TRANSACTIONS }o--o| ACCOUNTING_PERIODS : "in period"
+    TRANSACTIONS }o--o| RECEIPT_DOCUMENTS : "has receipt"
+    TRANSACTIONS ||--o{ TRANSACTION_SPLITS : "split into"
+    TRANSACTIONS ||--o{ TRANSACTION_PARTICIPANTS : "participants"
+    TRANSACTIONS ||--o{ EXPENSE_ALLOCATIONS : "allocated"
+    TRANSACTIONS ||--o{ TRANSACTION_DIMENSIONS : "tagged dims"
+    TRANSACTIONS ||--o{ TRANSACTION_ATTACHMENTS : "files"
+    TRANSACTIONS ||--o{ TRANSACTION_TAGS : "tagged"
+    TRANSACTION_TAGS }|--|| TAGS : "uses"
+    TRANSACTION_SPLITS }o--o| CATEGORIES : "category"
+    TRANSACTION_PARTICIPANTS }o--o| HOUSEHOLD_MEMBERS : "member"
+    EXPENSE_ALLOCATIONS }o--o| HOUSEHOLD_MEMBERS : "for member"
+    EXPENSE_ALLOCATIONS }o--o| TRANSACTION_SPLITS : "from split"
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="module-title">1.4 OCR Hóa Đơn & Import Dữ Liệu</h3>
+    <p style="margin-bottom:1rem;color:var(--text-secondary)">Luồng scan hóa đơn (Receipt) và import sao kê ngân hàng (Bank Statement Import).</p>
+    <div class="mermaid">
+erDiagram
+    RECEIPT_DOCUMENTS ||--o{ RECEIPT_LINE_ITEMS : "has items"
+    RECEIPT_DOCUMENTS ||--o{ RECEIPT_OCR_JOBS : "processed by"
+    RECEIPT_OCR_JOBS ||--o{ RECEIPT_OCR_RESULTS : "produces"
+    RECEIPT_DOCUMENTS }o--o| TRANSACTIONS : "linked txn"
+
+    IMPORT_JOBS ||--o{ IMPORT_BATCHES : "batched"
+    IMPORT_JOBS ||--o{ IMPORT_ROWS : "contains rows"
+    IMPORT_JOBS ||--o{ IMPORT_ERRORS : "has errors"
+    IMPORT_BATCHES ||--o{ IMPORT_ROWS : "in batch"
+    IMPORT_ROWS ||--o{ IMPORT_MATCHES : "matched"
+    IMPORT_ROWS }o--o| TRANSACTIONS : "committed as"
+    IMPORT_JOBS ||--o{ BANK_STATEMENT_IMPORTS : "bank stmt"
+    BANK_STATEMENT_IMPORTS ||--o{ BANK_STATEMENT_ROWS : "rows"
+    BANK_STATEMENT_ROWS }o--o| TRANSACTIONS : "reconciled"
+    </div>
+  </div>
+
+  <div class="card">
+    <h3 class="module-title">1.5 Kế Toán Kép, Đối Soát & Phê Duyệt</h3>
+    <p style="margin-bottom:1rem;color:var(--text-secondary)">Hệ thống bút toán kép (Journal Entry), đối soát ngân hàng (Reconciliation), và phê duyệt (Approval Workflow).</p>
+    <div class="mermaid">
+erDiagram
+    JOURNAL_ENTRIES }|--|| LEDGERS : "in ledger"
+    JOURNAL_ENTRIES }|--|| WORKSPACES : "in workspace"
+    JOURNAL_ENTRIES }o--o| TRANSACTIONS : "from txn"
+    JOURNAL_ENTRIES }o--o| ACCOUNTING_PERIODS : "in period"
+    JOURNAL_ENTRIES ||--o{ JOURNAL_LINES : "has lines"
+    JOURNAL_LINES }|--|| CHART_OF_ACCOUNTS : "debit/credit"
+    JOURNAL_ENTRIES ||--o| JOURNAL_ENTRIES : "reversal pair"
+
+    RECONCILIATION_SESSIONS }|--|| LEDGERS : "for ledger"
+    RECONCILIATION_SESSIONS }|--|| FINANCIAL_ACCOUNTS : "for account"
+    RECONCILIATION_SESSIONS ||--o{ RECONCILIATION_ITEMS : "has items"
+    RECONCILIATION_ITEMS }o--o| TRANSACTIONS : "matches txn"
+    RECONCILIATION_ITEMS }o--o| BANK_STATEMENT_ROWS : "matches stmt"
+
+    APPROVAL_WORKFLOWS }|--|| WORKSPACES : "in workspace"
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- SECTION 2: FULL DATA DICTIONARY -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 class="section-title">2. Từ Điển Dữ Liệu Chi Tiết (Full Data Dictionary — 50 Bảng)</h2>
+  <p style="margin-bottom:1.5rem;color:var(--text-secondary)">Bấm vào từng bảng để xem chi tiết. Mỗi cột có phân tích và lời khuyên (Advice) cụ thể.</p>
+
+  <!-- ===================== MODULE: AUTH & TENANCY ===================== -->
+  <h3 class="module-title">Module A: User & Phân Cấp Tổ Chức</h3>
+
+  <!-- profiles -->
+  <details id="profiles">
+    <summary><span>👤 <code>profiles</code> — Hồ sơ người dùng</span><span>4 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="pk">PK</span> <span class="fk">FK→auth.users(id)</span></td><td>ID định danh, map 1:1 với Supabase Auth. Mọi bảng khác dùng user_id sẽ FK vào đây.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>full_name</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên hiển thị của user.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>avatar_url</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>URL ảnh đại diện (có thể lưu trên Supabase Storage).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>Thời gian tạo profile.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>Cập nhật lần cuối. Cần trigger tự động set.</td><td><span class="advice keep">✅ GIỮ</span> Đảm bảo có trigger</td></tr>
+    </table></div>
+  </details>
+
+  <!-- organizations -->
+  <details id="organizations">
+    <summary><span>🏢 <code>organizations</code> — Tổ chức (Cấp cao nhất)</span><span>14 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>ID tổ chức.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tổ chức.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>slug</td><td>text</td><td>NOT NULL</td><td>—</td><td><span class="uq">UQ</span></td><td>Dùng cho URL friendly (ví dụ: my-family).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>address</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Địa chỉ (dùng cho doanh nghiệp, in hóa đơn).</td><td><span class="advice review">🔍 XEM LẠI</span> App cá nhân có cần?</td></tr>
+      <tr><td>business_type</td><td>text</td><td>nullable</td><td>'Enterprise'</td><td>—</td><td>Loại hình kinh doanh.</td><td><span class="advice review">🔍 XEM LẠI</span> Nếu chỉ là ví cá nhân/gia đình, cột này không cần.</td></tr>
+      <tr><td>plan</td><td>text</td><td>NOT NULL</td><td>'personal'</td><td>—</td><td>Gói dịch vụ (personal/premium/enterprise).</td><td><span class="advice keep">✅ GIỮ</span> Tốt cho monetization</td></tr>
+      <tr><td>country_code</td><td>char</td><td>nullable</td><td>—</td><td>—</td><td>Mã quốc gia.</td><td><span class="advice modify">⚠️ SỬA</span> Kiểu char quá ngắn. Nên dùng char(2) hoặc text rõ ràng.</td></tr>
+      <tr><td>timezone</td><td>text</td><td>NOT NULL</td><td>'Asia/Tokyo'</td><td>—</td><td>Múi giờ mặc định.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>base_currency</td><td>char</td><td>NOT NULL</td><td>'JPY'</td><td>—</td><td>Tiền tệ gốc của tổ chức.</td><td><span class="advice modify">⚠️ SỬA</span> Trùng với workspace.default_currency và ledger.currency. Nên chỉ giữ ở 1 cấp (ledger).</td></tr>
+      <tr><td>fiscal_year_start_month</td><td>smallint</td><td>NOT NULL</td><td>1</td><td>—</td><td>Tháng bắt đầu năm tài chính.</td><td><span class="advice modify">⚠️ SỬA</span> Trùng với workspaces.fiscal_year_start_month. Giữ ở 1 nơi.</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>Dữ liệu mở rộng linh hoạt.</td><td><span class="advice review">🔍 XEM LẠI</span> Bạn đang dùng để chứa gì? Nếu trống thì bỏ.</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>deleted_at</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Soft delete.</td><td><span class="advice keep">✅ GIỮ</span> Pattern tốt</td></tr>
+    </table></div>
+  </details>
+
+  <!-- workspaces -->
+  <details id="workspaces">
+    <summary><span>🗂 <code>workspaces</code> — Không gian làm việc (Cấp trung)</span><span>11 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>organization_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→organizations(id)</span></td><td>Thuộc tổ chức nào. Bảng con: ledgers, categories, chart_of_accounts, dimensions, tags đều FK vào workspaces.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên workspace (vd: "Chi tiêu gia đình 2026").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>slug</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>URL slug. Thiếu UNIQUE constraint (organizations.slug có UNIQUE nhưng đây thì không).</td><td><span class="advice modify">⚠️ SỬA</span> Thêm UNIQUE(organization_id, slug)</td></tr>
+      <tr><td>workspace_type</td><td>text</td><td>NOT NULL</td><td>'personal'</td><td>—</td><td>Loại: personal / family / business.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>fiscal_year_start_month</td><td>smallint</td><td>NOT NULL</td><td>1</td><td>—</td><td>Tháng bắt đầu năm tài chính.</td><td><span class="advice modify">⚠️ SỬA</span> Trùng với organizations. Chọn 1 nơi.</td></tr>
+      <tr><td>default_currency</td><td>char</td><td>NOT NULL</td><td>'JPY'</td><td>—</td><td>Tiền tệ mặc định.</td><td><span class="advice modify">⚠️ SỬA</span> Trùng với org.base_currency + ledger.currency</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>Mở rộng.</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>deleted_at</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Soft delete.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ledgers -->
+  <details id="ledgers">
+    <summary><span>📓 <code>ledgers</code> — Sổ cái (Trung tâm dữ liệu tài chính)</span><span>15 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>Sổ cái là đơn vị chứa giao dịch. Bảng transactions, financial_accounts, payment_instruments, groups, journal_entries đều FK vào đây.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>Thuộc workspace nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên sổ (vd: "Ví chính", "Thẻ tín dụng").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>code</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mã định danh ngắn.</td><td><span class="advice review">🔍 XEM LẠI</span> Có dùng không? Nếu không ai nhập thì bỏ.</td></tr>
+      <tr><td>base_currency</td><td>text</td><td>NOT NULL</td><td>'USD'</td><td>—</td><td>Tiền tệ cơ sở cho báo cáo.</td><td><span class="advice modify">⚠️ SỬA</span> Trùng ý nghĩa với cột currency bên dưới. Giữ 1 cột.</td></tr>
+      <tr><td>currency</td><td>char</td><td>NOT NULL</td><td>'JPY'</td><td>—</td><td>Tiền tệ giao dịch mặc định.</td><td><span class="advice modify">⚠️ SỬA</span> Gộp vào base_currency. 2 cột currency trong 1 bảng gây hiểu lầm.</td></tr>
+      <tr><td>timezone</td><td>text</td><td>NOT NULL</td><td>'UTC'</td><td>—</td><td>Múi giờ cho sổ cái.</td><td><span class="advice review">🔍 XEM LẠI</span> Đã có timezone ở organizations. Có thực sự cần override ở đây?</td></tr>
+      <tr><td>fiscal_year_start</td><td>date</td><td>nullable</td><td>—</td><td>—</td><td>Ngày bắt đầu năm tài chính.</td><td><span class="advice remove">🗑 BỎ</span> Đã có fiscal_year_start_month ở org + workspace. 3 lần define là quá nhiều.</td></tr>
+      <tr><td>locale</td><td>text</td><td>NOT NULL</td><td>'en-US'</td><td>—</td><td>Ngôn ngữ hiển thị.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_type</td><td>text</td><td>NOT NULL</td><td>'personal'</td><td>—</td><td>Loại sổ.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_default</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Sổ cái mặc định.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>settings</td><td>jsonb</td><td>NOT NULL</td><td>Complex JSON</td><td>—</td><td>Cấu hình kế toán (decimal_precision, number_formatting, exchange_rate_source...).</td><td><span class="advice keep">✅ GIỮ</span> Dùng jsonb ở đây hợp lý vì là config.</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>deleted_at</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Soft delete.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- organization_members -->
+  <details id="organization_members">
+    <summary><span>👥 <code>organization_members</code> — Thành viên tổ chức</span><span>6 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>organization_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→organizations(id)</span></td><td>Thuộc tổ chức nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>user_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→profiles(id)</span></td><td>Người dùng nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>role</td><td>text</td><td>NOT NULL</td><td>—</td><td><span class="chk">CHK</span> owner/admin/member</td><td>Vai trò trong tổ chức.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- household_members -->
+  <details id="household_members">
+    <summary><span>🏠 <code>household_members</code> — Thành viên gia đình</span><span>12 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>Bảng này được FK bởi: transaction_participants, expense_allocations, journal_lines, analytics_snapshots.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>organization_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→organizations(id)</span></td><td>Thuộc tổ chức nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>user_id</td><td>uuid</td><td>nullable</td><td>—</td><td>—</td><td>Nullable vì thành viên gia đình có thể không có tài khoản app (vd: con nhỏ).</td><td><span class="advice modify">⚠️ SỬA</span> Thiếu FK→profiles(id). Nên thêm.</td></tr>
+      <tr><td>role</td><td>text</td><td>NOT NULL</td><td>'member'</td><td>—</td><td>Vai trò (cha/mẹ/con...).</td><td><span class="advice modify">⚠️ SỬA</span> Thiếu CHECK constraint. Nên thêm enum giá trị.</td></tr>
+      <tr><td>relationship_type</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Loại quan hệ (spouse/child/parent...).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>display_name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên hiển thị.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>avatar_url</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Ảnh đại diện.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>color</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mã màu hiển thị trên biểu đồ.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>Còn hoạt động không.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>sort_order</td><td>smallint</td><td>NOT NULL</td><td>0</td><td>—</td><td>Thứ tự sắp xếp trên UI.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ledger_members -->
+  <details id="ledger_members">
+    <summary><span>🔑 <code>ledger_members</code> — Quyền truy cập sổ cái</span><span>8 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>Sổ cái.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>user_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→profiles(id)</span></td><td>Người dùng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>role</td><td>text</td><td>NOT NULL</td><td>—</td><td><span class="chk">CHK</span> owner/admin/accountant/auditor/viewer</td><td>Vai trò phân quyền chi tiết.</td><td><span class="advice keep">✅ GIỮ</span> Rất tốt cho RBAC</td></tr>
+      <tr><td>status</td><td>text</td><td>NOT NULL</td><td>'active'</td><td><span class="chk">CHK</span> active/suspended/pending</td><td>Trạng thái thành viên.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>joined_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>Ngày gia nhập.</td><td><span class="advice merge">🔗 GỘP</span> Trùng ý nghĩa với created_at. Giữ 1 cột.</td></tr>
+      <tr><td>last_active_at</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Lần hoạt động cuối.</td><td><span class="advice review">🔍 XEM LẠI</span> App có tracking tính năng này không?</td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- invitations -->
+  <details id="invitations">
+    <summary><span>✉️ <code>invitations</code> — Lời mời tham gia sổ cái</span><span>9 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>Mời vào sổ cái nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>inviter_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→profiles(id)</span></td><td>Ai gửi lời mời.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>email</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Email người được mời.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>role</td><td>text</td><td>NOT NULL</td><td>—</td><td><span class="chk">CHK</span> admin/accountant/auditor/viewer</td><td>Vai trò gán cho người được mời.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>token</td><td>text</td><td>NOT NULL</td><td>—</td><td><span class="uq">UQ</span></td><td>Token xác thực lời mời (dùng trong URL).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>expires_at</td><td>timestamptz</td><td>NOT NULL</td><td>—</td><td>—</td><td>Thời hạn hết hiệu lực.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>accepted_at</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Ngày chấp nhận. NULL = chưa accept.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- device_verifications -->
+  <details id="device_verifications">
+    <summary><span>📱 <code>device_verifications</code> — Xác thực thiết bị</span><span>7 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>user_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→profiles(id)</span></td><td>User sở hữu thiết bị.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>device_id</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>ID thiết bị (fingerprint hoặc UUID do app tạo).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>device_name</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên thiết bị (vd: "iPhone 16 của Leo").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_trusted</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Đã xác thực tin cậy chưa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>last_login_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>Lần đăng nhập cuối từ thiết bị này.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- groups -->
+  <details id="groups">
+    <summary><span>📁 <code>groups</code> — Nhóm quản lý chi phí (Cost Center)</span><span>14 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>Thuộc sổ cái nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>parent_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→groups(id)</span></td><td>Self-reference để tạo cấu trúc cây.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên nhóm.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>type</td><td>text</td><td>NOT NULL</td><td>'cost_center'</td><td><span class="chk">CHK</span> cost_center/department/project/team/subsidiary</td><td>Loại nhóm.</td><td><span class="advice review">🔍 XEM LẠI</span> App ví cá nhân có cần department/subsidiary?</td></tr>
+      <tr><td>color / emoji</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Hiển thị trên UI.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>budget_limit</td><td>numeric</td><td>nullable</td><td>0</td><td>—</td><td>Ngân sách tối đa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>warning_threshold</td><td>numeric</td><td>nullable</td><td>80</td><td>—</td><td>Cảnh báo khi chi tiêu đạt bao nhiêu % ngân sách.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>keywords</td><td>text[]</td><td>nullable</td><td>'{}'</td><td>—</td><td>Từ khóa cho auto-categorize.</td><td><span class="advice review">🔍 XEM LẠI</span> categories cũng có keywords. Có đang trùng chức năng?</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>nullable</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>is_active</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ===================== MODULE: ACCOUNTING ===================== -->
+  <h3 class="module-title">Module B: Kế Toán & Danh Mục</h3>
+
+  <!-- chart_of_accounts -->
+  <details id="chart_of_accounts">
+    <summary><span>📋 <code>chart_of_accounts</code> — Hệ thống tài khoản kế toán (COA)</span><span>18 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: financial_accounts, categories, journal_lines.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>parent_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→chart_of_accounts(id)</span></td><td>Self-reference cây tài khoản.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>account_code</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Mã tài khoản (vd: 1110, 2100).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>account_name_ja</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tài khoản tiếng Nhật.</td><td><span class="advice merge">🔗 GỘP</span> Nên gộp 3 cột name thành 1 cột name_i18n (jsonb).</td></tr>
+      <tr><td>account_name_vi</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tiếng Việt.</td><td><span class="advice merge">🔗 GỘP</span></td></tr>
+      <tr><td>account_name_en</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tiếng Anh.</td><td><span class="advice merge">🔗 GỘP</span></td></tr>
+      <tr><td>name_i18n</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>TRÙNG LẶP với 3 cột trên!</td><td><span class="advice modify">⚠️ SỬA</span> Chọn cách này HOẶC 3 cột cứng. Không nên có cả hai.</td></tr>
+      <tr><td>account_type</td><td>ENUM</td><td>NOT NULL</td><td>—</td><td>—</td><td>Loại tài khoản (asset/liability/equity/revenue/expense).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>normal_balance</td><td>ENUM</td><td>NOT NULL</td><td>—</td><td>—</td><td>Số dư bình thường (debit/credit).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_system</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Tài khoản hệ thống (không cho user xóa).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>path</td><td>ltree</td><td>nullable</td><td>—</td><td>—</td><td>Materialized path cho truy vấn cây nhanh.</td><td><span class="advice keep">✅ GIỮ</span> Rất tốt cho performance</td></tr>
+      <tr><td>description_ja/vi/en</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mô tả 3 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Cùng vấn đề i18n. Gộp hoặc bỏ.</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- categories -->
+  <details id="categories">
+    <summary><span>🏷 <code>categories</code> — Danh mục chi tiêu/thu nhập</span><span>20 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: transactions, transaction_splits, receipt_line_items, category_rules, import_rows.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>parent_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→categories(id)</span></td><td>Cây danh mục cha/con.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>chart_of_account_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→chart_of_accounts(id)</span></td><td>Map với hệ thống tài khoản kế toán (cho bút toán kép).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên danh mục 3 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Gộp vào name_i18n jsonb bên dưới.</td></tr>
+      <tr><td>name_i18n</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>Lại trùng 3 cột trên.</td><td><span class="advice modify">⚠️ SỬA</span> Quyết định 1 cách duy nhất.</td></tr>
+      <tr><td>category_code</td><td>varchar</td><td>nullable</td><td>—</td><td>—</td><td>Mã danh mục ngắn.</td><td><span class="advice review">🔍 XEM LẠI</span> Đang nullable, có dùng?</td></tr>
+      <tr><td>category_type</td><td>text</td><td>NOT NULL</td><td>'expense'</td><td>—</td><td>Loại: expense/income/transfer.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>emoji / color / icon</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Hiển thị UI. Cả 3 cột có thể dư thừa (chỉ cần emoji + color hoặc icon + color).</td><td><span class="advice modify">⚠️ SỬA</span> Giữ 2/3 cột. emoji VÀ icon là trùng chức năng.</td></tr>
+      <tr><td>budget_limit</td><td>numeric</td><td>NOT NULL</td><td>0</td><td>—</td><td>Giới hạn ngân sách tháng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>keywords</td><td>text[]</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>Từ khóa giúp auto-categorize.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_system / is_active</td><td>boolean</td><td>NOT NULL</td><td>—</td><td>—</td><td>Hệ thống và trạng thái.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_shared</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Danh mục dùng chung giữa các thành viên.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_recurring</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Đánh dấu danh mục có giao dịch định kỳ.</td><td><span class="advice review">🔍 XEM LẠI</span> Nên đánh dấu ở transaction, không phải category.</td></tr>
+      <tr><td>path</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Materialized path.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>sort_order</td><td>smallint</td><td>NOT NULL</td><td>0</td><td>—</td><td>Thứ tự sắp xếp.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- tags -->
+  <details id="tags">
+    <summary><span>🔖 <code>tags</code> — Nhãn gắn cho giao dịch</span><span>9 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: transaction_tags.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tag chính.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên tag 3 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Gộp vào 1 cột name_i18n hoặc bỏ hẳn vì đã có cột name.</td></tr>
+      <tr><td>color</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mã màu.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice remove">🗑 BỎ</span> Tags quá đơn giản, không cần metadata.</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- accounting_periods -->
+  <details id="accounting_periods">
+    <summary><span>📅 <code>accounting_periods</code> — Kỳ kế toán</span><span>11 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: transactions, journal_entries, reconciliation_sessions.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>Kỳ kế toán có thể áp dụng cho 1 ledger cụ thể hoặc toàn workspace.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>period_name / period_type</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên (vd: "Tháng 6/2026") và loại (monthly/quarterly/yearly).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>start_date / end_date</td><td>date</td><td>NOT NULL</td><td>—</td><td>—</td><td>Khoảng thời gian của kỳ.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>status</td><td>text</td><td>NOT NULL</td><td>'open'</td><td>—</td><td>Trạng thái: open/closed/locked.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>closed_by / closed_at</td><td>uuid / timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Ai đóng kỳ và khi nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ===================== MODULE: FINANCIAL ACCOUNTS ===================== -->
+  <h3 class="module-title">Module C: Tài Khoản & Phương Thức Thanh Toán</h3>
+
+  <!-- financial_accounts -->
+  <details id="financial_accounts">
+    <summary><span>🏦 <code>financial_accounts</code> — Tài khoản tài chính</span><span>21 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: payment_instruments, funding_sources, transactions (settlement), reconciliation_sessions, bank_statement_imports.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>chart_of_account_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→chart_of_accounts(id)</span></td><td>Map với mã kế toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>account_name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên tài khoản (vd: "Vietcombank", "Tiền mặt").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>account_type</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Loại: bank/cash/credit_card/e_wallet/investment.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>institution_name / institution_code</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên ngân hàng và mã.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>account_number_masked</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Số tài khoản che giấu (vd: ****1234).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>currency</td><td>char</td><td>NOT NULL</td><td>'JPY'</td><td>—</td><td>Loại tiền.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>current_balance</td><td>numeric</td><td>NOT NULL</td><td>0</td><td>—</td><td>Số dư hiện tại.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>credit_limit</td><td>numeric</td><td>nullable</td><td>—</td><td>—</td><td>Hạn mức tín dụng (chỉ dùng cho credit card).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>statement_day / payment_due_day</td><td>smallint</td><td>nullable</td><td>—</td><td>—</td><td>Ngày sao kê và ngày thanh toán (cho thẻ tín dụng).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active / is_tracked</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>Hoạt động và có theo dõi số dư không.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>color / icon</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Hiển thị UI.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at / deleted_at</td><td>timestamptz</td><td>—</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- payment_instruments -->
+  <details id="payment_instruments">
+    <summary><span>💳 <code>payment_instruments</code> — Phương thức thanh toán</span><span>22 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: transactions, funding_sources, settlement_profiles.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>linked_financial_account_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→financial_accounts(id)</span></td><td>Thẻ/ví trừ tiền vào tài khoản nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>type / provider</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Loại (credit_card/debit_card/e_wallet/cash) và nhà cung cấp (Visa/Momo/Suica).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên chính.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên 3 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Gộp vào name_i18n.</td></tr>
+      <tr><td>name_i18n</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>Tên đa ngôn ngữ — TRÙNG 3 cột trên.</td><td><span class="advice modify">⚠️ SỬA</span></td></tr>
+      <tr><td>settlement_type</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Kiểu thanh toán (immediate/deferred/prepaid).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_transit_card</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Có phải thẻ giao thông không (Suica, PASMO).</td><td><span class="advice keep">✅ GIỮ</span> Phù hợp thị trường JP</td></tr>
+      <tr><td>supports_auto_charge</td><td>boolean</td><td>NOT NULL</td><td>false</td><td>—</td><td>Hỗ trợ nạp tiền tự động.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>card_last4 / expiry_month / expiry_year</td><td>text / smallint</td><td>nullable</td><td>—</td><td>—</td><td>Thông tin thẻ bảo mật.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active / is_default</td><td>boolean</td><td>NOT NULL</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>color / icon / sort_order</td><td>text/smallint</td><td>—</td><td>—</td><td>—</td><td>Hiển thị UI.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- funding_sources -->
+  <details id="funding_sources">
+    <summary><span>💵 <code>funding_sources</code> — Nguồn tiền</span><span>20 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: transactions, settlement_profiles.</td><td><span class="advice review">🔍 XEM LẠI</span> Bảng này có chức năng trùng với financial_accounts + payment_instruments. Xem xét gộp.</td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>financial_account_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→financial_accounts(id)</span></td><td>Tài khoản nguồn tiền.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>payment_instrument_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→payment_instruments(id)</span></td><td>Phương thức liên kết.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>type / name</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Loại và tên nguồn tiền.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Lại trùng i18n.</td><td><span class="advice merge">🔗 GỘP</span></td></tr>
+      <tr><td>institution</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên tổ chức tài chính.</td><td><span class="advice review">🔍 XEM LẠI</span> financial_accounts đã có institution_name.</td></tr>
+      <tr><td>settlement_day / payment_due_day</td><td>smallint</td><td>nullable</td><td>—</td><td>—</td><td>Ngày thanh toán.</td><td><span class="advice review">🔍 XEM LẠI</span> financial_accounts cũng có cùng 2 cột này.</td></tr>
+      <tr><td>rewards_rate / rewards_currency</td><td>numeric / text</td><td>nullable</td><td>—</td><td>—</td><td>Tỷ lệ và loại tiền thưởng (points/cashback).</td><td><span class="advice keep">✅ GIỮ</span> Tính năng hay</td></tr>
+      <tr><td>priority_order / is_default / is_active</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- settlement_profiles -->
+  <details id="settlement_profiles">
+    <summary><span>🔄 <code>settlement_profiles</code> — Hồ sơ thanh toán</span><span>13 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>Bảng này mô tả quy tắc: "Thẻ X thanh toán qua nguồn Y theo chu kỳ Z".</td><td><span class="advice review">🔍 XEM LẠI</span> Rất niche. App cá nhân có cần không?</td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>payment_instrument_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→payment_instruments(id)</span></td><td>Thẻ/phương thức nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>funding_source_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→funding_sources(id)</span></td><td>Nguồn tiền thanh toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>profile_name + _ja/_vi/_en</td><td>text</td><td>—</td><td>—</td><td>—</td><td>Tên hồ sơ đa ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Lại trùng i18n.</td></tr>
+      <tr><td>settlement_cycle</td><td>text</td><td>NOT NULL</td><td>'monthly'</td><td>—</td><td>Chu kỳ thanh toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>settlement_date_rule</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Quy tắc ngày thanh toán (vd: "25th of next month").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_primary</td><td>boolean</td><td>NOT NULL</td><td>true</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>condition_expression</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Biểu thức điều kiện (dùng cho rule engine).</td><td><span class="advice review">🔍 XEM LẠI</span> Quá phức tạp cho MVP.</td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ===================== MODULE: TRANSACTIONS ===================== -->
+  <h3 class="module-title">Module D: Giao Dịch (Transactions — Trái Tim Hệ Thống)</h3>
+
+  <!-- transactions -->
+  <details id="transactions">
+    <summary><span>💰 <code>transactions</code> — Bảng giao dịch chính (CORE)</span><span>32 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>Bảng trung tâm. FK bởi: splits, participants, allocations, dimensions, tags, attachments, journal_entries, receipt_documents, import_rows, bank_statement_rows, reconciliation_items.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>organization_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→organizations(id)</span></td><td>Scope tổ chức.</td><td><span class="advice review">🔍 XEM LẠI</span> Có thể suy ra từ ledger→workspace→org. Lưu trực tiếp để tối ưu query (denormalization).</td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>Scope workspace.</td><td><span class="advice review">🔍 XEM LẠI</span> Tương tự — denormalization có chủ đích.</td></tr>
+      <tr><td>ledger_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→ledgers(id)</span></td><td>Thuộc sổ cái nào.</td><td><span class="advice keep">✅ GIỮ</span> ĐÂY là FK chính.</td></tr>
+      <tr><td>payment_instrument_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→payment_instruments(id)</span></td><td>Phương thức thanh toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>funding_source_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→funding_sources(id)</span></td><td>Nguồn tiền.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>settlement_account_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→financial_accounts(id)</span></td><td>Tài khoản thanh toán quyết toán.</td><td><span class="advice review">🔍 XEM LẠI</span> Có thể suy ra từ funding_source. Trùng?</td></tr>
+      <tr><td>category_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→categories(id)</span></td><td>Danh mục chính.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>status</td><td>ENUM</td><td>NOT NULL</td><td>'draft'</td><td>—</td><td>Trạng thái giao dịch (draft/pending/completed/voided).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>transaction_type</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Loại (expense/income/transfer/adjustment).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>business_event_type</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Loại sự kiện kinh doanh.</td><td><span class="advice review">🔍 XEM LẠI</span> App cá nhân có dùng?</td></tr>
+      <tr><td>source / source_reference</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Nguồn tạo (manual/import/ocr/api) và tham chiếu.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>external_id / external_hash</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>ID và hash từ hệ thống bên ngoài (chống trùng import).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>merchant_name / merchant_normalized</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Tên cửa hàng gốc và tên chuẩn hóa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>merchant_category_code</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>MCC code (chuẩn quốc tế phân loại cửa hàng).</td><td><span class="advice review">🔍 XEM LẠI</span> Nếu chỉ nhập tay thì không dùng.</td></tr>
+      <tr><td>description / notes</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mô tả ngắn và ghi chú chi tiết.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>transaction_date</td><td>timestamptz</td><td>NOT NULL</td><td>—</td><td>—</td><td>Ngày phát sinh giao dịch.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>value_date / posted_date</td><td>timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Ngày giá trị và ngày hạch toán.</td><td><span class="advice review">🔍 XEM LẠI</span> Cần cả 3 loại ngày? Chỉ cần transaction_date + posted_date cho đa số use case.</td></tr>
+      <tr><td>amount / currency_code</td><td>numeric / char</td><td>NOT NULL</td><td>—</td><td>—</td><td>Số tiền giao dịch và mã tiền tệ.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>base_amount / base_currency_code / exchange_rate / exchange_rate_source</td><td>—</td><td>nullable</td><td>—</td><td>—</td><td>Quy đổi tỷ giá.</td><td><span class="advice keep">✅ GIỮ</span> Rất tốt cho multi-currency</td></tr>
+      <tr><td>receipt_document_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→receipt_documents(id)</span></td><td>Hóa đơn đính kèm.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>accounting_period_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→accounting_periods(id)</span></td><td>Kỳ kế toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>created_by / reviewed_by / reviewed_at</td><td>uuid / timestamptz</td><td>nullable</td><td>—</td><td>—</td><td>Ai tạo, ai review.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_reconciled / reconciled_at</td><td>boolean / timestamptz</td><td>—</td><td>false</td><td>—</td><td>Đã đối soát chưa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span></td></tr>
+      <tr><td>created_at / updated_at / deleted_at</td><td>timestamptz</td><td>—</td><td>now()</td><td>—</td><td>Soft delete pattern.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- transaction_splits -->
+  <details id="transaction_splits">
+    <summary><span>✂️ <code>transaction_splits</code> — Chia nhỏ giao dịch</span><span>11 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: expense_allocations, receipt_line_items.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>transaction_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch gốc.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>category_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→categories(id)</span></td><td>Danh mục cho phần chia này.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>Mô tả phần chia.</td><td><span class="advice merge">🔗 GỘP</span> Gộp thành 1 cột description là đủ.</td></tr>
+      <tr><td>amount / currency_code</td><td>numeric / char</td><td>NOT NULL</td><td>—</td><td>—</td><td>Số tiền và tiền tệ. Tổng splits = transaction.amount.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>expense_scope</td><td>text</td><td>NOT NULL</td><td>'personal'</td><td>—</td><td>Phạm vi (personal/shared/business).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>notes</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>sort_order</td><td>smallint</td><td>NOT NULL</td><td>0</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata</td><td>jsonb</td><td>NOT NULL</td><td>'{}'</td><td>—</td><td>—</td><td><span class="advice remove">🗑 BỎ</span> Bảng split quá đơn giản.</td></tr>
+      <tr><td>created_at</td><td>timestamptz</td><td>NOT NULL</td><td>now()</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- transaction_participants -->
+  <details id="transaction_participants">
+    <summary><span>👥 <code>transaction_participants</code> — Người tham gia giao dịch</span><span>6 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice review">🔍 XEM LẠI</span> Bảng này trùng chức năng lớn với expense_allocations. Cân nhắc gộp.</td></tr>
+      <tr><td>transaction_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→transactions(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>household_member_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→household_members(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>role</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Vai trò (payer/beneficiary/witness).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>notes</td><td>text</td><td>nullable</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata / created_at</td><td>jsonb / timestamptz</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- expense_allocations -->
+  <details id="expense_allocations">
+    <summary><span>🤝 <code>expense_allocations</code> — Phân bổ chi phí (Split Bill)</span><span>14 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>transaction_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→transactions(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>transaction_split_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→transaction_splits(id)</span></td><td>Phần chia nào (nếu giao dịch có split).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>household_member_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→household_members(id)</span></td><td>Thành viên nào chịu khoản.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>allocation_type</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Kiểu phân bổ (equal/percentage/amount/weight).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>percentage / amount / weight</td><td>numeric</td><td>nullable</td><td>—</td><td>—</td><td>3 cách tính: theo %, theo số tiền cứng, theo trọng số.</td><td><span class="advice modify">⚠️ SỬA</span> Quá phức tạp. Cho MVP chỉ cần percentage + amount là đủ.</td></tr>
+      <tr><td>expense_scope</td><td>text</td><td>NOT NULL</td><td>'personal'</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_settled / settled_at</td><td>boolean / timestamptz</td><td>—</td><td>false</td><td>—</td><td>Đã trả nợ xong chưa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>settled_by_transaction_id</td><td>uuid</td><td>nullable</td><td>—</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch nào thanh toán khoản nợ này.</td><td><span class="advice keep">✅ GIỮ</span> Rất thông minh</td></tr>
+      <tr><td>notes / metadata / created_at</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- dimensions, dimension_values, transaction_dimensions -->
+  <details id="dimensions">
+    <summary><span>📐 <code>dimensions</code> — Chiều phân tích (Custom Dimensions)</span><span>10 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>gen_random_uuid()</td><td><span class="pk">PK</span></td><td>FK bởi: dimension_values, transaction_dimensions. Cho phép user tạo phân loại tùy ý (vd: "Dự án", "Phòng ban").</td><td><span class="advice review">🔍 XEM LẠI</span> Tính năng Enterprise. Có thể hoãn cho MVP.</td></tr>
+      <tr><td>workspace_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>dimension_key</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Key identifier (vd: "project", "department").</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>name_ja / name_vi / name_en</td><td>text</td><td>NOT NULL</td><td>—</td><td>—</td><td>Tên 3 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span></td></tr>
+      <tr><td>is_required / is_active / sort_order</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>metadata / created_at</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <details id="dimension_values"><summary><span>📐 <code>dimension_values</code></span><span>10 cột — Giá trị của mỗi dimension</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>Kiểu</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>dimension_id</td><td>uuid</td><td><span class="fk">FK→dimensions(id)</span></td><td>Thuộc dimension nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>value_key / name_ja/vi/en / color</td><td>text</td><td>—</td><td>Giá trị cụ thể.</td><td><span class="advice merge">🔗 GỘP</span> i18n</td></tr></table></div></details>
+
+  <details id="transaction_dimensions"><summary><span>📐 <code>transaction_dimensions</code></span><span>5 cột — Liên kết giao dịch ↔ dimension</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>Kiểu</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>transaction_id</td><td>uuid</td><td><span class="fk">FK→transactions(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>dimension_id</td><td>uuid</td><td><span class="fk">FK→dimensions(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>dimension_value_id</td><td>uuid</td><td><span class="fk">FK→dimension_values(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- transaction_attachments -->
+  <details id="transaction_attachments"><summary><span>📎 <code>transaction_attachments</code> — File đính kèm</span><span>10 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>Kiểu</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>transaction_id</td><td>uuid</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>file_name / file_type / storage_path / file_size_bytes</td><td>text/bigint</td><td>—</td><td>Thông tin file.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>thumbnail_path</td><td>text</td><td>—</td><td>Ảnh thu nhỏ.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>uploaded_by</td><td>uuid</td><td>—</td><td>Ai upload. Thiếu FK→profiles.</td><td><span class="advice modify">⚠️ SỬA</span> Thêm FK</td></tr><tr><td>description / metadata / created_at</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- transaction_tags -->
+  <details id="transaction_tags"><summary><span>🔖 <code>transaction_tags</code> — Bảng nối N:N giữa transaction ↔ tags</span><span>3 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>Kiểu</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>transaction_id</td><td>uuid</td><td><span class="pk">PK</span> <span class="fk">FK→transactions(id)</span></td><td>Composite PK.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>tag_id</td><td>uuid</td><td><span class="pk">PK</span> <span class="fk">FK→tags(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>created_at</td><td>timestamptz</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- recurring_transactions -->
+  <details id="recurring_transactions">
+    <summary><span>🔁 <code>recurring_transactions</code> — Giao dịch định kỳ</span><span>12 cột</span></summary>
+    <div class="table-wrap"><table>
+      <tr><th>Cột</th><th>Kiểu</th><th>Nullable</th><th>Default</th><th>Ràng buộc</th><th>Ý nghĩa & Liên kết</th><th>Lời khuyên</th></tr>
+      <tr><td>id</td><td>uuid</td><td>NOT NULL</td><td>uuid_generate_v4()</td><td><span class="pk">PK</span></td><td>—</td><td><span class="advice modify">⚠️ SỬA</span> Bảng này FK vào profiles(id) thay vì ledgers. Thiết kế cũ (v1), nên migrate sang FK→ledgers.</td></tr>
+      <tr><td>user_id</td><td>uuid</td><td>NOT NULL</td><td>—</td><td><span class="fk">FK→profiles(id)</span></td><td>Ai tạo. Không thông qua org/workspace/ledger.</td><td><span class="advice modify">⚠️ SỬA</span> Nên thêm ledger_id FK để nhất quán.</td></tr>
+      <tr><td>description / amount / category / provider</td><td>text / numeric</td><td>NOT NULL</td><td>—</td><td>—</td><td>Thông tin giao dịch định kỳ.</td><td><span class="advice modify">⚠️ SỬA</span> category là text thay vì FK→categories(id). Không nhất quán.</td></tr>
+      <tr><td>day_of_month</td><td>integer</td><td>NOT NULL</td><td>—</td><td><span class="chk">CHK</span> 1-31</td><td>Ngày trong tháng tự động tạo.</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>group_id</td><td>uuid</td><td>nullable</td><td>—</td><td>—</td><td>Thiếu FK constraint! Có vẻ nên FK→groups(id).</td><td><span class="advice modify">⚠️ SỬA</span> Thêm FK constraint.</td></tr>
+      <tr><td>applied_months</td><td>text[]</td><td>—</td><td>'{}'</td><td>—</td><td>Các tháng đã áp dụng (vd: ["2026-01","2026-02"]).</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+      <tr><td>is_active / note / metadata / timestamps</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr>
+    </table></div>
+  </details>
+
+  <!-- ===================== MODULE: OCR ===================== -->
+  <h3 class="module-title">Module E: Scan Hóa Đơn (Receipt OCR)</h3>
+
+  <details id="receipt_documents"><summary><span>🧾 <code>receipt_documents</code> — Tài liệu hóa đơn</span><span>22 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ledger_id / organization_id</td><td><span class="fk">FK→ledgers, organizations</span></td><td>Scope.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>uploaded_by</td><td>—</td><td>Thiếu FK→profiles.</td><td><span class="advice modify">⚠️ SỬA</span> Thêm FK</td></tr><tr><td>merchant_name + _ja/_vi/_en</td><td>—</td><td>Tên cửa hàng 4 ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Quá nhiều. Giữ merchant_name + 1 cột i18n.</td></tr><tr><td>receipt_date / total_amount / tax_amount / tip_amount</td><td>—</td><td>Dữ liệu chính.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>storage_path / file_name / file_type / file_size_bytes / thumbnail_path</td><td>—</td><td>File storage.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>ocr_status</td><td>—</td><td>Enum: pending/processing/completed/failed.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>linked_transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch liên kết.</td><td><span class="advice keep">✅ GIỮ</span> Circular ref với transactions.receipt_document_id. Giữ 1 chiều.</td></tr><tr><td>is_matched / detected_language</td><td>—</td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="receipt_line_items"><summary><span>🛒 <code>receipt_line_items</code> — Từng món hàng trên hóa đơn</span><span>24 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>receipt_document_id</td><td><span class="fk">FK→receipt_documents(id)</span></td><td>Hóa đơn gốc.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>transaction_id / transaction_split_id</td><td><span class="fk">FK→transactions, transaction_splits</span></td><td>Liên kết tới giao dịch.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>raw_text + _ja/_vi/_en / normalized_name + _ja/_vi/_en</td><td>—</td><td>Text OCR thô và chuẩn hóa — 8 cột cho 1 tên!</td><td><span class="advice merge">🔗 GỘP</span> Quá nhiều. Giữ raw_text + normalized_name (2 cột) là đủ.</td></tr><tr><td>quantity / unit_price / discount_amount / tax_rate / total_amount</td><td>—</td><td>Chi tiết tài chính mỗi item.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>suggested_category_id</td><td><span class="fk">FK→categories(id)</span></td><td>AI gợi ý danh mục.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>ai_confidence</td><td>—</td><td>Độ tin cậy AI.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>is_reviewed / is_accepted</td><td>—</td><td>User đã xác nhận chưa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="receipt_ocr_jobs"><summary><span>⚙️ <code>receipt_ocr_jobs</code> — Job xử lý OCR</span><span>16 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>receipt_document_id</td><td><span class="fk">FK→receipt_documents(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>status / ocr_engine / started_at / completed_at / processing_ms</td><td>—</td><td>Tracking job.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>tokens_used / api_cost_usd</td><td>—</td><td>Chi phí API.</td><td><span class="advice keep">✅ GIỮ</span> Rất tốt để monitor cost</td></tr><tr><td>retry_count / max_retries</td><td>—</td><td>Retry logic.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>enhance_mode</td><td>—</td><td>Chế độ xử lý (standard/enhanced).</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="receipt_ocr_results"><summary><span>📄 <code>receipt_ocr_results</code> — Kết quả OCR</span><span>13 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ocr_job_id / receipt_document_id</td><td><span class="fk">FK→receipt_ocr_jobs, receipt_documents</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>raw_response</td><td>—</td><td>JSON thô từ API (lưu toàn bộ response).</td><td><span class="advice keep">✅ GIỮ</span> Debug + audit</td></tr><tr><td>extracted_merchant / date / total / currency / items / taxes</td><td>—</td><td>Dữ liệu đã bóc tách.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>confidence_score / parsing_version</td><td>—</td><td>Chất lượng và version parser.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- ===================== MODULE: IMPORT ===================== -->
+  <h3 class="module-title">Module F: Import Dữ Liệu</h3>
+
+  <details id="import_jobs"><summary><span>📥 <code>import_jobs</code> — Job import file</span><span>26 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ledger_id / workspace_id</td><td><span class="fk">FK→ledgers, workspaces</span></td><td>Scope.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>file_name / file_type / file_size / storage_path / provider</td><td>—</td><td>Thông tin file.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>status (Enum)</td><td>—</td><td>pending/parsing/mapping/reviewing/committed/failed.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>total_rows / parsed_rows / duplicate_rows / error_rows / committed_rows</td><td>—</td><td>Statistics.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>imported_by / reviewed_by / committed_by</td><td>—</td><td>Thiếu FK→profiles cho cả 3!</td><td><span class="advice modify">⚠️ SỬA</span> Thêm FK</td></tr></table></div></details>
+
+  <details id="import_batches"><summary><span>📦 <code>import_batches</code></span><span>9 cột — Batch xử lý trong 1 job</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>import_job_id</td><td><span class="fk">FK→import_jobs(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>batch_number / row_start / row_end / status</td><td>—</td><td>Phạm vi xử lý.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="import_rows"><summary><span>📋 <code>import_rows</code></span><span>28 cột — Từng dòng dữ liệu import</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>import_job_id / import_batch_id</td><td><span class="fk">FK→import_jobs, import_batches</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>raw_data / raw_date / raw_amount / raw_description / raw_balance</td><td>—</td><td>Dữ liệu thô.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>parsed_* (date, amount, currency, description, merchant, type)</td><td>—</td><td>Dữ liệu đã parse.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>suggested_category_id</td><td><span class="fk">FK→categories(id)</span></td><td>AI gợi ý.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>committed_transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch đã tạo từ dòng này.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>is_duplicate / is_settlement_match</td><td>—</td><td>Cờ phát hiện trùng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="import_matches"><summary><span>🔗 <code>import_matches</code></span><span>13 cột — Kết quả matching</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>import_row_id</td><td><span class="fk">FK→import_rows(id)</span></td><td>Dòng import.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>matched_transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch trùng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>matched_import_row_id</td><td><span class="fk">FK→import_rows(id)</span></td><td>Dòng import trùng (cross-file duplicate).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>match_type / confidence_score / match_fields / decision_status</td><td>—</td><td>Chi tiết matching.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="import_errors"><summary><span>❌ <code>import_errors</code></span><span>13 cột — Lỗi import</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>import_job_id / import_row_id / batch_id</td><td><span class="fk">FK→import_jobs, import_rows, import_batches</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>error_stage / error_code / error_message</td><td>—</td><td>Chi tiết lỗi.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>error_message_ja / _vi / _en</td><td>—</td><td>Thông báo lỗi đa ngôn ngữ.</td><td><span class="advice merge">🔗 GỘP</span> Nên dùng error_code rồi translate ở frontend.</td></tr><tr><td>is_recoverable</td><td>—</td><td>Có thể khôi phục không.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="bank_statement_imports"><summary><span>🏦 <code>bank_statement_imports</code></span><span>13 cột — Thông tin sao kê ngân hàng</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>import_job_id</td><td><span class="fk">FK→import_jobs(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>financial_account_id</td><td><span class="fk">FK→financial_accounts(id)</span></td><td>Tài khoản ngân hàng liên kết.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>statement_period / opening_balance / closing_balance</td><td>—</td><td>Kỳ sao kê.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="bank_statement_rows"><summary><span>📃 <code>bank_statement_rows</code></span><span>15 cột — Từng dòng sao kê</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>bank_statement_import_id</td><td><span class="fk">FK→bank_statement_imports(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>import_row_id</td><td><span class="fk">FK→import_rows(id)</span></td><td>Dòng import tương ứng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>reconciled_transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch đã đối soát.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>debit_amount / credit_amount / balance</td><td>—</td><td>Nợ/Có/Số dư.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- ===================== MODULE: DOUBLE-ENTRY ACCOUNTING ===================== -->
+  <h3 class="module-title">Module G: Kế Toán Kép & Đối Soát</h3>
+
+  <details id="journal_entries"><summary><span>📖 <code>journal_entries</code> — Bút toán kép</span><span>26 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ledger_id / workspace_id</td><td><span class="fk">FK→ledgers, workspaces</span></td><td>Scope.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>accounting_period_id</td><td><span class="fk">FK→accounting_periods(id)</span></td><td>Kỳ kế toán.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch tạo ra bút toán này.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>reversed_by_entry_id / reverses_entry_id</td><td><span class="fk">FK→journal_entries(id)</span></td><td>Self-ref cho reversal pair (storno kế toán).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>entry_type (Enum)</td><td>—</td><td>standard/adjusting/closing/reversing.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>description + _ja/_vi/_en</td><td>—</td><td>4 cột mô tả.</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>total_debit / total_credit / currency_code</td><td>—</td><td>Tổng nợ/có. Phải bằng nhau (balanced).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>status</td><td>—</td><td>draft/approved/posted/voided.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>prepared_by / approved_by / posted_by</td><td>—</td><td>Thiếu FK→profiles.</td><td><span class="advice modify">⚠️ SỬA</span> Thêm FK</td></tr><tr><td>is_locked</td><td>—</td><td>Đã khóa không cho sửa.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="journal_lines"><summary><span>📝 <code>journal_lines</code> — Dòng bút toán (Debit/Credit)</span><span>16 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>journal_entry_id</td><td><span class="fk">FK→journal_entries(id)</span></td><td>Thuộc bút toán nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>chart_of_account_id</td><td><span class="fk">FK→chart_of_accounts(id)</span></td><td>Tài khoản kế toán nợ/có.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>side</td><td>—</td><td>'debit' hoặc 'credit'.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>amount</td><td>—</td><td>Số tiền. CHECK > 0.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>household_member_id</td><td><span class="fk">FK→household_members(id)</span></td><td>Phân bổ cho thành viên nào.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>description + _ja/_vi/_en</td><td>—</td><td>Mô tả dòng.</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>base_amount / base_currency / exchange_rate</td><td>—</td><td>Multi-currency.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="exchange_rates"><summary><span>💱 <code>exchange_rates</code> — Tỷ giá hối đoái</span><span>10 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>workspace_id</td><td><span class="fk">FK→workspaces(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>from_currency / to_currency / rate / rate_date</td><td>—</td><td>Cặp tiền tệ, tỷ giá, ngày.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>source</td><td>—</td><td>Nguồn tỷ giá (manual/api).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>is_official</td><td>—</td><td>Tỷ giá chính thức hay ước tính.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="reconciliation_sessions"><summary><span>🔍 <code>reconciliation_sessions</code> — Phiên đối soát ngân hàng</span><span>20 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ledger_id / financial_account_id</td><td><span class="fk">FK→ledgers, financial_accounts</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>accounting_period_id</td><td><span class="fk">FK→accounting_periods(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>bank_statement_import_id</td><td><span class="fk">FK→bank_statement_imports(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>statement_opening / closing_balance</td><td>—</td><td>Số dư sao kê.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>book_opening / closing_balance</td><td>—</td><td>Số dư sổ sách.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>unreconciled_amount</td><td>—</td><td>Chênh lệch (computed column).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>status (Enum)</td><td>—</td><td>open/in_progress/completed.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="reconciliation_items"><summary><span>✅ <code>reconciliation_items</code> — Item đối soát</span><span>15 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>reconciliation_session_id</td><td><span class="fk">FK→reconciliation_sessions(id)</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>transaction_id</td><td><span class="fk">FK→transactions(id)</span></td><td>Giao dịch sổ sách.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>bank_statement_row_id</td><td><span class="fk">FK→bank_statement_rows(id)</span></td><td>Dòng sao kê ngân hàng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>import_match_id</td><td><span class="fk">FK→import_matches(id)</span></td><td>Kết quả matching.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>book_amount / statement_amount / difference_amount</td><td>—</td><td>So sánh số tiền.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>is_cleared / cleared_by / cleared_at</td><td>—</td><td>Đã xác nhận khớp.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- ===================== MODULE: SYSTEM ===================== -->
+  <h3 class="module-title">Module H: Hệ Thống & Phân Tích</h3>
+
+  <details id="approval_workflows"><summary><span>✍️ <code>approval_workflows</code> — Luồng phê duyệt</span><span>18 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>workspace_id / ledger_id</td><td><span class="fk">FK</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>entity_type / entity_id</td><td>—</td><td>Polymorphic: loại bản ghi (transaction/journal_entry) và ID.</td><td><span class="advice review">🔍 XEM LẠI</span> Polymorphic FK khó maintain. Cân nhắc tách bảng.</td></tr><tr><td>workflow_name + _ja/_vi/_en</td><td>—</td><td>—</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>current_step / total_steps / status (Enum)</td><td>—</td><td>Tiến trình phê duyệt.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>trigger_amount / trigger_currency</td><td>—</td><td>Ngưỡng kích hoạt (vd: phê duyệt khi > 1 triệu).</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="category_rules"><summary><span>🤖 <code>category_rules</code> — Quy tắc tự động phân loại</span><span>20 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>workspace_id / category_id</td><td><span class="fk">FK→workspaces, categories</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>rule_name + _ja/_vi/_en</td><td>—</td><td>—</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>rule_type / match_field / match_operator / match_value</td><td>—</td><td>Logic matching (vd: merchant_name CONTAINS "starbucks").</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>condition_tree</td><td>—</td><td>Cây điều kiện phức tạp (jsonb).</td><td><span class="advice review">🔍 XEM LẠI</span> MVP có cần?</td></tr><tr><td>match_count / last_matched_at</td><td>—</td><td>Thống kê hiệu quả rule.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="category_templates"><summary><span>📚 <code>category_templates</code> — Template danh mục preset</span><span>13 cột</span></summary><div class="table-wrap"><table><tr><th>Cột</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>template_name + _ja/_vi/_en</td><td>—</td><td>Tên template.</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>region / use_case</td><td>—</td><td>Khu vực (JP/VN) và use case (personal/business).</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>categories / rules (jsonb)</td><td>—</td><td>Dữ liệu categories và rules mẫu.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>usage_count</td><td>—</td><td>Số lần được dùng.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="audit_logs"><summary><span>🛡 <code>audit_logs</code> — Nhật ký kiểm toán</span><span>24 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>organization_id / workspace_id / ledger_id</td><td><span class="fk">FK→orgs, workspaces, ledgers</span></td><td>Scope.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>actor_id / actor_email / actor_role / actor_ip / actor_user_agent / session_id</td><td>—</td><td>Thông tin người thực hiện. Denormalized có chủ đích (audit log không nên JOIN).</td><td><span class="advice keep">✅ GIỮ</span> Pattern chuẩn</td></tr><tr><td>event_type / entity_type / entity_id / action</td><td>—</td><td>Loại sự kiện, đối tượng, hành động.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>old_values / new_values / diff</td><td>—</td><td>Giá trị cũ/mới và diff. 3 cột lưu thay đổi.</td><td><span class="advice modify">⚠️ SỬA</span> Chỉ cần old_values + new_values. diff có thể tính runtime.</td></tr><tr><td>description + _ja/_vi/_en</td><td>—</td><td>—</td><td><span class="advice merge">🔗 GỘP</span></td></tr><tr><td>severity / is_sensitive</td><td>—</td><td>Mức độ nghiêm trọng và đánh dấu nhạy cảm.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="activity_logs"><summary><span>📢 <code>activity_logs</code> — Nhật ký hoạt động (Thông báo)</span><span>18 cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>organization_id / workspace_id / ledger_id</td><td><span class="fk">FK→orgs, workspaces, ledgers</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>actor_id</td><td>—</td><td>Ai tạo hoạt động.</td><td><span class="advice modify">⚠️ SỬA</span> Thiếu FK→profiles</td></tr><tr><td>activity_type / entity_type / entity_id</td><td>—</td><td>Loại hoạt động.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>title_ja/vi/en / body_ja/vi/en</td><td>—</td><td>Nội dung 6 cột!</td><td><span class="advice merge">🔗 GỘP</span> Gộp thành title_i18n + body_i18n.</td></tr><tr><td>is_read / read_at</td><td>—</td><td>Đã đọc chưa (như notification).</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <details id="analytics_snapshots"><summary><span>📊 <code>analytics_snapshots</code> — Snapshot phân tích</span><span>22+ cột</span></summary><div class="table-wrap"><table><tr><th>Cột chính</th><th>FK</th><th>Ý nghĩa</th><th>Lời khuyên</th></tr><tr><td>ledger_id / workspace_id</td><td><span class="fk">FK→ledgers, workspaces</span></td><td>—</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>snapshot_type / period_start / period_end / period_label</td><td>—</td><td>Loại (daily/weekly/monthly) và khoảng thời gian.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>household_member_id</td><td>—</td><td>Nếu snapshot cho 1 thành viên cụ thể.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>total_income / total_expense / net_balance / transaction_count / avg_daily_expense</td><td>—</td><td>Aggregated metrics.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>by_category / by_payment_instrument / by_funding_source / by_household_member</td><td>—</td><td>Breakdown jsonb.</td><td><span class="advice keep">✅ GIỮ</span> Rất tốt cho dashboard performance</td></tr><tr><td>top_merchants / budget_utilization</td><td>—</td><td>Phân tích bổ sung.</td><td><span class="advice keep">✅ GIỮ</span></td></tr><tr><td>is_final</td><td>—</td><td>Snapshot đã chốt hay còn cập nhật.</td><td><span class="advice keep">✅ GIỮ</span></td></tr></table></div></details>
+
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <!-- SECTION 3: SUMMARY -->
+  <!-- ═══════════════════════════════════════════════════════ -->
+  <h2 class="section-title">3. Tổng Kết Lời Khuyên Chuyên Gia</h2>
+
+  <div class="card">
+    <h3>🔴 Vấn đề #1: Trùng lặp I18N (Ưu tiên sửa NGAY)</h3>
+    <p>Hầu hết các bảng đều có <code>name_ja, name_vi, name_en</code> VÀ <code>name_i18n (jsonb)</code>. Đây là vi phạm nguyên tắc <strong>Single Source of Truth</strong>.</p>
+    <p><strong>Khuyến nghị:</strong> Chọn 1 chiến lược duy nhất. Nếu app hỗ trợ cố định 3 ngôn ngữ → giữ 3 cột cứng, bỏ jsonb. Nếu muốn linh hoạt thêm ngôn ngữ sau → giữ jsonb, bỏ 3 cột. Các bảng bị ảnh hưởng: <code>chart_of_accounts</code>, <code>categories</code>, <code>payment_instruments</code>, <code>tags</code>, <code>settlement_profiles</code>, <code>funding_sources</code>, <code>dimensions</code>, <code>dimension_values</code>, <code>receipt_line_items</code>, <code>journal_entries</code>, <code>journal_lines</code>, <code>category_rules</code>, <code>approval_workflows</code>, <code>activity_logs</code>, <code>audit_logs</code>.</p>
+  </div>
+
+  <div class="card">
+    <h3>🟡 Vấn đề #2: Currency được define ở 3 cấp</h3>
+    <p><code>organizations.base_currency</code> → <code>workspaces.default_currency</code> → <code>ledgers.base_currency + currency</code>. Tổng cộng <strong>4 cột currency</strong> cho 1 luồng dữ liệu.</p>
+    <p><strong>Khuyến nghị:</strong> Giữ currency ở <code>ledgers</code> (gộp base_currency và currency thành 1). Xóa ở organizations và workspaces. Nếu cần inherit, lấy từ ledger khi tạo giao dịch.</p>
+  </div>
+
+  <div class="card">
+    <h3>🟡 Vấn đề #3: metadata jsonb ở MỌI bảng</h3>
+    <p>50/50 bảng đều có cột <code>metadata jsonb</code>. Phần lớn sẽ chứa <code>{}</code> rỗng → lãng phí storage và tạo thói quen "nhồi bừa" dữ liệu.</p>
+    <p><strong>Khuyến nghị:</strong> Chỉ giữ ở các bảng thực sự cần mở rộng: <code>organizations</code>, <code>ledgers</code>, <code>transactions</code>, <code>import_rows</code>, <code>receipt_ocr_results</code>. Bỏ ở các bảng đơn giản như <code>tags</code>, <code>transaction_splits</code>, <code>transaction_tags</code>.</p>
+  </div>
+
+  <div class="card">
+    <h3>🟠 Vấn đề #4: Thiếu FK constraint</h3>
+    <p>Các cột sau có dữ liệu UUID nhưng thiếu ràng buộc FK: <code>household_members.user_id</code>, <code>recurring_transactions.group_id</code>, <code>transaction_attachments.uploaded_by</code>, <code>import_jobs.imported_by/reviewed_by/committed_by</code>, <code>journal_entries.prepared_by/approved_by/posted_by</code>, <code>activity_logs.actor_id</code>, <code>receipt_documents.uploaded_by</code>.</p>
+    <p><strong>Khuyến nghị:</strong> Thêm FK constraint cho tất cả. Nếu cố ý bỏ (vd: audit_logs), hãy document rõ lý do.</p>
+  </div>
+
+  <div class="card">
+    <h3>🟢 Vấn đề #5: recurring_transactions — Bảng "lạc thời"</h3>
+    <p>Bảng này FK thẳng vào <code>profiles(id)</code> thay vì đi qua hệ thống phân cấp org → workspace → ledger. Cột <code>category</code> là text thay vì FK vào bảng <code>categories</code>.</p>
+    <p><strong>Khuyến nghị:</strong> Migrate bảng này: thêm <code>ledger_id FK</code>, đổi <code>category text</code> → <code>category_id uuid FK→categories(id)</code>, thêm FK cho <code>group_id</code>.</p>
+  </div>
+
+  <div class="card">
+    <h3>🔵 Vấn đề #6: Circular FK giữa transactions ↔ receipt_documents</h3>
+    <p><code>transactions.receipt_document_id FK→receipt_documents</code> VÀ <code>receipt_documents.linked_transaction_id FK→transactions</code>. Vòng lặp 2 chiều gây khó khăn cho INSERT.</p>
+    <p><strong>Khuyến nghị:</strong> Chỉ giữ 1 chiều. Khuyên giữ <code>transactions.receipt_document_id</code> (giao dịch biết mình có hóa đơn nào) và bỏ chiều ngược.</p>
+  </div>
+
+  </div> <!-- end v1 -->
+
+  <div id="v2" class="tab-content">
+    <header>
+      <h1>🌐 Leo Walletly — Database i18n Migration (v2)</h1>
+      <p>Version 2.0 &bull; Cập nhật đa ngôn ngữ: 15 bảng &bull; Ngày cập nhật: 20/06/2026</p>
+    </header>
+
+    <div class="card">
+      <h3 class="module-title">Tổng quan Migration</h3>
+      <p>Trong đợt cập nhật này, chúng ta loại bỏ các cột ngôn ngữ tĩnh (<code>name_ja, name_vi, name_en, name_i18n</code>) tại 15 bảng domain và chuyển sang kiến trúc <code>[entity]_translations</code> chuẩn mực.</p>
+    </div>
+
+    <h2 class="section-title">Danh sách các bảng bị ảnh hưởng (15 bảng)</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Bảng gốc</th><th>Bảng Dịch (Mới)</th><th>Hành động</th></tr>
+        <tr><td><code>chart_of_accounts</code></td><td><code>chart_of_accounts_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>account_id</code></td></tr>
+        <tr><td><code>categories</code></td><td><code>category_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>category_id</code></td></tr>
+        <tr><td><code>payment_instruments</code></td><td><code>payment_instrument_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>instrument_id</code></td></tr>
+        <tr><td><code>tags</code></td><td><code>tag_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>tag_id</code></td></tr>
+        <tr><td><code>settlement_profiles</code></td><td><code>settlement_profile_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>profile_id</code></td></tr>
+        <tr><td><code>funding_sources</code></td><td><code>funding_source_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>source_id</code></td></tr>
+        <tr><td><code>dimensions</code></td><td><code>dimension_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>dimension_id</code></td></tr>
+        <tr><td><code>dimension_values</code></td><td><code>dimension_value_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>value_id</code></td></tr>
+        <tr><td><code>receipt_line_items</code></td><td><code>receipt_line_item_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>item_id</code></td></tr>
+        <tr><td><code>journal_entries</code></td><td><code>journal_entry_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>entry_id</code></td></tr>
+        <tr><td><code>journal_lines</code></td><td><code>journal_line_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>line_id</code></td></tr>
+        <tr><td><code>category_rules</code></td><td><code>category_rule_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>rule_id</code></td></tr>
+        <tr><td><code>approval_workflows</code></td><td><code>approval_workflow_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>workflow_id</code></td></tr>
+        <tr><td><code>activity_logs</code></td><td><code>activity_log_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>log_id</code></td></tr>
+        <tr><td><code>audit_logs</code></td><td><code>audit_log_translations</code></td><td>Drop cột ngôn ngữ, tạo bảng dịch liên kết <code>log_id</code></td></tr>
+      </table>
+    </div>
+
+    <h2 class="section-title">Bảng UI Translations Mới</h2>
+    <div class="card">
+      <h3 class="module-title"><code>ui_translations</code></h3>
+      <p>Chứa 100% dữ liệu dịch từ file tĩnh <code>lib/i18n.ts</code>. Bảng này sẽ được dùng để hiển thị giao diện đa ngôn ngữ động thay vì bundle JSON tĩnh.</p>
+      <br>
+      <p><strong>Cấu trúc:</strong> <code>id, key (e.g. nav.dashboard), locale (ja, vi, en), value</code></p>
+    </div>
+
+    <h2 class="section-title">Các thay đổi Frontend & Views</h2>
+    <div class="card">
+      <h3 class="module-title">Database Views</h3>
+      <p>Do việc xóa các cột ngôn ngữ tĩnh, các View phụ thuộc đã được cập nhật:</p>
+      <ul>
+        <li><code>category_balances</code>: Đã được tái tạo lại, loại bỏ cột tĩnh <code>name_en</code>.</li>
+        <li><code>group_balances</code>: Đã được DROP hoàn toàn do không còn được sử dụng và xung đột cột.</li>
+      </ul>
+
+      <h3 class="module-title">API & Hooks</h3>
+      <p>Hệ thống dịch thuật đã được làm lại để tương thích với Database:</p>
+      <ul>
+        <li><code>app/api/translations/route.ts</code>: API Server-side kết nối Supabase, trích xuất dữ liệu từ <code>ui_translations</code> và tái tạo lại cấu trúc JSON lồng nhau cho Frontend.</li>
+        <li><code>hooks/useTranslation.ts</code>: Đã cập nhật cơ chế <strong>Deep Merge</strong> kết hợp dữ liệu dịch tĩnh (default) và dữ liệu động từ API. Tránh lỗi crash ứng dụng khi API thiếu key hoặc cache của trình duyệt bị lỗi.</li>
+      </ul>
+    </div>
+  </div> <!-- end v2 -->
+
+  <div id="v3" class="tab-content">
+    <header>
+      <h1>📊 Category Domain Refactoring</h1>
+      <p>Version 3.0 &bull; Ngày thực hiện: 21/06/2026</p>
+    </header>
+
+    <h2 class="section-title">1. Tái Cấu Trúc Database</h2>
+    <div class="card">
+      <h3 class="module-title">Bảng <code>category_budgets</code> (Mới)</h3>
+      <p>Đã tách rời chức năng giới hạn ngân sách (budget) từ cấp Workspace xuống cấp Ledger bằng bảng mới <code>category_budgets</code>:</p>
+      <ul>
+        <li><code>category_id</code> (uuid): Tham chiếu đến bảng categories.</li>
+        <li><code>ledger_id</code> (uuid): Tham chiếu đến bảng ledgers (Khắc phục lỗi nhiều ledger dùng chung một ngân sách).</li>
+        <li><code>amount</code> (numeric): Số tiền giới hạn.</li>
+        <li><code>currency</code> (char(3)): Đơn vị tiền tệ của ngân sách.</li>
+      </ul>
+
+      <h3 class="module-title">Bảng <code>categories</code></h3>
+      <p>Loại bỏ các cột dư thừa và đã được di dời:</p>
+      <ul>
+        <li>Xóa cột <code>budget_limit</code> (Đã chuyển sang <code>category_budgets</code>).</li>
+        <li>Xóa cột <code>icon</code> (Chỉ giữ lại <code>emoji</code> để đơn giản hóa giao diện).</li>
+        <li>Xóa cột <code>is_recurring</code> (Chuyển tính năng định kỳ xuống cấp độ Giao dịch).</li>
+      </ul>
+    </div>
+
+    <h2 class="section-title">2. Database Triggers & Functions</h2>
+    <div class="card">
+      <h3 class="module-title">Roll-up Validation Trigger</h3>
+      <p>Đã triển khai function <code>validate_category_budget_rollup()</code> ngăn chặn ngân sách danh mục con vượt quá danh mục cha. Trigger này được kích hoạt tự động mỗi khi người dùng Insert hoặc Update bảng <code>category_budgets</code>.</p>
+      
+      <h3 class="module-title">Hàm Gộp Danh Mục</h3>
+      <p>Triển khai Stored Procedure <code>merge_categories(source_id, target_id)</code> để dời tất cả giao dịch, hóa đơn, luật tự động, v.v. từ danh mục cũ sang danh mục mới trước khi xóa vĩnh viễn danh mục cũ.</p>
+    </div>
+
+    <h2 class="section-title">3. Thay đổi Frontend & API</h2>
+    <div class="card">
+      <h3 class="module-title">API Routes</h3>
+      <ul>
+        <li><code>/api/categories/stats</code> và <code>/api/categories/kpi</code>: Đã cập nhật truy vấn SQL (JOIN với bảng <code>category_budgets</code>) để lấy đúng ngân sách theo <code>ledger_id</code> hiện tại.</li>
+      </ul>
+      <h3 class="module-title">Frontend UI</h3>
+      <ul>
+        <li>Category Form: Xóa nút "Là chi phí định kỳ".</li>
+        <li>Category Bento Page: Sửa lỗi hiển thị UI và thuật toán dịch thuật (i18n), giờ đây tra cứu tên danh mục trực tiếp từ Local State (Zustand Store) thay vì phụ thuộc JSON tĩnh từ Server.</li>
+      </ul>
+    </div>
+    
+    <h2 class="section-title">4. Kiểm tra rủi ro do cập nhật CSDL (Audit Checklist)</h2>
+    <div class="card">
+      <h3 class="module-title">Rà soát các cột đã bị xóa</h3>
+      <p style="margin-bottom:1rem;color:var(--text-secondary)">Dưới đây là danh sách kiểm tra (Audit Checklist) tổng thể để bảo đảm các trường dữ liệu bị loại bỏ khỏi CSDL không làm gãy giao diện hoặc logic ứng dụng.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cột bị xóa</th>
+              <th>Vị trí ảnh hưởng</th>
+              <th>Tình trạng</th>
+              <th>Đánh giá rủi ro</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>budget_limit</code></td>
+              <td><code>features/categories/store.ts</code><br/><code>features/categories/category-detail-view.tsx</code><br/><code>features/categories/categories-bento-page.tsx</code><br/><code>features/categories/category-explorer.tsx</code></td>
+              <td><span class="advice keep">✅ Đã sửa</span></td>
+              <td>Gây lỗi mất thông tin Ngân sách (luôn hiển thị 0). <strong>Cách xử lý:</strong> Cập nhật hàm fetchCategories để lấy số tiền từ bảng <code>category_budgets</code> theo đúng <code>ledger_id</code>, đồng thời bỏ lưu budget_limit vào categories.</td>
+            </tr>
+            <tr>
+              <td><code>is_recurring</code></td>
+              <td><code>features/categories/categories-bento-page.tsx</code></td>
+              <td><span class="advice keep">✅ Đã sửa</span></td>
+              <td>Giao diện cũ vẫn cố render icon "Định kỳ" dựa trên cờ này. <strong>Cách xử lý:</strong> Loại bỏ hoàn toàn UI hiển thị is_recurring trong Categories, vì hệ thống đã sử dụng bảng riêng <code>recurring_transactions</code>.</td>
+            </tr>
+            <tr>
+              <td><code>icon</code></td>
+              <td><code>features/categories/category-explorer.tsx</code></td>
+              <td><span class="advice keep">✅ Đã sửa</span></td>
+              <td>Chỉ tồn tại trong TypeScript Interface cũ. <strong>Cách xử lý:</strong> Đổi sang dùng <code>emoji</code> thay thế theo đúng cấu trúc DB mới.</td>
+            </tr>
+            <tr>
+              <td><code>name_en</code>, <code>name_vi</code></td>
+              <td><code>features/categories/types.ts</code><br/><code>features/categories/store.ts</code></td>
+              <td><span class="advice keep">✅ Đã sửa</span></td>
+              <td>TypeScript phàn nàn và logic fallback cũ vẫn tham chiếu. <strong>Cách xử lý:</strong> Xóa khai báo khỏi Typescript, sử dụng trường <code>name</code> (được normalize từ <code>category_translations</code>).</td>
+            </tr>
+            <tr>
+              <td><code>warning_threshold</code></td>
+              <td><code>features/categories/store.ts</code></td>
+              <td><span class="advice keep">✅ Đã sửa</span></td>
+              <td>Lỗi Schema Cache khi thêm mới hoặc sửa danh mục. <strong>Cách xử lý:</strong> Loại bỏ khỏi payload trực tiếp trên Root object, dữ liệu này hiện nay được lưu trữ bên trong trường JSON <code>metadata</code>.</td>
+            </tr>
+            <tr>
+              <td><code>merge_categories (RPC)</code></td>
+              <td><code>features/categories/store.ts</code></td>
+              <td><span class="advice keep">✅ Đã thêm mới</span></td>
+              <td>Lỗi gộp danh mục bị thất bại hoàn toàn ở dưới DB. <strong>Cách xử lý:</strong> Viết thêm migration script `20260621000000_create_merge_categories_rpc.sql` để định nghĩa RPC `merge_categories`. Hàm này tự động hợp nhất từ khóa (keywords), chuyển giao dịch và tất cả các ràng buộc (Foreign Keys) sang danh mục đích, sau đó xóa danh mục nguồn.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <h2 class="section-title">5. Cải thiện trải nghiệm người dùng (UX)</h2>
+    <div class="card">
+      <h3 class="module-title">Loại bỏ Native Dialogs</h3>
+      <p style="margin-bottom:1rem;color:var(--text-secondary)">Thay thế toàn bộ các hàm gọi mặc định của trình duyệt gây trải nghiệm không đồng nhất.</p>
+      <ul>
+        <li><strong>Xác nhận xóa (window.confirm):</strong> Đã được loại bỏ và thay thế bằng component <code>&lt;Modal&gt;</code> tại <code>category-detail-view.tsx</code> và <code>users/page.tsx</code>.</li>
+        <li><strong>Thông báo trạng thái (alert):</strong> Đã được loại bỏ và thay thế bằng các UI Banners thông báo lỗi/thành công hoặc Floating Toast (Custom div) ở <code>category-form.tsx</code>, <code>merge-category-modal.tsx</code>, <code>users/page.tsx</code>, và <code>login/page.tsx</code>.</li>
+      </ul>
+    </div>
+  </div> <!-- end v3 -->
+
+  <div id="v4" class="tab-content active">
+    <header>
+      <h1>🧠 Leo Walletly — Smart Categorization Refactor (v4)</h1>
+      <p>Version 4.0 &bull; Cập nhật logic phân loại thông minh &bull; Ngày cập nhật: 21/06/2026</p>
+    </header>
+
+    <div class="card">
+      <h3 class="module-title">Tổng quan Migration</h3>
+      <p>Trong đợt cập nhật này, hệ thống phân loại giao dịch được tái cấu trúc kiến trúc UI/UX để giải quyết triệt để bài toán <strong>Xung đột từ khóa (Keyword Collision)</strong> và cải thiện tính minh bạch khi tự động gợi ý danh mục.</p>
+    </div>
+
+    <h2 class="section-title">1. Phân giải Cấp độ Khớp Từ khóa (Confidence Weighting)</h2>
+    <div class="card">
+      <p style="margin-bottom:1rem;color:var(--text-secondary)">Hệ thống giờ đây nhận biết được độ tin cậy của việc gán danh mục thông qua cơ chế Exact vs Partial Match.</p>
+      <ul>
+        <li><strong>Exact Match (Khớp 100%):</strong> Giao dịch có chuỗi tên/địa điểm trùng hoàn toàn với từ khóa đã cấu hình của danh mục. Hệ thống đủ tự tin để coi đây là gán "Tự động".</li>
+        <li><strong>Partial Match (Khớp một phần):</strong> Giao dịch chứa chuỗi con trùng với một trong các từ khóa (ví dụ: giao dịch <code>セブン-イレブン - 北松戸駅</code> khớp với từ khóa <code>セブン-イレブン</code>). Độ tự tin thấp, yêu cầu con người duyệt.</li>
+      </ul>
+    </div>
+
+    <h2 class="section-title">2. Chi tiết các thay đổi logic nghiệp vụ</h2>
+    <div class="table-wrap">
+      <table>
+        <tr><th>Màn hình</th><th>Thay đổi & UX Logic</th><th>Ý nghĩa / Lợi ích</th></tr>
+        <tr>
+          <td><code>classify-page.tsx</code></td>
+          <td>Ghi nhận biến <code>metadata: { match_type: 'manual' }</code> vào Payload giao dịch khi người dùng ấn "Áp dụng" một cách thủ công.</td>
+          <td>Cho phép hệ thống Backend và UI phân biệt được đâu là dữ liệu do AI gán (auto) và đâu là dữ liệu do con người gán (manual) để có huy hiệu (badge) phù hợp.</td>
+        </tr>
+        <tr>
+          <td><code>category-detail-view.tsx</code></td>
+          <td>Viết lại toàn bộ hàm <code>getTxBadgeInfo()</code> để đánh giá trạng thái huy hiệu hiển thị:
+          <br>- <strong>Thủ công:</strong> <code>categoryId</code> khớp và <code>match_type: 'manual'</code>
+          <br>- <strong>Tự động:</strong> <code>categoryId</code> khớp và tên giao dịch trùng 100% (Exact Match)
+          <br>- <strong>Cần xem lại:</strong> Khớp một phần (Partial) nhưng <code>categoryId</code> chưa gán. Cung cấp nút <strong>Xác nhận Áp dụng</strong>
+          <br>- <strong>Đã xác nhận:</strong> Khi bấm "Xác nhận Áp dụng" từ nhóm "Cần xem lại".</td>
+          <td>Giải quyết tình trạng lú lẫn giữa các trạng thái. Rạch ròi giữa việc "Hệ thống tự làm" và "Gợi ý chờ duyệt". Không còn tình trạng "Cần xem lại" ảo (dead-end).</td>
+        </tr>
+        <tr>
+          <td><code>categories-bento-page.tsx</code></td>
+          <td>- Ẩn badge nguồn "Thủ công" (nếu source là manual hoặc rỗng).<br>- Tính toán tổng số lượng gợi ý thực tế có thể áp dụng.<br>- Đổi nút "Áp dụng tất cả" thành <strong>"Áp dụng N gợi ý"</strong> và ẩn đi nếu không có gợi ý.</td>
+          <td>Giảm thiểu Visual Noise (nhiễu thị giác). Hành động Bulk Apply (áp dụng hàng loạt) giờ đây minh bạch và không còn bị mù thông tin.</td>
+        </tr>
+      </table>
+    </div>
+  </div> <!-- end v4 -->
+
+</div>
+
+<script>
+  function openTab(tabId, event) {
+    document.querySelectorAll('.tab-content').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    document.querySelectorAll('.tab-btn').forEach(function(el) {
+      el.classList.remove('active');
+    });
+    document.getElementById(tabId).classList.add('active');
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
+  }
+</script>
+</body>
+</html>

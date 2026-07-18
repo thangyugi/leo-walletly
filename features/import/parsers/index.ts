@@ -82,17 +82,27 @@ export async function parseFile(
 
   try {
     if (format === 'pdf') {
-      if (provider === 'rakuten_pay') {
-        const { transactions, errors } = await parseRakutenPayPDF(file)
-        return { success: transactions.length > 0, transactions: mapToV3(transactions), errors, fileName: file.name, provider }
+      try {
+        const rakutenRes = await parseRakutenPayPDF(file)
+        if (rakutenRes.transactions.length > 0) {
+          return { success: true, transactions: mapToV3(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_pay' }
+        }
+      } catch (e) {
+        // ignore and try next
       }
-      if (provider === 'paypay') {
-        const { transactions, errors } = await parsePayPayPDF(file)
-        return { success: transactions.length > 0, transactions: mapToV3(transactions), errors, fileName: file.name, provider }
+      
+      try {
+        const paypayRes = await parsePayPayPDF(file)
+        if (paypayRes.transactions.length > 0) {
+          return { success: true, transactions: mapToV3(paypayRes.transactions), errors: paypayRes.errors, fileName: file.name, provider: 'paypay' }
+        }
+      } catch (e) {
+        // ignore
       }
+
       return {
-        success: false, transactions: [], fileName: file.name, provider,
-        errors: ['PDFは楽天PayとPayPayのみ対応しています。'],
+        success: false, transactions: [], fileName: file.name, provider: 'generic_csv',
+        errors: ['PDFの解析に失敗しました。対応しているのは楽天PayとPayPayの利用明細のみです。'],
       }
     }
 

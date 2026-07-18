@@ -16,6 +16,7 @@ import { PROVIDERS, CATEGORIES, type ProviderRegion } from '@/lib/constants'
 import type { PaymentProvider, Transaction, Category } from '@/types'
 import { formatMoney } from '@/lib/money'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useCategoryStore, resolveCategoryId } from '@/features/categories/store'
 
 const IMPORT_PROVIDERS = PROVIDERS.filter((p) => p.fileTypes.length > 0)
 
@@ -27,8 +28,8 @@ function fmtDate(d: string): string {
   return `${dd}/${m}/${y}`
 }
 
-function getCat(v: string) {
-  return CATEGORIES.find((c) => c.value === v)
+function getCat(v: string, categories: Category[]) {
+  return categories.find((c) => c.id === v)
 }
 
 // ---- Step indicator ---------------------------------------------------------
@@ -146,17 +147,12 @@ function ColSelect({ label, value, headers, onChange }: {
 }
 
 // ---- Preview row ------------------------------------------------------------
-function PreviewRow({
-  tx, checked, onToggle, t,
-}: {
-  tx: Transaction
-  checked: boolean
-  onToggle: () => void
-  t: any
-}) {
-  const isIncome  = tx.transactionType === 'income'
-  const cat       = getCat(tx.categoryId || '')
-  const catLabel  = (t.categories as any)[tx.categoryId || ''] ?? cat?.label ?? tx.categoryId
+function PreviewRow({ tx, checked, onToggle, t }: { tx: Transaction; checked: boolean; onToggle: () => void; t: any }) {
+  const isIncome = tx.transactionType === 'income'
+  const { categories } = useCategoryStore()
+  
+  const cat      = categories.find((c) => c.id === resolveCategoryId(tx.categoryId as string, categories))
+  const catLabel = cat ? cat.name : (tx.categoryId || 'Other')
 
   return (
     <tr className={cn('border-t border-border transition-colors', !checked && 'opacity-40')}>
@@ -210,13 +206,14 @@ function PreviewRow({
 export default function ImportPage() {
   const { addTransactions } = useTransactionsStore()
   const { t, lang }         = useTranslation()
+  const { categories }      = useCategoryStore()
   const fileInputRef        = useRef<HTMLInputElement>(null)
 
   const L = (ja: string, vi: string, en: string) =>
     lang === 'ja' ? ja : lang === 'vi' ? vi : en
 
   const [region,      setRegion]      = useState<Region>('jp')
-  const [provider,    setProvider]    = useState<PaymentProvider>('rakuten_pay')
+  const [provider,    setProvider]    = useState<PaymentProvider>('generic_csv')
   const [dragging,    setDragging]    = useState(false)
   const [loading,     setLoading]     = useState(false)
   const [file,        setFile]        = useState<File | null>(null)
@@ -260,7 +257,6 @@ export default function ImportPage() {
         const headers  = cleaned.split('\n')[0].split(',').map((h) => h.trim().replace(/^﻿/, ''))
         const guessed  = autoDetectProvider(headers)
         if (guessed && guessed !== provider) {
-          setDetected(guessed)
           activeProvider = guessed
         }
 
@@ -272,6 +268,7 @@ export default function ImportPage() {
 
       const res = await parseFile(f, activeProvider, userMapping)
       setResult(res)
+      setProvider(res.provider)
       setSelected(new Set(res.transactions.map((tx) => tx.id)))
 
       if (!res.success && res.transactions.length === 0) {
@@ -302,9 +299,12 @@ export default function ImportPage() {
 
   function handleConfirm() {
     if (!result?.transactions.length) return
-    const toAdd = result.transactions.filter((tx) => selected.has(tx.id))
+    const toAdd = result.transactions.filter((tx) => selected.has(tx.id)).map(tx => ({
+      ...tx,
+      categoryId: resolveCategoryId(tx.categoryId as string, categories) || categories[0]?.id
+    }))
     if (!toAdd.length) return
-    addTransactions(toAdd)
+    addTransactions(toAdd as Transaction[])
     setConfirmed(true)
   }
 
@@ -355,44 +355,6 @@ export default function ImportPage() {
 
       {step === 'setup' && (
         <>
-          <div className="flex gap-1 p-1 bg-surface-alt rounded-xl w-fit">
-            {regionTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => {
-                  setRegion(tab.key)
-                  const first = IMPORT_PROVIDERS.find(
-                    (p) => p.region === tab.key || (tab.key === 'global' && p.region === 'global')
-                  )
-                  if (first) setProvider(first.value)
-                }}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
-                  region === tab.key
-                    ? 'bg-white shadow-sm text-text-primary'
-                    : 'text-text-muted hover:text-text-primary'
-                )}
-              >
-                <span>{tab.flag}</span>
-                <span>{tab.label}</span>
-              </button>
-            ))}
-          </div>
-
-          <div>
-            <p className="text-xs font-semibold text-text-muted mb-2">{t.import.selectProvider}</p>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-              {filteredProviders.map((p) => (
-                <ProviderCard
-                  key={p.value}
-                  p={p}
-                  selected={provider === p.value}
-                  onClick={() => setProvider(p.value)}
-                  lang={lang}
-                />
-              ))}
-            </div>
-          </div>
 
           <div
             onDragOver={(e) => { e.preventDefault(); setDragging(true) }}
@@ -409,7 +371,7 @@ export default function ImportPage() {
             <input
               ref={fileInputRef}
               type="file"
-              accept={providerMeta?.fileTypes.map((t) => `.${t}`).join(',') ?? '.csv,.pdf'}
+              accept=".csv,.pdf"
               className="sr-only"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) processFile(f) }}
             />
@@ -431,22 +393,6 @@ export default function ImportPage() {
             </p>
           </div>
         </>
-      )}
-
-      {detected && detected !== provider && (
-        <div className="flex items-center gap-3 p-3 rounded-xl border border-brand-200 bg-brand-50 text-sm">
-          <Sparkles className="w-4 h-4 text-brand-600 shrink-0" />
-          <span className="text-brand-700 text-sm">
-            {t.import.autoDetected}
-            <strong>{PROVIDERS.find((p) => p.value === detected)?.label ?? detected}</strong>
-          </span>
-          <button
-            className="ml-auto text-xs font-semibold text-brand-600 underline-offset-2 hover:underline"
-            onClick={() => { setProvider(detected); setDetected(null) }}
-          >
-            {t.common.confirm}
-          </button>
-        </div>
       )}
 
       {mapping && provider === 'generic_csv' && step === 'setup' && (

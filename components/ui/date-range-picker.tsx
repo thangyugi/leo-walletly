@@ -487,7 +487,7 @@ export function DateNavigator({
       </div>
 
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[300] bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-2xl shadow-xl overflow-hidden animate-slide-in-up">
+        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[300] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl overflow-hidden animate-slide-in-up">
           <DateRangePicker
             value={value}
             onChange={(v) => { onChange(v); setOpen(false) }}

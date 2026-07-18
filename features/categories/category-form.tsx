@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { getTranslations, Lang } from '@/lib/i18n'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
-import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight } from 'lucide-react'
+import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
 import { Modal } from '@/components/ui/modal'
@@ -126,12 +126,14 @@ export function ParentTreeDropdown({
   options,
   allCategories,
   disabled,
+  allowNone,
 }: {
   value: string
   onChange: (id: string) => void
   options: Category[]
   allCategories: Category[]
   disabled?: boolean
+  allowNone?: boolean
 }) {
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
@@ -175,35 +177,39 @@ export function ParentTreeDropdown({
             <span className="flex-1 truncate">{selectedCategory.name}</span>
           </>
         ) : (
-          <span className="flex-1 text-[var(--color-text-placeholder)]">-- Không có danh mục cha --</span>
+          <span className="flex-1 text-[var(--color-text-placeholder)]">
+            {allowNone === false ? 'Chọn danh mục...' : '-- Không có danh mục cha --'}
+          </span>
         )}
         <ChevronDown className={cn('w-4 h-4 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </button>
 
       {open && (
         <div className={cn(
-          'absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-xl border shadow-lg overflow-hidden',
-          'bg-[var(--color-surface-default)] border-[var(--color-border-default)]',
+          'absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-xl shadow-xl overflow-hidden',
+          'bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]',
         )}>
           {/* None option */}
-          <div className="p-2 border-b border-[var(--color-border-subtle)]">
-            <button
-              type="button"
-              onClick={() => { onChange(''); setOpen(false) }}
-              className={cn(
-                'w-full flex items-center gap-2 px-3 py-[7px] rounded-[8px] text-[13px] transition-colors cursor-pointer',
-                !value
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
-              )}
-            >
-              <span className="w-6 h-6 rounded-[6px] flex items-center justify-center bg-[var(--color-bg-sunken)]">
-                <span className="text-[10px]">—</span>
-              </span>
-              Không có nhóm cha
-              {!value && <Check className="w-3.5 h-3.5 ml-auto" />}
-            </button>
-          </div>
+          {allowNone !== false && (
+            <div className="p-2 border-b border-[var(--color-border-subtle)]">
+              <button
+                type="button"
+                onClick={() => { onChange(''); setOpen(false) }}
+                className={cn(
+                  'w-full flex items-center gap-2 px-3 py-[7px] rounded-[8px] text-[13px] transition-colors cursor-pointer',
+                  !value
+                    ? 'bg-[var(--color-brand-500)] text-white'
+                    : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
+                )}
+              >
+                <span className="w-6 h-6 rounded-[6px] flex items-center justify-center bg-[var(--color-bg-sunken)]">
+                  <span className="text-[10px]">—</span>
+                </span>
+                Không có nhóm cha
+                {!value && <Check className="w-3.5 h-3.5 ml-auto" />}
+              </button>
+            </div>
+          )}
 
           {/* Tree */}
           <div className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
@@ -236,11 +242,11 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
     budget_limit: initialData?.budget_limit  ?? 0,
     keywords:     (initialData?.keywords     || []) as string[],
     is_shared:    initialData?.is_shared     ?? false,
-    is_recurring: initialData?.is_recurring  ?? false,
   })
 
   const [keywordInput, setKeywordInput] = React.useState('')
   const [isSaving, setIsSaving] = React.useState(false)
+  const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
   const [budgetWarning, setBudgetWarning] = React.useState<{ message: string; payload: any } | null>(null)
 
   const performSave = async (payload: any) => {
@@ -252,7 +258,7 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
       }
       onClose()
     } catch (err: any) {
-      alert(err.message || 'Có lỗi xảy ra khi lưu danh mục')
+      setErrorMsg(err.message || 'Có lỗi xảy ra khi lưu danh mục')
     } finally {
       setIsSaving(false)
     }
@@ -260,6 +266,13 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setErrorMsg(null)
+
+    if (!formData.name.trim()) {
+      setErrorMsg('Vui lòng nhập tên danh mục')
+      return
+    }
+
     if (!currentLedger?.id) return
     setIsSaving(true)
 
@@ -289,7 +302,7 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
         if (total > parentCat.budget_limit) {
           setIsSaving(false)
           setBudgetWarning({
-            message: `Tổng ngân sách các danh mục con (${total.toLocaleString()}) vượt quá ngân sách danh mục cha "${parentCat.name}" (${parentCat.budget_limit.toLocaleString()}). Vẫn tiếp tục lưu?`,
+            message: `Tổng ngân sách các danh mục con (${total.toLocaleString()}) vượt quá ngân sách danh mục cha "${parentCat.name}" (${parentCat.budget_limit.toLocaleString()}). Vui lòng điều chỉnh lại.`,
             payload,
           })
           return
@@ -414,7 +427,6 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
         <div className="flex items-center gap-6">
           {[
             { key: 'is_shared',    label: 'Chia sẻ danh mục',  hint: 'Nhiều người dùng chung' },
-            { key: 'is_recurring', label: 'Định kỳ hàng tháng', hint: 'Chi phí cố định mỗi tháng' },
           ].map(flag => (
             <div key={flag.key} className="flex items-center gap-3 select-none">
               <button
@@ -571,18 +583,26 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-end gap-3 px-8 py-5 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
-        <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl text-sm cursor-pointer">
-          Hủy bỏ
-        </Button>
-        <Button
-          type="submit"
-          icon={<Save className="w-4 h-4" />}
-          disabled={isSaving || !formData.name.trim()}
-          className="h-11 px-8 rounded-xl text-sm font-semibold cursor-pointer"
-        >
-          {isSaving ? 'Đang lưu…' : (initialData?.id ? 'Lưu thay đổi' : 'Tạo danh mục')}
-        </Button>
+      <div className="flex flex-col">
+        {errorMsg && (
+          <div className="mx-6 mb-4 bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-100 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="flex-1">{errorMsg}</span>
+          </div>
+        )}
+        <div className="flex items-center justify-end gap-3 px-8 py-5 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+          <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl text-sm cursor-pointer">
+            Hủy bỏ
+          </Button>
+          <Button
+            type="submit"
+            icon={<Save className="w-4 h-4" />}
+            disabled={isSaving}
+            className="h-11 px-8 rounded-xl text-sm font-semibold cursor-pointer"
+          >
+            {isSaving ? 'Đang lưu…' : (initialData?.id ? 'Lưu thay đổi' : 'Tạo danh mục')}
+          </Button>
+        </div>
       </div>
 
       {/* Budget Warning Modal — styled to match app theme */}
@@ -617,23 +637,8 @@ export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryForm
               onClick={() => setBudgetWarning(null)}
               className="cursor-pointer h-9 px-5 text-sm"
             >
-              Xem lại
+              Đã hiểu
             </Button>
-            <button
-              type="button"
-              onClick={() => {
-                const payload = budgetWarning?.payload
-                setBudgetWarning(null)
-                setIsSaving(true)
-                if (payload) performSave(payload)
-              }}
-              className={cn(
-                'inline-flex items-center gap-2 h-9 px-5 rounded-lg text-sm font-semibold transition-colors cursor-pointer',
-                'bg-[var(--color-warning-600)] hover:bg-[var(--color-warning-700)] text-white',
-              )}
-            >
-              Vẫn tiếp tục lưu
-            </button>
           </div>
         </div>
       </Modal>

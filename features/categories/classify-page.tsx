@@ -269,7 +269,7 @@ function MonthPicker({
   return (
     <div
       ref={ref}
-      className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg p-3 w-56"
+      className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl p-3 w-56 overflow-hidden"
     >
       <div className="flex items-center justify-between mb-2.5">
         <button
@@ -506,7 +506,10 @@ export function ClassifyPage() {
     if (!grp) return
 
     setApplyingKeys(prev => new Set(prev).add(gKey))
-    const updates = grp.transactions.map(t => ({ id: t.id, update: { categoryId } }))
+    const updates = grp.transactions.map(t => ({
+      id: t.id,
+      update: { categoryId, metadata: { ...t.metadata, match_type: 'manual' } }
+    }))
     await bulkUpdateTransactions(updates)
 
     const cat = groups.find((g: Group) => g.id === categoryId)
@@ -530,7 +533,10 @@ export function ClassifyPage() {
     txnGroups.forEach(g => {
       const catId = selectedCats[g.key]
       if (catId && !appliedKeys.has(g.key)) {
-        g.transactions.forEach(t => updates.push({ id: t.id, update: { categoryId: catId } }))
+        g.transactions.forEach(t => updates.push({
+          id: t.id,
+          update: { categoryId: catId, metadata: { ...t.metadata, match_type: 'manual' } }
+        }))
         kws.push({ catId, label: g.label })
       }
     })
@@ -789,7 +795,7 @@ export function ClassifyPage() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {suggested && !selected && (
+                      {suggested && (
                         <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border-[var(--color-brand-100)]">
                           <Zap className="w-2.5 h-2.5" />Gợi ý: {suggested.name}
                         </span>

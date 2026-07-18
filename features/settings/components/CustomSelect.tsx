@@ -71,7 +71,7 @@ export function CustomSelect({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -4, scale: 0.98 }}
             transition={{ duration: 0.15 }}
-            className="absolute z-[300] mt-2 w-full overflow-hidden rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-xl"
+            className="absolute z-[300] mt-2 w-full overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-xl"
           >
             <div className="max-h-60 overflow-y-auto p-1 scrollbar-hide">
               {options.map((option) => (

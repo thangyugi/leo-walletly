@@ -8,7 +8,8 @@ import { InviteModal } from '@/features/user-management/components/invite-modal'
 import { PermissionAware } from '@/features/user-management/hooks/use-permissions'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { UserPlus, Search, Filter, RefreshCw, AlertCircle, Link, Trash2 } from 'lucide-react'
+import { Modal } from '@/components/ui/modal'
+import { UserPlus, Search, Filter, RefreshCw, AlertCircle, Link, Trash2, Check, X } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
 
@@ -17,6 +18,8 @@ export default function UserManagementPage() {
   const { members, invitations, loading, error, fetchMembers, fetchInvitations, inviteMember, updateMemberRole, removeMember, cancelInvitation } = useUserManagementStore()
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [toastMsg, setToastMsg] = useState<string | null>(null)
+  const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null)
   const { t, lang } = useTranslation()
 
   useEffect(() => {
@@ -157,9 +160,9 @@ export default function UserManagementPage() {
                           icon={<Link className="w-3 h-3" />}
                           onClick={() => {
                             const link = `${window.location.origin}/join?token=${inv.token}`
-                            navigator.clipboard.writeText(link)
                             const msg = t.members.copySuccess
-                            alert(msg)
+                            setToastMsg(msg)
+                            setTimeout(() => setToastMsg(null), 3000)
                           }}
                         >
                           {t.members.copyLink}
@@ -170,10 +173,7 @@ export default function UserManagementPage() {
                           className="text-[var(--color-loss-600)] hover:bg-[var(--color-loss-50)]"
                           icon={<Trash2 className="w-3 h-3" />}
                           onClick={() => {
-                            const msg = t.members.cancelConfirm.replace('{{email}}', inv.email)
-                            if (confirm(msg)) {
-                              cancelInvitation(inv.id)
-                            }
+                            setCancelConfirmId(inv.id)
                           }}
                         >
                           {t.members.cancel}
@@ -194,6 +194,42 @@ export default function UserManagementPage() {
           onInvite={(email, role) => inviteMember(currentLedger.id, email, role)}
         />
       )}
+
+      {/* Custom Toast */}
+      {toastMsg && (
+        <div className="fixed bottom-4 right-4 bg-[var(--color-bg-base)] shadow-xl border border-[var(--color-border-subtle)] px-4 py-3 rounded-xl z-[100] flex items-center gap-3 animate-in slide-in-from-bottom-2 fade-in">
+          <div className="w-6 h-6 rounded-full bg-[var(--color-gain-50)] flex items-center justify-center">
+            <Check className="w-3.5 h-3.5 text-[var(--color-gain-600)]" />
+          </div>
+          <span className="text-sm font-medium text-[var(--color-text-primary)]">{toastMsg}</span>
+          <button onClick={() => setToastMsg(null)} className="ml-2 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors cursor-pointer">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Cancel Confirmation Modal */}
+      <Modal isOpen={!!cancelConfirmId} onClose={() => setCancelConfirmId(null)}>
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Xác nhận hủy lời mời</h2>
+          <p className="text-[var(--color-text-secondary)] text-sm mb-6">
+            {t.members.cancelConfirm.replace('{{email}}', invitations.find(i => i.id === cancelConfirmId)?.email || '')}
+          </p>
+          <div className="flex justify-end gap-3">
+            <Button variant="secondary" onClick={() => setCancelConfirmId(null)} className="cursor-pointer">Hủy bỏ</Button>
+            <Button 
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer" 
+              onClick={() => {
+                if (cancelConfirmId) cancelInvitation(cancelConfirmId)
+                setCancelConfirmId(null)
+              }}
+            >
+              Hủy lời mời
+            </Button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   )
 }

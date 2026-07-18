@@ -52,11 +52,15 @@ export async function GET(req: NextRequest) {
 
   const txns = txRows || []
 
-  // All categories for this workspace
+  // All categories for this workspace, joined with category_budgets for the specific ledger
   const { data: catRows } = await supabase
     .from('categories')
-    .select('id, parent_id, name_en, name_vi, budget_limit, is_active, keywords')
+    .select(`
+      id, parent_id, is_active, keywords,
+      category_budgets!left ( amount )
+    `)
     .eq('workspace_id', ledger.workspace_id)
+    .eq('category_budgets.ledger_id', ledgerId)
 
   const cats = catRows || []
 
@@ -87,10 +91,10 @@ export async function GET(req: NextRequest) {
       .reduce((s, t) => s + Math.abs(Number(t.amount)), 0)
     return {
       id:           rc.id,
-      name:         rc.name_en || rc.name_vi || '',
+      name:         'Category', // Will be translated on UI via useTranslation
       expense,
       tx_count:     catTxns.length,
-      budget_limit: Number(rc.budget_limit || 0),
+      budget_limit: Number((rc.category_budgets as any)?.[0]?.amount || 0),
     }
   }).sort((a, b) => b.expense - a.expense)
 

@@ -18,15 +18,19 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [fullName, setFullName] = useState('')
   const [mode,     setMode]     = useState<'login' | 'signup'>('login')
+  const [success,  setSuccess]  = useState<string | null>(null)
 
   async function handleAuth(e: React.FormEvent) {
     e.preventDefault()
     setLoading(true)
     setError(null)
+    setSuccess(null)
     try {
       if (mode === 'login') {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
+        router.push('/')
+        router.refresh()
       } else {
         const { error } = await supabase.auth.signUp({ 
           email, 
@@ -38,10 +42,8 @@ export default function LoginPage() {
           }
         })
         if (error) throw error
-        alert('Check your email to confirm your account.')
+        setSuccess('Vui lòng kiểm tra email của bạn để xác nhận tài khoản.')
       }
-      router.push('/')
-      router.refresh()
     } catch (err: any) {
       setError(err.message)
     } finally {
@@ -65,6 +67,20 @@ export default function LoginPage() {
 
         {/* Form */}
         <div className="card-base p-8 space-y-6">
+          {error && (
+            <div className="mb-4 bg-red-50/50 text-red-600 p-3 rounded-xl text-[13px] border border-red-100 flex gap-2.5 animate-in slide-in-from-top-2 fade-in duration-200">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="flex-1 leading-tight">{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-4 bg-emerald-50/50 text-emerald-600 p-3 rounded-xl text-[13px] border border-emerald-100 flex gap-2.5 animate-in slide-in-from-top-2 fade-in duration-200">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span className="flex-1 leading-tight">{success}</span>
+            </div>
+          )}
+
           <form onSubmit={handleAuth} className="space-y-4">
             {mode === 'signup' && (
               <Input
@@ -95,13 +111,6 @@ export default function LoginPage() {
               placeholder="••••••••"
               leading={<Lock className="w-4 h-4" />}
             />
-
-            {error && (
-              <div className="flex items-start gap-2 p-3 rounded-xl border border-[var(--color-border-error)] bg-[var(--color-status-loss-bg)] text-xs text-[var(--color-text-loss)]">
-                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                {error}
-              </div>
-            )}
 
             <Button type="submit" className="w-full h-11" loading={loading} disabled={loading}>
               {mode === 'login' ? t.login.submit : t.login.register}

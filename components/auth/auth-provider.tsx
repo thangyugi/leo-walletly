@@ -26,10 +26,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [authInitialized, user, initializeLedger])
 
   useEffect(() => {
-    if (authInitialized && ledgerInitialized) {
-      if (!user && pathname !== '/login') {
+    if (authInitialized) {
+      if (!user && pathname !== '/login' && pathname !== '/join') {
         router.push('/login')
-      } else if (user) {
+      } else if (user && ledgerInitialized) {
         // Sync data when user is present
         syncTransactions()
         syncRecurring()
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authInitialized, ledgerInitialized, user, pathname, router, currentLedger, syncTransactions, syncRecurring])
 
-  if ((!authInitialized || (user && !ledgerInitialized)) && pathname !== '/login') {
+  if ((!authInitialized || (user && !ledgerInitialized)) && pathname !== '/login' && pathname !== '/join') {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg-base)]">
         <div className="animate-pulse flex flex-col items-center gap-4">

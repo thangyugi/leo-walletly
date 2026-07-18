@@ -84,6 +84,7 @@
   --color-bg-overlay:   #ffffff;
   --color-bg-sunken:    #f3f4f6;
   --color-bg-canvas:    #eaecf0;
+  --color-bg-surface:   #ffffff;
 
   /* Sidebar */
   --color-sidebar-bg:               #fafafa;
@@ -285,6 +286,7 @@
     --color-bg-overlay:  #1e2328;
     --color-bg-sunken:   #080a0b;
     --color-bg-canvas:   #0c0e0f;
+    --color-bg-surface:  #161a1d;
 
     --color-sidebar-bg:             #111417;
     --color-sidebar-border:         #1e2428;

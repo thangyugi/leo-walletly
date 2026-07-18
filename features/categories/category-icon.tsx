@@ -23,12 +23,12 @@ const LUCIDE_ICONS: Record<string, React.ElementType> = {
 
 export const PRESET_ICONS = Object.keys(LUCIDE_ICONS)
 
-export function CategoryIcon({ name, className }: { name: string; className?: string }) {
+export function CategoryIcon({ name, className, style }: { name: string; className?: string; style?: React.CSSProperties }) {
   const Icon = LUCIDE_ICONS[name]
   if (!Icon) {
-    return <span className={className} style={{ display: 'inline-block', lineHeight: 1 }}>{name || '📁'}</span>
+    return <span className={className} style={{ display: 'inline-block', lineHeight: 1, ...style }}>{name || '📁'}</span>
   }
-  return <Icon className={className} />
+  return <Icon className={className} style={style} />
 }
 
 // Compatibility alias for legacy imports

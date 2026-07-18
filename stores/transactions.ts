@@ -6,6 +6,11 @@ import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 
+const isUuid = (id: string | null | undefined) => {
+  if (!id) return null
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id) ? id : null
+}
+
 export type SortOption = 'dateDesc' | 'dateAsc' | 'amountDesc' | 'amountAsc' | 'nameAsc' | 'nameDesc' | 'category'
 
 export interface TransactionFilters {
@@ -137,13 +142,13 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
       const toInsert = processedTxns.map(t => ({
         id:                      t.id,
-        organization_id:         t.organizationId,
-        workspace_id:            t.workspaceId,
-        ledger_id:               t.ledgerId,
-        payment_instrument_id:   t.paymentInstrumentId || null,
-        funding_source_id:       t.fundingSourceId || null,
-        settlement_account_id:   t.settlementAccountId || null,
-        category_id:             t.categoryId || null,
+        organization_id:         isUuid(t.organizationId),
+        workspace_id:            isUuid(t.workspaceId),
+        ledger_id:               isUuid(t.ledgerId),
+        payment_instrument_id:   isUuid(t.paymentInstrumentId),
+        funding_source_id:       isUuid(t.fundingSourceId),
+        settlement_account_id:   isUuid(t.settlementAccountId),
+        category_id:             isUuid(t.categoryId),
         status:                  t.status || 'posted',
         transaction_type:        t.transactionType,
         business_event_type:     t.businessEventType || null,
@@ -184,12 +189,12 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
       const { error } = await supabase.from('transactions').insert({
         id,
-        organization_id:         newTxn.organizationId,
-        workspace_id:            newTxn.workspaceId,
-        ledger_id:               newTxn.ledgerId,
-        payment_instrument_id:   txn.paymentInstrumentId || null,
-        funding_source_id:       txn.fundingSourceId || null,
-        category_id:             txn.categoryId || null,
+        organization_id:         isUuid(newTxn.organizationId),
+        workspace_id:            isUuid(newTxn.workspaceId),
+        ledger_id:               isUuid(newTxn.ledgerId),
+        payment_instrument_id:   isUuid(txn.paymentInstrumentId),
+        funding_source_id:       isUuid(txn.fundingSourceId),
+        category_id:             isUuid(txn.categoryId),
         status:                  txn.status || 'posted',
         transaction_type:        txn.transactionType,
         description:             txn.description || null,

@@ -125,7 +125,7 @@ export function getCategoryDepth(cat: Category, allCats: Category[]): number {
 
 // ─── Normalizer: raw DB row → Category ──────────────────────────────────────
 
-function normalizeCategory(g: any, rawCategories: any[]): Category {
+function normalizeCategory(g: any, rawCategories: any[], currentLedgerId?: string): Category {
   const code = g.category_code || g.metadata?.category_code || ''
   let cleanPath = g.path || g.metadata?.path || ''
 
@@ -144,17 +144,36 @@ function normalizeCategory(g: any, rawCategories: any[]): Category {
     cleanPath = '/' + parts.filter(Boolean).join('/')
   }
 
+  // Construct name_i18n from category_translations if available
+  const name_i18n: Record<string, string> = {}
+  if (Array.isArray(g.category_translations)) {
+    for (const t of g.category_translations) {
+      if (t.locale && t.name) {
+        name_i18n[t.locale] = t.name
+      }
+    }
+  } else if (g.name_i18n) {
+    Object.assign(name_i18n, g.name_i18n)
+  }
+
+  const name = name_i18n['vi'] || name_i18n['en'] || name_i18n['ja'] || g.name || 'Unnamed'
+
+  const ledgerBudget = g.category_budgets?.find((b: any) => !currentLedgerId || b.ledger_id === currentLedgerId)
+  const budgetLimit = ledgerBudget?.amount ?? g.budget_limit ?? g.metadata?.budget_limit ?? 0
+
   return {
     ...g,
-    name: g.name_i18n?.en || g.name_en || g.name_vi || g.name_ja || g.name || 'Unnamed',
+    ledger_id: currentLedgerId || g.ledger_id,
+    name,
+    name_i18n,
     type: g.category_type || g.type || 'cost_center',
     // Direct columns take priority, fall back to metadata for legacy rows
-    budget_limit: g.budget_limit ?? g.metadata?.budget_limit ?? 0,
+    budget_limit: budgetLimit,
     keywords: Array.isArray(g.keywords) && g.keywords.length > 0
       ? g.keywords
       : (g.metadata?.keywords ?? []),
     is_shared:    g.is_shared    ?? g.metadata?.is_shared    ?? false,
-    is_recurring: g.is_recurring ?? g.metadata?.is_recurring ?? false,
+    warning_threshold: g.warning_threshold ?? g.metadata?.warning_threshold ?? 80,
     categoryCode: code,
     path: cleanPath,
   }
@@ -174,6 +193,7 @@ interface CategoryState {
   createCategory: (category: Partial<Category>) => Promise<void>
   updateCategory: (id: string, category: Partial<Category>) => Promise<void>
   deleteCategory: (id: string) => Promise<void>
+  mergeCategories: (sourceId: string, targetId: string) => Promise<void>
   seedCategories: (ledgerId: string) => Promise<void>
 }
 
@@ -197,14 +217,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const { data: categories, error: gError } = await supabase
         .from('categories')
-        .select('*')
+        .select('*, category_translations(locale, name), category_budgets(ledger_id, amount)')
         .eq('workspace_id', ledgerRow?.workspace_id)
         .order('sort_order')
 
       if (gError) throw gError
 
       const rawCategories = categories || []
-      const normalizedCategories = rawCategories.map(g => normalizeCategory(g, rawCategories))
+      const normalizedCategories = rawCategories.map(g => normalizeCategory(g, rawCategories, ledgerId))
 
       // Fetch balances from category_balances view
       let balances: CategoryBalance[] = []
@@ -228,9 +248,11 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     try {
       const { data: ledger } = await supabase
         .from('ledgers')
-        .select('workspace_id')
+        .select('workspace_id, base_currency')
         .eq('id', category.ledger_id)
         .single()
+      
+      if (!ledger) throw new Error('Ledger not found')
 
       const newId = crypto.randomUUID()
       const allCategories = get().categories
@@ -263,9 +285,6 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         id: newId,
         workspace_id: ledger?.workspace_id,
         parent_id: category.parent_id || null,
-        name_en: category.name,
-        name_vi: category.name,
-        name_ja: category.name,
         category_type: category.type,
         color: category.color,
         emoji: category.emoji,
@@ -273,17 +292,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         category_code: newCode,
         sort_order: maxSortOrder + 1,
         is_active: true,
-        // Direct columns
-        budget_limit: category.budget_limit ?? 0,
         keywords: category.keywords ?? [],
         is_shared: category.is_shared ?? false,
-        is_recurring: category.is_recurring ?? false,
         metadata: {
           // Keep metadata in sync for any legacy readers
           budget_limit: category.budget_limit ?? 0,
           keywords: category.keywords ?? [],
           is_shared: category.is_shared ?? false,
-          is_recurring: category.is_recurring ?? false,
+          warning_threshold: category.warning_threshold ?? 80,
           category_code: newCode,
           path: pathStr,
           ...(category.metadata || {}),
@@ -298,7 +314,32 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       if (error) throw error
 
-      const norm = normalizeCategory(data, [...get().categories, data])
+      if (category.name) {
+        const { error: tError } = await supabase.from('category_translations').insert([
+          { category_id: data.id, locale: 'vi', name: category.name },
+          { category_id: data.id, locale: 'en', name: category.name },
+        ])
+        if (tError) throw tError
+
+        data.category_translations = [
+          { locale: 'vi', name: category.name },
+          { locale: 'en', name: category.name },
+        ]
+      }
+
+      if (category.budget_limit !== undefined && category.ledger_id) {
+        const { error: bError } = await supabase.from('category_budgets').insert({
+          category_id: data.id,
+          ledger_id: category.ledger_id,
+          amount: category.budget_limit,
+          currency: ledger.base_currency || 'VND'
+        })
+        if (bError) throw bError
+
+        data.category_budgets = [{ ledger_id: category.ledger_id, amount: category.budget_limit }]
+      }
+
+      const norm = normalizeCategory(data, [...get().categories, data], category.ledger_id)
       set((state) => ({ categories: [...state.categories, norm] }))
     } catch (err: any) {
       set({ error: err.message })
@@ -341,14 +382,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       const budgetLimit = 'budget_limit' in category ? (category.budget_limit ?? 0) : existing.budget_limit
       const keywords    = 'keywords'     in category ? (category.keywords    ?? []) : existing.keywords
       const isShared    = 'is_shared'    in category ? (category.is_shared   ?? false) : existing.is_shared
-      const isRecurring = 'is_recurring' in category ? (category.is_recurring ?? false) : existing.is_recurring
+      const warningThreshold = 'warning_threshold' in category ? (category.warning_threshold ?? 80) : (existing.warning_threshold ?? 80)
 
       const mergedMetadata = {
         ...currentMetadata,
         budget_limit: budgetLimit,
         keywords,
         is_shared: isShared,
-        is_recurring: isRecurring,
+        warning_threshold: warningThreshold,
         category_code: code,
         path: newPath,
         ...(category.metadata || {}),
@@ -356,18 +397,11 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const payload: any = {
         metadata: mergedMetadata,
-        budget_limit: budgetLimit,
         keywords,
         is_shared: isShared,
-        is_recurring: isRecurring,
       }
 
       if (hasParentIdUpdate) payload.parent_id = parentId
-      if ('name' in category) {
-        payload.name_en = category.name
-        payload.name_vi = category.name
-        payload.name_ja = category.name
-      }
       if ('type' in category) payload.category_type = category.type
       if ('color' in category) payload.color = category.color
       if ('emoji' in category) payload.emoji = category.emoji
@@ -382,7 +416,39 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       if (error) throw error
 
-      const norm = normalizeCategory(data, allCategories)
+      if ('name' in category && category.name) {
+        const { error: tError } = await supabase.from('category_translations').upsert([
+          { category_id: id, locale: 'vi', name: category.name },
+          { category_id: id, locale: 'en', name: category.name },
+        ], { onConflict: 'category_id, locale' })
+        if (tError) throw tError
+
+        data.category_translations = [
+          { locale: 'vi', name: category.name },
+          { locale: 'en', name: category.name },
+        ]
+      } else {
+        data.name_i18n = existing.name_i18n
+        data.name = existing.name
+      }
+
+      if ('budget_limit' in category && category.ledger_id) {
+        // Need ledger currency to upsert properly
+        const { data: lData } = await supabase.from('ledgers').select('base_currency').eq('id', category.ledger_id).single()
+        const { error: bError } = await supabase.from('category_budgets').upsert({
+          category_id: id,
+          ledger_id: category.ledger_id,
+          amount: category.budget_limit,
+          currency: lData?.base_currency || 'VND'
+        }, { onConflict: 'category_id, ledger_id' })
+        if (bError) throw bError
+
+        data.category_budgets = [{ ledger_id: category.ledger_id, amount: category.budget_limit }]
+      } else {
+        data.budget_limit = existing.budget_limit
+      }
+
+      const norm = normalizeCategory(data, allCategories, category.ledger_id)
 
       // Cascade path update to descendants
       let updatedDescendants: Category[] = []
@@ -414,11 +480,39 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
   deleteCategory: async (id) => {
     try {
+      const allCategories = get().categories
+      const hasChildren = allCategories.some(c => c.parent_id === id)
+      if (hasChildren) {
+        throw new Error('Không thể xóa danh mục này vì vẫn còn danh mục con bên trong. Vui lòng xóa hoặc di chuyển các danh mục con trước.')
+      }
+
       const { error } = await supabase.from('categories').delete().eq('id', id)
       if (error) throw error
       set((state) => ({
         categories: state.categories.filter((g) => g.id !== id),
         selectedCategoryId: state.selectedCategoryId === id ? null : state.selectedCategoryId,
+      }))
+    } catch (err: any) {
+      set({ error: err.message })
+      throw err
+    }
+  },
+
+  mergeCategories: async (sourceId, targetId) => {
+    try {
+      const { error } = await supabase.rpc('merge_categories', {
+        p_source_id: sourceId,
+        p_target_id: targetId,
+      })
+      if (error) throw error
+      
+      const ledgerId = get().categories[0]?.ledger_id
+      if (ledgerId) {
+        await get().fetchCategories(ledgerId)
+      }
+      
+      set((state) => ({
+        selectedCategoryId: state.selectedCategoryId === sourceId ? null : state.selectedCategoryId,
       }))
     } catch (err: any) {
       set({ error: err.message })
@@ -447,7 +541,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       const path = `/${code}`
       return {
         workspace_id: ledger.workspace_id,
-        name_en: d.name, name_vi: d.name, name_ja: d.name,
+        name_i18n: { vi: d.name, en: d.name, ja: d.name },
         emoji: d.emoji, color: d.color,
         category_type: d.type,
         category_code: code, path,
@@ -456,8 +550,8 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         budget_limit: 0,
         keywords: [d.name.toLowerCase()],
         is_shared: false,
-        is_recurring: false,
-        metadata: { budget_limit: 0, keywords: [d.name.toLowerCase()], category_code: code, path },
+        warning_threshold: 80,
+        metadata: { budget_limit: 0, keywords: [d.name.toLowerCase()], category_code: code, path, warning_threshold: 80 },
       }
     })
 
@@ -505,3 +599,32 @@ export const useGroupStore = () => {
 export function buildGroupTree(groups: Category[], parentId: string | null = null, depth = 0): CategoryTreeNode[] {
   return buildCategoryTree(groups, parentId, depth)
 }
+
+// ─── Legacy slug resolver ────────────────────────────────────────────────────────────
+
+export function resolveCategoryId(slug: string | undefined, categories: Category[]): string | undefined {
+  if (!slug) return undefined
+  if (categories.some(c => c.id === slug)) return slug // already a valid ID
+
+  const map: Record<string, string[]> = {
+    food: ['food', 'ăn uống', '食費', 'nhà hàng', 'dining', 'drinks', 'pizza'],
+    transport: ['transport', 'đi lại', '交通', 'taxi', 'train', 'bus', 'car'],
+    shopping: ['shopping', 'mua sắm', '買い物', 'clothes', 'electronics', 'bag'],
+    entertainment: ['entertainment', 'giải trí', '娯楽', 'movie', 'game'],
+    health: ['health', 'y tế', '医療', 'sức khỏe', 'medical', 'pill'],
+    utilities: ['utilities', 'tiện ích', '光熱費', 'điện nước', 'internet'],
+    other: ['other', 'khác', 'その他', 'general'],
+  }
+
+  const keywords = map[slug.toLowerCase()] || [slug.toLowerCase()]
+
+  const cat = categories.find(c => 
+    keywords.some(k => 
+      c.name.toLowerCase().includes(k) || 
+      (c.keywords && c.keywords.includes(k)) ||
+      Object.values(c.name_i18n || {}).some(n => n.toLowerCase().includes(k))
+    )
+  )
+  return cat?.id || categories[0]?.id
+}
+

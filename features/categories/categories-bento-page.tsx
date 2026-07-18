@@ -15,6 +15,7 @@ import { CategoryIcon } from './category-icon'
 import { Plus, ChevronDown, ArrowUpRight, Sun, ChevronUp, Check, X, Loader2 } from 'lucide-react'
 import { cn, slugify } from '@/lib/utils'
 import { CURRENCY_META } from '@/lib/money'
+import { useTranslation } from '@/hooks/useTranslation'
 
 /* ─── Currency context ─────────────────────────────────────────────────────── */
 const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string; currency: string }>({
@@ -232,10 +233,11 @@ function DarkStatCard({
   variant: 1 | 2
   classified?: number
   total?: number
-  topCategories?: { name: string; expense: number }[]
+  topCategories?: { id?: string; name: string; expense: number }[]
   isLoading?: boolean
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
+  const { categories } = useCategoryStore()
   const isV1 = variant === 1
   const pct = total && total > 0 ? Math.round(((classified ?? 0) / total) * 100) : 0
   const unclassified = (total ?? 0) - (classified ?? 0)
@@ -287,7 +289,7 @@ function DarkStatCard({
         <>
           <div className="text-[10px] font-semibold uppercase tracking-[0.12em] opacity-50 mb-1">Danh mục chi nhiều nhất (tháng này)</div>
           <div className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">
-            {topCategories && topCategories[0] ? topCategories[0].name : '—'}
+            {topCategories && topCategories[0] ? (categories.find(c => c.id === topCategories[0].id)?.name || topCategories[0].name) : '—'}
           </div>
           {topCategories && topCategories[0] && (
             <div className="flex items-center gap-1 text-[11px] font-medium mt-1 text-[var(--color-loss-400)]">
@@ -297,9 +299,9 @@ function DarkStatCard({
           )}
           <hr className="border-white/10 my-3" />
           <div className="space-y-[7px] text-[12px] opacity-80 flex-1">
-            {(topCategories ?? []).slice(1, 4).map((g: { name: string; expense: number }) => (
-              <div key={g.name} className="flex items-center">
-                <span className="truncate">{g.name}</span><span className="flex-1" />
+            {(topCategories ?? []).slice(1, 4).map((g) => (
+              <div key={g.id || g.name} className="flex items-center">
+                <span className="truncate">{categories.find(c => c.id === g.id)?.name || g.name}</span><span className="flex-1" />
                 <span className="font-semibold font-tabular opacity-100 shrink-0 ml-2">{fmt(g.expense)} {sym}</span>
               </div>
             ))}
@@ -371,9 +373,6 @@ function CategoryCard({
         {category.is_shared && (
           <span className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">Chia sẻ</span>
         )}
-        {category.is_recurring && (
-          <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)] border border-[var(--color-info-100)]">Định kỳ</span>
-        )}
       </div>
     </Link>
   )
@@ -411,6 +410,10 @@ function SmartClassifyCard({
     if (updates.length > 0) await onApplyAll(updates)
     setIsApplying(false)
   }
+
+  const totalSuggestions = React.useMemo(() => {
+    return pendingTxns.filter(t => suggestCategory(t)).length
+  }, [pendingTxns, categories])
 
   const displayTxns = pendingTxns.slice(0, 4)
 
@@ -464,9 +467,11 @@ function SmartClassifyCard({
               {/* Name */}
               <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{label}</span>
               {/* Source badge */}
-              <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
-                {srcLabel}
-              </span>
+              {txn.source && txn.source !== 'manual' && (
+                <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
+                  {srcLabel}
+                </span>
+              )}
               {/* Amount */}
               <span className="shrink-0 font-semibold font-tabular text-[var(--color-text-loss)]">
                 {fmt(amount)} {sym}
@@ -509,14 +514,16 @@ function SmartClassifyCard({
                 Xem tất cả
               </Link>
             )}
-            <button
-              onClick={handleApplyAll}
-              disabled={isApplying}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer disabled:opacity-50"
-            >
-              {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-              Áp dụng tất cả
-            </button>
+            {totalSuggestions > 0 && (
+              <button
+                onClick={handleApplyAll}
+                disabled={isApplying}
+                className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors cursor-pointer disabled:opacity-50"
+              >
+                {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                Áp dụng {totalSuggestions} gợi ý
+              </button>
+            )}
           </>
         )}
       </div>
@@ -656,7 +663,7 @@ export function CategoriesBentoPage() {
     all:       categories.length,
     active:    categories.filter((c: Category) => c.is_active).length,
     shared:    categories.filter((c: Category) => c.is_shared).length,
-    recurring: categories.filter((c: Category) => c.is_recurring || c.type === 'project').length,
+    recurring: categories.filter((c: Category) => c.type === 'project').length,
     archived:  categories.filter((c: Category) => !c.is_active).length,
   }), [categories])
 
@@ -671,7 +678,7 @@ export function CategoriesBentoPage() {
   const filteredCategories = React.useMemo(() => {
     switch (activeTab) {
       case 'shared':    return categories.filter((c: Category) => c.is_shared)
-      case 'recurring': return categories.filter((c: Category) => c.is_recurring || c.type === 'project')
+      case 'recurring': return categories.filter((c: Category) => c.type === 'project')
       case 'archived':  return categories.filter((c: Category) => !c.is_active)
       default:          return categories.filter((c: Category) => c.is_active)
     }

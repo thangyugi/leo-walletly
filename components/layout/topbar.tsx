@@ -135,7 +135,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
           </button>
 
           {showNotif && (
-            <div className="absolute right-0 top-full mt-1.5 w-80 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg z-50 overflow-hidden animate-slide-in-up">
+            <div className="absolute right-0 top-full mt-1.5 w-80 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50 overflow-hidden animate-slide-in-up">
               <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--color-border-subtle)]">
                 <div className="flex items-center gap-2">
                   <p className="text-sm font-semibold text-[var(--color-text-primary)]">
@@ -195,7 +195,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
           </button>
 
           {showUserMenu && (
-            <div className="absolute right-0 top-full mt-1.5 w-56 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg z-50 overflow-hidden animate-slide-in-up">
+            <div className="absolute right-0 top-full mt-1.5 w-56 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50 overflow-hidden animate-slide-in-up">
               <div className="px-4 py-3 border-b border-[var(--color-border-subtle)]">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-full bg-[var(--color-interactive-primary)] flex items-center justify-center text-xs font-bold text-white shrink-0">

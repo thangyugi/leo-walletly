@@ -7,7 +7,7 @@ import {
   ArrowLeft, Download, Plus, MoreVertical,
   Sun, Shield, ChevronLeft, ChevronRight,
   Check, X, ArrowRight, Clock, Loader2,
-  Pencil, Trash2,
+  Pencil, Trash2, GitMerge,
 } from 'lucide-react'
 import { useGroupStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -20,6 +20,7 @@ import { CURRENCY_META } from '@/lib/money'
 import { CategoryIcon as GroupIcon } from './category-icon'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm as GroupForm } from './category-form'
+import { MergeCategoryModal } from './merge-category-modal'
 
 /* ─────────────────────────────────────────────────────────────
    Currency context
@@ -94,11 +95,13 @@ function HeroCover({
   members,
   onEdit,
   onDelete,
+  onMerge,
 }: {
   group: Group
   members: LedgerMember[]
   onEdit: () => void
   onDelete: () => void
+  onMerge: () => void
 }) {
   const { sym: heroCurrency } = React.useContext(FmtCtx)
   const gradient = `linear-gradient(135deg,${group.color}ee 0%,${group.color}88 100%)`
@@ -142,6 +145,13 @@ function HeroCover({
           title="Chỉnh sửa nhóm"
         >
           <Pencil className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={onMerge}
+          className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 hover:bg-[var(--color-interactive-primary)] backdrop-blur-sm transition-colors cursor-pointer text-white"
+          title="Gộp danh mục"
+        >
+          <GitMerge className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={onDelete}
@@ -930,55 +940,76 @@ function RecentTransactions({
   groupTxns: Transaction[]
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
+  const { updateTransaction } = useTransactionsStore()
   const [txTab, setTxTab] = React.useState<'all' | 'auto' | 'review'>('all')
+
+  const allKws = React.useMemo(() => [
+    ...(group.keywords || []),
+    ...subGroups.flatMap(sg => sg.keywords || []),
+  ].map(k => k.toLowerCase()), [group, subGroups])
+
+  // Helper to determine exact vs partial match and badge info
+  const getTxBadgeInfo = React.useCallback((tx: Transaction) => {
+    const isCategorized = tx.categoryId === group.id || subGroups.some(sg => sg.id === tx.categoryId)
+    const matchType = (tx.metadata || {}).match_type as string | undefined
+    const haystack = ((tx.description || '') + ' ' + (tx.merchantName || '')).trim().toLowerCase()
+    const isExact = allKws.includes(haystack)
+    const partialMatch = allKws.find(kw => haystack.includes(kw))
+
+    if (isCategorized) {
+      if (matchType === 'manual') return { type: 'manual', label: 'Thủ công', color: 'bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]' }
+      if (matchType === 'confirmed') return { type: 'confirmed', label: 'Đã xác nhận', color: 'bg-[var(--color-gain-50)] text-[var(--color-gain-700)]' }
+      if (matchType === 'auto' || isExact) return { type: 'auto', label: 'Tự động', color: 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' }
+      if (partialMatch) return { type: 'review', label: 'Cần xem lại', color: 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]', matchKw: partialMatch }
+      return { type: 'manual', label: 'Thủ công', color: 'bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]' }
+    } else {
+      return { type: 'manual', label: 'Không xác định', color: 'bg-[var(--color-bg-raised)] text-[var(--color-text-tertiary)]' }
+    }
+  }, [group.id, subGroups, allKws])
+
+  const enhancedTxns = React.useMemo(() => {
+    return groupTxns.map(tx => ({
+      tx,
+      badge: getTxBadgeInfo(tx)
+    }))
+  }, [groupTxns, getTxBadgeInfo])
+
   const TX_TABS = [
     { value: 'all',    label: 'Tất cả' },
     { value: 'auto',   label: 'Tự động' },
-    { value: 'review', label: 'Cần xem lại', badge: groupTxns.filter(t => t.status === 'pending' || !t.isReconciled).length },
+    { value: 'review', label: 'Cần xem lại', badge: enhancedTxns.filter(t => t.badge.type === 'review').length },
   ] as const
 
-  // Apply tab filter
   const filteredTxns = React.useMemo(() => {
     switch (txTab) {
-      case 'auto':   return groupTxns.filter(t => !t.categoryId)  // keyword-matched, not yet categorized
-      case 'review': return groupTxns.filter(t => t.status === 'pending' || !t.isReconciled)
-      default:       return groupTxns
+      case 'auto':   return enhancedTxns.filter(t => t.badge.type === 'auto')
+      case 'review': return enhancedTxns.filter(t => t.badge.type === 'review')
+      default:       return enhancedTxns
     }
-  }, [groupTxns, txTab])
+  }, [enhancedTxns, txTab])
 
   const displayTxns = filteredTxns.slice(0, 20)
 
   function txEmoji(t: Transaction): string {
-    const sg = resolveSubGroup(t)
-    if (sg?.emoji) return sg.emoji
+    const direct = subGroups.find(s => s.id === t.categoryId)
+    if (direct?.emoji) return direct.emoji
+    if (!t.categoryId) {
+      const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
+      const sg = subGroups.find(sg => (sg.keywords || []).some(kw => haystack.includes(kw.toLowerCase())))
+      if (sg?.emoji) return sg.emoji
+    }
     return group.emoji || 'Folder'
   }
 
   function txAvatarBg(t: Transaction): string {
-    const sg = resolveSubGroup(t)
-    if (sg?.color) return sg.color + '22'
-    return (group.color || '#6366f1') + '22'
-  }
-
-  function txKwMatch(t: Transaction): string | undefined {
-    const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
-    const allKws = [
-      ...(group.keywords || []),
-      ...subGroups.flatMap(sg => sg.keywords || []),
-    ]
-    return allKws.find(kw => haystack.includes(kw.toLowerCase()))
-  }
-
-  // Find which sub-group this transaction belongs to (by categoryId or keyword match)
-  function resolveSubGroup(t: Transaction): Group | undefined {
-    // Direct match by categoryId
     const direct = subGroups.find(s => s.id === t.categoryId)
-    if (direct) return direct
-    // Keyword match: find the first sub-group whose keyword matches
-    const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
-    return subGroups.find(sg =>
-      (sg.keywords || []).some(kw => haystack.includes(kw.toLowerCase()))
-    )
+    if (direct?.color) return direct.color + '22'
+    if (!t.categoryId) {
+      const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
+      const sg = subGroups.find(sg => (sg.keywords || []).some(kw => haystack.includes(kw.toLowerCase())))
+      if (sg?.color) return sg.color + '22'
+    }
+    return (group.color || '#6366f1') + '22'
   }
 
   return (
@@ -999,7 +1030,7 @@ function RecentTransactions({
             >
               {tab.label}
               {'badge' in tab && tab.badge > 0 && (
-                <span className="font-mono text-[9px] bg-[var(--color-loss-50)] text-[var(--color-loss-600)] px-1 rounded">
+                <span className="font-mono text-[9px] bg-[var(--color-warning-100)] text-[var(--color-warning-700)] px-1 rounded">
                   {tab.badge}
                 </span>
               )}
@@ -1013,9 +1044,7 @@ function RecentTransactions({
           <div className="px-[18px] py-6 text-[12px] text-[var(--color-text-tertiary)] text-center">
             Chưa có giao dịch nào
           </div>
-        ) : displayTxns.map((tx, i) => {
-          const review = tx.status === 'pending' || !tx.isReconciled
-          const kwMatch = txKwMatch(tx)
+        ) : displayTxns.map(({ tx, badge }) => {
           const desc = tx.merchantName || tx.description || '—'
           const meta = new Date(tx.transactionDate).toLocaleDateString('vi-VN') + ' · ' + tx.currencyCode
           const avatar = txEmoji(tx)
@@ -1025,23 +1054,34 @@ function RecentTransactions({
             <div key={tx.id} className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors" style={{ gridTemplateColumns: '32px 1fr auto auto' }}>
               <div className="w-8 h-8 rounded-[9px] flex items-center justify-center text-sm shrink-0" style={{ background: avatarBg }}><GroupIcon name={avatar} className="w-4 h-4" /></div>
               <div className="min-w-0">
-                <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{desc}</div>
-                <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 truncate">{meta}</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{desc}</div>
+                  <span className={cn('text-[10px] font-medium px-[7px] py-[2px] rounded-full shrink-0', badge.color)}>
+                    {badge.label}
+                  </span>
+                </div>
+                <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 flex items-center gap-2 truncate">
+                  {meta}
+                  {badge.matchKw && <span className="text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-1 rounded">khớp "{badge.matchKw}"</span>}
+                </div>
               </div>
-              {review ? (
-                <span className="text-[10px] font-medium px-[7px] py-[2px] rounded-full bg-[var(--color-warning-50)] text-[var(--color-warning-600)] shrink-0">cần xem lại</span>
-              ) : kwMatch ? (
-                <span className="text-[11px] font-medium text-[var(--color-brand-700)] bg-[var(--color-brand-50)] px-2 py-0.5 rounded-md shrink-0">
-                  khớp "{kwMatch}"
-                </span>
+              
+              {badge.type === 'review' ? (
+                <button
+                  onClick={() => updateTransaction(tx.id, { categoryId: group.id, metadata: { ...tx.metadata, match_type: 'confirmed' } })}
+                  className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[var(--color-brand-500)] text-white hover:bg-[var(--color-brand-600)] transition-colors shrink-0"
+                >
+                  Xác nhận Áp dụng
+                </button>
               ) : (
-                <span className="text-[11px] font-medium text-[var(--color-text-quaternary)] shrink-0">tự động</span>
+                <span className="w-4" />
               )}
+              
               {(() => {
                 const isIncome = tx.transactionType === 'income' || tx.transactionType === 'refund'
                 return (
                   <span className={cn(
-                    'text-[13px] font-semibold font-tabular shrink-0',
+                    'text-[13px] font-semibold font-tabular shrink-0 text-right',
                     isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
                   )}>
                     {isIncome ? '+' : '−'}{fmt(Math.abs(tx.amount))} {sym}
@@ -1054,7 +1094,7 @@ function RecentTransactions({
       </div>
 
       <div className="flex items-center px-[18px] py-3 border-t border-[var(--color-border-subtle)]">
-        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị {displayTxns.length} / {filteredTxns.length} · Tổng {groupTxns.length} giao dịch</span>
+        <span className="text-[11px] text-[var(--color-text-quaternary)]">Hiển thị {displayTxns.length} / {filteredTxns.length} · Tổng {enhancedTxns.length} giao dịch</span>
         <span className="flex-1" />
         <button className="text-xs font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors px-3 py-1.5 rounded-lg hover:bg-[var(--color-bg-sunken)]">
           Xem tất cả →
@@ -1204,11 +1244,13 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
   const [editingGroup, setEditingGroup] = React.useState<Group | null>(null)
   const [selectedSubGroup, setSelectedSubGroup] = React.useState<string | null>(null)
   const [selectedMonth, setSelectedMonth] = React.useState(new Date())
+  const [isMergeModalOpen, setIsMergeModalOpen] = React.useState(false)
 
   const { groups, balances, fetchGroups, isLoading, updateGroup, deleteGroup } = useGroupStore()
   const { transactions, syncTransactions } = useTransactionsStore()
   const { currentLedger } = useLedgerStore()
   const { members, fetchMembers } = useUserManagementStore()
+  const [deleteConfirm, setDeleteConfirm] = React.useState<{ id: string; isCurrent: boolean } | null>(null)
 
   // ── Currency formatting ───────────────────────────────────
   const currency = (currentLedger?.base_currency ?? 'JPY') as string
@@ -1235,13 +1277,31 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
   const descendantIds = React.useMemo(() => {
     return getDescendantIds(actualGroupId, groups)
   }, [actualGroupId, groups])
-
   const ym = React.useMemo(() => {
     const y = selectedMonth.getFullYear()
     const m = String(selectedMonth.getMonth() + 1).padStart(2, '0')
     return `${y}-${m}`
   }, [selectedMonth])
 
+  const handleDeleteGroup = React.useCallback(async (id: string, isCurrent: boolean) => {
+    setDeleteConfirm({ id, isCurrent })
+  }, [])
+
+  const executeDelete = async () => {
+    if (!deleteConfirm) return
+    try {
+      await deleteGroup(deleteConfirm.id)
+      if (deleteConfirm.isCurrent) {
+        if (onClose) onClose()
+        else if (typeof window !== 'undefined') window.location.href = '/categories'
+      }
+    } catch (err: any) {
+      // Custom toast could be here, but for now we rely on the generic error boundary or UI
+      console.error(err)
+    } finally {
+      setDeleteConfirm(null)
+    }
+  }
   const groupTxns = React.useMemo(() => {
     // Collect ALL keywords from this group and all descendants
     const allKeywords: { kw: string; groupId: string }[] = []
@@ -1254,20 +1314,8 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
       }
     }
 
-    function matchesKeyword(t: Transaction): boolean {
-      if (allKeywords.length === 0) return false
-      const haystack = ((t.description || '') + ' ' + (t.merchantName || '')).toLowerCase()
-      return allKeywords.some(({ kw }) => haystack.includes(kw.toLowerCase()))
-    }
-
     return transactions
-      .filter(t => {
-        // 1. Already categorized into this group or its descendants
-        if (t.categoryId && descendantIds.has(t.categoryId)) return true
-        // 2. Not yet categorized but matches a keyword of this group or descendants
-        if (!t.categoryId && matchesKeyword(t)) return true
-        return false
-      })
+      .filter(t => t.categoryId && descendantIds.has(t.categoryId))
       .filter(t => t.transactionDate?.startsWith(ym))
       .sort((a, b) => {
         const da = String(a.transactionDate || (a as any).transaction_date || (a as any).date || '')
@@ -1305,26 +1353,6 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
     if (!group) return 1
     return ancestors.length + 1
   }, [group, ancestors])
-
-  const handleDeleteGroup = React.useCallback(async (id: string, isCurrent: boolean) => {
-    if (typeof window !== 'undefined') {
-      const confirmDelete = window.confirm("Bạn có chắc chắn muốn xóa nhóm này không? Toàn bộ nhóm con cũng sẽ bị xóa.")
-      if (!confirmDelete) return
-      
-      try {
-        await deleteGroup(id)
-        if (isCurrent) {
-          if (onClose) {
-            onClose()
-          } else {
-            window.location.href = '/categories'
-          }
-        }
-      } catch (err: any) {
-        alert(err.message || "Có lỗi xảy ra khi xóa nhóm.")
-      }
-    }
-  }, [deleteGroup, onClose])
 
   // Loading / not found
   if (!group) {
@@ -1413,6 +1441,7 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
               setIsFormOpen(true)
             }}
             onDelete={() => handleDeleteGroup(group.id, true)}
+            onMerge={() => setIsMergeModalOpen(true)}
           />
           <TabBar
             active={activeTab}
@@ -1572,6 +1601,49 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
             <GroupDetailView groupId={selectedSubGroup} isNested onClose={() => setSelectedSubGroup(null)} />
           </div>
         )}
+      </Modal>
+
+      {/* Modal gộp danh mục */}
+      <MergeCategoryModal
+        isOpen={isMergeModalOpen}
+        onClose={() => setIsMergeModalOpen(false)}
+        sourceCategory={group}
+        categories={groups}
+        onSuccess={() => {
+          syncTransactions(0)
+          if (onClose) {
+            onClose()
+          } else {
+            if (typeof window !== 'undefined') window.location.href = '/categories'
+          }
+        }}
+      />
+
+      {/* Modal xác nhận xóa */}
+      <Modal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+      >
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Xác nhận xóa danh mục</h2>
+          <p className="text-[var(--color-text-secondary)] mb-6 text-sm">
+            Bạn có chắc chắn muốn xóa danh mục này không? Toàn bộ danh mục con (nếu có) cũng sẽ bị xóa vĩnh viễn và không thể khôi phục.
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="px-5 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-subtle)] rounded-lg transition-colors cursor-pointer"
+            >
+              Hủy bỏ
+            </button>
+            <button
+              onClick={executeDelete}
+              className="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors cursor-pointer"
+            >
+              Đồng ý xóa
+            </button>
+          </div>
+        </div>
       </Modal>
       </div>
     </div>

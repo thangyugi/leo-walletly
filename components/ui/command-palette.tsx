@@ -92,7 +92,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
 
       <div
         ref={containerRef}
-        className="relative w-full max-w-xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-2xl shadow-xl overflow-hidden animate-slide-in-up"
+        className="relative w-full max-w-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-slide-in-up"
       >
         <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--color-border-subtle)]">
           <Search className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0" />

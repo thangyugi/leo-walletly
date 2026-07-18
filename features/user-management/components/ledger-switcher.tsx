@@ -46,7 +46,7 @@ export function LedgerSwitcher() {
             className="fixed inset-0 z-40" 
             onClick={() => setIsOpen(false)} 
           />
-          <div className="absolute top-full left-2.5 right-2.5 mt-2 p-1.5 bg-[var(--color-bg-elevated)] border border-[var(--color-border-default)] rounded-2xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2">
+          <div className="absolute top-full left-2.5 right-2.5 mt-2 p-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50 animate-in fade-in slide-in-from-top-2">
             <p className="px-3 py-1.5 text-[10px] font-bold text-[var(--color-text-quaternary)] uppercase tracking-widest border-b border-[var(--color-border-subtle)] mb-1">
               {s.title}
             </p>

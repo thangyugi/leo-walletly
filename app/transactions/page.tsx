@@ -115,7 +115,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
       {open && (
-        <div className="absolute right-0 top-full mt-1.5 w-52 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl shadow-lg z-50 py-1 overflow-hidden animate-slide-in-up">
+        <div className="absolute right-0 top-full mt-1.5 w-52 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-slide-in-up">
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}

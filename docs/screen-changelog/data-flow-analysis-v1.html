@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leo Walletly — Tài liệu Luồng Dữ Liệu & Phân Tích Màn Hình v1</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f8fafc; --card: #fff; --border: #e2e8f0; --text: #0f172a; --muted: #64748b;
+      --primary: #2563eb; --green: #16a34a; --red: #dc2626; --amber: #d97706; --purple: #7c3aed; --cyan: #0891b2;
+      --green-bg: #f0fdf4; --red-bg: #fef2f2; --amber-bg: #fffbeb; --purple-bg: #f5f3ff; --cyan-bg: #ecfeff; --blue-bg: #eff6ff;
+      --code-bg: #eef2ff; --code: #3730a3;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+    .container { max-width: 1400px; margin: 0 auto; padding: 2rem; }
+
+    header { text-align: center; padding: 2.5rem 0 1.5rem; border-bottom: 3px solid var(--primary); margin-bottom: 2.5rem; }
+    header h1 { font-size: 2rem; color: var(--primary); font-weight: 800; }
+    header p { color: var(--muted); margin-top: .5rem; font-size: .95rem; }
+
+    h2 { font-size: 1.5rem; color: var(--primary); border-bottom: 2px solid var(--border); padding-bottom: .5rem; margin: 3rem 0 1.5rem; }
+    h3 { font-size: 1.2rem; color: var(--text); margin: 1.5rem 0 .75rem; }
+    h4 { font-size: 1.05rem; color: var(--muted); margin: 1rem 0 .5rem; }
+
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,.04); }
+    .card.highlight { border-left: 4px solid var(--primary); }
+    .card.good { border-left: 4px solid var(--green); background: var(--green-bg); }
+    .card.bad { border-left: 4px solid var(--red); background: var(--red-bg); }
+    .card.warn { border-left: 4px solid var(--amber); background: var(--amber-bg); }
+    .card.info { border-left: 4px solid var(--cyan); background: var(--cyan-bg); }
+
+    code { font-family: 'Fira Code', monospace; background: var(--code-bg); color: var(--code); padding: .15rem .4rem; border-radius: 3px; font-size: .85em; }
+    pre { background: #1e293b; color: #e2e8f0; padding: 1.25rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; font-family: 'Fira Code', monospace; font-size: .85rem; line-height: 1.5; }
+    pre .comment { color: #64748b; }
+    pre .key { color: #38bdf8; }
+    pre .val { color: #34d399; }
+    pre .num { color: #fbbf24; }
+    pre .arrow { color: #f472b6; font-weight: 700; }
+
+    table { width: 100%; border-collapse: collapse; font-size: .9rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: .65rem .85rem; border: 1px solid var(--border); vertical-align: top; }
+    th { background: #f1f5f9; color: var(--muted); font-weight: 600; white-space: nowrap; }
+    td:first-child { font-family: 'Fira Code', monospace; font-size: .85rem; white-space: nowrap; }
+
+    .flow-step { display: flex; align-items: flex-start; gap: 1rem; margin-bottom: 1.25rem; padding-bottom: 1.25rem; border-bottom: 1px dashed var(--border); }
+    .flow-step:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+    .step-num { flex-shrink: 0; width: 36px; height: 36px; background: var(--primary); color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; }
+    .step-content { flex: 1; }
+    .step-content h4 { margin-top: 0; color: var(--text); font-weight: 600; }
+
+    .tag { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+    .tag.tbl { background: var(--blue-bg); color: var(--primary); }
+    .tag.good { background: var(--green-bg); color: var(--green); }
+    .tag.bad { background: var(--red-bg); color: var(--red); }
+    .tag.warn { background: var(--amber-bg); color: var(--amber); }
+
+    .csv-example { background: #fff7ed; border: 1px solid #fed7aa; border-radius: 8px; padding: 1rem; margin: 1rem 0; overflow-x: auto; font-family: 'Fira Code', monospace; font-size: .8rem; white-space: pre; }
+
+    .screen-analysis { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+    .screen-analysis .card { margin-bottom: 0; }
+    @media (max-width: 768px) { .screen-analysis { grid-template-columns: 1fr; } }
+
+    .verdict { padding: .75rem 1rem; border-radius: 8px; margin: .5rem 0; font-weight: 500; }
+    .verdict.good { background: var(--green-bg); color: var(--green); }
+    .verdict.bad { background: var(--red-bg); color: var(--red); }
+    .verdict.warn { background: var(--amber-bg); color: var(--amber); }
+
+    ul, ol { margin-left: 1.25rem; margin-bottom: 1rem; }
+    li { margin-bottom: .4rem; }
+
+    .nav-toc { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; }
+    .nav-toc h3 { margin-top: 0; color: var(--primary); }
+    .nav-toc ol { columns: 2; }
+    .nav-toc a { color: var(--primary); text-decoration: none; }
+    .nav-toc a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>📱 Leo Walletly — Tài Liệu Luồng Dữ Liệu & Phân Tích Hoạt Động</h1>
+    <p>Phân tích chi tiết cách dữ liệu chảy qua hệ thống từ đăng ký → nhập dữ liệu → hiển thị trên app</p>
+    <p>Phiên bản 1.0 &bull; 20/06/2026</p>
+  </header>
+
+  <nav class="nav-toc">
+    <h3>📑 Mục Lục</h3>
+    <ol>
+      <li><a href="#s1">Luồng đăng ký & Onboarding</a></li>
+      <li><a href="#s2">Import CSV — Ví dụ PayPay</a></li>
+      <li><a href="#s3">Import CSV — Ví dụ Rakuten Card</a></li>
+      <li><a href="#s4">Quét hóa đơn — Ví dụ đi chợ</a></li>
+      <li><a href="#s5">Phân tích màn hình Tổng Quan (Dashboard)</a></li>
+      <li><a href="#s6">Phân tích màn hình Giao Dịch</a></li>
+      <li><a href="#s7">Phân tích màn hình Quản Lý Danh Mục</a></li>
+      <li><a href="#s8">Phân biệt Transactions vs Journal Entries (Kế toán kép)</a></li>
+      <li><a href="#s9">Tổng kết đánh giá & Khuyến nghị</a></li>
+    </ol>
+  </nav>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 1: ONBOARDING -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s1">1. Luồng Đăng Ký & Onboarding — Dữ Liệu Vào Bảng Nào?</h2>
+
+  <p>Khi người dùng mới đăng ký tài khoản và bắt đầu sử dụng app, hệ thống tự động tạo ra chuỗi dữ liệu sau:</p>
+
+  <div class="card highlight">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Đăng ký tài khoản (Supabase Auth)</h4>
+        <p>User nhập email + password → Supabase Auth tạo record trong <code>auth.users</code>.</p>
+        <p><span class="tag tbl">auth.users</span> ← Tự động bởi Supabase</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Tạo Profile</h4>
+        <p>Trigger sau khi signup → tạo record trong <code>profiles</code> với cùng ID.</p>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị ví dụ</th></tr>
+          <tr><td>profiles</td><td>id</td><td><code>a1b2c3d4-...</code> (= auth.users.id)</td></tr>
+          <tr><td></td><td>full_name</td><td>"Nguyễn Văn Leo"</td></tr>
+          <tr><td></td><td>avatar_url</td><td>null (chưa upload)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Tạo Organization (Tổ chức)</h4>
+        <p>User chọn loại: "Cá nhân" hoặc "Gia đình" → tạo organization.</p>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị ví dụ</th></tr>
+          <tr><td>organizations</td><td>name</td><td>"Gia đình Leo"</td></tr>
+          <tr><td></td><td>slug</td><td>"gia-dinh-leo"</td></tr>
+          <tr><td></td><td>plan</td><td>"personal"</td></tr>
+          <tr><td></td><td>base_currency</td><td>"JPY"</td></tr>
+          <tr><td></td><td>timezone</td><td>"Asia/Tokyo"</td></tr>
+          <tr><td>organization_members</td><td>user_id</td><td>a1b2c3d4-...</td></tr>
+          <tr><td></td><td>role</td><td>"owner"</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Tạo Workspace + Ledger mặc định</h4>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị ví dụ</th></tr>
+          <tr><td>workspaces</td><td>name</td><td>"Chi tiêu cá nhân"</td></tr>
+          <tr><td></td><td>workspace_type</td><td>"personal"</td></tr>
+          <tr><td></td><td>default_currency</td><td>"JPY"</td></tr>
+          <tr><td>ledgers</td><td>name</td><td>"Sổ chi tiêu chính"</td></tr>
+          <tr><td></td><td>is_default</td><td>true</td></tr>
+          <tr><td></td><td>currency</td><td>"JPY"</td></tr>
+          <tr><td>ledger_members</td><td>role</td><td>"owner"</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>Import Category Template</h4>
+        <p>User chọn template "JP - Cá nhân" → bulk insert ~30-50 danh mục vào <code>categories</code>.</p>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị ví dụ</th></tr>
+          <tr><td>categories</td><td>name_ja / name_vi / name_en</td><td>"食費" / "Ăn uống" / "Food"</td></tr>
+          <tr><td></td><td>emoji</td><td>"🍱"</td></tr>
+          <tr><td></td><td>category_type</td><td>"expense"</td></tr>
+          <tr><td></td><td>parent_id</td><td>null (danh mục gốc) hoặc UUID của "Ăn uống"</td></tr>
+          <tr><td></td><td>is_system</td><td>true</td></tr>
+        </table>
+        <p style="color:var(--muted);font-size:.9rem">Ví dụ cây danh mục JP: 🍱 食費 → (con: 🍚 外食, 🛒 スーパー, ☕ カフェ) / 🏠 住居費 → (con: 🔌 光熱費, 📱 通信費)</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card warn">
+    <strong>⚠️ Đánh giá Onboarding:</strong> Luồng 5 bước hiện tại yêu cầu user đưa ra quá nhiều quyết định (chọn organization type, workspace type, currency, template). Đối với app ví cá nhân, nên <strong>auto-detect locale</strong> (dùng browser language + timezone) → tự động tạo org + workspace + ledger + categories trong 1 bước duy nhất. User chỉ cần nhập tên.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 2: PAYPAY IMPORT -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s2">2. Import CSV — Ví Dụ Thực Tế: PayPay</h2>
+
+  <h3>2.1. File CSV gốc từ PayPay (Shift_JIS encoding)</h3>
+  <div class="csv-example">取引日時,取引内容,取引先,金額,手数料,キャッシュバック,残高
+2026-06-01 12:30:45,PayPay残高払い,セブンイレブン新宿店,¥-580,0,0,¥12420
+2026-06-02 08:15:22,PayPay残高払い,ローソン渋谷店,¥-350,0,¥3,¥12073
+2026-06-03 19:45:10,PayPay残高払い,松屋 池袋西口店,¥-890,0,¥8,¥11191
+2026-06-05 14:20:33,チャージ（銀行口座）,—,¥10000,0,0,¥21191
+2026-06-06 11:00:15,PayPay残高払い,ドラッグストア マツキヨ,¥-2480,0,¥24,¥18735</div>
+
+  <h3>2.2. Luồng dữ liệu chi tiết: CSV → Database</h3>
+
+  <div class="card highlight">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>User chọn Provider "PayPay" và upload file CSV</h4>
+        <p>App đọc config từ <code>import-providers.ts</code>: encoding = Shift_JIS, delimiter = comma, skipRows = 1.</p>
+        <p>→ Tạo record trong <span class="tag tbl">import_jobs</span>:</p>
+        <table>
+          <tr><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>file_name</td><td>"paypay_history_202606.csv"</td></tr>
+          <tr><td>provider</td><td>"paypay"</td></tr>
+          <tr><td>file_type</td><td>"csv"</td></tr>
+          <tr><td>status</td><td><code>'pending'</code></td></tr>
+          <tr><td>ledger_id</td><td>(ledger đang dùng)</td></tr>
+          <tr><td>workspace_id</td><td>(workspace đang dùng)</td></tr>
+          <tr><td>total_rows</td><td>5</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Parse CSV → Tạo import_rows</h4>
+        <p>CSV parser chuyển encoding Shift_JIS → UTF-8, map cột theo fieldMappings của PayPay provider.</p>
+        <p>→ Mỗi dòng CSV tạo 1 record trong <span class="tag tbl">import_rows</span>:</p>
+        <table>
+          <tr><th>Cột</th><th>Dòng 1 (7-Eleven)</th><th>Dòng 4 (Charge)</th></tr>
+          <tr><td>raw_data (jsonb)</td><td><code>{"取引日時":"2026-06-01 12:30:45", "取引先":"セブンイレブン新宿店", ...}</code></td><td><code>{"取引内容":"チャージ（銀行口座）", "金額":"¥10000", ...}</code></td></tr>
+          <tr><td>raw_date</td><td>"2026-06-01 12:30:45"</td><td>"2026-06-05 14:20:33"</td></tr>
+          <tr><td>raw_amount</td><td>"¥-580"</td><td>"¥10000"</td></tr>
+          <tr><td>raw_description</td><td>"セブンイレブン新宿店"</td><td>"チャージ（銀行口座）"</td></tr>
+          <tr><td>parsed_date</td><td>2026-06-01</td><td>2026-06-05</td></tr>
+          <tr><td>parsed_amount</td><td>-580</td><td>10000</td></tr>
+          <tr><td>parsed_currency</td><td>"JPY"</td><td>"JPY"</td></tr>
+          <tr><td>parsed_merchant</td><td>"セブンイレブン新宿店"</td><td>null</td></tr>
+          <tr><td>parsed_merchant_normalized</td><td>"セブンイレブン"</td><td>null</td></tr>
+          <tr><td>parsed_type</td><td>"expense"</td><td>"income" (nạp tiền)</td></tr>
+          <tr><td>cashback_amount</td><td>0</td><td>0</td></tr>
+          <tr><td>status</td><td><code>'pending'</code></td><td><code>'pending'</code></td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>AI Categorization (Gemini + Category Rules)</h4>
+        <p>Mỗi dòng được gửi qua hệ thống phân loại:</p>
+        <ol>
+          <li><strong>Rule-based first:</strong> Kiểm tra <code>category_rules</code> — VD: rule "merchant CONTAINS セブンイレブン" → gán category "🛒 コンビニ" (Cửa hàng tiện lợi).</li>
+          <li><strong>AI fallback:</strong> Nếu không match rule → gửi tên merchant cho Gemini AI để gợi ý.</li>
+        </ol>
+        <p>→ Update <span class="tag tbl">import_rows</span>:</p>
+        <table>
+          <tr><th>Dòng</th><th>suggested_category_id</th><th>ai_category_confidence</th></tr>
+          <tr><td>セブンイレブン</td><td>UUID của "🛒 コンビニ"</td><td>0.95 (rule match)</td></tr>
+          <tr><td>ローソン</td><td>UUID của "🛒 コンビニ"</td><td>0.95 (rule match)</td></tr>
+          <tr><td>松屋</td><td>UUID của "🍚 外食" (Ăn ngoài)</td><td>0.82 (AI)</td></tr>
+          <tr><td>チャージ</td><td>UUID của "💰 振替" (Chuyển khoản)</td><td>0.90 (rule)</td></tr>
+          <tr><td>マツキヨ</td><td>UUID của "💊 日用品" (Đồ dùng hàng ngày)</td><td>0.78 (AI)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Duplicate Detection → import_matches</h4>
+        <p>Kiểm tra xem giao dịch đã tồn tại chưa (dựa trên date + amount + merchant hash).</p>
+        <p>→ Nếu trùng, tạo record trong <span class="tag tbl">import_matches</span> với <code>match_type: 'duplicate'</code>.</p>
+        <p>→ Update <code>import_rows.is_duplicate = true</code>.</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>User Review & Commit → Tạo transactions</h4>
+        <p>User xác nhận → Mỗi import_row approved tạo 1 record trong <span class="tag tbl">transactions</span>:</p>
+        <table>
+          <tr><th>Cột transactions</th><th>Giá trị (dòng 7-Eleven)</th></tr>
+          <tr><td>organization_id / workspace_id / ledger_id</td><td>(từ context hiện tại)</td></tr>
+          <tr><td>transaction_type</td><td>"expense"</td></tr>
+          <tr><td>source</td><td>"import"</td></tr>
+          <tr><td>source_reference</td><td>"paypay"</td></tr>
+          <tr><td>merchant_name</td><td>"セブンイレブン新宿店"</td></tr>
+          <tr><td>merchant_normalized</td><td>"セブンイレブン"</td></tr>
+          <tr><td>amount</td><td>580</td></tr>
+          <tr><td>currency_code</td><td>"JPY"</td></tr>
+          <tr><td>category_id</td><td>UUID "🛒 コンビニ"</td></tr>
+          <tr><td>payment_instrument_id</td><td>UUID của "PayPay" (nếu đã tạo)</td></tr>
+          <tr><td>transaction_date</td><td>2026-06-01T12:30:45+09:00</td></tr>
+          <tr><td>status</td><td><code>'completed'</code></td></tr>
+          <tr><td>external_hash</td><td>SHA256 của dòng CSV (chống trùng)</td></tr>
+        </table>
+        <p>→ Update <code>import_rows.committed_transaction_id</code> = ID giao dịch vừa tạo.</p>
+        <p>→ Update <code>import_jobs.committed_rows</code> += 1.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 3: RAKUTEN IMPORT -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s3">3. Import CSV — Ví Dụ Thực Tế: Rakuten Card</h2>
+
+  <h3>3.1. File CSV gốc từ Rakuten Card</h3>
+  <div class="csv-example">利用日,利用店名・商品名,利用者,支払方法,利用金額,支払手数料,支払総額
+2026/06/01,"Amazon.co.jp",本人,1回払い,3280,0,3280
+2026/06/03,"スターバックス 表参道店",本人,1回払い,650,0,650
+2026/06/05,"東京電力エナジーパートナー",本人,1回払い,8920,0,8920
+2026/06/07,"楽天市場　ユニクロ公式",本人,1回払い,4990,0,4990
+2026/06/10,"NETFLIX",本人,1回払い,1490,0,1490</div>
+
+  <h3>3.2. Điểm khác biệt so với PayPay</h3>
+  <div class="card info">
+    <ul>
+      <li><strong>settlement_type:</strong> Rakuten Card là thẻ tín dụng (deferred payment) — giao dịch phát sinh ngay nhưng thanh toán sau. App cần liên kết với <code>funding_sources</code> và <code>settlement_profiles</code> để biết khi nào trừ tiền từ tài khoản ngân hàng.</li>
+      <li><strong>payment_instrument:</strong> Tự động gán <code>payment_instruments</code> có <code>provider = 'rakuten_card'</code> và <code>type = 'credit_card'</code>.</li>
+      <li><strong>Dòng "東京電力":</strong> category_rules match pattern "電力|ガス|水道" → auto-assign "🔌 光熱費" (Tiện ích). Bảng <code>category_rules.match_count</code> += 1.</li>
+      <li><strong>Dòng "NETFLIX":</strong> Có thể match với <code>recurring_transactions</code> nếu user đã setup định kỳ → cập nhật <code>applied_months</code>.</li>
+    </ul>
+  </div>
+
+  <h3>3.3. Dữ liệu vào bảng chi tiết (dòng Amazon)</h3>
+  <table>
+    <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+    <tr><td>import_rows</td><td>raw_data</td><td><code>{"利用日":"2026/06/01","利用店名":"Amazon.co.jp","利用金額":"3280",...}</code></td></tr>
+    <tr><td></td><td>parsed_merchant_normalized</td><td>"Amazon"</td></tr>
+    <tr><td></td><td>payment_method_label</td><td>"1回払い" (trả 1 lần)</td></tr>
+    <tr><td>transactions</td><td>merchant_name</td><td>"Amazon.co.jp"</td></tr>
+    <tr><td></td><td>amount</td><td>3280</td></tr>
+    <tr><td></td><td>payment_instrument_id</td><td>UUID của Rakuten Card</td></tr>
+    <tr><td></td><td>category_id</td><td>UUID "🛒 ネットショッピング" (Mua sắm online)</td></tr>
+    <tr><td></td><td>source</td><td>"import"</td></tr>
+    <tr><td></td><td>source_reference</td><td>"rakuten_card"</td></tr>
+  </table>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 4: RECEIPT OCR -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s4">4. Quét Hóa Đơn — Ví Dụ: Đi Chợ 1 Ngày (スーパー)</h2>
+
+  <h3>4.1. Tình huống thực tế</h3>
+  <p>User đi siêu thị <strong>イオン (AEON)</strong> mua sắm hàng ngày, nhận hóa đơn giấy, chụp ảnh bằng app.</p>
+
+  <div class="card highlight">
+    <h4>Nội dung hóa đơn chụp được:</h4>
+    <pre>
+<span class="comment">========================</span>
+   イオン 板橋店
+   東京都板橋区...
+   2026年06月15日 18:45
+<span class="comment">------------------------</span>
+ <span class="key">キャベツ</span>          <span class="num">¥198</span>
+ <span class="key">にんじん 3本</span>      <span class="num">¥149</span>
+ <span class="key">豚バラ肉 300g</span>    <span class="num">¥498</span>
+ <span class="key">牛乳 1L</span>          <span class="num">¥218</span>
+ <span class="key">食パン 6枚</span>       <span class="num">¥158</span>
+ <span class="key">ビール 350ml×6</span>   <span class="num">¥1,078</span>  <span class="comment">※軽減税率対象外</span>
+ <span class="key">洗剤 詰め替え</span>    <span class="num">¥398</span>
+<span class="comment">------------------------</span>
+ 小計              <span class="num">¥2,697</span>
+ 消費税(8%)        <span class="num">¥97</span>
+ 消費税(10%)       <span class="num">¥107</span>
+ <span class="val">合計              ¥2,901</span>
+ お支払い: <span class="val">WAON</span>
+<span class="comment">========================</span></pre>
+  </div>
+
+  <h3>4.2. Luồng xử lý OCR chi tiết</h3>
+
+  <div class="card highlight">
+    <div class="flow-step">
+      <div class="step-num">1</div>
+      <div class="step-content">
+        <h4>Upload ảnh → Supabase Storage + tạo receipt_documents</h4>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>receipt_documents</td><td>storage_path</td><td>"receipts/a1b2c3d4/2026-06-15_184500.jpg"</td></tr>
+          <tr><td></td><td>file_name</td><td>"2026-06-15_184500.jpg"</td></tr>
+          <tr><td></td><td>file_type</td><td>"image/jpeg"</td></tr>
+          <tr><td></td><td>ocr_status</td><td><code>'pending'</code></td></tr>
+          <tr><td></td><td>ledger_id / organization_id</td><td>(context hiện tại)</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">2</div>
+      <div class="step-content">
+        <h4>Tạo OCR Job → Gọi Gemini Vision API</h4>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>receipt_ocr_jobs</td><td>ocr_engine</td><td>"gemini"</td></tr>
+          <tr><td></td><td>status</td><td><code>'processing'</code></td></tr>
+          <tr><td></td><td>language_hint</td><td>"ja"</td></tr>
+          <tr><td></td><td>enhance_mode</td><td>"standard"</td></tr>
+        </table>
+        <p>Gemini Vision API nhận ảnh → trả về JSON có cấu trúc.</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">3</div>
+      <div class="step-content">
+        <h4>Lưu kết quả OCR thô → receipt_ocr_results</h4>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>receipt_ocr_results</td><td>extracted_merchant</td><td>"イオン 板橋店"</td></tr>
+          <tr><td></td><td>extracted_date</td><td>"2026-06-15"</td></tr>
+          <tr><td></td><td>extracted_total</td><td>"2901"</td></tr>
+          <tr><td></td><td>extracted_currency</td><td>"JPY"</td></tr>
+          <tr><td></td><td>extracted_items (jsonb)</td><td><code>[{"name":"キャベツ","qty":1,"price":198}, ...]</code></td></tr>
+          <tr><td></td><td>extracted_taxes (jsonb)</td><td><code>[{"rate":8,"amount":97},{"rate":10,"amount":107}]</code></td></tr>
+          <tr><td></td><td>confidence_score</td><td>0.92</td></tr>
+          <tr><td></td><td>detected_language</td><td>"ja"</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">4</div>
+      <div class="step-content">
+        <h4>Tạo từng dòng hàng → receipt_line_items (7 items)</h4>
+        <table>
+          <tr><th>line_number</th><th>raw_text</th><th>normalized_name</th><th>qty</th><th>unit_price</th><th>total_amount</th><th>suggested_category</th><th>ai_confidence</th></tr>
+          <tr><td>1</td><td>"キャベツ"</td><td>"キャベツ"</td><td>1</td><td>198</td><td>198</td><td>🛒 スーパー (Siêu thị)</td><td>0.88</td></tr>
+          <tr><td>2</td><td>"にんじん 3本"</td><td>"にんじん"</td><td>3</td><td>—</td><td>149</td><td>🛒 スーパー</td><td>0.88</td></tr>
+          <tr><td>3</td><td>"豚バラ肉 300g"</td><td>"豚バラ肉"</td><td>1</td><td>498</td><td>498</td><td>🛒 スーパー</td><td>0.90</td></tr>
+          <tr><td>4</td><td>"牛乳 1L"</td><td>"牛乳"</td><td>1</td><td>218</td><td>218</td><td>🛒 スーパー</td><td>0.88</td></tr>
+          <tr><td>5</td><td>"食パン 6枚"</td><td>"食パン"</td><td>1</td><td>158</td><td>158</td><td>🛒 スーパー</td><td>0.85</td></tr>
+          <tr><td>6</td><td>"ビール 350ml×6"</td><td>"ビール"</td><td>6</td><td>—</td><td>1078</td><td>🍺 酒類 (Rượu bia)</td><td>0.82</td></tr>
+          <tr><td>7</td><td>"洗剤 詰め替え"</td><td>"洗剤"</td><td>1</td><td>398</td><td>398</td><td>💊 日用品 (Đồ dùng)</td><td>0.79</td></tr>
+        </table>
+        <p style="color:var(--muted);font-size:.9rem">→ AI tự động nhận diện bia thuộc danh mục khác (酒類), bột giặt thuộc đồ dùng hàng ngày (日用品).</p>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">5</div>
+      <div class="step-content">
+        <h4>Update receipt_documents + receipt_ocr_jobs</h4>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị sau xử lý</th></tr>
+          <tr><td>receipt_documents</td><td>merchant_name</td><td>"イオン 板橋店"</td></tr>
+          <tr><td></td><td>receipt_date</td><td>2026-06-15T18:45:00+09:00</td></tr>
+          <tr><td></td><td>total_amount</td><td>2901</td></tr>
+          <tr><td></td><td>tax_amount</td><td>204 (97 + 107)</td></tr>
+          <tr><td></td><td>ocr_status</td><td><code>'completed'</code></td></tr>
+          <tr><td>receipt_ocr_jobs</td><td>status</td><td><code>'completed'</code></td></tr>
+          <tr><td></td><td>processing_ms</td><td>2350</td></tr>
+          <tr><td></td><td>tokens_used</td><td>1820</td></tr>
+          <tr><td></td><td>api_cost_usd</td><td>0.0045</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <div class="flow-step">
+      <div class="step-num">6</div>
+      <div class="step-content">
+        <h4>User xác nhận → Tạo transaction (có 2 cách)</h4>
+        <p><strong>Cách A — 1 giao dịch gộp (đơn giản):</strong></p>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>transactions</td><td>amount</td><td>2901</td></tr>
+          <tr><td></td><td>merchant_name</td><td>"イオン 板橋店"</td></tr>
+          <tr><td></td><td>category_id</td><td>UUID "🛒 スーパー"</td></tr>
+          <tr><td></td><td>source</td><td>"ocr"</td></tr>
+          <tr><td></td><td>receipt_document_id</td><td>UUID của receipt trên</td></tr>
+        </table>
+        <p><strong>Cách B — 1 giao dịch + splits (chi tiết theo danh mục):</strong></p>
+        <table>
+          <tr><th>Bảng</th><th>Cột</th><th>Giá trị</th></tr>
+          <tr><td>transactions</td><td>amount</td><td>2901 (tổng)</td></tr>
+          <tr><td>transaction_splits #1</td><td>amount / category_id</td><td>1221 / "🛒 スーパー" (thực phẩm)</td></tr>
+          <tr><td>transaction_splits #2</td><td>amount / category_id</td><td>1078 / "🍺 酒類" (bia)</td></tr>
+          <tr><td>transaction_splits #3</td><td>amount / category_id</td><td>398 / "💊 日用品" (bột giặt)</td></tr>
+          <tr><td></td><td>expense_scope</td><td>"shared" (nếu gia đình dùng chung)</td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="card info">
+    <strong>💡 Tính năng phân bổ gia đình:</strong> Nếu user đã tạo <code>household_members</code> (vợ + chồng), app có thể hỏi "Bia là chi tiêu riêng hay chung?" → tạo <code>expense_allocations</code> cho splits #2 với <code>allocation_type: 'personal'</code>, <code>household_member_id: UUID_chồng</code>.
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 5: DASHBOARD -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s5">5. Phân Tích Màn Hình: Tổng Quan (Dashboard)</h2>
+
+  <h3>5.1. Dữ liệu hiển thị trên Dashboard</h3>
+  <div class="card">
+    <table>
+      <tr><th>Widget</th><th>Nguồn dữ liệu</th><th>Query chính</th></tr>
+      <tr><td>💰 Tổng thu / Tổng chi / Chênh lệch</td><td><code>analytics_snapshots</code> hoặc SUM từ <code>transactions</code></td><td>Lọc theo ledger_id + period (tháng hiện tại)</td></tr>
+      <tr><td>📊 Chi tiêu theo danh mục (Donut chart)</td><td><code>analytics_snapshots.by_category</code> (jsonb)</td><td>Nếu chưa có snapshot → GROUP BY category_id từ transactions</td></tr>
+      <tr><td>📈 Xu hướng hàng tháng (Line chart)</td><td><code>analytics_snapshots</code> nhiều tháng</td><td>WHERE snapshot_type = 'monthly' ORDER BY period_start</td></tr>
+      <tr><td>📋 Giao dịch gần đây (10 giao dịch)</td><td><code>transactions</code> JOIN <code>categories</code></td><td>ORDER BY transaction_date DESC LIMIT 10</td></tr>
+      <tr><td>🎯 Tiến độ ngân sách</td><td><code>categories.budget_limit</code> vs SUM(transactions.amount)</td><td>GROUP BY category_id WHERE budget_limit > 0</td></tr>
+      <tr><td>🏪 Top cửa hàng</td><td><code>analytics_snapshots.top_merchants</code></td><td>Hoặc GROUP BY merchant_normalized từ transactions</td></tr>
+    </table>
+  </div>
+
+  <h3>5.2. Đánh giá Dashboard</h3>
+  <div class="screen-analysis">
+    <div class="card good">
+      <h4>✅ Điểm tốt</h4>
+      <ul>
+        <li><strong>Pre-computed snapshots:</strong> Dùng bảng <code>analytics_snapshots</code> thay vì query realtime mỗi lần mở dashboard. Rất tốt cho performance.</li>
+        <li><strong>Fallback logic:</strong> Nếu chưa có snapshot → tự tính từ transactions. Đảm bảo dashboard luôn có dữ liệu.</li>
+        <li><strong>Budget progress bars:</strong> Cho user thấy ngay mình đang chi tiêu bao nhiêu so với ngân sách đặt ra.</li>
+        <li><strong>Multi-currency support:</strong> Dữ liệu đã được quy đổi về base_amount khi tổng hợp.</li>
+      </ul>
+    </div>
+    <div class="card bad">
+      <h4>❌ Điểm chưa tốt</h4>
+      <ul>
+        <li><strong>Snapshot stale data:</strong> Khi user import giao dịch mới, snapshot không tự cập nhật ngay lập tức. Cần cơ chế invalidate/rebuild snapshot khi có giao dịch mới.</li>
+        <li><strong>Thiếu widget "Cash flow":</strong> Không thấy luồng tiền vào/ra theo thời gian (khác với tổng thu/chi). Đối với app tài chính, đây là thiếu sót lớn.</li>
+        <li><strong>Không hiển thị số dư tài khoản:</strong> <code>financial_accounts.current_balance</code> không được show ở dashboard. User muốn biết "ví tôi còn bao nhiêu?" ngay lập tức.</li>
+        <li><strong>Quá nặng về kế toán:</strong> Có widget Journal Entry cho app cá nhân là không cần thiết. Dashboard nên đơn giản, tập trung vào tiền chi/thu.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 6: TRANSACTIONS -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s6">6. Phân Tích Màn Hình: Giao Dịch (Transactions)</h2>
+
+  <h3>6.1. Query hiển thị danh sách giao dịch</h3>
+  <div class="card">
+    <p>Khi mở trang Transactions, app thực hiện query:</p>
+    <pre>
+<span class="comment">-- Pseudocode query</span>
+SELECT
+  t.id, t.transaction_date, t.amount, t.currency_code,
+  t.merchant_name, t.description, t.status, t.source,
+  <span class="key">c.name_ja, c.emoji, c.color,</span>            <span class="comment">-- JOIN categories</span>
+  <span class="key">pi.name, pi.type, pi.icon,</span>               <span class="comment">-- JOIN payment_instruments</span>
+  <span class="key">COUNT(ts.id) AS split_count,</span>             <span class="comment">-- LEFT JOIN transaction_splits</span>
+  <span class="key">ARRAY_AGG(tg.name) AS tags</span>               <span class="comment">-- LEFT JOIN transaction_tags + tags</span>
+FROM <span class="val">transactions</span> t
+LEFT JOIN <span class="val">categories</span> c ON t.category_id = c.id
+LEFT JOIN <span class="val">payment_instruments</span> pi ON t.payment_instrument_id = pi.id
+LEFT JOIN <span class="val">transaction_splits</span> ts ON ts.transaction_id = t.id
+LEFT JOIN <span class="val">transaction_tags</span> tt ON tt.transaction_id = t.id
+LEFT JOIN <span class="val">tags</span> tg ON tt.tag_id = tg.id
+WHERE t.ledger_id = :ledger_id
+  AND t.deleted_at IS NULL
+  <span class="comment">-- + filters: date range, category, amount, search text</span>
+GROUP BY t.id, c.id, pi.id
+ORDER BY t.transaction_date DESC
+LIMIT 50;</pre>
+  </div>
+
+  <h3>6.2. Đánh giá màn hình Giao Dịch</h3>
+  <div class="screen-analysis">
+    <div class="card good">
+      <h4>✅ Điểm tốt</h4>
+      <ul>
+        <li><strong>Filter đa chiều:</strong> Lọc theo ngày, danh mục, phương thức, loại, số tiền, text — rất đầy đủ.</li>
+        <li><strong>Grouping linh hoạt:</strong> Nhóm theo ngày / danh mục / phương thức — hữu ích để phân tích.</li>
+        <li><strong>Source tracking:</strong> Nhìn icon biết giao dịch đến từ manual/import/ocr — tốt cho traceability.</li>
+        <li><strong>Soft delete:</strong> Xóa giao dịch chỉ set <code>deleted_at</code>, không mất dữ liệu. Chuẩn enterprise.</li>
+        <li><strong>Splits visual:</strong> Giao dịch có split hiển thị badge "2 splits" — user biết đây là giao dịch chia nhỏ.</li>
+      </ul>
+    </div>
+    <div class="card bad">
+      <h4>❌ Điểm chưa tốt</h4>
+      <ul>
+        <li><strong>Query quá phức tạp:</strong> Mỗi lần load danh sách, app JOIN 5 bảng. Với 10,000+ giao dịch sẽ chậm. <strong>Khuyến nghị:</strong> Tạo <code>VIEW</code> hoặc materialized view trên Supabase.</li>
+        <li><strong>Không có "Quick Edit":</strong> Muốn đổi danh mục phải vào trang chi tiết. Nên cho phép thay đổi category bằng dropdown ngay tại danh sách (inline edit).</li>
+        <li><strong>Thiếu Bulk Actions:</strong> Không có chọn nhiều giao dịch → gán danh mục hàng loạt, xóa hàng loạt. Rất bất tiện sau khi import 100+ giao dịch.</li>
+        <li><strong>Denormalization cần index:</strong> Cột <code>organization_id</code> và <code>workspace_id</code> trên bảng transactions là denormalized (có thể suy từ ledger). Nếu giữ thì PHẢI có index, nếu không query qua org/workspace sẽ full table scan.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 7: CATEGORIES -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s7">7. Phân Tích Màn Hình: Quản Lý Danh Mục</h2>
+
+  <h3>7.1. Cấu trúc cây danh mục (ví dụ thực tế)</h3>
+  <div class="card">
+    <pre>
+<span class="comment">── Tab: Chi phí (Expense) ──────────────────────────</span>
+
+🍱 <span class="key">食費</span> (Ăn uống)                        budget: ¥80,000/month
+   ├── 🍚 <span class="val">外食</span> (Ăn ngoài)                  budget: ¥30,000
+   ├── 🛒 <span class="val">スーパー</span> (Siêu thị)              budget: ¥35,000
+   ├── ☕ <span class="val">カフェ</span> (Quán cà phê)              budget: ¥10,000
+   └── 🛵 <span class="val">デリバリー</span> (Giao hàng)            budget: ¥5,000
+
+🏠 <span class="key">住居費</span> (Nhà ở)                         budget: ¥150,000/month
+   ├── 🏘️ <span class="val">家賃</span> (Tiền thuê nhà)             budget: ¥120,000
+   ├── 🔌 <span class="val">光熱費</span> (Điện/gas/nước)           budget: ¥15,000
+   └── 📱 <span class="val">通信費</span> (Viễn thông)              budget: ¥10,000
+
+🚃 <span class="key">交通費</span> (Đi lại)                        budget: ¥20,000/month
+   ├── 🚆 <span class="val">電車・バス</span> (Tàu/bus)
+   ├── 🚕 <span class="val">タクシー</span> (Taxi)
+   └── ⛽ <span class="val">ガソリン</span> (Xăng)
+
+🎭 <span class="key">娯楽費</span> (Giải trí)                      budget: ¥25,000/month
+💊 <span class="key">日用品</span> (Đồ dùng hàng ngày)              budget: ¥15,000/month
+👔 <span class="key">衣服・美容</span> (Quần áo & Làm đẹp)         budget: ¥20,000/month
+🏥 <span class="key">医療費</span> (Y tế)
+
+<span class="comment">── Tab: Thu nhập (Income) ──────────────────────────</span>
+
+💼 <span class="key">給料</span> (Lương)
+💰 <span class="key">副収入</span> (Thu nhập phụ)
+🎁 <span class="key">その他</span> (Khác)</pre>
+  </div>
+
+  <h3>7.2. Dữ liệu hiển thị trên trang danh mục chi tiết (/categories/[id])</h3>
+  <p>Ví dụ user bấm vào "🍱 食費" (Ăn uống):</p>
+  <div class="card">
+    <table>
+      <tr><th>Thành phần UI</th><th>Nguồn dữ liệu</th><th>Query</th></tr>
+      <tr><td>Tên + emoji + màu</td><td><code>categories</code></td><td>WHERE id = :id</td></tr>
+      <tr><td>Danh mục con (4 sub-categories)</td><td><code>categories</code></td><td>WHERE parent_id = :id AND is_active = true ORDER BY sort_order</td></tr>
+      <tr><td>Ngân sách: ¥58,200 / ¥80,000 (72.8%)</td><td>SUM(<code>transactions.amount</code>) vs <code>categories.budget_limit</code></td><td>WHERE category_id IN (:id, :child_ids) AND tháng hiện tại</td></tr>
+      <tr><td>Giao dịch gần đây</td><td><code>transactions</code></td><td>WHERE category_id IN (:id, :child_ids) ORDER BY date DESC LIMIT 20</td></tr>
+      <tr><td>Biểu đồ chi tiêu hàng tháng</td><td><code>transactions</code> GROUP BY month</td><td>Aggregation 6-12 tháng gần nhất</td></tr>
+      <tr><td>Category Rules (quy tắc auto-assign)</td><td><code>category_rules</code></td><td>WHERE category_id = :id</td></tr>
+      <tr><td>Keywords</td><td><code>categories.keywords</code></td><td>["食", "フード", "レストラン", "弁当"]</td></tr>
+    </table>
+  </div>
+
+  <h3>7.3. Đánh giá màn hình Quản Lý Danh Mục</h3>
+  <div class="screen-analysis">
+    <div class="card good">
+      <h4>✅ Điểm tốt</h4>
+      <ul>
+        <li><strong>Cây danh mục phân cấp:</strong> parent_id + sort_order cho phép xếp tổ chức rõ ràng. Rất chuẩn.</li>
+        <li><strong>Template system:</strong> Bảng <code>category_templates</code> cho phép user mới bắt đầu ngay mà không cần tạo từ đầu.</li>
+        <li><strong>Auto-categorization:</strong> Kết hợp <code>keywords</code> (đơn giản, nhanh) + <code>category_rules</code> (phức tạp, linh hoạt) + AI fallback. Kiến trúc 3 lớp rất tốt.</li>
+        <li><strong>Budget per category:</strong> Mỗi danh mục có <code>budget_limit</code> riêng — rất hữu ích cho quản lý tài chính.</li>
+        <li><strong>Emoji + color + i18n:</strong> Hiển thị trực quan, hỗ trợ đa ngôn ngữ.</li>
+      </ul>
+    </div>
+    <div class="card bad">
+      <h4>❌ Điểm chưa tốt</h4>
+      <ul>
+        <li><strong>emoji + icon — Trùng chức năng:</strong> Cả 2 cột đều dùng để hiển thị hình ảnh đại diện. Trên UI chỉ dùng 1 trong 2. Nên bỏ cột <code>icon</code>, giữ <code>emoji</code> vì đơn giản hơn.</li>
+        <li><strong>I18N kép:</strong> Như đã phân tích, có cả <code>name_ja/vi/en</code> VÀ <code>name_i18n</code>. Gây confuse cho developer: "nên lấy từ cột nào?".</li>
+        <li><strong>Budget chỉ ở cấp danh mục:</strong> Không có tổng hợp ngân sách (roll-up). VD: budget con (外食: 30k + スーパー: 35k + ...) = 80k nhưng hệ thống không validate tổng con ≤ budget cha.</li>
+        <li><strong>is_recurring trên categories:</strong> Cờ này sai chỗ. "Định kỳ" là thuộc tính của <strong>giao dịch</strong>, không phải danh mục. Tiền thuê nhà (住居費) có giao dịch định kỳ, nhưng danh mục đó cũng có giao dịch 1 lần.</li>
+        <li><strong>Thiếu merge categories:</strong> Khi user muốn gộp 2 danh mục (ví dụ gộp "ăn ngoài" vào "ăn uống"), không có chức năng reassign tất cả giao dịch cũ sang danh mục mới.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card warn">
+    <h4>⚠️ Vấn đề quan trọng: categories thuộc workspace, nhưng transactions FK vào categories</h4>
+    <p>Nếu 1 workspace có nhiều ledgers, tất cả ledgers dùng chung categories (vì categories FK vào workspace). Điều này có thể gây xung đột khi 2 ledgers khác currency nhưng cùng danh mục có budget_limit bằng đơn vị tiền khác nhau.</p>
+    <p><strong>Khuyến nghị:</strong> Hoặc chuyển <code>budget_limit</code> sang 1 bảng riêng <code>category_budgets(category_id, ledger_id, amount, currency)</code>, hoặc quy ước budget_limit luôn tính bằng workspace.default_currency.</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 8: TRANSACTIONS VS JOURNAL ENTRIES -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s8">8. Phân Biệt Kế Toán Đơn (Transactions) & Kế Toán Kép (Journal Entries)</h2>
+
+  <p>Hệ thống <strong>KHÔNG</strong> hiểu lầm, mà đang được thiết kế theo <strong>Kiến trúc Hybrid (Lai)</strong> giữa hai trường phái kế toán. Đây là một thiết kế rất mạnh nhưng cũng mang lại sự phức tạp.</p>
+
+  <div class="card">
+    <ul>
+      <li><strong>Transactions (Kế toán đơn / Ví cá nhân):</strong> Là góc nhìn đơn giản dành cho Người dùng UI (ví dụ: "Tôi mua cà phê 50k"). Dữ liệu này trực quan, dễ hiểu, dùng để hiển thị trên phần lớn các màn hình App.</li>
+      <li><strong>Journal Entries & Lines (Kế toán kép / Kế toán doanh nghiệp):</strong> Là góc nhìn cho Core Ledger bên dưới (Bảng cân đối kế toán). Giao dịch mua cà phê 50k sẽ là 1 <code>journal_entry</code> chứa 2 <code>journal_lines</code>: Ghi nợ (Debit) vào Chi phí Cà phê 50k, Ghi có (Credit) từ Tiền mặt 50k.</li>
+    </ul>
+  </div>
+
+  <h3>8.1. Dữ liệu Import và Quét hóa đơn nên lưu vào đâu?</h3>
+  <p>Hệ thống hiện tại đang ánh xạ dữ liệu <strong>ĐÚNG CHUẨN</strong>. Mọi dữ liệu đầu vào phải đi qua lớp <code>Transactions</code> trước, cụ thể:</p>
+
+  <div class="card highlight">
+    <h4>A. Import CSV/PDF của cả 1 tháng (PayPay, Rakuten)</h4>
+    <p>Một file CSV/PDF của tháng thường chứa <strong>hàng trăm giao dịch</strong>. Hệ thống xử lý bóc tách như sau:</p>
+    <ul>
+      <li><span class="tag good">Tiếp nhận File:</span> 1 file CSV upload lên tạo ra 1 <code>import_jobs</code> (đại diện cho tác vụ xử lý file đó).</li>
+      <li><span class="tag good">Tạo giao dịch hàng loạt:</span> Nếu file có 100 dòng chi tiêu → Tạo ra 100 <code>import_rows</code> → Sinh ra <strong>100 <code>transactions</code> độc lập</strong>. (Tuyệt đối KHÔNG gộp 100 dòng thành 1 giao dịch).</li>
+      <li><span class="tag info">Chạy ngầm (Auto-sync):</span> Mỗi 1 <code>transaction</code> mới sẽ tự động sinh ra 1 <code>journal_entries</code> tương ứng (nếu bật chế độ kế toán). Tổng cộng file 100 dòng sẽ sinh ra 100 bút toán.</li>
+    </ul>
+
+    <h4>B. Quét 1 tờ hóa đơn siêu thị (OCR)</h4>
+    <p>Khác với file CSV tháng, một tờ hóa đơn siêu thị được xem là <strong>1 sự kiện thanh toán duy nhất (1 lần quẹt thẻ)</strong> nhưng bao gồm nhiều món hàng bên trong (ví dụ 5 món).</p>
+    <ul>
+      <li><span class="tag good">Xử lý hóa đơn:</span> 1 ảnh hóa đơn → Tạo 1 <code>receipt_documents</code> + 5 <code>receipt_line_items</code>.</li>
+      <li><span class="tag good">Tạo giao dịch:</span> Vì bạn chỉ thanh toán 1 lần cho tổng số hóa đơn, hệ thống sẽ <strong>chỉ tạo ra 1 <code>transactions</code> duy nhất</strong> cho tổng tiền đó. Tuy nhiên, nó sẽ tạo thêm <strong>5 <code>transaction_splits</code></strong> để chia nhỏ tiền cho từng món hàng vào các danh mục tương ứng.</li>
+      <li><span class="tag info">Chạy ngầm (Auto-sync):</span> Sinh ra 1 <code>journal_entries</code> kèm theo 6 <code>journal_lines</code> (5 dòng Debit ghi nợ cho 5 loại chi phí con, và 1 dòng Credit ghi có trừ tổng tiền ở tài khoản).</li>
+    </ul>
+  </div>
+
+  <h3>8.2. Đánh giá rủi ro (Over-engineering)</h3>
+  <div class="card warn">
+    <p>Dù hệ thống đang làm <strong>đúng về mặt kế toán</strong>, nhưng lại đối mặt với nguy cơ làm mọi thứ trở nên quá phức tạp (Over-engineering) nếu đối tượng người dùng phần lớn chỉ là <strong>Cá nhân / Gia đình</strong>.</p>
+    <ul>
+      <li><strong>Tăng gấp 4 lần chi phí lưu trữ:</strong> 1 giao dịch tạo ra 1 record <code>transactions</code>, 1 <code>journal_entries</code>, 2 <code>journal_lines</code>.</li>
+      <li><strong>Đồng bộ phức tạp:</strong> Nếu user sửa giá tiền của giao dịch (transactions), hệ thống phải có logic đảm bảo số liệu bên <code>journal_lines</code> cũng được update khớp hoàn toàn.</li>
+    </ul>
+    <p><strong>Khuyến nghị:</strong> Nên coi <code>transactions</code> là bảng sự thật duy nhất (Source of Truth) cho ứng dụng cá nhân. Có thể tạm thời vô hiệu hóa luồng sinh Journal Entries, hoặc ẩn nó đi hoàn toàn trên UI cho tới khi phát triển tính năng riêng cho Doanh nghiệp vừa và nhỏ (SME/Freelancer).</p>
+  </div>
+
+  <!-- ═══════════════════════════════════════════ -->
+  <!-- SECTION 9: SUMMARY -->
+  <!-- ═══════════════════════════════════════════ -->
+  <h2 id="s9">9. Tổng Kết Đánh Giá & Khuyến Nghị Ưu Tiên</h2>
+
+  <div class="card">
+    <h3>Bảng đánh giá tổng hợp</h3>
+    <table>
+      <tr><th>Tính năng / Module</th><th>Trạng thái</th><th>Đánh giá</th><th>Ưu tiên sửa</th></tr>
+      <tr>
+        <td>Onboarding Flow</td>
+        <td><span class="tag warn">Cần cải thiện</span></td>
+        <td>Quá nhiều bước. Nên auto-detect và giảm xuống 1-2 bước.</td>
+        <td>🟡 Trung bình</td>
+      </tr>
+      <tr>
+        <td>CSV Import (PayPay, Rakuten...)</td>
+        <td><span class="tag good">Tốt</span></td>
+        <td>Multi-provider, AI categorization, duplicate detection — rất hoàn chỉnh.</td>
+        <td>✅ Giữ nguyên</td>
+      </tr>
+      <tr>
+        <td>Receipt OCR</td>
+        <td><span class="tag good">Tốt</span></td>
+        <td>Gemini Vision, line item extraction, cost tracking — chuẩn production.</td>
+        <td>✅ Giữ nguyên</td>
+      </tr>
+      <tr>
+        <td>Dashboard</td>
+        <td><span class="tag warn">Cần cải thiện</span></td>
+        <td>Thiếu số dư tài khoản, thiếu cash flow chart, snapshot stale.</td>
+        <td>🔴 Cao</td>
+      </tr>
+      <tr>
+        <td>Transactions Screen</td>
+        <td><span class="tag warn">Cần cải thiện</span></td>
+        <td>Thiếu inline edit, thiếu bulk actions, query phức tạp cần View.</td>
+        <td>🔴 Cao</td>
+      </tr>
+      <tr>
+        <td>Category Management</td>
+        <td><span class="tag warn">Cần cải thiện</span></td>
+        <td>emoji vs icon trùng, i18n kép, budget không roll-up, is_recurring sai chỗ.</td>
+        <td>🟡 Trung bình</td>
+      </tr>
+      <tr>
+        <td>I18N Strategy</td>
+        <td><span class="tag bad">Cần sửa ngay</span></td>
+        <td>15+ bảng đang lưu đa ngôn ngữ bằng 2 cách khác nhau cùng lúc.</td>
+        <td>🔴 Cao</td>
+      </tr>
+      <tr>
+        <td>recurring_transactions</td>
+        <td><span class="tag bad">Cần sửa ngay</span></td>
+        <td>Bảng lạc thời, không FK đúng vào hệ thống phân cấp mới.</td>
+        <td>🔴 Cao</td>
+      </tr>
+      <tr>
+        <td>Double-Entry (Journal)</td>
+        <td><span class="tag good">Tốt (nhưng niche)</span></td>
+        <td>Thiết kế chuẩn kế toán kép. Nhưng cần ẩn đi cho user cá nhân.</td>
+        <td>🟢 Thấp</td>
+      </tr>
+      <tr>
+        <td>Reconciliation</td>
+        <td><span class="tag good">Tốt (nhưng niche)</span></td>
+        <td>Đối soát ngân hàng đầy đủ. Tính năng enterprise, ẩn cho user cá nhân.</td>
+        <td>🟢 Thấp</td>
+      </tr>
+    </table>
+  </div>
+
+  <div class="card highlight">
+    <h3>🎯 Top 5 Việc Cần Làm Ngay (Theo Thứ Tự Ưu Tiên)</h3>
+    <ol>
+      <li><strong>Thống nhất I18N:</strong> Chọn 1 chiến lược (cột cứng hoặc jsonb) và migration toàn bộ. Ảnh hưởng 15+ bảng.</li>
+      <li><strong>Sửa Dashboard:</strong> Thêm widget số dư tài khoản (<code>financial_accounts.current_balance</code>), thêm cash flow chart, thêm cơ chế auto-rebuild snapshot khi có giao dịch mới.</li>
+      <li><strong>Transactions: Thêm Bulk Actions + Inline Edit:</strong> Cho phép chọn nhiều giao dịch → gán danh mục / xóa hàng loạt. Cho phép đổi category bằng dropdown ngay tại danh sách.</li>
+      <li><strong>Migrate recurring_transactions:</strong> Thêm <code>ledger_id</code> FK, đổi <code>category text</code> → <code>category_id uuid FK</code>, thêm FK cho <code>group_id</code>.</li>
+      <li><strong>Tạo Database View cho Transactions:</strong> Tạo <code>v_transactions_list</code> VIEW trên Supabase để giảm JOIN phức tạp ở client side.</li>
+    </ol>
+  </div>
+
+</div>
+</body>
+</html>
