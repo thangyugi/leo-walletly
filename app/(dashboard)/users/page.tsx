@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import { useUserManagementStore } from '@/features/user-management/store'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { MemberTable } from '@/features/user-management/components/member-table'
 import { InviteModal } from '@/features/user-management/components/invite-modal'
 import { PermissionAware } from '@/features/user-management/hooks/use-permissions'
@@ -14,29 +14,39 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
 
 export default function UserManagementPage() {
-  const { currentLedger } = useLedgerStore()
-  const { members, invitations, loading, error, fetchMembers, fetchInvitations, inviteMember, updateMemberRole, removeMember, cancelInvitation } = useUserManagementStore()
+  const { currentContext, households, organizations } = useMembershipStore()
+  const {
+    members, invitations, roles, loading, error,
+    fetchMembers, fetchInvitations, fetchRoles, inviteMember, updateMemberRole, removeMember, cancelInvitation,
+  } = useUserManagementStore()
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [toastMsg, setToastMsg] = useState<string | null>(null)
   const [cancelConfirmId, setCancelConfirmId] = useState<string | null>(null)
-  const { t, lang } = useTranslation()
+  const { t } = useTranslation()
 
   useEffect(() => {
-    if (currentLedger) {
-      fetchMembers(currentLedger.id)
-      fetchInvitations(currentLedger.id)
+    if (currentContext) {
+      fetchMembers(currentContext)
+      fetchInvitations(currentContext)
+      fetchRoles(currentContext)
     }
-  }, [currentLedger, fetchMembers, fetchInvitations])
+  }, [currentContext, fetchMembers, fetchInvitations, fetchRoles])
 
   const filteredMembers = members.filter((m) => {
-    const name = m.profile?.full_name?.toLowerCase() || ''
-    const role = m.role.toLowerCase()
+    const name = m.user?.display_name?.toLowerCase() || ''
+    const role = m.role?.name?.toLowerCase() || ''
     const query = searchQuery.toLowerCase()
     return name.includes(query) || role.includes(query)
   })
 
-  if (!currentLedger) return null
+  const permissionCode = currentContext?.type === 'household' ? 'MEMBER_INVITE_HOUSEHOLD' : 'MEMBER_INVITE_ORGANIZATION'
+
+  const contextName = currentContext?.type === 'household'
+    ? households.find((h) => h.id === currentContext.id)?.name
+    : organizations.find((o) => o.id === currentContext?.id)?.name
+
+  if (!currentContext) return null
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -48,12 +58,12 @@ export default function UserManagementPage() {
           </h1>
           <p className="text-[var(--color-text-tertiary)] text-sm mt-1">
             {t.members.subtitle}
-            <span className="font-semibold text-[var(--color-text-secondary)]">{currentLedger.name}</span>.
+            <span className="font-semibold text-[var(--color-text-secondary)]">{contextName}</span>.
           </p>
         </div>
-        
-        <PermissionAware permission="member:invite">
-          <Button 
+
+        <PermissionAware permission={permissionCode}>
+          <Button
             onClick={() => setIsInviteModalOpen(true)}
             icon={<UserPlus className="w-4 h-4" />}
             size="lg"
@@ -73,7 +83,7 @@ export default function UserManagementPage() {
         <div className="p-4 rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-sm">
           <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">{t.members.activeSeats}</p>
           <p className="text-2xl font-bold text-[var(--color-text-primary)] mt-1">
-            {members.filter(m => m.status === 'active').length}
+            {members.length}
           </p>
         </div>
         <div className="p-4 rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-sm">
@@ -85,8 +95,8 @@ export default function UserManagementPage() {
       {/* Controls */}
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
-          <Input 
-            placeholder={t.members.searchPlaceholder} 
+          <Input
+            placeholder={t.members.searchPlaceholder}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="pl-10"
@@ -97,10 +107,10 @@ export default function UserManagementPage() {
           <Button variant="outline" icon={<Filter className="w-4 h-4" />}>
             {t.common.filter}
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             icon={<RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />}
-            onClick={() => fetchMembers(currentLedger.id)}
+            onClick={() => fetchMembers(currentContext)}
             disabled={loading}
           >
             {t.common.sync}
@@ -113,7 +123,7 @@ export default function UserManagementPage() {
         <div className="p-4 rounded-xl bg-[var(--color-loss-50)] border border-[var(--color-loss-100)] flex items-center gap-3">
           <AlertCircle className="w-5 h-5 text-[var(--color-loss-600)]" />
           <p className="text-sm text-[var(--color-loss-700)] font-medium">{error}</p>
-          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => fetchMembers(currentLedger.id)}>
+          <Button size="sm" variant="ghost" className="ml-auto" onClick={() => fetchMembers(currentContext)}>
             {t.common.retry}
           </Button>
         </div>
@@ -122,8 +132,9 @@ export default function UserManagementPage() {
       {/* Main Content */}
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider px-1">{t.members.activeMembers}</h3>
-        <MemberTable 
-          members={filteredMembers} 
+        <MemberTable
+          members={filteredMembers}
+          roles={roles}
           onRoleChange={updateMemberRole}
           onRemove={removeMember}
         />
@@ -145,21 +156,22 @@ export default function UserManagementPage() {
               <tbody className="divide-y divide-[var(--color-border-subtle)]">
                 {invitations.map((inv) => (
                   <tr key={inv.id} className="hover:bg-[var(--color-bg-sunken)]/30 transition-colors">
-                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">{inv.email}</td>
+                    <td className="px-4 py-3 text-sm text-[var(--color-text-primary)] font-medium">{inv.invitation_email}</td>
                     <td className="px-4 py-3">
                       <span className="text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] capitalize border border-[var(--color-border-default)]">
-                        {inv.role}
+                        {inv.role?.name ?? inv.role?.code}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="xs" 
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           className="text-[var(--color-interactive-primary)]"
                           icon={<Link className="w-3 h-3" />}
                           onClick={() => {
-                            const link = `${window.location.origin}/join?token=${inv.token}`
+                            const link = `${window.location.origin}/join?token=${inv.invitation_token}`
+                            navigator.clipboard.writeText(link)
                             const msg = t.members.copySuccess
                             setToastMsg(msg)
                             setTimeout(() => setToastMsg(null), 3000)
@@ -167,9 +179,9 @@ export default function UserManagementPage() {
                         >
                           {t.members.copyLink}
                         </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="xs" 
+                        <Button
+                          variant="ghost"
+                          size="xs"
                           className="text-[var(--color-loss-600)] hover:bg-[var(--color-loss-50)]"
                           icon={<Trash2 className="w-3 h-3" />}
                           onClick={() => {
@@ -189,9 +201,10 @@ export default function UserManagementPage() {
       )}
 
       {isInviteModalOpen && (
-        <InviteModal 
-          onClose={() => setIsInviteModalOpen(false)} 
-          onInvite={(email, role) => inviteMember(currentLedger.id, email, role)}
+        <InviteModal
+          roles={roles}
+          onClose={() => setIsInviteModalOpen(false)}
+          onInvite={(email, roleCode) => inviteMember(currentContext, email, roleCode)}
         />
       )}
 
@@ -213,12 +226,12 @@ export default function UserManagementPage() {
         <div className="p-6">
           <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">Xác nhận hủy lời mời</h2>
           <p className="text-[var(--color-text-secondary)] text-sm mb-6">
-            {t.members.cancelConfirm.replace('{{email}}', invitations.find(i => i.id === cancelConfirmId)?.email || '')}
+            {t.members.cancelConfirm.replace('{{email}}', invitations.find(i => i.id === cancelConfirmId)?.invitation_email || '')}
           </p>
           <div className="flex justify-end gap-3">
             <Button variant="secondary" onClick={() => setCancelConfirmId(null)} className="cursor-pointer">Hủy bỏ</Button>
-            <Button 
-              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer" 
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white cursor-pointer"
               onClick={() => {
                 if (cancelConfirmId) cancelInvitation(cancelConfirmId)
                 setCancelConfirmId(null)

@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { MemberService } from '@/features/user-management/services'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
 import { Wallet, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
@@ -13,7 +13,7 @@ export default function JoinPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading: authLoading } = useAuthStore()
-  const { initialize } = useLedgerStore()
+  const { initialize } = useMembershipStore()
   const { t } = useTranslation()
   
   const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
@@ -44,7 +44,7 @@ export default function JoinPage() {
     
     setStatus('processing')
     try {
-      await MemberService.acceptInvitation(token, user.id)
+      await MemberService.acceptInvitationByToken(token)
       await initialize()
       setStatus('success')
       

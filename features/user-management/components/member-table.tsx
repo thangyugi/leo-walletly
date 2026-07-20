@@ -3,30 +3,20 @@
 import React from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Trash2, Shield, User as UserIcon } from 'lucide-react'
-import type { LedgerMember, UserRole } from '../types'
+import type { Member, Role } from '../types'
 import { usePermissions } from '../hooks/use-permissions'
 import { useTranslation } from '@/hooks/useTranslation'
 
 interface MemberTableProps {
-  members: LedgerMember[]
-  onRoleChange: (memberId: string, role: UserRole) => void
+  members: Member[]
+  roles: Role[]
+  onRoleChange: (memberId: string, roleCode: string) => void
   onRemove: (memberId: string) => void
 }
 
-export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProps) {
+export function MemberTable({ members, roles, onRoleChange, onRemove }: MemberTableProps) {
   const { isAdmin } = usePermissions()
-  const { t, lang } = useTranslation()
-
-  const getRoleLabel = (role: UserRole) => {
-    switch (role) {
-      case 'admin': return t.members.admin
-      case 'accountant': return t.members.accountant
-      case 'auditor': return t.members.auditor
-      case 'viewer': return t.members.viewer
-      case 'owner': return t.members.owner
-      default: return role
-    }
-  }
+  const { t } = useTranslation()
 
   return (
     <div className="w-full overflow-hidden rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-sm">
@@ -54,11 +44,11 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-[var(--color-interactive-primary)]/10 flex items-center justify-center text-[var(--color-interactive-primary)] font-bold text-sm border border-[var(--color-interactive-primary)]/20 shadow-inner">
-                      {member.profile?.full_name?.charAt(0) || '?'}
+                      {member.user?.display_name?.charAt(0) || '?'}
                     </div>
                     <div>
                       <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        {member.profile?.full_name || t.common.active}
+                        {member.user?.display_name || t.common.active}
                       </p>
                       <p className="text-[10px] font-mono text-[var(--color-text-quaternary)]">
                         ID: {member.user_id.substring(0, 8)}...
@@ -67,21 +57,20 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                   </div>
                 </td>
                 <td className="px-6 py-4">
-                  {isAdmin && member.role !== 'owner' ? (
+                  {isAdmin && !member.is_owner ? (
                     <select
-                      value={member.role}
-                      onChange={(e) => onRoleChange(member.id, e.target.value as UserRole)}
+                      value={member.role?.code ?? ''}
+                      onChange={(e) => onRoleChange(member.id, e.target.value)}
                       className="bg-[var(--color-bg-sunken)] hover:bg-[var(--color-border-subtle)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-xs px-3 py-1.5 rounded-xl cursor-pointer transition-all focus:ring-2 focus:ring-[var(--color-interactive-primary)] outline-none font-medium"
                     >
-                      <option value="admin">{t.members.admin}</option>
-                      <option value="accountant">{t.members.accountant}</option>
-                      <option value="auditor">{t.members.auditor}</option>
-                      <option value="viewer">{t.members.viewer}</option>
+                      {roles.map((r) => (
+                        <option key={r.code} value={r.code}>{r.name}</option>
+                      ))}
                     </select>
                   ) : (
-                    <Badge variant={member.role === 'owner' ? 'loss' : 'neutral'} className="capitalize px-3 py-1 rounded-lg">
+                    <Badge variant={member.is_owner ? 'loss' : 'neutral'} className="capitalize px-3 py-1 rounded-lg">
                       <Shield className="w-3 h-3 mr-1.5" />
-                      {getRoleLabel(member.role)}
+                      {member.role?.name ?? member.role?.code}
                     </Badge>
                   )}
                 </td>
@@ -92,10 +81,10 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
                   </span>
                 </td>
                 <td className="px-6 py-4 text-right">
-                  {isAdmin && member.role !== 'owner' ? (
+                  {isAdmin && !member.is_owner ? (
                     <button
                       onClick={() => {
-                        const name = member.profile?.full_name || t.members.member
+                        const name = member.user?.display_name || t.members.member
                         if (confirm(t.members.removeConfirm.replace('{{name}}', name))) {
                           onRemove(member.id)
                         }
@@ -116,7 +105,7 @@ export function MemberTable({ members, onRoleChange, onRemove }: MemberTableProp
           </tbody>
         </table>
       </div>
-      
+
       {members.length === 0 && (
         <div className="py-20 flex flex-col items-center justify-center text-center bg-[var(--color-bg-sunken)]/20">
           <div className="w-16 h-16 rounded-3xl bg-[var(--color-surface-default)] shadow-sm flex items-center justify-center mb-4 border border-[var(--color-border-default)]">

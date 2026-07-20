@@ -1,76 +1,98 @@
 import { create } from 'zustand'
-import type { LedgerMember, UserRole, Permission } from './types'
-import { RolePermissions } from './types'
-import { MemberService } from './services'
+import type { Member, MembershipContext, Role } from './types'
+import { MemberService, RoleService } from './services'
 
 interface UserManagementState {
-  members: LedgerMember[]
-  invitations: any[]
+  members: Member[]
+  invitations: Member[]
+  roles: Role[]
+  permissionCodes: string[]
   loading: boolean
   error: string | null
-  
+
   // Actions
-  fetchMembers: (ledgerId: string) => Promise<void>
-  fetchInvitations: (ledgerId: string) => Promise<void>
-  inviteMember: (ledgerId: string, email: string, role: UserRole) => Promise<void>
-  updateMemberRole: (memberId: string, role: UserRole) => Promise<void>
+  fetchMembers: (context: MembershipContext) => Promise<void>
+  fetchInvitations: (context: MembershipContext) => Promise<void>
+  fetchRoles: (context: MembershipContext) => Promise<void>
+  fetchPermissions: (roleId: string) => Promise<void>
+  inviteMember: (context: MembershipContext, email: string, roleCode: string) => Promise<void>
+  updateMemberRole: (memberId: string, roleCode: string) => Promise<void>
   removeMember: (memberId: string) => Promise<void>
-  cancelInvitation: (invitationId: string) => Promise<void>
-  
+  cancelInvitation: (memberId: string) => Promise<void>
+
   // Helpers
-  getPermissions: (role: UserRole) => Permission[]
-  hasPermission: (role: UserRole, permission: Permission) => boolean
+  hasPermission: (code: string) => boolean
 }
 
 export const useUserManagementStore = create<UserManagementState>((set, get) => ({
   members: [],
   invitations: [],
+  roles: [],
+  permissionCodes: [],
   loading: false,
   error: null,
 
-  fetchMembers: async (ledgerId) => {
+  fetchMembers: async (context) => {
     set({ loading: true, error: null })
     try {
-      const members = await MemberService.getMembers(ledgerId)
-      set({ members, loading: false })
+      const members = await MemberService.getMembers(context)
+      set({ members: members.filter((m) => m.status === 'active'), loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
     }
   },
 
-  fetchInvitations: async (ledgerId) => {
+  fetchInvitations: async (context) => {
     try {
-      const { data, error } = await MemberService.getInvitations(ledgerId)
-      if (error) throw error
-      set({ invitations: data || [] })
+      const invitations = await MemberService.getPendingInvitations(context)
+      set({ invitations })
     } catch (err: any) {
       console.error(err)
     }
   },
 
-  inviteMember: async (ledgerId, email, role) => {
+  fetchRoles: async (context) => {
+    try {
+      const roles = await RoleService.getRoles(context.type)
+      set({ roles })
+    } catch (err: any) {
+      console.error(err)
+    }
+  },
+
+  fetchPermissions: async (roleId) => {
+    try {
+      const permissionCodes = await RoleService.getPermissionCodesForRole(roleId)
+      set({ permissionCodes })
+    } catch (err: any) {
+      console.error(err)
+    }
+  },
+
+  inviteMember: async (context, email, roleCode) => {
     set({ loading: true, error: null })
     try {
-      await MemberService.inviteMember(ledgerId, email, role)
-      // Refresh both members and invitations
-      const members = await MemberService.getMembers(ledgerId)
-      const { data: invitations } = await MemberService.getInvitations(ledgerId)
-      set({ members, invitations: invitations || [], loading: false })
+      await MemberService.inviteMember(context, email, roleCode)
+      const [members, invitations] = await Promise.all([
+        MemberService.getMembers(context),
+        MemberService.getPendingInvitations(context),
+      ])
+      set({ members: members.filter((m) => m.status === 'active'), invitations, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
       throw err
     }
   },
 
-  updateMemberRole: async (memberId, role) => {
+  updateMemberRole: async (memberId, roleCode) => {
     set({ loading: true, error: null })
     try {
-      await MemberService.updateMemberRole(memberId, role)
+      await MemberService.updateMemberRole(memberId, roleCode)
       set((state) => ({
-        members: state.members.map((m) => 
-          m.id === memberId ? { ...m, role } : m
+        members: state.members.map((m) =>
+          m.id === memberId ? { ...m, role: state.roles.find((r) => r.code === roleCode) ?? m.role } : m
         ),
-        loading: false
+        loading: false,
       }))
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -84,7 +106,7 @@ export const useUserManagementStore = create<UserManagementState>((set, get) => 
       await MemberService.removeMember(memberId)
       set((state) => ({
         members: state.members.filter((m) => m.id !== memberId),
-        loading: false
+        loading: false,
       }))
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -92,13 +114,13 @@ export const useUserManagementStore = create<UserManagementState>((set, get) => 
     }
   },
 
-  cancelInvitation: async (invitationId) => {
+  cancelInvitation: async (memberId) => {
     set({ loading: true, error: null })
     try {
-      await MemberService.cancelInvitation(invitationId)
+      await MemberService.cancelInvitation(memberId)
       set((state) => ({
-        invitations: state.invitations.filter((i) => i.id !== invitationId),
-        loading: false
+        invitations: state.invitations.filter((i) => i.id !== memberId),
+        loading: false,
       }))
     } catch (err: any) {
       set({ error: err.message, loading: false })
@@ -106,10 +128,5 @@ export const useUserManagementStore = create<UserManagementState>((set, get) => 
     }
   },
 
-  getPermissions: (role) => RolePermissions[role] || [],
-  
-  hasPermission: (role, permission) => {
-    const permissions = RolePermissions[role] || []
-    return permissions.includes(permission)
-  }
+  hasPermission: (code) => get().permissionCodes.includes(code),
 }))
