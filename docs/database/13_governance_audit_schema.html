@@ -1,0 +1,2031 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>13. Governance & Audit Schema - Leo Walletly</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,
+          Arial, sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.05em;
+        color: #475569;
+        padding: 0.75rem 1rem;
+        border-bottom: 2px solid #e2e8f0;
+      }
+      .schema-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        font-size: 0.875rem;
+      }
+      .schema-table tr:hover {
+        background-color: #f8fafc;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8rem;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.8rem;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin-bottom: 1rem;
+        display: flex;
+        align-items: center;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+    </style>
+  </head>
+  <body class="flex h-screen overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex h-full sticky top-0"
+    >
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-white mb-2">Governance & Audit</h1>
+        <p class="text-sm text-slate-400">Security & Compliance</p>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Core Audit
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#audit_logs"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-shoe-prints text-indigo-200 mr-2"></i> 1.
+                Audit Logs</a
+              >
+            </li>
+            <li>
+              <a
+                href="#event_store"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-stream text-indigo-200 mr-2"></i> 2. Event
+                Store</a
+              >
+            </li>
+            <li>
+              <a
+                href="#change_history"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-history text-indigo-200 mr-2"></i> 3. Change
+                History</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Policies & Access
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#data_retention_policies"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-trash-alt text-indigo-200 mr-2"></i> 4. Data
+                Retention</a
+              >
+            </li>
+            <li>
+              <a
+                href="#compliance_frameworks"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-check-circle text-indigo-200 mr-2"></i> 5.
+                Compliance</a
+              >
+            </li>
+            <li>
+              <a
+                href="#audit_policies"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-shield-alt text-indigo-200 mr-2"></i> 6. Audit
+                Policies</a
+              >
+            </li>
+            <li>
+              <a
+                href="#data_access_logs"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-eye text-indigo-200 mr-2"></i> 7. Data Access
+                Logs</a
+              >
+            </li>
+          </ul>
+        </div>
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Security & DevOps
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#api_audit_logs"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-network-wired text-indigo-200 mr-2"></i> 8.
+                API Audit Logs</a
+              >
+            </li>
+            <li>
+              <a
+                href="#security_incidents"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-user-shield text-indigo-200 mr-2"></i> 9.
+                Security Incidents</a
+              >
+            </li>
+            <li>
+              <a
+                href="#audit_export_jobs"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-file-export text-indigo-200 mr-2"></i> 10.
+                Audit Export Jobs</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto h-full">
+      <div class="p-8 max-w-6xl mx-auto">
+        <div class="mb-10">
+          <div class="flex items-center gap-3 text-slate-500 mb-4">
+            <i class="fas fa-database"></i>
+            <span>Leo Walletly Database Schema</span>
+            <i class="fas fa-chevron-right text-xs"></i>
+            <span class="text-indigo-600 font-semibold"
+              >13. Governance & Audit</span
+            >
+          </div>
+          <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight">
+            Governance & Audit System
+          </h1>
+          <p class="text-lg text-slate-600 mt-2">
+            Hệ thống nhật ký kiểm toán, quản lý sự kiện và lưu vết thay đổi.
+            (Append Only - Immutable)
+          </p>
+        </div>
+
+        <!-- Bảng Audit Logs -->
+        <section
+          id="audit_logs"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-shoe-prints mr-3"></i> 1. audit_logs
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Nhật ký kiểm toán toàn hệ thống. Ai làm gì, lúc nào. Bảng quan
+                trọng nhất của Governance.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Immutable</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Surrogate Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">actor_user_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">actor_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>user / system / api / scheduler / ai</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">action</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>CREATE_TRANSACTION, login, export...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>transaction / budget...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">old_values</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Before Change</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">new_values</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>After Change</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ip_address</td>
+                      <td><span class="type">inet</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">user_agent</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">session_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">correlation_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">success</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(jsonb_typeof(old_values)='object' OR old_values IS NULL)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_audit_entity idx_audit_actor idx_audit_action
+                  idx_audit_created_at idx_audit_request
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Event Store -->
+        <section
+          id="event_store"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-stream mr-3"></i> 2. event_store
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lưu trữ các sự kiện xảy ra (Domain Events). Điều gì đã xảy ra,
+                payload là gì. Dùng cho Event-Driven Architecture.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >EDA</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">event_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">aggregate_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">aggregate_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        aggregate_version
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">event_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">event_payload</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">source</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>api / workflow / scheduler / ai...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">correlation_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">causation_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">published</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">published_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_event_name idx_event_aggregate idx_event_created
+                  idx_event_published
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Change History -->
+        <section
+          id="change_history"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-history mr-3"></i> 3. change_history
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lịch sử phiên bản (Version History) của các Entity. Cho phép
+                "Undo" hoặc "Restore".
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Versioning</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version_no</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">changed_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">change_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>create / update / delete / restore / merge</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">diff_json</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">full_snapshot</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reason</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(entity_type, entity_id, version_no)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_history_entity idx_history_version idx_history_created
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Distributed Tracing Banner -->
+        <section
+          class="bg-violet-50 rounded-2xl shadow-sm border border-violet-200 overflow-hidden mb-12"
+        >
+          <div class="bg-violet-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-project-diagram mr-3"></i> Distributed Tracing
+              Architecture (Staff Engineer Recommendation)
+            </h2>
+            <p class="text-violet-100 text-sm mt-1">
+              Khuyến nghị nâng cấp cấu trúc Audit Log cho hệ thống Phân tán
+              (Microservices/Enterprise).
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-violet-100 shadow-sm col-span-1 md:col-span-2"
+              >
+                <p class="text-slate-700 text-sm mb-4 leading-relaxed">
+                  Thiết kế bảng <code>audit_logs</code> đã được tích hợp sẵn bộ
+                  3 khóa vàng trong Distributed Tracing (truy vết phân tán),
+                  điều mà Oracle Fusion hay Salesforce bắt buộc phải có:
+                </p>
+                <div
+                  class="overflow-x-auto border border-violet-200 rounded-lg"
+                >
+                  <table class="w-full text-left text-sm">
+                    <thead>
+                      <tr class="bg-violet-100 text-violet-900">
+                        <th
+                          class="px-4 py-3 font-semibold border-b border-violet-200"
+                        >
+                          Tracing Column
+                        </th>
+                        <th
+                          class="px-4 py-3 font-semibold border-b border-violet-200"
+                        >
+                          Chức năng & Ý nghĩa
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      class="divide-y divide-violet-50 bg-white text-slate-700"
+                    >
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          request_id
+                        </td>
+                        <td class="px-4 py-3">
+                          Định danh duy nhất cho mỗi HTTP Request (từ API
+                          Gateway). Giúp tìm chính xác log của 1 lần click
+                          chuột.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          correlation_id
+                        </td>
+                        <td class="px-4 py-3">
+                          ID xuyên suốt một luồng nghiệp vụ. Ví dụ: Từ lúc gửi
+                          API -&gt; Kích hoạt Workflow -&gt; Giao việc cho AI
+                          -&gt; Gửi Email. Dùng ID này để xâu chuỗi tất cả hành
+                          động ở các services khác nhau.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          session_id
+                        </td>
+                        <td class="px-4 py-3">
+                          Định danh phiên làm việc của user (từ lúc đăng nhập
+                          đến khi đăng xuất). Rất quan trọng khi điều tra
+                          Security (VD: user bị chiếm đoạt phiên).
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Data Retention Policies -->
+        <section
+          id="data_retention_policies"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-trash-alt mr-3"></i> 4. data_retention_policies
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quy định vòng đời dữ liệu (Data Lifecycle). Tránh phình to
+                Database. (-1 = Lưu vĩnh viễn).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Lifecycle</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">policy_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>transactions / audit_logs / ocr...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">retention_days</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>-1 = Forever</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        archive_after_days
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        delete_after_days
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        anonymize_after_days
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">legal_hold</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Khóa xóa dữ liệu nếu có tranh chấp pháp lý</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">enabled</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK (retention_days = -1 OR retention_days &gt; 0)<br />CHECK
+                  (archive_after_days IS NULL OR archive_after_days &lt;=
+                  retention_days OR retention_days = -1)
+                </div>
+              </div>
+            </div>
+            <div>
+              <h3 class="section-title">
+                <i class="fas fa-search text-slate-400 mr-2"></i> Index
+              </h3>
+              <div class="code-block">
+                idx_retention_entity idx_retention_enabled idx_retention_policy
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Compliance Frameworks -->
+        <section
+          id="compliance_frameworks"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-check-circle mr-3"></i> 5.
+                compliance_frameworks
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các tiêu chuẩn tuân thủ (GDPR, PCI DSS, SOC2,
+                ISO27001...). Rất cần thiết khi Scale Enterprise.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Metadata</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">framework_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>GDPR / PCI_DSS / SOC2...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">framework_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">enabled</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">expiry_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, framework_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_framework_code idx_framework_enabled
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Audit Policies -->
+        <section
+          id="audit_policies"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-shield-alt mr-3"></i> 6. audit_policies
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Định nghĩa chính sách Audit cho từng Entity. Tránh Audit thừa
+                thãi làm phình to DB.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Config</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">audit_create</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">audit_update</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">audit_delete</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">audit_read</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">log_old_value</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Có lưu json_b old values không?</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">log_new_value</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Có lưu json_b new values không?</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">enabled</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">idx_audit_policy_entity</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Data Access Logs -->
+        <section
+          id="data_access_logs"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-eye mr-3"></i> 7. data_access_logs
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lưu vết người dùng ĐỌC dữ liệu nhạy cảm (View, Export,
+                Download). Rất quan trọng với Bank (PCI DSS / GDPR).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Read Audit</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">user_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_type</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entity_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">access_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>view / download / export / print / api</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ip_address</td>
+                      <td><span class="type">inet</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">session_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">success</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accessed_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_access_user idx_access_entity idx_access_time
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Full GRC Suite Banner -->
+        <section
+          class="bg-cyan-50 rounded-2xl shadow-sm border border-cyan-200 overflow-hidden mb-12"
+        >
+          <div class="bg-cyan-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-balance-scale mr-3"></i> Full GRC Suite
+              Architecture (Staff Engineer Recommendation)
+            </h2>
+            <p class="text-cyan-100 text-sm mt-1">
+              Khuyến nghị nâng cấp module Compliance thành một hệ thống GRC
+              (Governance, Risk & Compliance) hoàn chỉnh theo chuẩn Enterprise.
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-cyan-100 shadow-sm col-span-1 lg:col-span-2"
+              >
+                <p class="text-slate-700 text-sm mb-4 leading-relaxed">
+                  Thay vì dùng một bảng <code>compliance_frameworks</code> tĩnh,
+                  hệ thống nên được mở rộng thành một bộ quy chuẩn hoàn chỉnh để
+                  quản lý và truy vết rủi ro, kiểm toán:
+                </p>
+                <div class="overflow-x-auto border border-cyan-200 rounded-lg">
+                  <table class="w-full text-left text-sm">
+                    <thead>
+                      <tr class="bg-cyan-100 text-cyan-900">
+                        <th
+                          class="px-4 py-3 font-semibold border-b border-cyan-200"
+                        >
+                          Bảng Đề Xuất
+                        </th>
+                        <th
+                          class="px-4 py-3 font-semibold border-b border-cyan-200"
+                        >
+                          Chức năng & Ý nghĩa (Oracle / SAP Style)
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody
+                      class="divide-y divide-cyan-50 bg-white text-slate-700"
+                    >
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          compliance_controls
+                        </td>
+                        <td class="px-4 py-3">
+                          Danh sách các điều khoản cụ thể của một Framework. VD:
+                          Điều 3.1 của PCI DSS yêu cầu mã hóa thẻ tín dụng.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          compliance_evidences
+                        </td>
+                        <td class="px-4 py-3">
+                          Bằng chứng (file logs, ảnh chụp màn hình, policies)
+                          chứng minh hệ thống đã đáp ứng control đó.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          compliance_assessments
+                        </td>
+                        <td class="px-4 py-3">
+                          Lịch sử và kết quả các đợt đánh giá định kỳ
+                          (Quarterly/Yearly) bởi Auditor bên thứ 3.
+                        </td>
+                      </tr>
+                      <tr>
+                        <td
+                          class="px-4 py-3 font-mono font-medium text-slate-900 bg-slate-50"
+                        >
+                          compliance_violations
+                        </td>
+                        <td class="px-4 py-3">
+                          Ghi nhận các vi phạm (Security Breach, Data Leak) và
+                          quá trình khắc phục (Remediation).
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng API Audit Logs -->
+        <section
+          id="api_audit_logs"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-network-wired mr-3"></i> 8. api_audit_logs
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lưu vết toàn bộ API Request (Endpoints, Status, Headers). Bảng
+                quan trọng nhất dành cho DevOps & Tracing.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >API Log</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Surrogate Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">user_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">api_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Business API Name</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">endpoint</td>
+                      <td><span class="type">varchar(500)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>URL</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">http_method</td>
+                      <td><span class="type">varchar(10)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>GET / POST / PUT / DELETE...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_headers</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_body</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">response_status</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>HTTP Status Code</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">response_body</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">duration_ms</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Response Time</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ip_address</td>
+                      <td><span class="type">inet</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">user_agent</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">correlation_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">success</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">error_code</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">error_message</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(response_status BETWEEN 100 AND 599)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_api_endpoint idx_api_request idx_api_status
+                  idx_api_created idx_api_correlation
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Security Incidents -->
+        <section
+          id="security_incidents"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-user-shield mr-3"></i> 9. security_incidents
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng quản lý sự cố an ninh cho bộ phận SOC. (Failed Login, Token
+                Leak, SQL Injection...)
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Security</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">incident_code</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Unique Code</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">incident_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>failed_login / sql_injection / api_abuse...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">severity</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>low / medium / high / critical</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">title</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">user_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ip_address</td>
+                      <td><span class="type">inet</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">device_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">session_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">request_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>open / investigating / resolved / closed</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">assigned_to</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users (SOC team)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">resolved_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_security_type idx_security_status idx_security_severity
+                  idx_security_user idx_security_created
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Audit Export Jobs -->
+        <section
+          id="audit_export_jobs"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-file-export mr-3"></i> 10. audit_export_jobs
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các Job kết xuất dữ liệu kiểm toán cho Big4 (PwC, KPMG,
+                EY, Deloitte).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Background</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">requested_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">export_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>audit_logs / api_logs / transactions...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">export_format</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>csv / xlsx / pdf / json / parquet</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">filter_json</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">row_count</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">file_size_bytes</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">storage_path</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>S3 URL</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">checksum</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>MD5/SHA256 để đảm bảo tính toàn vẹn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>pending / running / completed / failed...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">expires_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Auto delete sau ngày này</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">downloaded_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(row_count &gt;= 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_export_status idx_export_user idx_export_created
+                  idx_export_type
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Final Module Review Banner -->
+        <section
+          class="bg-slate-900 rounded-2xl shadow-xl overflow-hidden mb-12"
+        >
+          <div
+            class="bg-gradient-to-r from-teal-600 to-emerald-700 px-6 py-5 border-b border-emerald-500"
+          >
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-flag-checkered mr-3"></i> Enterprise Data
+              Governance Architecture (Final Masterpiece)
+            </h2>
+            <p class="text-emerald-100 text-sm mt-1">
+              Phân rã module Governance thành 5 trụ cột để thiết lập kiến trúc
+              Bảo mật tối đa.
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6 bg-slate-900 text-slate-300">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div
+                class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm"
+              >
+                <h4 class="font-bold text-white text-lg mb-2">
+                  <i class="fas fa-shield-virus text-red-400 mr-2"></i> Security
+                  Posture
+                </h4>
+                <p class="text-slate-400 text-sm mb-3">
+                  Ngoài việc ghi nhận Security Incidents, hệ thống nên có thêm
+                  <code>Security Alerts</code>, cấu hình thiết bị tin cậy
+                  <code>Device Trust</code> (chống Account Takeover) và tính
+                  toán <code>Risk Scores</code> cho từng giao dịch.
+                </p>
+              </div>
+
+              <div
+                class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm"
+              >
+                <h4 class="font-bold text-white text-lg mb-2">
+                  <i class="fas fa-database text-blue-400 mr-2"></i> Data
+                  Governance
+                </h4>
+                <p class="text-slate-400 text-sm mb-3">
+                  Với ngân hàng, không phải ai cũng được xem số dư. Cần có
+                  <code>Data Classification</code> (Secret, Confidential,
+                  Public), quy định ẩn danh dữ liệu
+                  <code>Data Masking Policies</code> và theo dõi luồng chảy dữ
+                  liệu <code>Data Lineage</code>.
+                </p>
+              </div>
+
+              <div
+                class="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-sm"
+              >
+                <h4 class="font-bold text-white text-lg mb-2">
+                  <i class="fas fa-check-double text-purple-400 mr-2"></i>
+                  Compliance Automation
+                </h4>
+                <p class="text-slate-400 text-sm">
+                  Đừng chỉ lưu Tên chuẩn (GDPR). Hãy lưu
+                  <code>Compliance Controls</code> chi tiết, thu thập
+                  <code>Compliance Evidences</code> tự động và tạo bảng
+                  <code>Compliance Assessments</code> để Big4 Audit dễ dàng đánh
+                  giá định kỳ.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

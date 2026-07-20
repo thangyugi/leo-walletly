@@ -1,0 +1,1915 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>07. Merchant Intelligence - Leo Walletly Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* CSS reset and styling matching the other files */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .schema-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        vertical-align: middle;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .schema-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        background: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex h-full sticky top-0"
+    >
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-white mb-2">
+          Merchant Intelligence
+        </h1>
+        <p class="text-sm text-slate-400">Database Schema Documentation</p>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Domain Tables
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#merchant_categories"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-tags text-indigo-200 mr-2"></i> 1. Merchant
+                Categories</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchants"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-store text-indigo-200 mr-2"></i> 2.
+                Merchants</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_locations"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-map-marker-alt text-indigo-200 mr-2"></i> 3.
+                Merchant Locations</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_aliases"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-font text-indigo-200 mr-2"></i> 4. Merchant
+                Aliases</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_identifiers"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-barcode text-indigo-200 mr-2"></i> 5. Merchant
+                Identifiers</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_rules"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-magic text-indigo-200 mr-2"></i> 6. Merchant
+                Rules</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_tags"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-hashtag text-indigo-200 mr-2"></i> 7. Merchant
+                Tags</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_category_mappings"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-network-wired text-indigo-200 mr-2"></i> 8.
+                Categories Mapping</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_recurring_patterns"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-sync text-indigo-200 mr-2"></i> 9. Recurring
+                Patterns</a
+              >
+            </li>
+            <li>
+              <a
+                href="#merchant_analytics"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-chart-pie text-indigo-200 mr-2"></i> 10.
+                Merchant Analytics</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+      <div class="max-w-6xl mx-auto p-8 md:p-12">
+        <!-- Bảng Merchant Categories -->
+        <section
+          id="merchant_categories"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-tags mr-3"></i> 1. merchant_categories
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân loại ngành nghề kinh doanh của Merchant (VD: Fast Food).
+                Hoàn toàn độc lập với Expense Category.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        parent_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">category_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">category_name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">mcc_code</td>
+                      <td><span class="type">varchar(10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Merchant Category Code</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">icon</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">color</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sort_order</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_system</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, category_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_merchant_category idx_parent_category
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Tách biệt
+                  Merchant Category và Expense Category
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Sự khác biệt quan trọng: Merchant McDonald's thuộc nhóm
+                    ngành kinh doanh <strong>Fast Food</strong> (Merchant
+                    Category), nhưng khi người dùng đi ăn thì có thể phân loại
+                    khoản chi phí này vào ngân sách
+                    <strong>Food & Dining</strong> (Expense Category). Thiết kế
+                    này giúp AI mapping chuẩn xác hơn mà không làm hỏng cấu trúc
+                    ngân sách.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchants -->
+        <section
+          id="merchants"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-store mr-3"></i> 2. merchants
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng thông tin Master của đơn vị bán hàng. Đây là đỉnh của tháp
+                dữ liệu (Merchant > Aliases > Identifiers).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        merchant_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → merchant_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">legal_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên pháp lý</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">display_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên hiển thị</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">brand_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">website</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">phone</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">email</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country_code</td>
+                      <td><span class="type">char(2)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>ISO3166</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">default_currency</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tax_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">logo_url</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">verified</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, merchant_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_merchant_name idx_merchant_category idx_merchant_country
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Locations -->
+        <section
+          id="merchant_locations"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-map-marker-alt mr-3"></i> 3. merchant_locations
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các chi nhánh/cửa hàng của Merchant (VD: Starbucks
+                Shibuya, Starbucks Kyoto).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Location</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">location_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">location_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">branch_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country_code</td>
+                      <td><span class="type">char(2)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>ISO3166</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">state</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">city</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">district</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">postal_code</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">address_line1</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">address_line2</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">latitude</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">longitude</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">timezone</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">phone</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_headquarters</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(merchant_id, location_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_location_merchant idx_location_city idx_location_country
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Aliases -->
+        <section
+          id="merchant_aliases"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-font mr-3"></i> 4. merchant_aliases
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng từ khóa (Alias) để AI chuẩn hóa Raw Transaction String về
+                đúng Merchant.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >AI Matching</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">alias_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">normalized_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Chuỗi đã xử lý (xóa dấu cách, ký tự đặc biệt)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">language_code</td>
+                      <td><span class="type">varchar(10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>vi, en, ja...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country_code</td>
+                      <td><span class="type">char(2)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">priority</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">100</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">confidence_score</td>
+                      <td><span class="type">numeric(5,4)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1.0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_regex</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">source</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>manual / ai / bank / import / system</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">usage_count</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Số lần AI/Rule dùng alias này để match</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">last_seen_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">embedding_vector</td>
+                      <td><span class="type">vector</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Dùng cho pgvector semantic search (Tùy chọn)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(merchant_id, normalized_name)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_alias_name idx_alias_normalized
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Embedding và Chuẩn Hóa
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bằng cách chuẩn hóa (<code>normalized_name</code>), chuỗi
+                    <code>AMZN PRIME</code> và <code>Amzn Prime</code> đều thành
+                    <code>amznprime</code>, dễ dàng match exact 100%. Nếu có
+                    pgvector (<code>embedding_vector</code>), hệ thống có thể
+                    fuzzy match cực nhanh những tên viết sai chính tả mà không
+                    cần RegExp phức tạp.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Identifiers -->
+        <section
+          id="merchant_identifiers"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-barcode mr-3"></i> 5. merchant_identifiers
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Các định danh chuẩn quốc tế hoặc ID riêng từ Bank (Terminal ID,
+                Acquirer ID). Match 100% không cần AI.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Open Banking</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">identifier_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>terminal_id, acquirer_id, iban, swift, tax_id...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">identifier_value</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">provider</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Visa, Mastercard, Plaid, Tink...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country_code</td>
+                      <td><span class="type">char(2)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">priority</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">100</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">verified</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(identifier_type, identifier_value)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_identifier idx_identifier_provider
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Rules -->
+        <section
+          id="merchant_rules"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-magic mr-3"></i> 6. merchant_rules
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quy tắc nhận diện do AI sinh ra hoặc User tự định nghĩa (Rule
+                Engine).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Automation</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">priority</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">100</span></td>
+                      <td>Rule nhỏ hơn chạy trước</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">rule_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">rule_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'exact'</span></td>
+                      <td>
+                        exact / contains / starts_with / ends_with / regex /
+                        wildcard / embedding
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">match_pattern</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Pattern cần match</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        normalized_pattern
+                      </td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Pattern chuẩn hóa</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">case_sensitive</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">enabled</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">stop_processing</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td>Match xong dừng luôn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">confidence_score</td>
+                      <td><span class="type">numeric(5,4)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1.0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">source</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'manual'</span></td>
+                      <td>manual / ai / system</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_from</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_to</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(priority >= 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_rule_priority idx_rule_enabled idx_rule_type
+                  idx_rule_merchant
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Tags -->
+        <section
+          id="merchant_tags"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-hashtag mr-3"></i> 7. merchant_tags
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân loại linh hoạt thay vì cứng nhắc như Category. (VD:
+                "Online", "Subscription", "Crypto").
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Metadata</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-table text-slate-400 mr-2"></i> merchant_tags
+                </h3>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                  <table class="schema-table">
+                    <thead>
+                      <tr>
+                        <th>Column</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="font-bold text-slate-900">id</td>
+                        <td><span class="type">uuid</span></td>
+                        <td>PK</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">tenant_id</td>
+                        <td><span class="type">uuid</span></td>
+                        <td>FK → tenants</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">tag_code</td>
+                        <td><span class="type">varchar(50)</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">tag_name</td>
+                        <td><span class="type">varchar(100)</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">color</td>
+                        <td><span class="type">varchar(20)</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">icon</td>
+                        <td><span class="type">varchar(100)</span></td>
+                        <td></td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">created_at</td>
+                        <td><span class="type">timestamptz</span></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-link text-slate-400 mr-2"></i>
+                  merchant_tag_assignments
+                </h3>
+                <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                  <table class="schema-table">
+                    <thead>
+                      <tr>
+                        <th>Column</th>
+                        <th>Type</th>
+                        <th>Description</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td class="font-bold text-slate-900">merchant_id</td>
+                        <td><span class="type">uuid</span></td>
+                        <td>FK → merchants</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">tag_id</td>
+                        <td><span class="type">uuid</span></td>
+                        <td>FK → merchant_tags</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">assigned_by</td>
+                        <td><span class="type">uuid</span></td>
+                        <td>FK → users</td>
+                      </tr>
+                      <tr>
+                        <td class="font-bold text-slate-900">assigned_at</td>
+                        <td><span class="type">timestamptz</span></td>
+                        <td></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+                <div class="mt-4">
+                  <h4 class="text-sm font-semibold text-slate-700">
+                    Constraints:
+                  </h4>
+                  <div class="code-block mt-2">UNIQUE(merchant_id, tag_id)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Category Mappings -->
+        <section
+          id="merchant_category_mappings"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-network-wired mr-3"></i> 8.
+                merchant_category_mappings
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng quy định: Cửa hàng McDonald's (Fast Food) được Map vào
+                Expense Category nào của người dùng (VD: "Food" hay "Business
+                Meal").
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Mapping</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        merchant_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchant_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        expense_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → transaction_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">priority</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">100</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">confidence</td>
+                      <td><span class="type">numeric(5,4)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1.0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">source</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'system'</span></td>
+                      <td>system / user</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(merchant_category_id, expense_category_id)
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Recurring Patterns -->
+        <section
+          id="merchant_recurring_patterns"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-sync mr-3"></i> 9. merchant_recurring_patterns
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phát hiện mẫu thanh toán định kỳ. (VD: Netflix 980 JPY mỗi
+                tháng).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Subscription AI</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">frequency</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>daily/weekly/monthly/yearly</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">expected_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Số tiền kỳ vọng</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        tolerance_percent
+                      </td>
+                      <td><span class="type">numeric(8,4)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">10</span></td>
+                      <td>Độ chênh lệch cho phép (%)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">first_seen</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">last_seen</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">occurrences</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Số lần lặp lại đã thấy</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        next_expected_date
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Dự kiến kỳ tới</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">confidence_score</td>
+                      <td><span class="type">numeric(5,4)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">auto_detected</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td>AI tự detect hay User gán</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_pattern_frequency idx_pattern_next_date idx_pattern_active
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Merchant Analytics -->
+        <section
+          id="merchant_analytics"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-chart-pie mr-3"></i> 10. merchant_analytics
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Aggregate Data hỗ trợ Dashboard và Phân tích chuyên sâu.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Analytics</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">merchant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → merchants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">analytics_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        transaction_count
+                      </td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_income</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_expense</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        average_transaction
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        first_transaction_at
+                      </td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        last_transaction_at
+                      </td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">active_users</td>
+                      <td><span class="type">bigint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">recurring_ratio</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">refund_ratio</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">anomaly_score</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Phục vụ AI Fraud Detection</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calculated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recommended Enterprise Tables -->
+        <section
+          class="bg-indigo-50 rounded-2xl shadow-sm border border-indigo-200 overflow-hidden mb-12"
+        >
+          <div class="bg-indigo-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-building mr-3"></i> Recommended Enterprise Tables
+            </h2>
+            <p class="text-indigo-100 text-sm mt-1">
+              Phần mở rộng dành cho AI FinTech chuẩn Enterprise (Theo đề xuất)
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-sitemap text-indigo-500 mr-2"></i> 11.
+                  merchant_brands
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Gom nhóm nhiều Merchant về chung một thương hiệu mẹ (VD:
+                  7-Eleven thuộc Seven & i Holdings).
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-link text-indigo-500 mr-2"></i> 12.
+                  merchant_chains
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý mạng lưới chuỗi cửa hàng để phân tích theo chuỗi thay
+                  vì chi nhánh rời rạc.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-credit-card text-indigo-500 mr-2"></i> 13.
+                  merchant_payment_methods
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý phương thức thanh toán hỗ trợ (Visa, Apple Pay,
+                  PayPay) để tối đa hóa điểm thưởng.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-shield-alt text-indigo-500 mr-2"></i> 14.
+                  merchant_risk_profiles
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Đánh giá Risk Score, Chargeback, Fraud Rate. Quan trọng cho hệ
+                  thống Cảnh báo rủi ro.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-brain text-indigo-500 mr-2"></i> 15.
+                  merchant_ai_embeddings
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Tách riêng Vector DB để quản lý phiên bản model AI mà không
+                  phình bảng alias gốc.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

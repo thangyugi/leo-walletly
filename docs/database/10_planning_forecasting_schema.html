@@ -1,0 +1,2184 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>010. Planning & Forecasting - Leo Walletly Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* CSS reset and styling matching the other files */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .schema-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        vertical-align: middle;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .schema-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        background: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex h-full sticky top-0"
+    >
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-white mb-2">
+          Planning & Forecasting
+        </h1>
+        <p class="text-sm text-slate-400">Database Schema Documentation</p>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Domain Tables
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#budget_templates"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-copy text-indigo-200 mr-2"></i> 1. Budget
+                Templates</a
+              >
+            </li>
+            <li>
+              <a
+                href="#budgets"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-wallet text-indigo-200 mr-2"></i> 2.
+                Budgets</a
+              >
+            </li>
+            <li>
+              <a
+                href="#budget_categories"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-list-ul text-indigo-200 mr-2"></i> 3. Budget
+                Categories</a
+              >
+            </li>
+            <li>
+              <a
+                href="#budget_allocations"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-sitemap text-indigo-200 mr-2"></i> 4. Budget
+                Allocations</a
+              >
+            </li>
+            <li>
+              <a
+                href="#budget_transactions"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-exchange-alt text-indigo-200 mr-2"></i> 5.
+                Budget Transactions</a
+              >
+            </li>
+            <li>
+              <a
+                href="#financial_goals"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-bullseye text-indigo-200 mr-2"></i> 6.
+                Financial Goals</a
+              >
+            </li>
+            <li>
+              <a
+                href="#forecast_models"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-project-diagram text-indigo-200 mr-2"></i> 7.
+                Forecast Models</a
+              >
+            </li>
+            <li>
+              <a
+                href="#forecast_results"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-chart-area text-indigo-200 mr-2"></i> 8.
+                Forecast Results</a
+              >
+            </li>
+            <li>
+              <a
+                href="#scenarios"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-code-branch text-indigo-200 mr-2"></i> 9.
+                Scenarios</a
+              >
+            </li>
+            <li>
+              <a
+                href="#financial_alerts"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i
+                  class="fas fa-exclamation-triangle text-indigo-200 mr-2"
+                ></i>
+                10. Financial Alerts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#planning_analytics"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-chart-pie text-indigo-200 mr-2"></i> 11.
+                Planning Analytics</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+      <div class="max-w-6xl mx-auto p-8 md:p-12">
+        <!-- Bảng Budget Templates -->
+        <section
+          id="budget_templates"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-copy mr-3"></i> 1. budget_templates
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Master Data phục vụ cho việc tạo nhanh Budget. (Ví dụ: Quy tắc
+                50/30/20, Family, Business).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">template_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">template_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">default_currency</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        recommended_income_ratio
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_system</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, template_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_budget_template idx_budget_template_active
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Budgets -->
+        <section
+          id="budgets"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-wallet mr-3"></i> 2. budgets
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Budget Header. Không lưu thông tin chi tiết từng Category tại
+                đây.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Header Entity</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">template_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → budget_templates</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">budget_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fiscal_year</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_type</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'monthly'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">base_income</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">planned_income</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">planned_expense</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">target_saving</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">budget_status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'draft'</span></td>
+                      <td>draft / active / closed / archived</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_from</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_to</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">approved_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">approved_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(effective_to >= effective_from)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_budget_year idx_budget_status idx_budget_household
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Budget Categories -->
+        <section
+          id="budget_categories"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-list-ul mr-3"></i> 3. budget_categories
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Budget Line. Định mức chi tiêu (Plan) cho từng danh mục. KHÔNG
+                LƯU số tiền thực chi (Actual) ở đây.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Plan Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">budget_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → budgets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        transaction_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → transaction_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">planned_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        warning_threshold
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0.80</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        critical_threshold
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1.00</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">rollover_enabled</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">note</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(budget_id, transaction_category_id)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_budget_category idx_budget_transaction_category
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i>
+                  Enterprise Design Principle
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này CHỈ lưu
+                    <code
+                      class="bg-indigo-100 text-indigo-800 px-1 py-0.5 rounded"
+                      >planned_amount</code
+                    >
+                    (Kế hoạch). Không bao giờ lưu
+                    <code class="bg-red-100 text-red-800 px-1 py-0.5 rounded"
+                      >actual_amount</code
+                    >
+                    (Thực tế) ở đây. Số thực tế phải được tổng hợp từ các
+                    Transaction thực (Plan vs Actual Concept) để tránh tình
+                    trạng "lệch số" kinh điển.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Budget Allocations -->
+        <section
+          id="budget_allocations"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-sitemap mr-3"></i> 4. budget_allocations
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân bổ ngân sách chi tiết cho từng giai đoạn, tài khoản, thành
+                viên hoặc dự án.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Allocation</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        budget_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → budget_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → ledger_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        household_member_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → household_members</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">project_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → projects</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">department_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → departments</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_start</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_end</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">allocated_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        allocation_method
+                      </td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'manual'</span></td>
+                      <td>
+                        manual / equal / percentage / weighted / historical /
+                        forecast
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        allocation_percentage
+                      </td>
+                      <td><span class="type">numeric(8,5)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(allocated_amount >= 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_budget_allocation idx_budget_allocation_period
+                  idx_budget_allocation_account
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Budget Transactions -->
+        <section
+          id="budget_transactions"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-exchange-alt mr-3"></i> 5. budget_transactions
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Fact Table. Liên kết giao dịch thực tế vào kế hoạch ngân sách
+                (Plan vs Actual).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Fact Table</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        budget_category_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → budget_categories</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → transactions</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">matched_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        allocation_percentage
+                      </td>
+                      <td><span class="type">numeric(8,5)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">variance_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">matched_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(budget_category_id, transaction_id)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_budget_transaction idx_budget_transaction_transaction
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Financial Goals -->
+        <section
+          id="financial_goals"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-bullseye mr-3"></i> 6. financial_goals
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Goal Engine. Thiết lập và theo dõi mục tiêu tài chính (Mua nhà,
+                Mua xe, Trả nợ).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Goal Engine</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">goal_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">goal_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>saving / investment / debt / house / vehicle...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">target_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">current_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">target_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">priority</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">3</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        contribution_frequency
+                      </td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'monthly'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        recommended_contribution
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">linked_asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        linked_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → ledger_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td>active / paused / completed / cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">completed_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(current_amount >= 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_goal_status idx_goal_target_date idx_goal_household
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Forecast Models -->
+        <section
+          id="forecast_models"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-project-diagram mr-3"></i> 7. forecast_models
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các mô hình dự báo (Linear, ARIMA, AI, Machine Learning)
+                tách biệt với kết quả dự báo.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Predictive</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">model_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">model_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>
+                        linear / moving_average / seasonal / arima / prophet /
+                        ai...
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        prediction_horizon
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số kỳ dự báo</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        training_period_months
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">parameters</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_forecast_model idx_forecast_model_active
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recommended Enterprise Tables -->
+        <section
+          class="bg-indigo-50 rounded-2xl shadow-sm border border-indigo-200 overflow-hidden mb-12"
+        >
+          <div class="bg-indigo-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-building mr-3"></i> Recommended Enterprise Tables
+            </h2>
+            <p class="text-indigo-100 text-sm mt-1">
+              Phần mở rộng dành cho hệ thống Financial Planning chuyên sâu (Theo
+              đề xuất)
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm col-span-1 md:col-span-2 lg:col-span-3"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-coins text-indigo-500 mr-2"></i>
+                  goal_contributions (Crucial Enterprise Upgrade)
+                </h4>
+                <p class="text-slate-600 text-sm mb-3">
+                  Tách biệt dòng tiền đóng góp thay vì cập nhật trực tiếp
+                  <code>current_amount</code>. Giúp tính toán báo cáo tiến độ,
+                  hoàn tác giao dịch và duy trì lịch sử biến động chính xác
+                  tuyệt đối.
+                </p>
+                <div
+                  class="bg-slate-800 rounded p-3 font-mono text-xs text-green-400 overflow-x-auto"
+                >
+                  financial_goals (1) ---> (N) goal_contributions (1) ---> (1)
+                  transactions
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Forecast Results -->
+        <section
+          id="forecast_results"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-chart-area mr-3"></i> 8. forecast_results
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Kết quả dự báo (Append Only). Một mô hình có thể chạy nhiều lần
+                tạo ra nhiều kết quả.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Predictive</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        forecast_model_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → forecast_models</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">forecast_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        forecast_period_start
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        forecast_period_end
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">dimension_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>
+                        account / category / merchant / project / overall...
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">dimension_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK Động</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">predicted_income</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        predicted_expense
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        predicted_cashflow
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        predicted_balance
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">confidence_score</td>
+                      <td><span class="type">numeric(8,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">lower_bound</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">upper_bound</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">generated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">expires_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(forecast_period_end >= forecast_period_start)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_forecast_result idx_forecast_period idx_forecast_household
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Scenarios -->
+        <section
+          id="scenarios"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-code-branch mr-3"></i> 9. scenarios
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các kịch bản tài chính (What-if analysis). Bảng siêu cấp
+                của EPM Systems.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Simulation</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">scenario_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">scenario_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>
+                        best_case / expected / worst_case / stress_test...
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">base_budget_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → budgets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">base_forecast_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → forecast_results</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">assumptions</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td>salary_change, inflation, interest_rate...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        expected_income_change
+                      </td>
+                      <td><span class="type">numeric(12,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>(%)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        expected_expense_change
+                      </td>
+                      <td><span class="type">numeric(12,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>(%)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        expected_investment_return
+                      </td>
+                      <td><span class="type">numeric(12,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">active</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">idx_scenario idx_scenario_type</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Financial Alerts -->
+        <section
+          id="financial_alerts"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-exclamation-triangle mr-3"></i> 10.
+                financial_alerts
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Cảnh báo nghiệp vụ tài chính. Độc lập với kênh Notification.
+                (VD: "Quỹ khẩn cấp cạn kiệt").
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Alerts</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">alert_type</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>
+                        budget_exceeded / goal_off_track / cashflow_warning...
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">severity</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'info'</span></td>
+                      <td>info / warning / critical</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        related_entity_type
+                      </td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>budget / goal / forecast</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        related_entity_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">title</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">message</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">threshold_value</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">actual_value</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">acknowledged</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">acknowledged_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">acknowledged_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_financial_alert idx_financial_alert_type
+                  idx_financial_alert_household
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Planning Analytics -->
+        <section
+          id="planning_analytics"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-chart-pie mr-3"></i> 11. planning_analytics
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng Aggregate tổng hợp các chỉ số KPIs từ Budget, Goal và
+                Forecast.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Analytics</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">analytics_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_budget</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_actual</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_variance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        budget_utilization
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        goal_completion_rate
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        forecast_accuracy
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        average_monthly_saving
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        projected_net_worth
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calculated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_planning_analytics idx_planning_date
+                  idx_planning_household
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recommended Enterprise Tables -->
+        <section
+          class="bg-indigo-50 rounded-2xl shadow-sm border border-indigo-200 overflow-hidden mb-12"
+        >
+          <div class="bg-indigo-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-building mr-3"></i> Recommended Enterprise Tables
+            </h2>
+            <p class="text-indigo-100 text-sm mt-1">
+              Phần mở rộng dành cho hệ thống Financial Planning chuyên sâu (Theo
+              đề xuất)
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm col-span-1 md:col-span-2 lg:col-span-3"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-history text-indigo-500 mr-2"></i>
+                  budget_versions (Crucial Enterprise Upgrade)
+                </h4>
+                <p class="text-slate-600 text-sm mb-3">
+                  Tách biệt quản lý các phiên bản (Version) của Budget thay vì
+                  overwrite bản hiện tại. Hỗ trợ quy trình phê duyệt (Workflow)
+                  ngân sách và so sánh Draft vs Revised vs Approved.
+                </p>
+                <div
+                  class="bg-slate-800 rounded p-3 font-mono text-xs text-green-400 overflow-x-auto"
+                >
+                  budgets (1) ---> (N) budget_versions (1) ---> (N)
+                  budget_categories
+                </div>
+              </div>
+
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-poll text-indigo-500 mr-2"></i>
+                  scenario_results
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Lưu trữ kết quả cụ thể của từng Scenario (Ví dụ: Cashflow khi
+                  lương giảm 10%).
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-sliders-h text-indigo-500 mr-2"></i>
+                  scenario_assumptions
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Tách các biến số (lạm phát, lãi suất) ra bảng riêng thay vì
+                  lưu JSON để query dễ hơn.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-clipboard-check text-indigo-500 mr-2"></i>
+                  budget_approval_history
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Lịch sử phê duyệt ngân sách, phục vụ cho tài chính doanh
+                  nghiệp hoặc gia đình minh bạch.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-running text-indigo-500 mr-2"></i>
+                  forecast_runs
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý Batch Job cho quá trình dự báo, ghi nhận thời gian
+                  chạy và số dòng xử lý.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-layer-group text-indigo-500 mr-2"></i>
+                  forecast_features
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Lưu trữ các Features (Đặc trưng) được dùng để huấn luyện mô
+                  hình ML (Machine Learning).
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-bullseye text-indigo-500 mr-2"></i>
+                  forecast_accuracy_history
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  So sánh Dự báo vs Thực tế sau khi kỳ dự báo kết thúc, dùng để
+                  tính MAPE và tối ưu lại Model.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,3577 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>05. Asset Management - Leo Walletly Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* CSS reset and styling matching the other files */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .schema-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        vertical-align: middle;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .schema-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        background: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-72 bg-slate-900 text-slate-300 flex flex-col h-full shrink-0 shadow-xl z-10"
+    >
+      <div class="p-6 border-b border-slate-800">
+        <h1 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-database text-indigo-400 mr-3"></i>
+          Leo Walletly
+        </h1>
+        <p class="text-xs text-slate-500 mt-2 font-mono">
+          05_asset_management_schema.html
+        </p>
+      </div>
+
+      <div class="overflow-y-auto flex-1 p-4 space-y-6">
+        <div>
+          <div
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2"
+          >
+            Domains
+          </div>
+          <ul class="space-y-1 text-sm">
+            <li>
+              <a
+                href="01_foundation_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-layer-group text-slate-500 mr-2"></i> 01.
+                Foundation</a
+              >
+            </li>
+            <li>
+              <a
+                href="02_financial_institutions_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-university text-slate-500 mr-2"></i> 02.
+                Institutions</a
+              >
+            </li>
+            <li>
+              <a
+                href="03_accounting_core_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-calculator text-slate-500 mr-2"></i> 03.
+                Accounting Core</a
+              >
+            </li>
+            <li>
+              <a
+                href="04_transaction_engine_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-exchange-alt text-slate-500 mr-2"></i> 04.
+                Transaction Engine</a
+              >
+            </li>
+            <li>
+              <a
+                href="05_asset_management_schema.html"
+                class="block py-2 px-3 rounded bg-indigo-600 text-white"
+                ><i class="fas fa-chart-line text-indigo-200 mr-2"></i> 05.
+                Asset Management</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2"
+          >
+            Tables
+          </div>
+          <ul class="space-y-1 text-sm">
+            <li>
+              <a
+                href="#asset_types"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-cubes text-indigo-200 mr-2"></i> 1. Asset
+                Types</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_classes"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-layer-group text-indigo-200 mr-2"></i> 2.
+                Asset Classes</a
+              >
+            </li>
+            <li>
+              <a
+                href="#assets"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-briefcase text-indigo-200 mr-2"></i> 3.
+                Assets</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_accounts"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-wallet text-indigo-200 mr-2"></i> 4. Asset
+                Accounts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#holdings"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-piggy-bank text-indigo-200 mr-2"></i> 5.
+                Holdings</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_transactions"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-exchange-alt text-indigo-200 mr-2"></i> 6.
+                Asset Transactions</a
+              >
+            </li>
+            <li>
+              <a
+                href="#holding_lots"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-box text-indigo-200 mr-2"></i> 7. Holding
+                Lots</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_prices"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-chart-line text-indigo-200 mr-2"></i> 7. Asset
+                Prices</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_valuations"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-camera text-indigo-200 mr-2"></i> 8. Asset
+                Valuations</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_corporate_actions"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-building text-indigo-200 mr-2"></i> 9. Asset
+                Corporate Actions</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_income_events"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-hand-holding-usd text-indigo-200 mr-2"></i>
+                10. Asset Income Events</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_cost_basis_adjustments"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-sliders-h text-indigo-200 mr-2"></i> 11. Asset
+                Cost Basis Adjustments</a
+              >
+            </li>
+            <li>
+              <a
+                href="#holding_lots"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-box text-indigo-200 mr-2"></i> 12. Holding
+                Lots</a
+              >
+            </li>
+            <li>
+              <a
+                href="#holding_lot_allocations"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-sitemap text-indigo-200 mr-2"></i> 13. Lot
+                Allocations</a
+              >
+            </li>
+            <li>
+              <a
+                href="#depreciation_books"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-book text-indigo-200 mr-2"></i> 14.
+                Depreciation Books</a
+              >
+            </li>
+            <li>
+              <a
+                href="#depreciation_rules"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-cogs text-indigo-200 mr-2"></i> 15.
+                Depreciation Rules</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_depreciation_assignments"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-link text-indigo-200 mr-2"></i> 16. Asset
+                Depr. Assignments</a
+              >
+            </li>
+            <li>
+              <a
+                href="#depreciation_history"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-history text-indigo-200 mr-2"></i> 17.
+                Depreciation History</a
+              >
+            </li>
+            <li>
+              <a
+                href="#asset_performance"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-tachometer-alt text-indigo-200 mr-2"></i> 18.
+                Asset Performance</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+      <div class="max-w-6xl mx-auto p-8 md:p-12">
+        <!-- Header -->
+        <div class="mb-10">
+          <div class="flex items-center gap-3 text-indigo-600 mb-2">
+            <i class="fas fa-chart-line text-2xl"></i>
+            <h1 class="text-3xl font-bold text-slate-900">Asset Management</h1>
+          </div>
+          <p class="text-slate-600 text-lg max-w-3xl">
+            Trái tim của Financial System. Module quản lý vòng đời tài sản
+            (Assets), định giá (Valuations) và phân bổ danh mục (Asset Classes &
+            Types) theo chuẩn Enterprise (Oracle, SAP).
+          </p>
+        </div>
+
+        <!-- Bảng Asset Types -->
+        <section
+          id="asset_types"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-cubes mr-3"></i> 1. asset_types
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân loại loại hình tài sản cốt lõi (Stock, Crypto, House,
+                Car...)
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">type_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>STOCK, HOUSE...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">type_name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Stock, House...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">parent_type_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">category</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'financial'</span></td>
+                      <td>financial / physical / digital</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_applicable
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        market_price_supported
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">allow_fraction</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">icon</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">color</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sort_order</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, type_code) CHECK(category IN ('financial',
+                  'physical', 'digital'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_type_code idx_asset_type_parent
+                  idx_asset_type_category
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-sitemap text-slate-400 mr-2"></i> Hierarchy
+                  Example
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-wrap gap-12"
+                >
+                  <div>
+                    <h4 class="font-bold text-indigo-900 mb-2">Financial</h4>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                      <li>Stock</li>
+                      <li>ETF</li>
+                      <li>Bond</li>
+                      <li>Crypto</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-indigo-900 mb-2">Physical</h4>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                      <li>House</li>
+                      <li>Car</li>
+                      <li>Gold</li>
+                    </ul>
+                  </div>
+                  <div>
+                    <h4 class="font-bold text-indigo-900 mb-2">Digital</h4>
+                    <ul class="list-disc pl-5 text-sm text-slate-700 space-y-1">
+                      <li>Domain</li>
+                      <li>NFT</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Classes -->
+        <section
+          id="asset_classes"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-layer-group mr-3"></i> 2. asset_classes
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân lớp nhóm đầu tư của tài sản (US Equity, Technology,
+                Growth...) phục vụ Asset Allocation
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Analytics</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">class_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">class_name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">parent_class_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">risk_level</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'medium'</span></td>
+                      <td>low / medium / high</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, class_code) CHECK(risk_level IN ('low',
+                  'medium', 'high'))
+                </div>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Enterprise
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100"
+                >
+                  <p class="text-sm text-slate-700">
+                    <strong>Asset Type</strong> trả lời câu hỏi
+                    <em>"Đây là tài sản gì?"</em> (Stock, Bond, Crypto...).<br /><br />
+                    <strong>Asset Class</strong> trả lời câu hỏi
+                    <em>"Thuộc nhóm đầu tư nào?"</em> (US Equity, Tech,
+                    Growth...).<br /><br />
+                    Ví dụ: AAPL có Type = Stock, nhưng Class = Technology / US
+                    Equity. Việc tách biệt giúp Dashboard tính Asset Allocation
+                    cực kỳ mạnh mẽ, phục vụ trực tiếp cho AI Advisor.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Bảng Assets -->
+        <section
+          id="assets"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-briefcase mr-3"></i> 3. assets
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Tài sản độc lập (Master Data). Chứa thông tin về tài sản, không
+                chứa số lượng/giá trị sở hữu.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_type_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → asset_types</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_class_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → asset_classes</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Mã nội bộ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">symbol</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>AAPL, BTC, NVDA...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">isin</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>ISIN quốc tế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cusip</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>US Securities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sedol</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>UK Securities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">short_name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">issuer_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Apple Inc</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">exchange_code</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>NASDAQ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">country_code</td>
+                      <td><span class="type">char(2)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>ISO3166</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">base_currency</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sector</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Technology</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">industry</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Consumer Electronics</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">inception_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">maturity_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Bond</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_tradable</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        supports_fraction
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        market_data_provider
+                      </td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Yahoo/Polygon...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">external_id</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>API Mapping</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, symbol, exchange_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_symbol idx_asset_type idx_asset_class
+                  idx_asset_exchange idx_asset_currency
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Enterprise
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này
+                    <strong
+                      >hoàn toàn không lưu Quantity, Cost, Value hay
+                      Profit/Loss</strong
+                    >. Nó giống như Master Data trong Bloomberg: Apple là Apple,
+                    không cần biết ai sở hữu. Việc sở hữu nằm ở bảng Holding.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Accounts -->
+        <section
+          id="asset_accounts"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-wallet mr-3"></i> 4. asset_accounts
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Tài khoản lưu giữ tài sản (Brokerage, Crypto Exchange, Gold
+                Vault, Két sắt...). Supertype thay vì giới hạn ở "Investment
+                Accounts".
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Storage</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">institution_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → financial_institutions</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        linked_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → bank_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_name</td>
+                      <td><span class="type">varchar(200)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'brokerage'</span></td>
+                      <td>brokerage/crypto/wallet/gold...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">base_currency</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">owner_name</td>
+                      <td><span class="type">varchar(200)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opened_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">closed_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, account_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_account_type idx_asset_account_status
+                  idx_asset_account_institution
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Bảng Holdings -->
+        <section
+          id="holdings"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-piggy-bank mr-3"></i> 5. holdings
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Current Position - Ghi nhận trạng thái sở hữu hiện tại
+                (Quantity, Cost, Market Value). Không lưu lịch sử.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Position</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → asset_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">lot_method</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">'weighted_average'</span>
+                      </td>
+                      <td>FIFO/LIFO/Weighted Average/Specific</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Số lượng hiện tại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        available_quantity
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Có thể bán</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">locked_quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Đang khóa</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">average_cost</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Giá vốn bình quân</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_cost</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tổng giá vốn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">current_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Cache giá hiện tại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_value</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Giá trị hiện tại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">unrealized_gain</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Lãi/lỗ chưa thực hiện</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">realized_gain</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Lãi/lỗ đã thực hiện</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        first_purchase_at
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        last_transaction_at
+                      </td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        last_price_updated_at
+                      </td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td>active/closed</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(asset_account_id, asset_id) CHECK(lot_method IN
+                  ('fifo', 'lifo', 'weighted_average',
+                  'specific_identification'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_holding_asset idx_holding_account idx_holding_status
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Transactions -->
+        <section
+          id="asset_transactions"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-exchange-alt mr-3"></i> 6. asset_transactions
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Giao dịch thay đổi Holding. Link trực tiếp với Transaction
+                Engine nếu có luân chuyển tiền (ví dụ: mua chứng khoán = tiền ra
+                khỏi bank).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Transaction</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holdings</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → transactions (Transaction Engine)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → asset_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>buy/sell/dividend/split/fee/tax...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">trade_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">settlement_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">unit_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">gross_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">commission</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fee</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tax</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">net_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">exchange_rate</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">note</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(quantity > 0) CHECK(unit_price >= 0)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_tx_holding idx_asset_tx_asset idx_asset_tx_date
+                  idx_asset_tx_type
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Enterprise
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100"
+                >
+                  <p class="text-sm text-slate-700">
+                    <strong>Asset Transaction Engine</strong> duy nhất cho mọi
+                    tài sản: Stock, ETF, Crypto, Gold, Real Estate, Options...
+                    <br /><br />
+                    Khi Buy: Holding Quantity ++
+                    <br />
+                    Khi Sell: Holding Quantity --
+                    <br />
+                    Khi Dividend: Tạo thêm Income Transaction trong Accounting
+                    Engine (nếu là tiền mặt) để chạy qua Subledger.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Prices -->
+        <section
+          id="asset_prices"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-chart-line mr-3"></i> 7. asset_prices
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lịch sử giá thị trường theo ngày của các tài sản (Market Data
+                Time Series).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Market Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">provider</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Yahoo, Polygon, AlphaVantage...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày giao dịch</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_time</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Thời điểm lấy giá</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">open_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">high_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">low_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">close_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        adjusted_close_price
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        previous_close_price
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">bid_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ask_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">volume</td>
+                      <td><span class="type">numeric(30,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_cap</td>
+                      <td><span class="type">numeric(30,2)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">source_reference</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>API ID</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">imported_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(asset_id, provider, market_date)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_price_asset idx_asset_price_date
+                  idx_asset_price_provider
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Enterprise
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Trong Finance, <strong>Price luôn là Time Series</strong>,
+                    không bao giờ overwrite. Nếu bạn chỉ lưu
+                    <code>current_price</code> trong bảng assets, bạn sẽ mất
+                    lịch sử.
+                  </p>
+                  <p class="text-sm text-slate-700">
+                    Current Price của một tài sản =
+                    <code
+                      >SELECT close_price FROM asset_prices ORDER BY market_date
+                      DESC LIMIT 1</code
+                    >.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Valuations -->
+        <section
+          id="asset_valuations"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-camera mr-3"></i> 8. asset_valuations
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Snapshot giá trị của Holding theo từng ngày, phục vụ vẽ biểu đồ
+                và phân tích lịch sử danh mục đầu tư.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Snapshot</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holdings</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">valuation_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Snapshot</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_price</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">market_value</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">average_cost</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cost_basis</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">unrealized_gain</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        unrealized_gain_percent
+                      </td>
+                      <td><span class="type">numeric(12,6)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">realized_gain</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">daily_change</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        daily_change_percent
+                      </td>
+                      <td><span class="type">numeric(12,6)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">exchange_rate</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        valuation_currency
+                      </td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(holding_id, valuation_date)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_asset_valuation_holding idx_asset_valuation_date
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Phân biệt
+                  Holding vs Valuation
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    <strong>Holding</strong>: Vị thế duy nhất hiện tại. Thay đổi
+                    mỗi khi có giao dịch hoặc giá mới.<br />
+                    <strong>Valuation</strong>: Là 1 bức ảnh chụp lại (Snapshot)
+                    vào mỗi cuối ngày. Nhờ có nó, người dùng mới vẽ biểu đồ số
+                    dư tăng giảm theo thời gian.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Corporate Actions -->
+        <section
+          id="asset_corporate_actions"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-building mr-3"></i> 9. asset_corporate_actions
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Các sự kiện doanh nghiệp như Stock Split, Merger, Spin-off...
+                (Tác động tới Holding/Cost nhưng không phải Transaction mua bán)
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Event</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets (Asset bị tác động)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">action_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>split / reverse_split / merger...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày hiệu lực</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        announcement_date
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ngày công bố</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ratio_from</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Tỷ lệ cũ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ratio_to</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Tỷ lệ mới</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">old_asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → assets (Asset cũ)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">new_asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → assets (Asset mới)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cash_component</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tiền mặt kèm theo</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency</td>
+                      <td><span class="type">varchar(3)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'pending'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(ratio_from > 0 AND ratio_to > 0) CHECK(action_type IN
+                  ('split', 'reverse_split', 'stock_dividend', 'merger',
+                  'spin_off', 'conversion', 'rights_issue', 'symbol_change'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_corporate_action_asset idx_corporate_action_date
+                  idx_corporate_action_type
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Income Events -->
+        <section
+          id="asset_income_events"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-hand-holding-usd mr-3"></i> 11.
+                asset_income_events
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Các khoản thu nhập từ tài sản như Dividend, Interest, Coupon...
+                (Tự động tạo Journal Entry vào hệ thống kế toán).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Income</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holdings</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">income_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>dividend / interest / coupon...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">declaration_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ngày công bố</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ex_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ngày giao dịch không hưởng quyền</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày nhận tiền</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số lượng tính income</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">rate</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Cổ tức / Share</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">gross_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Trước thuế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tax_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tiền thuế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fee_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phí</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">net_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Thực nhận</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency</td>
+                      <td><span class="type">varchar(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'pending'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(gross_amount >= 0) CHECK(net_amount >= 0)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_income_asset idx_income_payment_date idx_income_type
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Cost Basis Adjustments -->
+        <section
+          id="asset_cost_basis_adjustments"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-sliders-h mr-3"></i> 12.
+                asset_cost_basis_adjustments
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Điều chỉnh giá vốn của Holding Lot (Return of Capital, Wash
+                Sale, Split...). Không phải giao dịch mua bán.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Tax & Accounting</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_lot_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holding_lots</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">adjustment_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>return_of_capital / wash_sale / split...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">adjustment_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Mức điều chỉnh giá vốn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        quantity_adjustment
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Điều chỉnh lượng nếu có</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency</td>
+                      <td><span class="type">varchar(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reason</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reference_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Liên kết giao dịch gốc nếu có</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(amount <> 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_cost_adjustment_lot idx_cost_adjustment_asset
+                  idx_cost_adjustment_date
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Enterprise
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này là trái tim của <strong>Tax Reporting</strong>. Mọi
+                    sự kiện Return of Capital hay Wash Sale không làm thay đổi
+                    số lượng tài sản, nhưng làm giảm Cost Basis, dẫn tới thay
+                    đổi Lãi/Lỗ.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Holding Lots -->
+        <section
+          id="holding_lots"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-box mr-3"></i> 12. holding_lots
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lô tài sản chi tiết của từng lần mua, dùng để tính giá vốn và
+                quản lý FIFO/LIFO. Nền tảng cho Realized Gain/Loss.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Cost Basis</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holdings</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        asset_transaction_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → asset_transactions (Giao dịch tạo lot)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">acquisition_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày mua</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        original_quantity
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số lượng ban đầu</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        remaining_quantity
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số lượng còn lại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">unit_cost</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Giá vốn / unit</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_cost</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tổng giá vốn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency</td>
+                      <td><span class="type">varchar(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">lot_status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'open'</span></td>
+                      <td>open / partially_closed / closed</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">closed_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(remaining_quantity >= 0) UNIQUE(asset_transaction_id) --
+                  1 BUY transaction tạo 1 lot
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_holding_lots_holding idx_holding_lots_asset
+                  idx_holding_lots_status idx_holding_lots_acquisition_date
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Lot Allocations -->
+        <section
+          id="holding_lot_allocations"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-sitemap mr-3"></i> 13. holding_lot_allocations
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Realized Gain/Loss Engine. Mapping giao dịch SELL vào các
+                Holding Lots để tính chính xác chi phí vốn và lãi lỗ.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Realized Gain/Loss</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        sell_transaction_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → asset_transactions (Giao dịch SELL)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_lot_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holding_lots (Lot bị consume)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quantity</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số lượng bị consume</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cost_basis</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Giá vốn bị bán</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">proceeds</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tiền thu về từ lượng này</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">realized_gain</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Lãi thực hiện (Proceeds - Cost Basis)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Tại sao
+                  lại quan trọng?
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này giải quyết bài toán:
+                    <strong>Bán 15 cổ thì lấy từ đâu?</strong> FIFO sẽ trừ 10 cổ
+                    từ Lot 1 và 5 cổ từ Lot 2, sinh ra 2 dòng Lot Allocation với
+                    <code>realized_gain</code> riêng biệt. Đây là "Nguồn sự
+                    thật" duy nhất cho Realized Gain/Loss.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Depreciation Books -->
+        <section
+          id="depreciation_books"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-book mr-3"></i> 14. depreciation_books
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Sổ khấu hao (Corporate Book, Tax Book...). Một tài sản có thể áp
+                dụng nhiều cách tính khấu hao khác nhau tùy theo sổ (Book).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Fixed Assets</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ledger_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → ledgers</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên sổ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">book_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>corporate / tax / ifrs / management</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency</td>
+                      <td><span class="type">varchar(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calendar_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → calendars</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">UNIQUE(ledger_id, name)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_depreciation_book_ledger idx_depreciation_book_status
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Depreciation Rules -->
+        <section
+          id="depreciation_rules"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-cogs mr-3"></i> 15. depreciation_rules
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quy tắc tính khấu hao. Một Rule chỉ thuộc về 1 Book. Định nghĩa
+                Method, Life, và Convention.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Accounting Policy</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_book_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → depreciation_books</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên Rule</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_method
+                      </td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>straight_line / declining_balance...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        useful_life_months
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Thời gian khấu hao</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">residual_value</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Giá trị thu hồi</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_frequency
+                      </td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'monthly'</span></td>
+                      <td>Tần suất</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">convention</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Quy ước ngày bắt đầu (full_month, mid_period...)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(useful_life_months > 0) CHECK(residual_value >= 0)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_depreciation_rule_book idx_depreciation_rule_method
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Depreciation Assignments -->
+        <section
+          id="asset_depreciation_assignments"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-link mr-3"></i> 16.
+                asset_depreciation_assignments
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng gán Asset với một Depreciation Rule cụ thể. Theo dõi
+                Accumulation và Book Value.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Assignment</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td>PK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_rule_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td>FK → depreciation_rules</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">start_date</td>
+                      <td><span class="type">date</span></td>
+                      <td>Ngày bắt đầu khấu hao theo Convention</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciable_basis
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td>Cost Basis để tính khấu hao</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        accumulated_depreciation
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td>Lũy kế khấu hao hiện tại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        current_book_value
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td>Net Book Value hiện tại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td>active / closed</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+        <!-- Bảng Depreciation History -->
+        <section
+          id="depreciation_history"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-history mr-3"></i> 17. depreciation_history
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lịch sử khấu hao hàng tháng, liên kết với Journal Entries nếu có
+                hạch toán. Append Only.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >History</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_rule_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → depreciation_rules</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_date
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        depreciation_amount
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        accumulated_depreciation
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        remaining_book_value
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">journal_entry_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → journal_entries</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Asset Performance -->
+        <section
+          id="asset_performance"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-tachometer-alt mr-3"></i> 18. asset_performance
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Các chỉ số KPIs tài chính (Sharpe Ratio, Volatility, Alpha,
+                Beta...) phục vụ đánh giá năng lực danh mục.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Analytics</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">holding_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → holdings</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">performance_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">daily_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">weekly_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">monthly_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">quarterly_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">yearly_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_return</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        annualized_return
+                      </td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>CAGR</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">volatility</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sharpe_ratio</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">max_drawdown</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">beta</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">alpha</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calculated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-sitemap text-slate-400 mr-2"></i> Luồng dữ
+                  liệu hiệu suất (Data Flow)
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100"
+                >
+                  <p class="text-sm text-slate-700">
+                    <code>Asset Transactions</code> +
+                    <code>Asset Prices</code> → <code>Holdings</code> →
+                    <code>Valuation</code> → <strong>Performance</strong> →
+                    <code>Dashboard</code>
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

@@ -1,0 +1,2611 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>06. Liability Management - Leo Walletly Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* CSS reset and styling matching the other files */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .schema-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        vertical-align: middle;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .schema-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        background: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-64 bg-slate-900 text-slate-300 flex flex-col hidden md:flex h-full sticky top-0"
+    >
+      <div class="p-6">
+        <h1 class="text-2xl font-bold text-white mb-2">Liability Management</h1>
+        <p class="text-sm text-slate-400">Database Schema Documentation</p>
+      </div>
+      <div class="flex-1 overflow-y-auto">
+        <div class="px-4 pb-6">
+          <h3
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3"
+          >
+            Domain Tables
+          </h3>
+          <ul class="space-y-1">
+            <li>
+              <a
+                href="#liability_types"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-tags text-indigo-200 mr-2"></i> 1. Liability
+                Types</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liabilities"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-file-contract text-indigo-200 mr-2"></i> 2.
+                Liabilities</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_accounts"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-wallet text-indigo-200 mr-2"></i> 3. Liability
+                Accounts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#loan_contracts"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-file-signature text-indigo-200 mr-2"></i> 4.
+                Loan Contracts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#credit_facilities"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-credit-card text-indigo-200 mr-2"></i> 5.
+                Credit Facilities</a
+              >
+            </li>
+            <li>
+              <a
+                href="#repayment_schedules"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-calendar-alt text-indigo-200 mr-2"></i> 6.
+                Repayment Schedules</a
+              >
+            </li>
+            <li>
+              <a
+                href="#interest_rate_history"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-percentage text-indigo-200 mr-2"></i> 7.
+                Interest Rate History</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_transactions"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-exchange-alt text-indigo-200 mr-2"></i> 8.
+                Liability Transactions</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_transaction_allocations"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-project-diagram text-indigo-200 mr-2"></i> 9.
+                Transaction Allocations</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_balances"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-balance-scale text-indigo-200 mr-2"></i> 10.
+                Liability Balances</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_statements"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-file-invoice text-indigo-200 mr-2"></i> 11.
+                Liability Statements</a
+              >
+            </li>
+            <li>
+              <a
+                href="#liability_performance"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-chart-line text-indigo-200 mr-2"></i> 12.
+                Liability Performance</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+      <div class="max-w-6xl mx-auto p-8 md:p-12">
+        <!-- Bảng Liability Types -->
+        <section
+          id="liability_types"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-tags mr-3"></i> 1. liability_types
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân loại các khoản nợ (Loan, Credit Card, Mortgage...). Thiết
+                kế dạng cây phân cấp (Parent - Child).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">type_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>HOME_LOAN, CREDIT_CARD...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">type_name</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Home Loan</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">parent_type_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">category</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'loan'</span></td>
+                      <td>
+                        loan / credit_line / credit_card / installment /
+                        mortgage / tax / other
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">secured</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Có tài sản đảm bảo không</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        interest_supported
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td>Có tính lãi không</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        allow_multiple_drawdown
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Cho phép giải ngân nhiều lần (Revolving)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">icon</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">color</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">sort_order</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, type_code) CHECK(category IN ('loan',
+                  'credit_line', 'credit_card', 'installment', 'mortgage',
+                  'tax', 'other'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_type_code idx_liability_type_parent
+                  idx_liability_type_category
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Tư duy
+                  ERP
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Phân tách rõ ràng giữa <strong>Thực thể khoản nợ</strong> và
+                    <strong>Loại hình khoản nợ</strong>. Giúp hệ thống dễ dàng
+                    mở rộng khi xuất hiện các sản phẩm tài chính mới như BNPL
+                    (Mua trước trả sau) hay P2P Lending mà không cần sửa schema.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liabilities -->
+        <section
+          id="liabilities"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-file-contract mr-3"></i> 2. liabilities
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng Master lưu thông tin gốc của Khoản Nợ. Không lưu số dư
+                (Balance) vì số dư là con số động (dynamic) theo thời gian.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        liability_type_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liability_types</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">institution_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → institutions (Ngân hàng/Tổ chức cho vay)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Mã khoản nợ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên định danh (VD: Khoản vay mua xe VIB)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">lender_name</td>
+                      <td><span class="type">varchar(255)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Bên cho vay (nếu không có institution_id)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Số tài khoản vay</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">contract_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Số hợp đồng</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">original_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Hạn mức / Dư nợ ban đầu</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        original_interest_rate
+                      </td>
+                      <td><span class="type">numeric(10,6)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Lãi suất ban đầu (%)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">origination_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ngày giải ngân / Bắt đầu</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">maturity_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ngày đáo hạn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">secured_asset_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → assets (Tài sản đảm bảo)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td>active / closed / default / charged_off</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">notes</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, liability_code) CHECK(original_amount >= 0)
+                  CHECK(status IN ('active', 'closed', 'default',
+                  'charged_off'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_type idx_liability_status idx_liability_currency
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Nguyên
+                  tắc Thiết Kế
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này <strong>KHÔNG LƯU</strong>
+                    <code>Current Balance</code>,
+                    <code>Interest Accrued</code> hay
+                    <code>Monthly Payment</code>. Đó là lỗi thiết kế chí mạng
+                    của 90% app tài chính vì các con số này luôn thay đổi. Số dư
+                    thực tế sẽ được tính toán qua
+                    <strong>Transactions</strong> hoặc lưu trong các bảng
+                    <strong>Balance Snapshots</strong>.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Accounts -->
+        <section
+          id="liability_accounts"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-wallet mr-3"></i> 3. liability_accounts
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Tài khoản để quản lý khoản nợ. Cho phép 1 khoản nợ (VD: Thẻ tín
+                dụng) có nhiều tài khoản phụ (Thẻ chính, Thẻ phụ).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Account</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">institution_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → institutions</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        linked_bank_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → bank_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_code</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_name</td>
+                      <td><span class="type">varchar(200)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">credit_limit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">available_credit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">minimum_payment</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_due_day</td>
+                      <td><span class="type">smallint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>1-31</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">statement_day</td>
+                      <td><span class="type">smallint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>1-31</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">auto_payment</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        auto_payment_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → bank_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opened_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">closed_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(tenant_id, account_code)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_account idx_liability_status
+                  idx_liability_institution
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Loan Contracts -->
+        <section
+          id="loan_contracts"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-file-signature mr-3"></i> 4. loan_contracts
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các khoản nợ dạng Hợp đồng vay (Amortized, Balloon,
+                Bullet...) với vốn gốc cố định.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Loan Contract</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">contract_no</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">contract_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'amortized'</span></td>
+                      <td>amortized / interest_only / balloon / bullet...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">principal_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_type</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>fixed / floating / hybrid</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        compounding_frequency
+                      </td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'monthly'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        repayment_frequency
+                      </td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'monthly'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">start_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">end_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        grace_period_months
+                      </td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        collateral_asset_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → assets</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        early_payment_allowed
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">penalty_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(liability_id, contract_no) CHECK(contract_type IN
+                  ('amortized', 'interest_only', 'balloon', 'revolving',
+                  'bullet')) CHECK(interest_type IN ('fixed', 'floating',
+                  'hybrid'))
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_contract_liability idx_contract_end_date
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Credit Facilities -->
+        <section
+          id="credit_facilities"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-credit-card mr-3"></i> 5. credit_facilities
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Quản lý các Hạn mức Tín dụng (Credit Card, Overdraft, Line of
+                Credit). Không có Principal cố định.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Revolving Credit</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">facility_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>
+                        credit_card / overdraft / margin / line_of_credit / bnpl
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">credit_limit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">available_limit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">current_balance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Cache để UI load nhanh</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        billing_cycle_day
+                      </td>
+                      <td><span class="type">smallint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_due_day</td>
+                      <td><span class="type">smallint</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        minimum_payment_rate
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        cash_advance_limit
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">annual_fee</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reward_program</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opened_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">expires_at</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(facility_type IN ('credit_card', 'overdraft', 'margin',
+                  'line_of_credit', 'bnpl'))
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Repayment Schedules -->
+        <section
+          id="repayment_schedules"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-calendar-alt mr-3"></i> 6. repayment_schedules
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Kế hoạch trả nợ định kỳ của Loan Contract (Home Loan, Auto
+                Loan).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Amortization</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">loan_contract_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → loan_contracts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">installment_no</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Kỳ trả thứ N</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">due_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày đến hạn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        opening_principal
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Dư nợ đầu kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        scheduled_principal
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Gốc phải trả</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        scheduled_interest
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Lãi phải trả</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">scheduled_fee</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phí</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">scheduled_tax</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thuế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_due</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tổng phải trả</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        remaining_principal
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Dư nợ cuối kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'pending'</span></td>
+                      <td>
+                        pending / partial / paid / overdue / waived / cancelled
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">paid_principal</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">paid_interest</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">paid_fee</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">paid_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(loan_contract_id, installment_no)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_schedule_contract idx_schedule_due_date
+                  idx_schedule_status
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Interest Rate History -->
+        <section
+          id="interest_rate_history"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-percentage mr-3"></i> 7. interest_rate_history
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Lịch sử thay đổi lãi suất. Rất quan trọng cho các khoản vay thả
+                nổi (Floating rate).
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Time Series</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_from</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_to</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>NULL = current rate</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Lãi suất (%)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_type</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>fixed / floating</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reference_rate</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>SOFR, LIBOR...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">spread</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Biên độ cộng thêm</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">changed_reason</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">approved_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  CHECK(effective_to IS NULL OR effective_to >= effective_from)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_interest_history idx_interest_effective
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Transactions -->
+        <section
+          id="liability_transactions"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-exchange-alt mr-3"></i> 8.
+                liability_transactions
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Source of Truth của Liability. Mọi phát sinh (Mua sắm, Tính lãi,
+                Đóng phí, Trả nợ) đều tạo Transaction.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Source of Truth</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        liability_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → liability_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        repayment_schedule_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → repayment_schedules (nếu map với schedule)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>
+                        FK → transactions (liên kết hệ thống kế toán chính)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>
+                        drawdown / payment / prepayment / interest / fee...
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày giao dịch thực tế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">posting_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày hạch toán</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">principal_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thành phần Gốc</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thành phần Lãi</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fee_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thành phần Phí</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">penalty_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thành phần Phạt</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tax_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Thành phần Thuế</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tổng số tiền giao dịch</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">balance_after</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Dư nợ gốc sau giao dịch</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reference_no</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Mã tham chiếu NH</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">note</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">CHECK(total_amount >= 0)</div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_tx idx_liability_tx_date idx_liability_tx_type
+                </div>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Nguyên
+                  tắc Thiết Kế Event-Sourcing
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Bảng này giải quyết bài toán:
+                    <strong
+                      >Không module nào được quyền cập nhật trực tiếp
+                      `liabilities`</strong
+                    >. Dư nợ khoản vay luôn có thể tính toán lại bằng cách lấy
+                    Tổng Phát Sinh Tăng (Drawdown, Interest) trừ Tổng Phát Sinh
+                    Giảm (Payment, Write-off) từ bảng Transaction này.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Transaction Allocations -->
+        <section
+          id="liability_transaction_allocations"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-project-diagram mr-3"></i> 9.
+                liability_transaction_allocations
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Phân bổ chi tiết số tiền (Payment) vào từng thành phần nợ
+                (Principal, Interest, Fee). (Đề xuất Enterprise)
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Allocation</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        liability_transaction_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liability_transactions</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">allocation_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>principal / interest / fee / penalty / tax</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số tiền được phân bổ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        applied_to_schedule_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → repayment_schedules</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 mt-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lightbulb text-slate-400 mr-2"></i> Kiến trúc
+                  Phân Bổ
+                </h3>
+                <div
+                  class="bg-indigo-50 p-4 rounded-xl border border-indigo-100 flex flex-col gap-3"
+                >
+                  <p class="text-sm text-slate-700">
+                    Khi user trả 100,000,
+                    <code>liability_transactions</code> tạo 1 dòng 100,000. Bảng
+                    này sẽ tạo 4 dòng: 82,000 (Principal), 15,000 (Interest),
+                    2,000 (Fee) và 1,000 (Tax). Điều này giúp hệ thống đáp ứng
+                    dễ dàng các thuật toán thu nợ phức tạp (VD: thu nợ lãi
+                    trước, gốc sau; hoặc thu nợ gốc trước, lãi sau tùy quy định
+                    quốc gia) và tạo Accounting Journal Entry chuẩn xác.
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Balances -->
+        <section
+          id="liability_balances"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-balance-scale mr-3"></i> 10. liability_balances
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Số dư tại một thời điểm (Snapshot). Cho phép rebuild lại số dư ở
+                bất kỳ thời gian nào từ Transaction Engine.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Snapshot</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        liability_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → liability_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">snapshot_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày chụp số dư</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_balance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        principal_balance
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Gốc còn lại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accrued_interest</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Lãi cộng dồn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accrued_fee</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phí cộng dồn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accrued_penalty</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phạt cộng dồn</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_balance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tổng dư nợ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">available_credit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Hạn mức còn lại</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">credit_limit</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">utilization_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>% sử dụng hạn mức</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">overdue_amount</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">days_past_due</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calculated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(liability_id, snapshot_date)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_balance idx_liability_balance_date
+                  idx_liability_balance_account
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Statements -->
+        <section
+          id="liability_statements"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-file-invoice mr-3"></i> 11.
+                liability_statements
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Sao kê theo chu kỳ của Khoản Nợ. Giống với Credit Card Statement
+                hay Bank Statement.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Billing</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        liability_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liability_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">statement_no</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        statement_period_start
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        statement_period_end
+                      </td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">statement_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_due_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_balance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">closing_balance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">minimum_payment</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">payment_received</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">interest_charged</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fee_charged</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">new_charges</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cash_advance</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reward_points</td>
+                      <td><span class="type">numeric(20,4)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'issued'</span></td>
+                      <td>draft / issued / paid / overdue / cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        pdf_attachment_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → attachments</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">imported_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  UNIQUE(liability_account_id, statement_no)
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_statement_account idx_statement_date
+                  idx_statement_due_date
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Liability Performance -->
+        <section
+          id="liability_performance"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div
+            class="bg-indigo-600 px-6 py-4 flex items-center justify-between"
+          >
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-chart-line mr-3"></i> 12. liability_performance
+              </h2>
+              <p class="text-indigo-100 text-sm mt-1">
+                Bảng lưu dữ liệu Analytics tổng hợp. Hỗ trợ cho Dashboard và AI
+                đưa ra khuyến nghị.
+              </p>
+            </div>
+            <span
+              class="bg-indigo-800 text-indigo-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Analytics</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">liability_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → liabilities</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">performance_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        outstanding_balance
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_paid</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        total_interest_paid
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_fee_paid</td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        total_penalty_paid
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        principal_reduction
+                      </td>
+                      <td><span class="type">numeric(30,12)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        repayment_progress
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>% hoàn thành</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">utilization_rate</td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        debt_to_income_ratio
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        payment_on_time_rate
+                      </td>
+                      <td><span class="type">numeric(12,8)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        average_days_late
+                      </td>
+                      <td><span class="type">numeric(12,4)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">calculated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-search text-slate-400 mr-2"></i> Index
+                </h3>
+                <div class="code-block">
+                  idx_liability_perf idx_liability_perf_date
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Recommended Enterprise Tables -->
+        <section
+          class="bg-indigo-50 rounded-2xl shadow-sm border border-indigo-200 overflow-hidden mb-12"
+        >
+          <div class="bg-indigo-600 px-6 py-4">
+            <h2 class="font-bold text-white text-2xl flex items-center">
+              <i class="fas fa-building mr-3"></i> Recommended Enterprise Tables
+            </h2>
+            <p class="text-indigo-100 text-sm mt-1">
+              Phần mở rộng dành cho Core Loan Servicing chuẩn Enterprise (Theo
+              đề xuất)
+            </p>
+          </div>
+          <div class="p-6 md:p-8 space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-home text-indigo-500 mr-2"></i> 13.
+                  liability_collaterals
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý tài sản đảm bảo. Hỗ trợ nhiều tài sản đảm bảo cho một
+                  khoản vay và ngược lại.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-users text-indigo-500 mr-2"></i> 14.
+                  liability_guarantors
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý người bảo lãnh, đồng vay (Co-borrower) hoặc tổ chức
+                  bảo lãnh khoản vay.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-calculator text-indigo-500 mr-2"></i> 15.
+                  interest_accruals
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Lưu từng lần tính lãi phát sinh theo ngày/tháng để đối chiếu
+                  và sinh Journal Entry chuẩn xác.
+                </p>
+              </div>
+              <div
+                class="bg-white p-5 rounded-xl border border-indigo-100 shadow-sm"
+              >
+                <h4 class="font-bold text-indigo-900 text-lg mb-2">
+                  <i class="fas fa-file-contract text-indigo-500 mr-2"></i> 16.
+                  debt_restructuring
+                </h4>
+                <p class="text-slate-600 text-sm">
+                  Quản lý sự kiện gia hạn, điều chỉnh lãi suất, cơ cấu lại nợ,
+                  khoanh nợ, miễn giảm lãi/phí.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

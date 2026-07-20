@@ -1,0 +1,1877 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>03. Accounting Core - Leo Walletly Database Schema</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+    <style>
+      /* CSS reset and styling matching the other files */
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", sans-serif;
+        background-color: #f8fafc;
+      }
+      .schema-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+      }
+      .schema-table th {
+        background-color: #f1f5f9;
+        padding: 12px 16px;
+        text-align: left;
+        font-size: 13px;
+        font-weight: 600;
+        color: #475569;
+        border-bottom: 1px solid #e2e8f0;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .schema-table td {
+        padding: 12px 16px;
+        font-size: 14px;
+        border-bottom: 1px solid #e2e8f0;
+        color: #334155;
+        vertical-align: middle;
+      }
+      .schema-table tr:last-child td {
+        border-bottom: none;
+      }
+      .schema-table tbody tr:hover {
+        background-color: #f8fafc;
+      }
+      .type {
+        color: #0284c7;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+        background: #f0f9ff;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .default-val {
+        color: #16a34a;
+        font-family:
+          ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 13px;
+      }
+      .section-title {
+        font-size: 1.125rem;
+        font-weight: 600;
+        color: #0f172a;
+        margin-bottom: 1rem;
+        border-bottom: 2px solid #e2e8f0;
+        padding-bottom: 0.5rem;
+      }
+      .code-block {
+        background-color: #1e293b;
+        color: #e2e8f0;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        font-family: ui-monospace, monospace;
+        font-size: 0.875rem;
+        overflow-x: auto;
+      }
+
+      /* Custom scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800 h-screen flex overflow-hidden">
+    <!-- Sidebar -->
+    <aside
+      class="w-72 bg-slate-900 text-slate-300 flex flex-col h-full shrink-0 shadow-xl z-10"
+    >
+      <div class="p-6 border-b border-slate-800">
+        <h1 class="text-xl font-bold text-white flex items-center">
+          <i class="fas fa-database text-blue-400 mr-3"></i>
+          Leo Walletly
+        </h1>
+        <p class="text-xs text-slate-500 mt-2 font-mono">
+          03_accounting_core_schema.html
+        </p>
+      </div>
+
+      <div class="overflow-y-auto flex-1 p-4 space-y-6">
+        <div>
+          <div
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2"
+          >
+            Domains
+          </div>
+          <ul class="space-y-1 text-sm">
+            <li>
+              <a
+                href="01_foundation_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-layer-group text-slate-500 mr-2"></i> 01.
+                Foundation</a
+              >
+            </li>
+            <li>
+              <a
+                href="02_financial_institutions_schema.html"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-university text-slate-500 mr-2"></i> 02.
+                Institutions</a
+              >
+            </li>
+            <li>
+              <a
+                href="03_accounting_core_schema.html"
+                class="block py-2 px-3 rounded bg-blue-600 text-white"
+                ><i class="fas fa-calculator text-blue-200 mr-2"></i> 03.
+                Accounting Core</a
+              >
+            </li>
+          </ul>
+        </div>
+
+        <div>
+          <div
+            class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3 px-2"
+          >
+            Tables
+          </div>
+          <ul class="space-y-1 text-sm">
+            <li>
+              <a
+                href="#chart_of_accounts"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-sitemap text-blue-200 mr-2"></i> 1. Chart of
+                Accounts</a
+              >
+            </li>
+            <li>
+              <a
+                href="#gl_balances"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-balance-scale-right text-blue-200 mr-2"></i>
+                2. GL Balances</a
+              >
+            </li>
+            <li>
+              <a
+                href="#journal_entries"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-file-invoice text-blue-200 mr-2"></i> 3.
+                Journal Entries</a
+              >
+            </li>
+            <li>
+              <a
+                href="#journal_lines"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-list text-blue-200 mr-2"></i> 4. Journal
+                Lines</a
+              >
+            </li>
+            <li>
+              <a
+                href="#trial_balances"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-balance-scale text-blue-200 mr-2"></i> 5.
+                Trial Balances</a
+              >
+            </li>
+            <li>
+              <a
+                href="#closing_processes"
+                class="block py-2 px-3 rounded hover:bg-slate-800 text-slate-400"
+                ><i class="fas fa-calendar-check text-blue-200 mr-2"></i> 6.
+                Closing Process</a
+              >
+            </li>
+          </ul>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+      <div class="max-w-6xl mx-auto p-8 md:p-12">
+        <!-- Header -->
+        <div class="mb-10">
+          <div class="flex items-center gap-3 text-blue-600 mb-2">
+            <i class="fas fa-calculator text-2xl"></i>
+            <h1 class="text-3xl font-bold text-slate-900">
+              Accounting Core (General Ledger)
+            </h1>
+          </div>
+          <p class="text-slate-600 text-lg max-w-3xl">
+            Thiết kế kiến trúc General Ledger chuẩn ERP. Trái tim của hệ thống
+            lưu trữ sổ cái, số dư và Chart of Accounts. Giao dịch (Transactions)
+            sẽ được định khoản kép (Double-Entry) qua đây chứ không ghi trực
+            tiếp.
+          </p>
+        </div>
+
+        <!-- Bảng Chart of Accounts -->
+        <section
+          id="chart_of_accounts"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-sitemap mr-3"></i> 1. chart_of_accounts
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Định nghĩa toàn bộ tài khoản kế toán (COA), ví dụ 1000 Cash,
+                2000 Payable, 4000 Revenue.
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Master Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <h3 class="section-title">
+                <i class="fas fa-columns text-slate-400 mr-2"></i> Cấu trúc Cột
+              </h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants.id</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations.id</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households.id</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        parent_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK → Account cha</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Account Details
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_code</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Mã tài khoản (1000, 1100...)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_name</td>
+                      <td><span class="type">varchar(200)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Tên tài khoản (Cash, Bank...)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        account_name_local
+                      </td>
+                      <td><span class="type">varchar(200)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Tên địa phương</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>asset / liability / equity / revenue / expense</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">account_subtype</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>cash / bank / card...</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">normal_balance</td>
+                      <td><span class="type">varchar(10)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'debit'</span></td>
+                      <td>debit / credit</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Hierarchy & Configuration
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">level</td>
+                      <td><span class="type">smallint</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td>Level cây tài khoản</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">path</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Materialized Path (vd: 1000.1100)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">allow_posting</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">true</span></td>
+                      <td>Được phép hạch toán trực tiếp</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        allow_reconciliation
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Yêu cầu đối chiếu</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        is_control_account
+                      </td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Control Account</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">is_system</td>
+                      <td><span class="type">boolean</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">false</span></td>
+                      <td>Tài khoản tạo bởi hệ thống</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Status & Audit
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'active'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_from</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">effective_to</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">deleted_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints &
+                  Index
+                </h3>
+                <div class="code-block mb-4">
+                  -- CONSTRAINTS UNIQUE(organization_id, account_code)
+                  CHECK(account_type IN ( 'asset', 'liability', 'equity',
+                  'revenue', 'expense' ))
+                </div>
+                <div class="code-block">
+                  -- INDEX idx_coa_code idx_coa_parent idx_coa_type
+                  idx_coa_posting
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-balance-scale text-slate-400 mr-2"></i>
+                  Normal Balance Rules
+                </h3>
+                <div
+                  class="bg-blue-50 p-4 rounded-xl border border-blue-100 mb-4"
+                >
+                  <ul class="space-y-2 text-sm text-blue-900 font-medium">
+                    <li
+                      class="flex items-center justify-between pb-2 border-b border-blue-200"
+                    >
+                      <span>Asset</span>
+                      <div>
+                        <span
+                          class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mr-1"
+                          >Debit +</span
+                        >
+                        <span
+                          class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs"
+                          >Credit -</span
+                        >
+                      </div>
+                    </li>
+                    <li
+                      class="flex items-center justify-between pb-2 border-b border-blue-200"
+                    >
+                      <span>Liability</span>
+                      <div>
+                        <span
+                          class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mr-1"
+                          >Credit +</span
+                        >
+                        <span
+                          class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs"
+                          >Debit -</span
+                        >
+                      </div>
+                    </li>
+                    <li
+                      class="flex items-center justify-between pb-2 border-b border-blue-200"
+                    >
+                      <span>Equity</span>
+                      <div>
+                        <span
+                          class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mr-1"
+                          >Credit +</span
+                        >
+                        <span
+                          class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs"
+                          >Debit -</span
+                        >
+                      </div>
+                    </li>
+                    <li
+                      class="flex items-center justify-between pb-2 border-b border-blue-200"
+                    >
+                      <span>Revenue</span>
+                      <div>
+                        <span
+                          class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mr-1"
+                          >Credit +</span
+                        >
+                        <span
+                          class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs"
+                          >Debit -</span
+                        >
+                      </div>
+                    </li>
+                    <li class="flex items-center justify-between">
+                      <span>Expense</span>
+                      <div>
+                        <span
+                          class="bg-green-100 text-green-700 px-2 py-0.5 rounded text-xs mr-1"
+                          >Debit +</span
+                        >
+                        <span
+                          class="bg-red-100 text-red-700 px-2 py-0.5 rounded text-xs"
+                          >Credit -</span
+                        >
+                      </div>
+                    </li>
+                  </ul>
+                </div>
+                <div
+                  class="bg-amber-50 border border-amber-200 p-3 rounded-lg text-sm text-amber-800"
+                >
+                  <i class="fas fa-exclamation-triangle mr-1"></i> Bảng này
+                  <strong>chỉ</strong> lưu cấu trúc danh mục, tuyệt đối
+                  <strong>không</strong> lưu số dư (Balance) ở đây. Số dư được
+                  tổng hợp tại <code>gl_balances</code>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng GL Balances -->
+        <section
+          id="gl_balances"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-balance-scale-right mr-3"></i> 2. gl_balances
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Lưu trữ số dư theo kỳ kế toán (Fiscal Period), được tổng hợp từ
+                Journal Lines.
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Balance</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">chart_account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → chart_of_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fiscal_period_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → fiscal_periods</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Balances
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư Nợ đầu kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư Có đầu kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phát sinh Nợ trong kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phát sinh Có trong kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ending_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư Nợ cuối kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ending_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư Có cuối kỳ</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Status & Meta
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">last_posted_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Thời gian update gần nhất</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td>Optimistic locking</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block">
+                  -- Đảm bảo chỉ 1 bản ghi Balance cho mỗi
+                  account/period/currency UNIQUE( chart_account_id,
+                  fiscal_period_id, currency_code )
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-cogs text-slate-400 mr-2"></i> Business Logic
+                </h3>
+                <div
+                  class="bg-slate-100 p-4 rounded-lg border border-slate-200"
+                >
+                  <ul
+                    class="list-disc list-inside space-y-2 text-sm text-slate-700"
+                  >
+                    <li>
+                      Tuyệt đối không update Balance bằng tay hoặc thông qua
+                      form CRUD.
+                    </li>
+                    <li>
+                      Số dư chỉ được tính toán và post (đẩy) tự động từ
+                      <strong>Journal Lines</strong> bởi Posting Engine.
+                    </li>
+                    <li>
+                      Không lưu <code>account_name</code> ở đây, mà JOIN qua
+                      bảng Chart of Accounts.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Journal Entries -->
+        <section
+          id="journal_entries"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-file-invoice mr-3"></i> 3. journal_entries
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Header của chứng từ kế toán. Đại diện cho một bút toán
+                (GL_JE_HEADERS).
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Transaction</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <h3 class="section-title">
+                <i class="fas fa-columns text-slate-400 mr-2"></i> Cấu trúc Cột
+              </h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Entry Identification
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">journal_number</td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Số chứng từ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">journal_source</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>transaction / import / manual / system</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">journal_category</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>payment / receipt / transfer / adjustment...</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Dates & Fiscal
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accounting_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày hạch toán (ghi sổ)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_date</td>
+                      <td><span class="type">date</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Ngày giao dịch (thực tế)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fiscal_period_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → fiscal_periods</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Totals & Currency
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">exchange_rate</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tổng Nợ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">total_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tổng Có</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Source References
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Diễn giải</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">reference_number</td>
+                      <td><span class="type">varchar(100)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>External Ref</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        source_document_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>ID của Transaction/Invoice</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        source_document_type
+                      </td>
+                      <td><span class="type">varchar(50)</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>transaction / import / payment...</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Status & Lifecycle
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">posting_status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'draft'</span></td>
+                      <td>draft / posted / reversed / cancelled</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">approval_status</td>
+                      <td><span class="type">varchar(20)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'approved'</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">posted_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        reversed_entry_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Self FK → Trỏ tới bút toán đảo</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Audit & Meta
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">updated_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">version</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block">
+                  CHECK(total_debit >= 0) CHECK(total_credit >= 0) CHECK (
+                  household_id IS NOT NULL OR organization_id IS NOT NULL )
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-undo-alt text-slate-400 mr-2"></i>
+                  Immutability Rule
+                </h3>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <p class="text-sm text-red-800 font-medium mb-2">
+                    Bút toán sau khi đã POST sẽ
+                    <strong>không bao giờ được update/xóa</strong>.
+                  </p>
+                  <p class="text-xs text-red-700">
+                    Nếu có sai sót, nguyên tắc kế toán bắt buộc phải sinh ra một
+                    bút toán đảo (Reversing Journal Entry) thông qua cột
+                    <code>reversed_entry_id</code>, bảo toàn dấu vết kiểm toán
+                    (Audit Trail).
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Journal Lines -->
+        <section
+          id="journal_lines"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-24"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-list mr-3"></i> 4. journal_lines
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Chi tiết từng dòng của chứng từ kế toán, tuân thủ nguyên tắc
+                Double-Entry (GL_JE_LINES).
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Transaction</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">journal_entry_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → journal_entries</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">line_number</td>
+                      <td><span class="type">integer</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>Thứ tự dòng</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Account Bindings
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">chart_account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → chart_of_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        financial_account_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → financial_accounts (Ví/Bank thực tế)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">transaction_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → transactions (Nguồn sinh ra dòng này)</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Legacy / Basic Amounts
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">debit_amount</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tiền Nợ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">credit_amount</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Tiền Có</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Multi-Currency: Entered (Tiền gốc)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entered_currency</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entered_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Nợ tiền gốc (Ví dụ: USD)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">entered_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Có tiền gốc</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Multi-Currency: Accounted (Tiền quy đổi)
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        accounted_currency
+                      </td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accounted_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Nợ tiền quy đổi (Ví dụ: JPY)</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">accounted_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Có tiền quy đổi</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">exchange_rate</td>
+                      <td><span class="type">numeric(20,10)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">1</span></td>
+                      <td>Tỷ giá tại thời điểm hạch toán</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Dimensions & Meta
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">description</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Diễn giải dòng</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">cost_center_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → cost_centers</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">project_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → projects</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">department_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → departments</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">region_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → regions</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Invariants &
+                  Constraints
+                </h3>
+                <div class="code-block mb-4">
+                  -- Một dòng không thể vừa ghi Nợ vừa ghi Có CHECK (
+                  debit_amount = 0 OR credit_amount = 0 )
+                </div>
+                <div
+                  class="bg-slate-100 p-4 rounded-lg border border-slate-200"
+                >
+                  <h4 class="font-bold text-slate-800 mb-2">
+                    Immutable Rule (Ở mức ứng dụng)
+                  </h4>
+                  <ul
+                    class="list-disc list-inside space-y-1 text-sm text-slate-700"
+                  >
+                    <li>
+                      Một <code>Journal Entry</code> phải có ít nhất 2
+                      <code>Journal Lines</code>.
+                    </li>
+                    <li>
+                      <code class="font-bold"
+                        >SUM(accounted_debit) = SUM(accounted_credit)</code
+                      >
+                      trong cùng một chứng từ.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-globe text-slate-400 mr-2"></i>
+                  Multi-Currency Support
+                </h3>
+                <p class="text-sm text-slate-700 mb-3">
+                  Ví dụ bạn quẹt thẻ Visa 100 USD (Tiền gốc -
+                  <code>entered</code>), nhưng thẻ của bạn bằng JPY và trừ
+                  15,600 JPY (Tiền hạch toán sổ cái - <code>accounted</code>).
+                </p>
+                <div
+                  class="bg-emerald-50 border border-emerald-200 p-3 rounded-lg text-sm text-emerald-800"
+                >
+                  Oracle / SAP bắt buộc phải lưu cả hai loại tiền này để có thể
+                  chạy báo cáo đánh giá lại tỷ giá (Revaluation) cuối tháng.
+                  Thiết kế này tuân thủ tuyệt đối tiêu chuẩn đó!
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Trial Balances -->
+        <section
+          id="trial_balances"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-12"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-balance-scale mr-3"></i> 5. trial_balances
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Lưu kết quả cân đối thử của từng kỳ kế toán (Materialized để
+                tăng tốc báo cáo BI).
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >Report Data</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <h3 class="section-title">
+                <i class="fas fa-columns text-slate-400 mr-2"></i> Cấu trúc Cột
+              </h3>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fiscal_period_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → fiscal_periods</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">chart_account_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → chart_of_accounts</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">currency_code</td>
+                      <td><span class="type">char(3)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → currencies</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Balances
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư nợ đầu kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">opening_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư có đầu kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phát sinh nợ trong kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">period_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Phát sinh có trong kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ending_debit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư nợ cuối kỳ</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">ending_credit</td>
+                      <td><span class="type">numeric(20,8)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">0</span></td>
+                      <td>Dư có cuối kỳ</td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        System Info
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">generated_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td>Thời điểm tạo Trial Balance</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        source_snapshot_id
+                      </td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → snapshots</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-lock text-slate-400 mr-2"></i> Constraints
+                </h3>
+                <div class="code-block">
+                  UNIQUE( fiscal_period_id, chart_account_id, currency_code )
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-check-double text-slate-400 mr-2"></i>
+                  Validation Rule
+                </h3>
+                <div
+                  class="bg-slate-100 p-4 rounded-xl border border-slate-200 mb-4"
+                >
+                  <p class="font-bold text-slate-800 text-center">
+                    SUM(ending_debit) = SUM(ending_credit)
+                  </p>
+                </div>
+                <div
+                  class="bg-red-50 p-3 rounded-lg text-sm text-red-800 border border-red-200"
+                >
+                  <i class="fas fa-ban mr-1"></i> Nếu Trial Balance không cân,
+                  tuyệt đối <strong>không cho phép Close Period</strong>. Bảng
+                  này không được sửa tay bằng UI.
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Bảng Closing Process -->
+        <section
+          id="closing_processes"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden mb-24"
+        >
+          <div class="bg-blue-600 px-6 py-4 flex items-center justify-between">
+            <div>
+              <h2 class="font-bold text-white text-2xl flex items-center">
+                <i class="fas fa-calendar-check mr-3"></i> 6. closing_processes
+              </h2>
+              <p class="text-blue-100 text-sm mt-1">
+                Đại diện cho tiến trình khóa sổ (Month Close, Quarter Close,
+                Year Close).
+              </p>
+            </div>
+            <span
+              class="bg-blue-800 text-blue-100 text-xs font-bold px-3 py-1 rounded-full uppercase"
+              >System Process</span
+            >
+          </div>
+          <div class="p-6 md:p-8 space-y-8">
+            <div>
+              <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                <table class="schema-table">
+                  <thead>
+                    <tr>
+                      <th class="w-1/5">Column</th>
+                      <th class="w-1/6">Type</th>
+                      <th class="w-24 text-center">Nullable</th>
+                      <th class="w-1/6">Default</th>
+                      <th>Description</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td class="font-bold text-slate-900">id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td>
+                        <span class="default-val">gen_random_uuid()</span>
+                      </td>
+                      <td>Primary Key</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">tenant_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → tenants</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">organization_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → organizations</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">household_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → households</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">fiscal_period_id</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td></td>
+                      <td>FK → fiscal_periods</td>
+                    </tr>
+
+                    <tr>
+                      <td class="font-bold text-slate-900">process_type</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'month_close'</span></td>
+                      <td>
+                        month_close / quarter_close / year_close / reopen_period
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">status</td>
+                      <td><span class="type">varchar(30)</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'pending'</span></td>
+                      <td>
+                        pending / running / completed / failed / cancelled
+                      </td>
+                    </tr>
+
+                    <tr class="bg-slate-50">
+                      <td
+                        colspan="5"
+                        class="font-semibold text-slate-500 text-xs uppercase tracking-wider"
+                      >
+                        Timestamps & Audit
+                      </td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">started_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">completed_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">performed_by</td>
+                      <td><span class="type">uuid</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>FK → users</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">
+                        validation_result
+                      </td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Kết quả kiểm tra chi tiết các bước</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">notes</td>
+                      <td><span class="type">text</span></td>
+                      <td class="text-center text-emerald-500">✅</td>
+                      <td></td>
+                      <td>Ghi chú</td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">created_at</td>
+                      <td><span class="type">timestamptz</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">now()</span></td>
+                      <td></td>
+                    </tr>
+                    <tr>
+                      <td class="font-bold text-slate-900">metadata</td>
+                      <td><span class="type">jsonb</span></td>
+                      <td class="text-center text-red-500">❌</td>
+                      <td><span class="default-val">'{}'</span></td>
+                      <td></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-list-check text-slate-400 mr-2"></i> Close
+                  Validation Checklist
+                </h3>
+                <div
+                  class="bg-slate-100 p-4 rounded-xl border border-slate-200"
+                >
+                  <ul class="space-y-2 text-sm text-slate-700 font-medium">
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Journal cân Debit/Credit
+                    </li>
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Không còn Draft Journal
+                    </li>
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Không còn Import đang chạy
+                    </li>
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Trial Balance cân
+                    </li>
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Fiscal Period đang Open
+                    </li>
+                    <li>
+                      <i class="fas fa-check-circle text-emerald-500 mr-2"></i>
+                      Không có Posting Error
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              <div>
+                <h3 class="section-title">
+                  <i class="fas fa-shield-alt text-slate-400 mr-2"></i> Trạng
+                  thái sau khi Close
+                </h3>
+                <p class="text-sm text-slate-700 mb-3">
+                  Fiscal Period chuyển từ <strong>Open</strong> sang
+                  <strong>Closed</strong>.
+                </p>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                  <ul
+                    class="list-disc list-inside space-y-1 text-sm text-red-800 font-medium"
+                  >
+                    <li>
+                      Cấm INSERT / UPDATE / DELETE bất kỳ Journal nào thuộc kỳ
+                      này.
+                    </li>
+                    <li>
+                      Muốn sửa đổi bắt buộc phải thực hiện quy trình:
+                      <strong
+                        >Reopen Period &rarr; Reverse Journal &rarr; Close
+                        lại</strong
+                      >.
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>
