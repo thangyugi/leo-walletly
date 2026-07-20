@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useTranslation } from '@/hooks/useTranslation'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
+import { TenantService, HouseholdService, OrganizationService, getCurrentUserId } from '@/features/user-management/services'
 import { useRouter } from 'next/navigation'
 import { 
   User, 
@@ -27,7 +28,7 @@ type Purpose = 'personal' | 'business' | 'freelance'
 
 export default function OnboardingPage() {
   const { t, lang } = useTranslation()
-  const { initialize } = useLedgerStore()
+  const { initialize } = useMembershipStore()
   const router = useRouter()
   
   const [step, setStep] = useState<OnboardingStep>('purpose')
@@ -81,28 +82,68 @@ export default function OnboardingPage() {
   const handleComplete = async () => {
     if (loading) return
     setLoading(true)
-    
+
     const promise = async () => {
-      const { data, error } = await supabase.rpc('create_new_ledger_system', {
-        org_name: orgName,
-        ledger_name: purpose === 'personal' ? (lang === 'vi' ? 'Sổ chi tiêu' : (lang === 'ja' ? '個人元帳' : 'Personal Ledger')) : (lang === 'vi' ? 'Sổ chính' : (lang === 'ja' ? 'メイン元帳' : 'Main Ledger')),
-        base_currency: regional.currency,
-        timezone: regional.timezone,
-        locale: regional.locale,
-        fiscal_year_start: regional.fiscal_year_start
+      const ownerUserId = await getCurrentUserId()
+      if (!ownerUserId) throw new Error('User profile is not ready yet — please retry in a moment.')
+
+      const { data: tz, error: tzError } = await supabase
+        .from('time_zones')
+        .select('id')
+        .eq('code', regional.timezone)
+        .single()
+      if (tzError || !tz) throw new Error(`Unknown timezone: ${regional.timezone}`)
+
+      const fiscalCalendarCode = purpose === 'business' && regional.currency === 'JPY' ? 'JAPAN_FY' : 'CALENDAR_YEAR'
+      const { data: fc, error: fcError } = await supabase
+        .from('fiscal_calendars')
+        .select('id')
+        .eq('code', fiscalCalendarCode)
+        .single()
+      if (fcError || !fc) throw new Error(`Unknown fiscal calendar: ${fiscalCalendarCode}`)
+
+      const languageCode = regional.locale.split('-')[0]
+      const slug = `${orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}-${Math.random().toString(36).slice(2, 8)}`
+
+      const tenant = await TenantService.createTenant({
+        code: slug,
+        name: orgName,
+        ownerUserId,
+        defaultLanguageCode: languageCode,
+        defaultCurrencyCode: regional.currency,
+        defaultTimezoneId: tz.id,
       })
 
-      if (error) throw error
+      if (purpose === 'personal') {
+        await HouseholdService.createHousehold({
+          tenantId: tenant.id,
+          code: slug,
+          name: orgName,
+          currencyCode: regional.currency,
+          timezoneId: tz.id,
+          fiscalCalendarId: fc.id,
+        })
+      } else {
+        await OrganizationService.createOrganization({
+          tenantId: tenant.id,
+          code: slug,
+          name: orgName,
+          organizationType: purpose === 'business' ? 'company' : 'freelancer',
+          currencyCode: regional.currency,
+          timezoneId: tz.id,
+          fiscalCalendarId: fc.id,
+        })
+      }
 
       await new Promise(resolve => setTimeout(resolve, 800))
       await initialize()
       setStep('success')
-      
+
       setTimeout(() => {
         router.push('/')
       }, 2000)
-      
-      return data
+
+      return tenant
     }
 
     toast.promise(promise(), {

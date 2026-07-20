@@ -4,12 +4,12 @@ import { useEffect } from 'react'
 import { useAuthStore } from '@/stores/auth'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useRecurringStore } from '@/stores/recurring'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { useRouter, usePathname } from 'next/navigation'
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const { user, initialized: authInitialized, initialize: initializeAuth } = useAuthStore()
-  const { initialized: ledgerInitialized, initialize: initializeLedger, currentLedger } = useLedgerStore()
+  const { initialized: membershipInitialized, initialize: initializeMembership, currentContext } = useMembershipStore()
   const { syncTransactions } = useTransactionsStore()
   const { syncRecurring } = useRecurringStore()
   const router = useRouter()
@@ -21,31 +21,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (authInitialized && user) {
-      initializeLedger()
+      initializeMembership()
     }
-  }, [authInitialized, user, initializeLedger])
+  }, [authInitialized, user, initializeMembership])
 
   useEffect(() => {
     if (authInitialized) {
       if (!user && pathname !== '/login' && pathname !== '/join') {
         router.push('/login')
-      } else if (user && ledgerInitialized) {
+      } else if (user && membershipInitialized) {
         // Sync data when user is present
         syncTransactions()
         syncRecurring()
-        
+
         if (pathname === '/login') {
           router.push('/')
-        } else if (!currentLedger && pathname !== '/onboarding') {
-          // If logged in but no ledger (shouldn't happen with auto-init trigger, 
-          // but good for safety/manual cleanup), redirect to onboarding
+        } else if (!currentContext && pathname !== '/onboarding') {
+          // Logged in but not a member of any household/organization yet —
+          // send them through onboarding to create their first one.
           router.push('/onboarding')
         }
       }
     }
-  }, [authInitialized, ledgerInitialized, user, pathname, router, currentLedger, syncTransactions, syncRecurring])
+  }, [authInitialized, membershipInitialized, user, pathname, router, currentContext, syncTransactions, syncRecurring])
 
-  if ((!authInitialized || (user && !ledgerInitialized)) && pathname !== '/login' && pathname !== '/join') {
+  if ((!authInitialized || (user && !membershipInitialized)) && pathname !== '/login' && pathname !== '/join') {
     return (
       <div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg-base)]">
         <div className="animate-pulse flex flex-col items-center gap-4">

@@ -14,6 +14,8 @@ Chú thích trạng thái: ☐ Chưa làm · 🔶 Đang làm · ✅ Xong
 - **`types/supabase.ts`**: ✅ Viết tay lại khớp 100% với migration (không có project Supabase sống để chạy `gen types`).
 - **UI / data-access layer (`features/user-management`)**: ✅ Viết lại hoàn toàn theo Foundation (xem phần "UI wiring" bên dưới).
 - **`modules/group-management`**: ✅ Đã xoá hoàn toàn theo quyết định của user (concept `groups` không tồn tại trong Foundation).
+- **Signup → `public.users` tự động**: ✅ Trigger `on_auth_user_created` (migration 23) — mirror `auth.users` sang `public.users` khi đăng ký, đã test.
+- **`app/onboarding` + `auth-provider.tsx`**: ✅ Viết lại theo Foundation — onboarding tạo `tenant` + `household`/`organization` qua RPC thay vì `create_new_ledger_system` (không còn tồn tại); auth-provider gate theo `membership-store` thay vì `ledger-store`. Đã test end-to-end (signup → tenant → household → member OWNER) bằng Postgres local.
 - **Kết nối Supabase project thật**: ☐ Chưa có — mọi thứ hiện là file migration local, chưa `supabase link` / `db push`.
 
 ## Đã kiểm thử (local Postgres, không phải Supabase project thật)

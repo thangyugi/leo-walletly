@@ -43,6 +43,20 @@ export interface Permission {
   module: string
 }
 
+export interface Tenant {
+  id: string
+  code: string
+  name: string
+  display_name: string | null
+  owner_user_id: string
+  default_language_code: string
+  default_currency_code: string
+  default_timezone_id: string
+  status: string
+  created_at: string
+  updated_at: string
+}
+
 export interface Household {
   id: string
   tenant_id: string
