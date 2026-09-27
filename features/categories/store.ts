@@ -1,630 +1,471 @@
-import { create } from 'zustand'
-import { Category, CategoryTreeNode, CategoryBalance } from './types'
-import { supabase } from '@/lib/supabase'
+'use client'
 
-// ─── Vietnamese/CJK diacritic stripper for acronym generation ───────────────
-function stripDiacritics(str: string): string {
-  return str
-    .replace(/[àáâãäåāăą]/gi, 'a')
-    .replace(/[èéêëēĕęě]/gi, 'e')
-    .replace(/[ìíîïīĭįı]/gi, 'i')
-    .replace(/[òóôõöōŏő]/gi, 'o')
-    .replace(/[ùúûüūŭůű]/gi, 'u')
-    .replace(/[ýÿ]/gi, 'y')
-    .replace(/[ñ]/gi, 'n')
-    .replace(/[çć]/gi, 'c')
-    .replace(/[đ]/gi, 'd')
-    .replace(/[Đ]/g, 'D')
+import { create } from 'zustand'
+import { supabase } from '@/lib/supabase'
+import { useI18nStore } from '@/features/i18n/store'
+import { useSettingsStore } from '@/stores/settings'
+import type { Category, CategoryBalance, CategoryMember, CategoryTreeNode, CategoryType, MemberBalance } from './types'
+import type { TablesUpdate } from '@/types/supabase'
+
+// Categories for schema v2.1. The Category shape the screens use is composed
+// from: categories + category_translations (name), category_rules with
+// match_type='contains' (keywords), budgets with period_start null (monthly budget).
+
+function fail(error: { message: string } | null) {
+  if (error) throw new Error(error.message)
+}
+
+/** "Ăn uống ngoài" → "an-uong-ngoai"; non-latin names fall back to a short id. */
+export function slugifyName(name: string): string {
+  const base = name
     .normalize('NFD')
     .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/gi, 'd')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return base || `c-${Math.random().toString(36).slice(2, 8)}`
 }
 
-/** Extract 2-uppercase-letter acronym from a display name */
-export function extractNameAcronym(name: string): string {
-  const clean = stripDiacritics(name).replace(/[^a-zA-Z0-9\s]/g, '').trim()
-  const words = clean.split(/\s+/).filter(Boolean)
-  if (words.length >= 2) {
-    return (words[0][0] + words[words.length - 1][0]).toUpperCase()
-  }
-  return clean.slice(0, 2).toUpperCase().padEnd(2, 'X')
+function uniqueSlug(name: string, taken: Set<string>): string {
+  const base = slugifyName(name)
+  if (!taken.has(base)) return base
+  for (let i = 2; i < 1000; i++) if (!taken.has(`${base}-${i}`)) return `${base}-${i}`
+  return `${base}-${Date.now()}`
 }
 
-/** Strip trailing digits from a category code to get its letter prefix */
-function getLetterPrefix(code: string): string {
-  return code.replace(/\d+$/, '')
+function displayName(row: { name: string; name_key: string | null }, translations: Record<string, string>): string {
+  const lang = useSettingsStore.getState().lang
+  if (translations[lang]) return translations[lang]
+  const texts = useI18nStore.getState().texts
+  if (row.name_key && texts[row.name_key]) return texts[row.name_key].value
+  return row.name
 }
 
-/**
- * Generate a unique category_code based on depth + name.
- * Format:
- *   depth 0 (root):      {2-letter-acronym}{6 digits}     → MS000001
- *   depth 1:             {parent-letters}{2-acronym}{4 digits} → MSDC0001
- *   depth 2:             {parent-letters}{2-acronym}{2 digits} → MSDCCP01
- *   depth 3+ (deepest):  {parent-6-letters}{2 digits}      → MSDCCP01
- *
- * All codes are exactly 8 characters.
- */
-export function generateCategoryCode(
-  name: string,
-  depth: number,
-  parentCode: string | undefined,
-  existingCodes: Set<string>,
-): string {
-  const acronym = extractNameAcronym(name)
-  const parentLetters = parentCode ? getLetterPrefix(parentCode) : ''
-
-  if (depth === 0) {
-    // acronym(2) + digits(6) = 8 chars
-    for (let i = 1; i <= 999999; i++) {
-      const c = `${acronym}${String(i).padStart(6, '0')}`
-      if (!existingCodes.has(c)) return c
-    }
-  } else if (depth === 1) {
-    // parent_letters(2) + acronym(2) + digits(4) = 8 chars
-    const prefix = parentLetters.slice(0, 2)
-    for (let i = 1; i <= 9999; i++) {
-      const c = `${prefix}${acronym}${String(i).padStart(4, '0')}`
-      if (!existingCodes.has(c)) return c
-    }
-  } else if (depth === 2) {
-    // parent_letters(4) + acronym(2) + digits(2) = 8 chars
-    const prefix = parentLetters.slice(0, 4)
-    for (let i = 1; i <= 99; i++) {
-      const c = `${prefix}${acronym}${String(i).padStart(2, '0')}`
-      if (!existingCodes.has(c)) return c
-    }
-  } else {
-    // depth 3+: parent_letters(6) + digits(2) = 8 chars
-    const prefix = parentLetters.slice(0, 6)
-    for (let i = 1; i <= 99; i++) {
-      const c = `${prefix}${String(i).padStart(2, '0')}`
-      if (!existingCodes.has(c)) return c
-    }
-  }
-  // Fallback: always 8 chars
-  return `${(acronym + parentLetters).slice(0, 6)}${String(Date.now()).slice(-2)}`
-}
-
-// ─── Path helpers ────────────────────────────────────────────────────────────
-
-export function getCleanCategoryPath(category: Category, allCategories: Category[]): string {
-  const parts: string[] = [category.categoryCode || category.metadata?.category_code || '']
-  let curr = category
-  while (curr.parent_id) {
-    const parent = allCategories.find(g => g.id === curr.parent_id)
-    if (parent) {
-      parts.unshift(parent.categoryCode || parent.metadata?.category_code || '')
-      curr = parent
-    } else {
-      break
-    }
-  }
-  return '/' + parts.filter(Boolean).join('/')
-}
+// ─── Tree helpers ────────────────────────────────────────────────────────────
 
 export function getSubtreeHeight(cat: Category, allCats: Category[]): number {
-  const children = allCats.filter(c => c.parent_id === cat.id)
+  const children = allCats.filter((c) => c.parent_id === cat.id)
   if (children.length === 0) return 1
-  return 1 + Math.max(...children.map(c => getSubtreeHeight(c, allCats)))
+  return 1 + Math.max(...children.map((c) => getSubtreeHeight(c, allCats)))
 }
 
 export function getCategoryDepth(cat: Category, allCats: Category[]): number {
   let depth = 1
   let curr = cat
   while (curr.parent_id) {
-    const parent = allCats.find(g => g.id === curr.parent_id)
-    if (parent) {
-      depth++
-      curr = parent
-    } else {
-      break
-    }
+    const parent = allCats.find((g) => g.id === curr.parent_id)
+    if (!parent) break
+    depth++
+    curr = parent
   }
   return depth
 }
 
-// ─── Normalizer: raw DB row → Category ──────────────────────────────────────
-
-function normalizeCategory(g: any, rawCategories: any[], currentLedgerId?: string): Category {
-  const code = g.category_code || g.metadata?.category_code || ''
-  let cleanPath = g.path || g.metadata?.path || ''
-
-  if (cleanPath.includes('_') || cleanPath.includes('-') || !cleanPath.startsWith('/')) {
-    const parts: string[] = [code]
-    let curr = g
-    while (curr.parent_id) {
-      const parent = rawCategories.find(p => p.id === curr.parent_id)
-      if (parent) {
-        parts.unshift(parent.category_code || parent.metadata?.category_code || '')
-        curr = parent
-      } else {
-        break
-      }
-    }
-    cleanPath = '/' + parts.filter(Boolean).join('/')
+/** "/food/cafe" style path built from slugs. */
+export function getCleanCategoryPath(category: Category, allCategories: Category[]): string {
+  const parts = [category.slug]
+  let curr = category
+  while (curr.parent_id) {
+    const parent = allCategories.find((g) => g.id === curr.parent_id)
+    if (!parent) break
+    parts.unshift(parent.slug)
+    curr = parent
   }
-
-  // Construct name_i18n from category_translations if available
-  const name_i18n: Record<string, string> = {}
-  if (Array.isArray(g.category_translations)) {
-    for (const t of g.category_translations) {
-      if (t.locale && t.name) {
-        name_i18n[t.locale] = t.name
-      }
-    }
-  } else if (g.name_i18n) {
-    Object.assign(name_i18n, g.name_i18n)
-  }
-
-  const name = name_i18n['vi'] || name_i18n['en'] || name_i18n['ja'] || g.name || 'Unnamed'
-
-  const ledgerBudget = g.category_budgets?.find((b: any) => !currentLedgerId || b.ledger_id === currentLedgerId)
-  const budgetLimit = ledgerBudget?.amount ?? g.budget_limit ?? g.metadata?.budget_limit ?? 0
-
-  return {
-    ...g,
-    ledger_id: currentLedgerId || g.ledger_id,
-    name,
-    name_i18n,
-    type: g.category_type || g.type || 'cost_center',
-    // Direct columns take priority, fall back to metadata for legacy rows
-    budget_limit: budgetLimit,
-    keywords: Array.isArray(g.keywords) && g.keywords.length > 0
-      ? g.keywords
-      : (g.metadata?.keywords ?? []),
-    is_shared:    g.is_shared    ?? g.metadata?.is_shared    ?? false,
-    warning_threshold: g.warning_threshold ?? g.metadata?.warning_threshold ?? 80,
-    categoryCode: code,
-    path: cleanPath,
-  }
+  return '/' + parts.join('/')
 }
-
-// ─── Store definition ────────────────────────────────────────────────────────
-
-interface CategoryState {
-  categories: Category[]
-  balances: CategoryBalance[]
-  isLoading: boolean
-  error: string | null
-  selectedCategoryId: string | null
-
-  fetchCategories: (ledgerId: string) => Promise<void>
-  setSelectedCategoryId: (id: string | null) => void
-  createCategory: (category: Partial<Category>) => Promise<void>
-  updateCategory: (id: string, category: Partial<Category>) => Promise<void>
-  deleteCategory: (id: string) => Promise<void>
-  mergeCategories: (sourceId: string, targetId: string) => Promise<void>
-  seedCategories: (ledgerId: string) => Promise<void>
-}
-
-export const useCategoryStore = create<CategoryState>((set, get) => ({
-  categories: [],
-  balances: [],
-  isLoading: false,
-  error: null,
-  selectedCategoryId: null,
-
-  setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
-
-  fetchCategories: async (ledgerId) => {
-    set({ isLoading: true, error: null })
-    try {
-      const { data: ledgerRow } = await supabase
-        .from('ledgers')
-        .select('workspace_id')
-        .eq('id', ledgerId)
-        .single()
-
-      const { data: categories, error: gError } = await supabase
-        .from('categories')
-        .select('*, category_translations(locale, name), category_budgets(ledger_id, amount)')
-        .eq('workspace_id', ledgerRow?.workspace_id)
-        .order('sort_order')
-
-      if (gError) throw gError
-
-      const rawCategories = categories || []
-      const normalizedCategories = rawCategories.map(g => normalizeCategory(g, rawCategories, ledgerId))
-
-      // Fetch balances from category_balances view
-      let balances: CategoryBalance[] = []
-      try {
-        const { data: bData, error: bError } = await supabase
-          .from('category_balances')
-          .select('*')
-          .eq('ledger_id', ledgerId)
-        if (!bError && bData) balances = bData
-      } catch {
-        // View may not exist yet on older deployments — safe to ignore
-      }
-
-      set({ categories: normalizedCategories, balances, isLoading: false })
-    } catch (err: any) {
-      set({ error: err.message, isLoading: false })
-    }
-  },
-
-  createCategory: async (category) => {
-    try {
-      const { data: ledger } = await supabase
-        .from('ledgers')
-        .select('workspace_id, base_currency')
-        .eq('id', category.ledger_id)
-        .single()
-      
-      if (!ledger) throw new Error('Ledger not found')
-
-      const newId = crypto.randomUUID()
-      const allCategories = get().categories
-      const allCodes = new Set(allCategories.map(g => g.categoryCode || g.metadata?.category_code || '').filter(Boolean))
-
-      let depth = 0
-      let parentCode: string | undefined
-      let parentPath = ''
-
-      if (category.parent_id) {
-        const parentCategory = allCategories.find(g => g.id === category.parent_id)
-        if (parentCategory) {
-          parentCode = parentCategory.categoryCode || parentCategory.metadata?.category_code
-          parentPath = getCleanCategoryPath(parentCategory, allCategories)
-          depth = getCategoryDepth(parentCategory, allCategories)
-
-          if (depth >= 4) {
-            throw new Error('Không thể tạo thêm danh mục con. Hệ thống chỉ cho phép tối đa 4 tầng danh mục.')
-          }
-        }
-      }
-
-      const newCode = generateCategoryCode(category.name || '', depth, parentCode, allCodes)
-      const pathStr = parentPath ? `${parentPath}/${newCode}` : `/${newCode}`
-
-      const siblings = allCategories.filter(g => g.parent_id === (category.parent_id || null))
-      const maxSortOrder = siblings.reduce((max, s) => Math.max(max, s.sort_order || 0), -1)
-
-      const payload = {
-        id: newId,
-        workspace_id: ledger?.workspace_id,
-        parent_id: category.parent_id || null,
-        category_type: category.type,
-        color: category.color,
-        emoji: category.emoji,
-        path: pathStr,
-        category_code: newCode,
-        sort_order: maxSortOrder + 1,
-        is_active: true,
-        keywords: category.keywords ?? [],
-        is_shared: category.is_shared ?? false,
-        metadata: {
-          // Keep metadata in sync for any legacy readers
-          budget_limit: category.budget_limit ?? 0,
-          keywords: category.keywords ?? [],
-          is_shared: category.is_shared ?? false,
-          warning_threshold: category.warning_threshold ?? 80,
-          category_code: newCode,
-          path: pathStr,
-          ...(category.metadata || {}),
-        },
-      }
-
-      const { data, error } = await supabase
-        .from('categories')
-        .insert(payload)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      if (category.name) {
-        const { error: tError } = await supabase.from('category_translations').insert([
-          { category_id: data.id, locale: 'vi', name: category.name },
-          { category_id: data.id, locale: 'en', name: category.name },
-        ])
-        if (tError) throw tError
-
-        data.category_translations = [
-          { locale: 'vi', name: category.name },
-          { locale: 'en', name: category.name },
-        ]
-      }
-
-      if (category.budget_limit !== undefined && category.ledger_id) {
-        const { error: bError } = await supabase.from('category_budgets').insert({
-          category_id: data.id,
-          ledger_id: category.ledger_id,
-          amount: category.budget_limit,
-          currency: ledger.base_currency || 'VND'
-        })
-        if (bError) throw bError
-
-        data.category_budgets = [{ ledger_id: category.ledger_id, amount: category.budget_limit }]
-      }
-
-      const norm = normalizeCategory(data, [...get().categories, data], category.ledger_id)
-      set((state) => ({ categories: [...state.categories, norm] }))
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
-    }
-  },
-
-  updateCategory: async (id, category) => {
-    try {
-      const allCategories = get().categories
-      const existing = allCategories.find(g => g.id === id)
-      if (!existing) throw new Error('Category not found')
-
-      const hasParentIdUpdate = 'parent_id' in category
-      const parentId = hasParentIdUpdate
-        ? (category.parent_id === '' || category.parent_id === null ? null : category.parent_id)
-        : existing.parent_id
-
-      let newPath = existing.path || ''
-      const code = existing.categoryCode || ''
-
-      if (parentId !== existing.parent_id) {
-        let parentPath = ''
-        if (parentId) {
-          const parentCategory = allCategories.find(g => g.id === parentId)
-          if (parentCategory) {
-            parentPath = getCleanCategoryPath(parentCategory, allCategories)
-            const parentDepth = getCategoryDepth(parentCategory, allCategories)
-            const subtreeHeight = getSubtreeHeight(existing, allCategories)
-            if (parentDepth + subtreeHeight > 4) {
-              throw new Error('Không thể di chuyển danh mục. Sẽ vượt quá giới hạn 4 tầng.')
-            }
-          }
-        }
-        newPath = parentPath ? `${parentPath}/${code}` : `/${code}`
-      }
-
-      const currentMetadata = existing.metadata || {}
-      // Resolve updated values, preferring explicit update over existing
-      const budgetLimit = 'budget_limit' in category ? (category.budget_limit ?? 0) : existing.budget_limit
-      const keywords    = 'keywords'     in category ? (category.keywords    ?? []) : existing.keywords
-      const isShared    = 'is_shared'    in category ? (category.is_shared   ?? false) : existing.is_shared
-      const warningThreshold = 'warning_threshold' in category ? (category.warning_threshold ?? 80) : (existing.warning_threshold ?? 80)
-
-      const mergedMetadata = {
-        ...currentMetadata,
-        budget_limit: budgetLimit,
-        keywords,
-        is_shared: isShared,
-        warning_threshold: warningThreshold,
-        category_code: code,
-        path: newPath,
-        ...(category.metadata || {}),
-      }
-
-      const payload: any = {
-        metadata: mergedMetadata,
-        keywords,
-        is_shared: isShared,
-      }
-
-      if (hasParentIdUpdate) payload.parent_id = parentId
-      if ('type' in category) payload.category_type = category.type
-      if ('color' in category) payload.color = category.color
-      if ('emoji' in category) payload.emoji = category.emoji
-      if (newPath !== existing.path) payload.path = newPath
-
-      const { data, error } = await supabase
-        .from('categories')
-        .update(payload)
-        .eq('id', id)
-        .select()
-        .single()
-
-      if (error) throw error
-
-      if ('name' in category && category.name) {
-        const { error: tError } = await supabase.from('category_translations').upsert([
-          { category_id: id, locale: 'vi', name: category.name },
-          { category_id: id, locale: 'en', name: category.name },
-        ], { onConflict: 'category_id, locale' })
-        if (tError) throw tError
-
-        data.category_translations = [
-          { locale: 'vi', name: category.name },
-          { locale: 'en', name: category.name },
-        ]
-      } else {
-        data.name_i18n = existing.name_i18n
-        data.name = existing.name
-      }
-
-      if ('budget_limit' in category && category.ledger_id) {
-        // Need ledger currency to upsert properly
-        const { data: lData } = await supabase.from('ledgers').select('base_currency').eq('id', category.ledger_id).single()
-        const { error: bError } = await supabase.from('category_budgets').upsert({
-          category_id: id,
-          ledger_id: category.ledger_id,
-          amount: category.budget_limit,
-          currency: lData?.base_currency || 'VND'
-        }, { onConflict: 'category_id, ledger_id' })
-        if (bError) throw bError
-
-        data.category_budgets = [{ ledger_id: category.ledger_id, amount: category.budget_limit }]
-      } else {
-        data.budget_limit = existing.budget_limit
-      }
-
-      const norm = normalizeCategory(data, allCategories, category.ledger_id)
-
-      // Cascade path update to descendants
-      let updatedDescendants: Category[] = []
-      if (newPath !== existing.path) {
-        const descendants = allCategories.filter(c => c.path && c.path.startsWith((existing.path || '') + '/'))
-        for (const desc of descendants) {
-          const relativePart = desc.path!.substring(existing.path!.length)
-          const descNewPath = newPath + relativePart
-          await supabase
-            .from('categories')
-            .update({ path: descNewPath, metadata: { ...desc.metadata, path: descNewPath } })
-            .eq('id', desc.id)
-          updatedDescendants.push({ ...desc, path: descNewPath, metadata: { ...desc.metadata, path: descNewPath } })
-        }
-      }
-
-      set((state) => ({
-        categories: state.categories.map((g) => {
-          if (g.id === id) return norm
-          const matchDesc = updatedDescendants.find(d => d.id === g.id)
-          return matchDesc ?? g
-        }),
-      }))
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
-    }
-  },
-
-  deleteCategory: async (id) => {
-    try {
-      const allCategories = get().categories
-      const hasChildren = allCategories.some(c => c.parent_id === id)
-      if (hasChildren) {
-        throw new Error('Không thể xóa danh mục này vì vẫn còn danh mục con bên trong. Vui lòng xóa hoặc di chuyển các danh mục con trước.')
-      }
-
-      const { error } = await supabase.from('categories').delete().eq('id', id)
-      if (error) throw error
-      set((state) => ({
-        categories: state.categories.filter((g) => g.id !== id),
-        selectedCategoryId: state.selectedCategoryId === id ? null : state.selectedCategoryId,
-      }))
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
-    }
-  },
-
-  mergeCategories: async (sourceId, targetId) => {
-    try {
-      const { error } = await supabase.rpc('merge_categories', {
-        p_source_id: sourceId,
-        p_target_id: targetId,
-      })
-      if (error) throw error
-      
-      const ledgerId = get().categories[0]?.ledger_id
-      if (ledgerId) {
-        await get().fetchCategories(ledgerId)
-      }
-      
-      set((state) => ({
-        selectedCategoryId: state.selectedCategoryId === sourceId ? null : state.selectedCategoryId,
-      }))
-    } catch (err: any) {
-      set({ error: err.message })
-      throw err
-    }
-  },
-
-  seedCategories: async (ledgerId) => {
-    const { data: ledger } = await supabase.from('ledgers').select('workspace_id').eq('id', ledgerId).single()
-    if (!ledger?.workspace_id) return
-
-    const defaults = [
-      { name: 'Food & Drinks', emoji: 'Pizza',       color: '#f97316', type: 'cost_center' },
-      { name: 'Shopping',      emoji: 'ShoppingBag', color: '#ec4899', type: 'cost_center' },
-      { name: 'Transport',     emoji: 'Car',         color: '#3b82f6', type: 'cost_center' },
-      { name: 'Housing',       emoji: 'Home',        color: '#6366f1', type: 'cost_center' },
-      { name: 'Health',        emoji: 'Pill',        color: '#ef4444', type: 'cost_center' },
-      { name: 'Entertainment', emoji: 'Gamepad',     color: '#8b5cf6', type: 'cost_center' },
-    ]
-
-    const existingCodes = new Set(get().categories.map(g => g.categoryCode || '').filter(Boolean))
-
-    const payload = defaults.map((d, index) => {
-      const code = generateCategoryCode(d.name, 0, undefined, existingCodes)
-      existingCodes.add(code)
-      const path = `/${code}`
-      return {
-        workspace_id: ledger.workspace_id,
-        name_i18n: { vi: d.name, en: d.name, ja: d.name },
-        emoji: d.emoji, color: d.color,
-        category_type: d.type,
-        category_code: code, path,
-        sort_order: index,
-        is_active: true,
-        budget_limit: 0,
-        keywords: [d.name.toLowerCase()],
-        is_shared: false,
-        warning_threshold: 80,
-        metadata: { budget_limit: 0, keywords: [d.name.toLowerCase()], category_code: code, path, warning_threshold: 80 },
-      }
-    })
-
-    try {
-      const { error } = await supabase.from('categories').insert(payload)
-      if (error) throw error
-      await get().fetchCategories(ledgerId)
-    } catch (err: any) {
-      set({ error: err.message })
-    }
-  },
-}))
-
-// ─── Tree builder ────────────────────────────────────────────────────────────
 
 export function buildCategoryTree(categories: Category[], parentId: string | null = null, depth = 0): CategoryTreeNode[] {
   return categories
     .filter((g) => g.parent_id === parentId)
-    .map((g) => ({
-      ...g,
-      depth,
-      children: buildCategoryTree(categories, g.id, depth + 1),
-    }))
-}
-
-// ─── Compatibility aliases ────────────────────────────────────────────────────
-
-export const useGroupStore = () => {
-  const store = useCategoryStore()
-  return {
-    groups:           store.categories,
-    balances:         store.balances,
-    isLoading:        store.isLoading,
-    error:            store.error,
-    selectedGroupId:  store.selectedCategoryId,
-    setSelectedGroupId: store.setSelectedCategoryId,
-    fetchGroups:      store.fetchCategories,
-    createGroup:      store.createCategory,
-    updateGroup:      store.updateCategory,
-    deleteGroup:      store.deleteCategory,
-    seedGroups:       store.seedCategories,
-  }
+    .sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+    .map((g) => ({ ...g, depth, children: buildCategoryTree(categories, g.id, depth + 1) }))
 }
 
 export function buildGroupTree(groups: Category[], parentId: string | null = null, depth = 0): CategoryTreeNode[] {
   return buildCategoryTree(groups, parentId, depth)
 }
 
-// ─── Legacy slug resolver ────────────────────────────────────────────────────────────
-
-export function resolveCategoryId(slug: string | undefined, categories: Category[]): string | undefined {
-  if (!slug) return undefined
-  if (categories.some(c => c.id === slug)) return slug // already a valid ID
-
-  const map: Record<string, string[]> = {
-    food: ['food', 'ăn uống', '食費', 'nhà hàng', 'dining', 'drinks', 'pizza'],
-    transport: ['transport', 'đi lại', '交通', 'taxi', 'train', 'bus', 'car'],
-    shopping: ['shopping', 'mua sắm', '買い物', 'clothes', 'electronics', 'bag'],
-    entertainment: ['entertainment', 'giải trí', '娯楽', 'movie', 'game'],
-    health: ['health', 'y tế', '医療', 'sức khỏe', 'medical', 'pill'],
-    utilities: ['utilities', 'tiện ích', '光熱費', 'điện nước', 'internet'],
-    other: ['other', 'khác', 'その他', 'general'],
-  }
-
-  const keywords = map[slug.toLowerCase()] || [slug.toLowerCase()]
-
-  const cat = categories.find(c => 
-    keywords.some(k => 
-      c.name.toLowerCase().includes(k) || 
-      (c.keywords && c.keywords.includes(k)) ||
-      Object.values(c.name_i18n || {}).some(n => n.toLowerCase().includes(k))
-    )
-  )
-  return cat?.id || categories[0]?.id
+/** Maps a parser hint (food, transport, …) or an id to a category id of this ledger. */
+export function resolveCategoryId(hint: string | undefined | null, categories: Category[]): string | undefined {
+  if (!hint) return undefined
+  if (categories.some((c) => c.id === hint)) return hint
+  return categories.find((c) => c.slug === hint && c.is_active)?.id
 }
 
+// ─── KPI / stats for the categories overview ────────────────────────────────
+
+export interface CategoryKpi {
+  total_expense: number
+  total_budget: number
+  classified_count: number
+  total_count: number
+  pending_reconcile: number
+  auto_classify_pct: number
+  auto_count: number
+}
+
+export interface CategoryStat {
+  id: string
+  name: string
+  expense: number
+  income: number
+  tx_count: number
+  budget_limit: number
+}
+
+// ─── Store ───────────────────────────────────────────────────────────────────
+
+export interface CategoryInput {
+  name?: string
+  type?: CategoryType
+  parent_id?: string | null
+  color?: string
+  emoji?: string
+  description?: string | null
+  budget_limit?: number
+  warning_threshold?: number
+  keywords?: string[]
+  is_shared?: boolean
+  is_active?: boolean
+  sort_order?: number
+  ledger_id?: string
+}
+
+interface CategoryState {
+  ledgerId: string | null
+  categories: Category[]
+  balances: CategoryBalance[]
+  stats: CategoryStat[]
+  kpi: CategoryKpi | null
+  month: string
+  isLoading: boolean
+  statsLoading: boolean
+  error: string | null
+  selectedCategoryId: string | null
+
+  fetchCategories: (ledgerId: string) => Promise<void>
+  fetchStats: (ledgerId: string, month?: string) => Promise<void>
+  setSelectedCategoryId: (id: string | null) => void
+  createCategory: (input: CategoryInput) => Promise<Category | undefined>
+  updateCategory: (id: string, input: CategoryInput) => Promise<void>
+  deleteCategory: (id: string) => Promise<void>
+  mergeCategories: (sourceId: string, targetId: string) => Promise<void>
+  applyTemplate: (templateCode: string) => Promise<number>
+  applyRules: (transactionIds?: string[]) => Promise<number>
+  addKeyword: (categoryId: string, keyword: string) => Promise<void>
+  fetchMembers: (categoryId: string) => Promise<CategoryMember[]>
+  setMembers: (categoryId: string, userIds: string[], ownerId?: string) => Promise<void>
+  fetchMemberBalances: (categoryId: string) => Promise<MemberBalance[]>
+  settle: (params: { categoryId: string; fromUserId: string; toUserId: string; amount: number; currencyCode: string; note?: string }) => Promise<void>
+  byId: (id: string | null | undefined) => Category | undefined
+}
+
+function currentMonth() {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+}
+
+async function syncKeywords(ledgerId: string, categoryId: string, keywords: string[]) {
+  const { data: existing } = await supabase
+    .from('category_rules')
+    .select('id, pattern')
+    .eq('category_id', categoryId)
+    .eq('match_type', 'contains')
+    .eq('match_field', 'description')
+    .is('deleted_at', null)
+  const wanted = new Set(keywords.map((k) => k.trim().toLowerCase()).filter(Boolean))
+  const have = new Map((existing ?? []).map((r) => [r.pattern, r.id]))
+  const toDelete = [...have.entries()].filter(([p]) => !wanted.has(p)).map(([, id]) => id)
+  const toAdd = [...wanted].filter((p) => !have.has(p))
+  if (toDelete.length) fail((await supabase.from('category_rules').update({ deleted_at: new Date().toISOString() }).in('id', toDelete)).error)
+  if (toAdd.length) {
+    fail((await supabase.from('category_rules').insert(
+      toAdd.map((pattern) => ({ ledger_id: ledgerId, category_id: categoryId, pattern, match_type: 'contains', match_field: 'description' }))
+    )).error)
+  }
+}
+
+async function syncBudget(ledgerId: string, categoryId: string, amount: number | undefined, warning: number | undefined) {
+  if (amount === undefined) return
+  const { data: existing } = await supabase
+    .from('budgets').select('id').eq('category_id', categoryId).eq('period_type', 'monthly')
+    .is('period_start', null).is('deleted_at', null).maybeSingle()
+  if (!amount || amount <= 0) {
+    if (existing) fail((await supabase.from('budgets').update({ deleted_at: new Date().toISOString() }).eq('id', existing.id)).error)
+    return
+  }
+  if (existing) {
+    fail((await supabase.from('budgets').update({ amount, ...(warning ? { warning_threshold_pct: warning } : {}) }).eq('id', existing.id)).error)
+  } else {
+    fail((await supabase.from('budgets').insert({
+      ledger_id: ledgerId, category_id: categoryId, amount, warning_threshold_pct: warning ?? 80,
+    })).error)
+  }
+}
+
+export const useCategoryStore = create<CategoryState>((set, get) => ({
+  ledgerId: null,
+  categories: [],
+  balances: [],
+  stats: [],
+  kpi: null,
+  month: currentMonth(),
+  isLoading: false,
+  statsLoading: false,
+  error: null,
+  selectedCategoryId: null,
+
+  setSelectedCategoryId: (id) => set({ selectedCategoryId: id }),
+
+  fetchCategories: async (ledgerId) => {
+    set({ isLoading: true, error: null, ledgerId })
+    try {
+      const [cats, rules, budgets, translations] = await Promise.all([
+        supabase.from('categories').select('*').eq('ledger_id', ledgerId).is('deleted_at', null),
+        supabase.from('category_rules').select('category_id, pattern').eq('ledger_id', ledgerId)
+          .eq('match_type', 'contains').eq('is_active', true).is('deleted_at', null),
+        supabase.from('budgets').select('category_id, amount, warning_threshold_pct').eq('ledger_id', ledgerId)
+          .eq('period_type', 'monthly').is('period_start', null).is('deleted_at', null),
+        supabase.from('category_translations').select('category_id, language_code, name'),
+      ])
+      fail(cats.error)
+      const keywordsBy = new Map<string, string[]>()
+      for (const r of rules.data ?? []) keywordsBy.set(r.category_id, [...(keywordsBy.get(r.category_id) ?? []), r.pattern])
+      const budgetBy = new Map((budgets.data ?? []).filter((b) => b.category_id).map((b) => [b.category_id!, b]))
+      const trBy = new Map<string, Record<string, string>>()
+      for (const t of translations.data ?? []) trBy.set(t.category_id, { ...(trBy.get(t.category_id) ?? {}), [t.language_code]: t.name })
+
+      const categories: Category[] = (cats.data ?? []).map((c) => {
+        const tr = trBy.get(c.id) ?? {}
+        const budget = budgetBy.get(c.id)
+        return {
+          id: c.id,
+          ledger_id: c.ledger_id,
+          parent_id: c.parent_id,
+          slug: c.slug,
+          name: displayName(c, tr),
+          base_name: c.name,
+          name_key: c.name_key,
+          type: c.category_type as CategoryType,
+          color: c.color ?? '#94a3b8',
+          emoji: c.icon ?? 'Folder',
+          description: c.description,
+          budget_limit: budget ? Number(budget.amount) : 0,
+          warning_threshold: budget?.warning_threshold_pct ?? 80,
+          keywords: keywordsBy.get(c.id) ?? [],
+          is_shared: c.is_shared,
+          is_active: !c.is_archived,
+          is_system: c.is_system,
+          sort_order: c.sort_order,
+          archived_at: c.archived_at,
+          translations: tr,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        }
+      }).sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+      set({ categories, isLoading: false })
+    } catch (err: any) {
+      set({ error: err.message, isLoading: false })
+    }
+  },
+
+  fetchStats: async (ledgerId, month) => {
+    const m = month ?? get().month
+    set({ statsLoading: true, month: m })
+    const [monthly, cls] = await Promise.all([
+      supabase.from('v_category_monthly').select('*').eq('ledger_id', ledgerId).eq('month', m),
+      supabase.from('v_classification_stats').select('*').eq('ledger_id', ledgerId).eq('month', m).maybeSingle(),
+    ])
+    const byId = new Map(get().categories.map((c) => [c.id, c]))
+    const stats: CategoryStat[] = (monthly.data ?? []).map((r) => ({
+      id: r.category_id ?? '',
+      name: byId.get(r.category_id ?? '')?.name ?? '—',
+      expense: Number(r.expense ?? 0),
+      income: Number(r.income ?? 0),
+      tx_count: Number(r.tx_count ?? 0),
+      budget_limit: Number(r.budget_amount ?? byId.get(r.category_id ?? '')?.budget_limit ?? 0),
+    }))
+    const totalBudget = get().categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0)
+    const c = cls.data
+    set({
+      statsLoading: false,
+      stats,
+      balances: stats.map((s) => ({
+        group_id: s.id, name: s.name, ledger_id: ledgerId, month: m,
+        total_income: s.income, total_expense: s.expense, net_balance: s.income - s.expense, transaction_count: s.tx_count,
+      })),
+      kpi: {
+        total_expense: stats.reduce((s, x) => s + x.expense, 0),
+        total_budget: totalBudget,
+        classified_count: Number(c?.classified ?? 0),
+        total_count: Number(c?.total ?? 0),
+        pending_reconcile: Number(c?.unreconciled ?? 0),
+        auto_classify_pct: Number(c?.auto_pct ?? 0),
+        auto_count: Number(c?.auto_classified ?? 0),
+      },
+    })
+  },
+
+  createCategory: async (input) => {
+    const ledgerId = input.ledger_id ?? get().ledgerId
+    if (!ledgerId || !input.name) throw new Error('Name is required')
+    const taken = new Set(get().categories.map((c) => c.slug))
+    const parent = input.parent_id ? get().byId(input.parent_id) : undefined
+    const { data, error } = await supabase.from('categories').insert({
+      ledger_id: ledgerId,
+      parent_id: input.parent_id ?? null,
+      slug: uniqueSlug(input.name, taken),
+      name: input.name.trim(),
+      category_type: input.type ?? parent?.type ?? 'expense',
+      icon: input.emoji ?? parent?.emoji ?? 'Folder',
+      color: input.color ?? parent?.color ?? '#10b981',
+      description: input.description ?? null,
+      is_shared: input.is_shared ?? false,
+      sort_order: input.sort_order ?? get().categories.length + 1,
+    }).select('id').single()
+    fail(error)
+    await syncBudget(ledgerId, data!.id, input.budget_limit, input.warning_threshold)
+    if (input.keywords?.length) await syncKeywords(ledgerId, data!.id, input.keywords)
+    await get().fetchCategories(ledgerId)
+    return get().byId(data!.id)
+  },
+
+  updateCategory: async (id, input) => {
+    const existing = get().byId(id)
+    if (!existing) return
+    const patch: TablesUpdate<'categories'> = {}
+    if (input.name !== undefined && input.name.trim() !== existing.name) {
+      patch.name = input.name.trim()
+      patch.name_key = null // renamed by the user → stop following the seeded translation
+    }
+    if (input.type !== undefined) patch.category_type = input.type
+    if (input.parent_id !== undefined) patch.parent_id = input.parent_id
+    if (input.color !== undefined) patch.color = input.color
+    if (input.emoji !== undefined) patch.icon = input.emoji
+    if (input.description !== undefined) patch.description = input.description
+    if (input.is_shared !== undefined) patch.is_shared = input.is_shared
+    if (input.is_active !== undefined) {
+      patch.is_archived = !input.is_active
+      patch.archived_at = input.is_active ? null : new Date().toISOString()
+    }
+    if (input.sort_order !== undefined) patch.sort_order = input.sort_order
+    if (Object.keys(patch).length) fail((await supabase.from('categories').update(patch).eq('id', id)).error)
+    await syncBudget(existing.ledger_id, id, input.budget_limit, input.warning_threshold)
+    if (input.keywords) await syncKeywords(existing.ledger_id, id, input.keywords)
+    await get().fetchCategories(existing.ledger_id)
+  },
+
+  deleteCategory: async (id) => {
+    const existing = get().byId(id)
+    if (!existing) return
+    if (existing.is_system) throw new Error('SYSTEM_CATEGORY')
+    // Transactions keep their history but become uncategorized.
+    fail((await supabase.from('transactions').update({ category_id: null, categorized_by: null }).eq('category_id', id)).error)
+    fail((await supabase.from('categories').update({ deleted_at: new Date().toISOString(), is_archived: true }).eq('id', id)).error)
+    await get().fetchCategories(existing.ledger_id)
+  },
+
+  mergeCategories: async (sourceId, targetId) => {
+    fail((await supabase.rpc('merge_categories', { p_source_id: sourceId, p_target_id: targetId })).error)
+    const ledgerId = get().ledgerId
+    if (ledgerId) await get().fetchCategories(ledgerId)
+  },
+
+  applyTemplate: async (templateCode) => {
+    const ledgerId = get().ledgerId
+    if (!ledgerId) return 0
+    const { data, error } = await supabase.rpc('apply_category_template', { p_ledger_id: ledgerId, p_template_code: templateCode })
+    fail(error)
+    await get().fetchCategories(ledgerId)
+    return data ?? 0
+  },
+
+  applyRules: async (transactionIds) => {
+    const ledgerId = get().ledgerId
+    if (!ledgerId) return 0
+    const { data, error } = await supabase.rpc('apply_category_rules', {
+      p_ledger_id: ledgerId,
+      p_transaction_ids: transactionIds ?? null,
+      p_import_only: false,
+    })
+    fail(error)
+    return data ?? 0
+  },
+
+  addKeyword: async (categoryId, keyword) => {
+    const cat = get().byId(categoryId)
+    if (!cat) return
+    await syncKeywords(cat.ledger_id, categoryId, [...cat.keywords, keyword])
+    await get().fetchCategories(cat.ledger_id)
+  },
+
+  fetchMembers: async (categoryId) => {
+    const { data, error } = await supabase
+      .from('category_members')
+      .select('id, category_id, user_id, role, share_ratio, user:users(display_name, email)')
+      .eq('category_id', categoryId)
+      .is('left_at', null)
+    fail(error)
+    return (data ?? []).map((m) => ({
+      id: m.id,
+      category_id: m.category_id,
+      user_id: m.user_id,
+      role: m.role as 'owner' | 'member',
+      share_ratio: m.share_ratio != null ? Number(m.share_ratio) : null,
+      display_name: m.user?.display_name ?? '—',
+      email: m.user?.email ?? '',
+    }))
+  },
+
+  setMembers: async (categoryId, userIds, ownerId) => {
+    const current = await get().fetchMembers(categoryId)
+    const keep = new Set(userIds)
+    const removeIds = current.filter((m) => !keep.has(m.user_id)).map((m) => m.id)
+    if (removeIds.length) fail((await supabase.from('category_members').delete().in('id', removeIds)).error)
+    const have = new Set(current.map((m) => m.user_id))
+    const add = userIds.filter((u) => !have.has(u))
+    if (add.length) {
+      fail((await supabase.from('category_members').insert(
+        add.map((user_id) => ({ category_id: categoryId, user_id, role: user_id === ownerId ? 'owner' : 'member' }))
+      )).error)
+    }
+  },
+
+  fetchMemberBalances: async (categoryId) => {
+    const { data, error } = await supabase.from('v_member_balances').select('user_id, paid, owed, balance').eq('category_id', categoryId)
+    fail(error)
+    return (data ?? []).map((r) => ({
+      user_id: r.user_id ?? '', paid: Number(r.paid ?? 0), owed: Number(r.owed ?? 0), balance: Number(r.balance ?? 0),
+    }))
+  },
+
+  settle: async ({ categoryId, fromUserId, toUserId, amount, currencyCode, note }) => {
+    const cat = get().byId(categoryId)
+    if (!cat) return
+    fail((await supabase.from('settlements').insert({
+      ledger_id: cat.ledger_id, category_id: categoryId, from_user_id: fromUserId, to_user_id: toUserId,
+      amount, currency_code: currencyCode, note: note ?? null,
+    })).error)
+  },
+
+  byId: (id) => (id ? get().categories.find((c) => c.id === id) : undefined),
+}))
+
+// ─── Compatibility alias used by older category components ──────────────────
+
+export const useGroupStore = () => {
+  const store = useCategoryStore()
+  return {
+    groups: store.categories,
+    balances: store.balances,
+    isLoading: store.isLoading,
+    error: store.error,
+    selectedGroupId: store.selectedCategoryId,
+    setSelectedGroupId: store.setSelectedCategoryId,
+    fetchGroups: store.fetchCategories,
+    createGroup: store.createCategory,
+    updateGroup: store.updateCategory,
+    deleteGroup: store.deleteCategory,
+  }
+}

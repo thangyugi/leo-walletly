@@ -1,67 +1,45 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, Wallet, ArrowRight, Sparkles } from 'lucide-react'
+import { X, Wallet } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { useMembershipStore } from '@/features/user-management/membership-store'
-import { supabase } from '@/lib/supabase'
+import { Input, Select } from '@/components/ui/input'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMasterStore } from '@/features/master/store'
+import { regionalDefaults } from '@/features/master/regional'
+import { useTranslation } from '@/hooks/useTranslation'
+import { cn } from '@/lib/utils'
 
-interface CreateLedgerModalProps {
-  onClose: () => void
-}
-
-const REGIONAL_DEFAULTS: Record<string, { timezone: string; fiscalYear: string; locale: string; symbol: string }> = {
-  JPY: { timezone: 'Asia/Tokyo', fiscalYear: '04-01', locale: 'ja-JP', symbol: '¥' },
-  VND: { timezone: 'Asia/Ho_Chi_Minh', fiscalYear: '01-01', locale: 'vi-VN', symbol: '₫' },
-  USD: { timezone: 'UTC', fiscalYear: '01-01', locale: 'en-US', symbol: '$' },
-}
-
-export function CreateLedgerModal({ onClose }: CreateLedgerModalProps) {
-  const { currentContext } = useMembershipStore()
-  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
+export function CreateLedgerModal({ onClose }: { onClose: () => void }) {
+  const { t, tk } = useTranslation()
+  const createLedger = useLedgerStore((s) => s.createLedger)
+  const defaultCurrency = useLedgerStore((s) => s.preferences?.default_currency_code ?? 'JPY')
+  const { currencies, countries, ledgerTypes } = useMasterStore()
   const [name, setName] = useState('')
-  const [currency, setCurrency] = useState('USD')
-  const [timezone, setTimezone] = useState('UTC')
-  const [fiscalYear, setFiscalYear] = useState('01-01')
-  const [locale, setLocale] = useState('en-US')
+  const [typeCode, setTypeCode] = useState('personal')
+  const [currency, setCurrency] = useState(defaultCurrency)
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
 
-  const handleCurrencyChange = (c: string) => {
-    setCurrency(c)
-    const defaults = REGIONAL_DEFAULTS[c]
-    if (defaults) {
-      setTimezone(defaults.timezone)
-      setFiscalYear(defaults.fiscalYear)
-      setLocale(defaults.locale)
-    }
-  }
+  const regional = regionalDefaults(currency, countries)
+  const type = ledgerTypes.find((l) => l.code === typeCode)
 
-  const handleCreate = async () => {
-    if (!name || !currentLedger) return
+  async function handleCreate() {
+    if (!name.trim()) return
     setLoading(true)
-    setError(null)
-
     try {
-      // Use the secure RPC to create ledger and assign owner in one transaction
-      const { data: newLedgerId, error: rpcError } = await supabase
-        .rpc('create_ledger_with_owner', {
-          p_workspace_id: currentLedger.workspace_id,
-          p_name: name,
-          p_currency: currency,
-          p_timezone: timezone,
-          p_fiscal_year_start: fiscalYear,
-          p_locale: locale,
-          p_code: name.slice(0, 4).toUpperCase()
-        })
-
-      if (rpcError) throw rpcError
-
-      await initialize()
+      await createLedger({
+        name: name.trim(),
+        ledgerTypeCode: typeCode,
+        currencyCode: currency,
+        timezoneCode: regional.timezone,
+        locale: regional.locale,
+        countryCode: regional.countryCode,
+        fiscalYearStartMonth: type?.default_fiscal_start_month ?? 1,
+      })
       onClose()
     } catch (err: any) {
-      setError(err.message)
+      toast.error(err.message)
       setLoading(false)
     }
   }
@@ -69,86 +47,60 @@ export function CreateLedgerModal({ onClose }: CreateLedgerModalProps) {
   return (
     <div className="fixed inset-0 z-[500] flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      
-      <div className="relative w-full max-w-md bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[2rem] shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-        <div className="p-6 space-y-6">
+      <div role="dialog" aria-modal="true" className="relative w-full max-w-md bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-2xl shadow-2xl">
+        <div className="p-6 space-y-5">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[var(--color-interactive-primary)] flex items-center justify-center text-white shadow-lg shadow-emerald-500/20">
+              <div className="w-10 h-10 rounded-xl bg-[var(--color-interactive-primary)] flex items-center justify-center text-white">
                 <Wallet className="w-5 h-5" />
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-[var(--color-text-primary)]">New Ledger</h3>
-                <p className="text-xs text-[var(--color-text-tertiary)]">Add a separate financial book</p>
-              </div>
+              <h3 className="text-base font-semibold text-[var(--color-text-primary)]">{t.ledger_switcher.create}</h3>
             </div>
-            <button onClick={onClose} className="p-2 rounded-full hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-quaternary)]">
+            <button onClick={onClose} aria-label={t.common.close} className="p-2 rounded-full hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">
               <X className="w-4 h-4" />
             </button>
           </div>
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-[var(--color-text-quaternary)] uppercase tracking-widest px-1">Ledger Name</label>
-              <Input 
-                placeholder="e.g. Savings 2026, Tax Ledger..." 
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                autoFocus
-              />
-            </div>
+          <Input label={t.ledger_settings.nameLabel} value={name} onChange={(e) => setName(e.target.value)} autoFocus />
 
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold text-[var(--color-text-quaternary)] uppercase tracking-widest px-1">Currency</label>
-              <div className="grid grid-cols-3 gap-2">
-                {['USD', 'VND', 'JPY'].map((c) => (
-                  <button
-                    key={c}
-                    onClick={() => handleCurrencyChange(c)}
-                    className={cn(
-                      "py-2 rounded-xl text-xs font-semibold border transition-all",
-                      currency === c 
-                        ? "bg-[var(--color-interactive-primary)]/10 border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]"
-                        : "bg-[var(--color-bg-sunken)] border-[var(--color-border-default)] text-[var(--color-text-tertiary)] hover:border-[var(--color-border-strong)]"
-                    )}
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-[var(--color-text-secondary)]">{t.groups.type}</p>
+            <div className="grid grid-cols-2 gap-2">
+              {ledgerTypes.map((lt) => (
+                <button
+                  key={lt.code}
+                  type="button"
+                  onClick={() => setTypeCode(lt.code)}
+                  className={cn(
+                    'py-2 px-3 rounded-lg text-xs font-medium border text-left transition-colors',
+                    typeCode === lt.code
+                      ? 'bg-[var(--color-status-gain-bg)] border-[var(--color-interactive-primary)] text-[var(--color-text-brand)]'
+                      : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:border-[var(--color-border-strong)]'
+                  )}
+                >
+                  {tk(lt.name_key)}
+                </button>
+              ))}
             </div>
           </div>
 
-          <div className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-100 space-y-2">
-            <div className="flex items-start gap-3">
-              <Sparkles className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-              <p className="text-[11px] text-emerald-800 leading-relaxed">
-                Applying smart defaults for <strong>{currency}</strong>: {timezone}, Fiscal start {fiscalYear === '04-01' ? 'April 1st' : 'Jan 1st'}.
-              </p>
-            </div>
-          </div>
-
-          {error && (
-            <p className="text-xs text-[var(--color-text-loss)] font-medium animate-shake px-1">{error}</p>
-          )}
+          <Select label={t.ledger_settings.currencyLabel} value={currency} onChange={(e) => setCurrency(e.target.value)}>
+            {currencies.map((c) => (
+              <option key={c.code} value={c.code}>{c.code} · {tk(c.name_key)}</option>
+            ))}
+          </Select>
+          <p className="text-[11px] text-[var(--color-text-tertiary)]">
+            {t.ledger_settings.timezoneLabel}: {regional.timezone} · {t.ledger_settings.localeLabel}: {regional.locale}
+          </p>
 
           <div className="flex gap-3">
-            <Button variant="ghost" onClick={onClose} className="flex-1 rounded-xl">Cancel</Button>
-            <Button 
-              disabled={!name || loading} 
-              loading={loading}
-              onClick={handleCreate}
-              className="flex-1 rounded-xl shadow-lg shadow-emerald-500/10"
-            >
-              Create Ledger <ArrowRight className="w-4 h-4 ml-1.5" />
+            <Button variant="ghost" onClick={onClose} className="flex-1">{t.common.cancel}</Button>
+            <Button disabled={!name.trim() || loading} loading={loading} onClick={handleCreate} className="flex-1">
+              {t.common.create}
             </Button>
           </div>
         </div>
       </div>
     </div>
   )
-}
-
-function cn(...classes: any[]) {
-  return classes.filter(Boolean).join(' ')
 }

@@ -1,50 +1,29 @@
 'use client'
 
 import React from 'react'
-import { useMembershipStore } from '../membership-store'
-import { useUserManagementStore } from '../store'
+import { useLedgerStore } from '../ledger-store'
 
 interface PermissionAwareProps {
+  /** Permission code from `permissions`, e.g. "member.invite", "transaction.delete". */
   permission: string
   children: React.ReactNode
   fallback?: React.ReactNode
 }
 
-/**
- * Enterprise RBAC component to conditionally render UI based on user permissions.
- * `permission` must be a permission code from the `permissions` table (e.g.
- * "MEMBER_INVITE_HOUSEHOLD").
- */
-export function PermissionAware({
-  permission,
-  children,
-  fallback = null,
-}: PermissionAwareProps) {
-  const { currentMember } = useMembershipStore()
-  const { hasPermission } = useUserManagementStore()
-
-  if (!currentMember) return fallback as React.ReactElement
-
-  if (!hasPermission(permission)) return fallback as React.ReactElement
-
-  return <>{children}</>
+/** Renders children only when the current member's role grants `permission`. */
+export function PermissionAware({ permission, children, fallback = null }: PermissionAwareProps) {
+  const allowed = useLedgerStore((s) => s.permissions.has(permission))
+  return <>{allowed ? children : fallback}</>
 }
 
-/**
- * Hook for checking permissions in business logic. Priority-based admin/owner
- * checks come straight from the current membership's role (roles.priority,
- * roles.code / members.is_owner), not a hardcoded role list.
- */
 export function usePermissions() {
-  const { currentMember } = useMembershipStore()
-  const { hasPermission } = useUserManagementStore()
-
-  const check = (permissionCode: string) => hasPermission(permissionCode)
-
+  const permissions = useLedgerStore((s) => s.permissions)
+  const current = useLedgerStore((s) => s.current)
+  const userId = useLedgerStore((s) => s.userId)
   return {
-    check,
-    role: currentMember?.role?.code,
-    isOwner: currentMember?.is_owner ?? false,
-    isAdmin: (currentMember?.role?.priority ?? 0) >= 800,
+    can: (code: string) => permissions.has(code),
+    role: current?.role_code ?? null,
+    isOwner: !!current && current.owner_user_id === userId,
+    isAdmin: current?.role_code === 'OWNER' || current?.role_code === 'ADMIN',
   }
 }

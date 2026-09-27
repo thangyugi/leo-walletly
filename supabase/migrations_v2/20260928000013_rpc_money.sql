@@ -438,6 +438,22 @@ begin
 end;
 $$;
 
+-- Client-callable catch-up for one ledger (used on app load so recurring
+-- transactions appear even where pg_cron is not available).
+create or replace function public.run_due_recurring(p_ledger_id uuid)
+returns integer
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if not public.is_ledger_member(p_ledger_id) then
+    raise exception 'Not a member of this ledger' using errcode = '42501';
+  end if;
+  return public.generate_recurring_transactions(p_ledger_id, current_date);
+end;
+$$;
+
 -- =========================================================================
 -- Budget alerts: after an expense lands in a budgeted category, notify active
 -- members the first time the month crosses the warning / 100% threshold.

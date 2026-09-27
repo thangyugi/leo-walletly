@@ -1,221 +1,154 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
-import { useMembershipStore } from '@/features/user-management/membership-store'
-import { usePermissions } from '@/features/user-management/hooks/use-permissions'
-import { useTranslation } from '@/hooks/useTranslation'
-import { SettingsSection } from '@/features/settings/components/SettingsSection'
-import { CustomSelect } from '@/features/settings/components/CustomSelect'
-import { HouseholdService, OrganizationService } from '@/features/user-management/services'
-import type { Organization } from '@/features/user-management/types'
-import { supabase } from '@/lib/supabase'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { Copy, Save, LogOut, Crown, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
-import {
-  Save,
-  Loader2,
-  Edit3,
-  Copy,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { motion, AnimatePresence } from 'framer-motion'
+import { PageTitle, SettingRow, selectClass } from '@/features/settings/components/Field'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMasterStore } from '@/features/master/store'
+import { MemberService } from '@/features/user-management/services'
+import { useLedgerData } from '@/hooks/useLedgerData'
+import { useTranslation } from '@/hooks/useTranslation'
+import { supabase } from '@/lib/supabase'
 
-// Ledger/Workspace don't exist in the Foundation schema — this page now edits the
-// current Household/Organization directly (currency/timezone/country/name/code).
+export default function LedgerSettingsPage() {
+  const { t, tk, lang } = useTranslation()
+  const router = useRouter()
+  const { current, userId, can, updateCurrent, initialize } = useLedgerStore()
+  const { members } = useLedgerData()
+  const { currencies, timeZones, countries, ledgerTypes, languages } = useMasterStore()
+  const [form, setForm] = useState(() => current ? { ...current } : null)
+  const [saving, setSaving] = useState(false)
+  const [newOwner, setNewOwner] = useState('')
+  const [confirmName, setConfirmName] = useState('')
 
-export default function ContextSettingsPage() {
-  const { currentContext, households, organizations, initialize } = useMembershipStore()
-  const { isOwner } = usePermissions()
-  const { t } = useTranslation()
+  useEffect(() => { if (current) setForm({ ...current }) }, [current])
+  if (!current || !form) return null
 
-  const [isEditing, setIsEditing] = useState(false)
-  const [isSaving, setIsSaving] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const editable = can('ledger.update')
+  const isOwner = current.owner_user_id === userId
+  const others = members.filter((m) => m.user_id !== userId && m.status === 'active')
+  const dirty = (['name', 'ledger_type_code', 'currency_code', 'timezone_code', 'country_code', 'locale', 'fiscal_year_start_month'] as const).some((k) => form[k] !== current[k])
+  const months = Array.from({ length: 12 }, (_, i) => ({ v: i + 1, label: new Date(2024, i, 1).toLocaleDateString(lang, { month: 'long' }) }))
 
-  const [currencies, setCurrencies] = useState<{ value: string; label: string }[]>([])
-  const [timezones, setTimezones] = useState<{ value: string; label: string }[]>([])
-  const [countries, setCountries] = useState<{ value: string; label: string }[]>([])
-
-  const [formData, setFormData] = useState({
-    name: '',
-    code: '',
-    currency_code: '',
-    timezone_id: '',
-    country_code: '',
-    legal_name: '',
-  })
-
-  const entity = currentContext?.type === 'household'
-    ? households.find((h) => h.id === currentContext.id)
-    : organizations.find((o) => o.id === currentContext?.id)
-
-  useEffect(() => {
-    async function loadOptions() {
-      const [{ data: cur }, { data: tz }, { data: ctr }] = await Promise.all([
-        supabase.from('currencies').select('code, name, symbol').eq('is_active', true),
-        supabase.from('time_zones').select('id, name, code').eq('status', 'active'),
-        supabase.from('countries').select('code, name').eq('is_supported', true),
-      ])
-      setCurrencies((cur ?? []).map((c: any) => ({ value: c.code, label: `${c.name} (${c.symbol})` })))
-      setTimezones((tz ?? []).map((z: any) => ({ value: z.id, label: `${z.name} (${z.code})` })))
-      setCountries((ctr ?? []).map((c: any) => ({ value: c.code, label: c.name })))
-    }
-    loadOptions()
-  }, [])
-
-  useEffect(() => {
-    if (!entity) return
-    setLoading(false)
-    setFormData({
-      name: entity.name,
-      code: entity.code,
-      currency_code: entity.currency_code,
-      timezone_id: entity.timezone_id,
-      country_code: entity.country_code ?? '',
-      legal_name: currentContext?.type === 'organization' ? (entity as Organization).legal_name ?? '' : '',
-    })
-  }, [entity])
-
-  const handleSave = async () => {
-    if (!currentContext) return
-    setIsSaving(true)
+  async function save() {
+    if (!form) return
+    if (form.currency_code !== current!.currency_code && !confirm(t.ledgerx.currencyWarn)) return
+    setSaving(true)
     try {
-      const updates = {
-        name: formData.name,
-        code: formData.code,
-        currency_code: formData.currency_code,
-        timezone_id: formData.timezone_id,
-        country_code: formData.country_code || null,
-      }
-      if (currentContext.type === 'household') {
-        await HouseholdService.updateHousehold(currentContext.id, updates)
-      } else {
-        await OrganizationService.updateOrganization(currentContext.id, { ...updates, legal_name: formData.legal_name || null })
-      }
-      await initialize()
-      setIsEditing(false)
-      toast.success(t.settings.profile.saveSuccess)
-    } catch (err: any) {
-      console.error('Save failed:', err)
-      toast.error(err.message || t.common.error)
-    } finally {
-      setIsSaving(false)
-    }
+      await updateCurrent({
+        name: form.name.trim(), ledger_type_code: form.ledger_type_code, currency_code: form.currency_code, timezone_code: form.timezone_code,
+        country_code: form.country_code, locale: form.locale, fiscal_year_start_month: form.fiscal_year_start_month,
+      })
+      toast.success(t.prefs.saved)
+    } catch (e: any) { toast.error(e.message) } finally { setSaving(false) }
   }
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text)
-    toast.success(t.ledger_settings.copied)
+  async function transfer() {
+    const m = others.find((x) => x.user_id === newOwner)
+    if (!m || !confirm(t.members.transferConfirm.replace('{{name}}', m.user?.display_name ?? ''))) return
+    try { await MemberService.transferOwnership(current!.id, newOwner); await initialize(); toast.success(t.ledgerx.transferred) } catch (e: any) { toast.error(e.message) }
   }
 
-  if (loading || !entity || !currentContext) return (
-    <div className="h-full flex items-center justify-center">
-      <Loader2 className="w-8 h-8 animate-spin text-[var(--color-interactive-primary)]" />
-    </div>
-  )
+  async function leave() {
+    if (!confirm(t.members.leaveConfirm)) return
+    try { await MemberService.leave(current!.id); await initialize(); toast.success(t.ledgerx.left); router.replace('/') } catch (e: any) { toast.error(e.message) }
+  }
+
+  async function remove() {
+    const { error } = await supabase.rpc('delete_ledger', { p_ledger_id: current!.id, p_confirm_name: confirmName })
+    if (error) return toast.error(error.message)
+    toast.success(t.ledgerx.deleted)
+    await initialize()
+    router.replace(useLedgerStore.getState().current ? '/' : '/onboarding')
+  }
+
+  const set = <K extends keyof typeof form>(k: K, v: (typeof form)[K]) => setForm((f) => (f ? { ...f, [k]: v } : f))
 
   return (
-    <div className="space-y-12 animate-in fade-in duration-500 pb-20">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1">
-            <span>{currentContext.type === 'household' ? 'Household' : 'Organization'}</span>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            {t.ledger_settings.title}
-          </h2>
-          <p className="text-[var(--color-text-tertiary)] mt-1">
-            {isEditing ? t.settings.profile.editing : t.ledger_settings.subtitle}
-          </p>
+    <div className="animate-fade-in max-w-3xl space-y-8">
+      <PageTitle title={t.ledger_settings.title} subtitle={t.ledger_settings.subtitle} />
+      {!editable && <p className="text-sm text-[var(--color-text-tertiary)]">{t.ledgerx.readOnly}</p>}
+
+      <fieldset disabled={!editable} className="card-base px-5">
+        <SettingRow label={t.ledger_settings.nameLabel}><Input aria-label={t.ledger_settings.nameLabel} value={form.name} onChange={(e) => set('name', e.target.value)} /></SettingRow>
+        <SettingRow label={t.ledgerx.type}>
+          <select aria-label={t.ledgerx.type} className={selectClass} value={form.ledger_type_code} onChange={(e) => set('ledger_type_code', e.target.value)}>
+            {ledgerTypes.map((lt) => <option key={lt.code} value={lt.code}>{tk(lt.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledger_settings.currencyLabel} hint={t.ledgerx.currencyWarn}>
+          <select aria-label={t.ledger_settings.currencyLabel} className={selectClass} value={form.currency_code} onChange={(e) => set('currency_code', e.target.value)}>
+            {currencies.map((c) => <option key={c.code} value={c.code}>{c.code} · {tk(c.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledger_settings.timezoneLabel}>
+          <select aria-label={t.ledger_settings.timezoneLabel} className={selectClass} value={form.timezone_code} onChange={(e) => set('timezone_code', e.target.value)}>
+            {timeZones.map((z) => <option key={z.code} value={z.code}>{tk(z.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledgerx.country}>
+          <select aria-label={t.ledgerx.country} className={selectClass} value={form.country_code ?? ''} onChange={(e) => set('country_code', e.target.value || null)}>
+            <option value="">—</option>
+            {countries.map((c) => <option key={c.code} value={c.code}>{tk(c.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledger_settings.localeLabel}>
+          <select aria-label={t.ledger_settings.localeLabel} className={selectClass} value={form.locale} onChange={(e) => set('locale', e.target.value)}>
+            {[...new Set([...languages.map((l) => l.locale), form.locale])].map((l) => <option key={l} value={l}>{l}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledgerx.fiscalStart}>
+          <select aria-label={t.ledgerx.fiscalStart} className={selectClass} value={form.fiscal_year_start_month} onChange={(e) => set('fiscal_year_start_month', Number(e.target.value))}>
+            {months.map((m) => <option key={m.v} value={m.v}>{m.label}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.ledger_settings.systemId}>
+          <button type="button" onClick={() => { void navigator.clipboard.writeText(current.id); toast.success(t.ledger_settings.copied) }}
+            className="inline-flex items-center gap-2 text-xs font-mono text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"><Copy className="w-3.5 h-3.5" />{current.id}</button>
+        </SettingRow>
+      </fieldset>
+      {editable && (
+        <div className="flex gap-2">
+          <Button icon={<Save />} loading={saving} disabled={!dirty || !form.name.trim()} onClick={save}>{t.ledger_settings.saveBtn}</Button>
+          {dirty && <Button variant="ghost" onClick={() => setForm({ ...current })}>{t.ledger_settings.discardBtn}</Button>}
         </div>
+      )}
 
-        {isOwner && (
-          <AnimatePresence mode="wait">
-            {!isEditing ? (
-              <motion.button
-                key="edit-btn"
-                initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
-                onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-all"
-              >
-                <Edit3 className="w-4 h-4" />
-                {t.ledger_settings.editBtn}
-              </motion.button>
-            ) : (
-              <motion.div key="action-btns" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }} className="flex items-center gap-2">
-                <button onClick={() => setIsEditing(false)} className="px-4 py-2 text-sm font-semibold text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors">
-                  {t.common.cancel}
-                </button>
-                <button
-                  onClick={handleSave}
-                  disabled={isSaving}
-                  className="flex items-center gap-2 px-6 py-2 rounded-xl bg-[var(--color-interactive-primary)] text-white text-sm font-bold shadow-lg shadow-[var(--color-interactive-primary)]/20 hover:opacity-90 transition-all disabled:opacity-50"
-                >
-                  {isSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  {t.common.save}
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        )}
-      </div>
-
-      <SettingsSection title={t.ledger_settings.general}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <ProfileField label={t.ledger_settings.nameLabel} isEditing={isEditing}>
-            {isEditing ? <Input value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} /> : <p className="text-sm font-semibold">{formData.name}</p>}
-          </ProfileField>
-          <ProfileField label={t.ledger_settings.codeLabel} isEditing={isEditing}>
-            {isEditing ? <Input value={formData.code} onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })} /> : <p className="text-sm font-semibold">{formData.code}</p>}
-          </ProfileField>
-          {currentContext.type === 'organization' && (
-            <ProfileField label="Legal Name" isEditing={isEditing} className="md:col-span-2">
-              {isEditing ? <Input value={formData.legal_name} onChange={(e) => setFormData({ ...formData, legal_name: e.target.value })} /> : <p className="text-sm font-semibold">{formData.legal_name || '—'}</p>}
-            </ProfileField>
-          )}
-          <ProfileField label={t.ledger_settings.systemId} isEditing={false}>
-            <div className="flex items-center gap-2">
-              <code className="text-[10px] font-mono text-[var(--color-text-quaternary)] truncate max-w-[220px]">{entity.id}</code>
-              <button onClick={() => copyToClipboard(entity.id)} className="p-1.5 hover:bg-[var(--color-bg-sunken)] rounded-xl transition-colors"><Copy className="w-3 h-3 text-[var(--color-text-quaternary)]" /></button>
+      <section className="rounded-xl border border-[var(--color-text-loss)]/30 p-5 space-y-5">
+        <h3 className="text-sm font-semibold text-[var(--color-text-loss)]">{t.ledger_settings.dangerTitle}</h3>
+        {isOwner ? (
+          <>
+            <div className="space-y-2">
+              <p className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2"><Crown className="w-4 h-4" />{t.ledger_settings.transferLabel}</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">{t.ledger_settings.transferSub}</p>
+              {others.length === 0 ? <p className="text-xs text-[var(--color-text-quaternary)]">{t.ledgerx.noOtherMembers}</p> : (
+                <div className="flex gap-2">
+                  <select aria-label={t.ledgerx.transferTo} className={selectClass} value={newOwner} onChange={(e) => setNewOwner(e.target.value)}>
+                    <option value="">{t.ledgerx.transferTo}</option>
+                    {others.map((m) => <option key={m.user_id} value={m.user_id}>{m.user?.display_name} ({m.user?.email})</option>)}
+                  </select>
+                  <Button variant="outline" disabled={!newOwner} onClick={transfer}>{t.members.transferOwnership}</Button>
+                </div>
+              )}
             </div>
-          </ProfileField>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title={t.ledger_settings.regionalTitle}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <ProfileField label={t.ledger_settings.currencyLabel} isEditing={isEditing}>
-            {isEditing
-              ? <CustomSelect options={currencies} value={formData.currency_code} onChange={(v) => setFormData({ ...formData, currency_code: v })} />
-              : <p className="text-sm font-semibold">{currencies.find(c => c.value === formData.currency_code)?.label ?? formData.currency_code}</p>}
-          </ProfileField>
-          <ProfileField label={t.ledger_settings.timezoneLabel} isEditing={isEditing}>
-            {isEditing
-              ? <CustomSelect options={timezones} value={formData.timezone_id} onChange={(v) => setFormData({ ...formData, timezone_id: v })} />
-              : <p className="text-sm font-semibold">{timezones.find(z => z.value === formData.timezone_id)?.label ?? formData.timezone_id}</p>}
-          </ProfileField>
-          <ProfileField label="Country" isEditing={isEditing}>
-            {isEditing
-              ? <CustomSelect options={countries} value={formData.country_code} onChange={(v) => setFormData({ ...formData, country_code: v })} placeholder="—" />
-              : <p className="text-sm font-semibold">{countries.find(c => c.value === formData.country_code)?.label ?? '—'}</p>}
-          </ProfileField>
-        </div>
-      </SettingsSection>
-    </div>
-  )
-}
-
-function ProfileField({ label, children, isEditing, className }: { label: string, children: React.ReactNode, isEditing: boolean, className?: string }) {
-  return (
-    <div className={cn("space-y-1.5", className)}>
-      <label className={cn(
-        "text-[10px] font-bold uppercase tracking-wider transition-colors",
-        isEditing ? "text-[var(--color-text-tertiary)]" : "text-[var(--color-text-quaternary)]"
-      )}>
-        {label}
-      </label>
-      {children}
+            <div className="space-y-2 pt-4 border-t border-[var(--color-border-subtle)]">
+              <p className="text-sm font-medium text-[var(--color-text-loss)] flex items-center gap-2"><Trash2 className="w-4 h-4" />{t.ledger_settings.deleteTitle}</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">{t.ledger_settings.deleteDesc}</p>
+              <Input label={t.ledgerx.deleteType.replace('{{name}}', current.name)} value={confirmName} onChange={(e) => setConfirmName(e.target.value)} />
+              <Button variant="destructive" size="sm" disabled={confirmName !== current.name} onClick={remove}>{t.ledger_settings.deleteBtn}</Button>
+            </div>
+          </>
+        ) : (
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-[var(--color-text-primary)]">{t.members.leave}</p>
+            <Button variant="outline" size="sm" icon={<LogOut />} onClick={leave}>{t.members.leave}</Button>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

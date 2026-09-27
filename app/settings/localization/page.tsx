@@ -1,127 +1,75 @@
 'use client'
 
-import React from 'react'
-import { SettingsSection } from '@/features/settings/components/SettingsSection'
-import { CustomSelect } from '@/features/settings/components/CustomSelect'
-import { Globe, Clock, Calendar, Check } from 'lucide-react'
+import { toast } from 'sonner'
+import { SettingRow, PageTitle, selectClass } from '@/features/settings/components/Field'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMasterStore } from '@/features/master/store'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
+import { formatMoney } from '@/lib/money'
+import type { Lang } from '@/lib/i18n'
+
+const DATE_FORMATS = ['yyyy/MM/dd', 'yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy']
+
+function sampleDate(fmt: string) {
+  const d = new Date()
+  const map: Record<string, string> = { yyyy: String(d.getFullYear()), MM: String(d.getMonth() + 1).padStart(2, '0'), dd: String(d.getDate()).padStart(2, '0') }
+  return fmt.replace(/yyyy|MM|dd/g, (m) => map[m])
+}
 
 export default function LocalizationSettingsPage() {
-  const { setLang, timezone, setTimezone, locale, setLocale } = useSettingsStore()
-  const { t, lang } = useTranslation()
+  const { t, tk } = useTranslation()
+  const { preferences, updatePreferences } = useLedgerStore()
+  const { languages, currencies, timeZones } = useMasterStore()
+  const setLang = useSettingsStore((s) => s.setLang)
+  if (!preferences) return null
 
-  const LANG_OPTIONS = [
-    { value: 'en', label: 'English (US)', icon: Globe },
-    { value: 'ja', label: '日本語 (Japanese)', icon: Globe },
-    { value: 'vi', label: 'Tiếng Việt (Vietnamese)', icon: Globe },
-  ]
-
-  const TIMEZONES = [
-    { value: 'UTC', label: 'UTC (Universal Time)', icon: Clock },
-    { value: 'Asia/Tokyo', label: 'Tokyo (GMT+9)', icon: Clock },
-    { value: 'Asia/Ho_Chi_Minh', label: 'Ho Chi Minh (GMT+7)', icon: Clock },
-  ]
-
-  const LOCALES = [
-    { value: 'en-US', label: 'English (United States)', icon: Calendar },
-    { value: 'ja-JP', label: '日本語 (日本)', icon: Calendar },
-    { value: 'vi-VN', label: 'Tiếng Việt (Việt Nam)', icon: Calendar },
-  ]
-
-  const handleLangChange = (val: string) => {
-    setLang(val as any)
-    toast.success(t.settings.profile.saveSuccess)
+  const save = async (patch: Parameters<typeof updatePreferences>[0]) => {
+    try { await updatePreferences(patch); toast.success(t.prefs.saved) } catch (e: any) { toast.error(e.message) }
   }
-
-  const handleTimezoneChange = (val: string) => {
-    setTimezone(val)
-    toast.success(t.settings.profile.saveSuccess)
-  }
-
-  const handleLocaleChange = (val: string) => {
-    setLocale(val)
-    toast.success(t.settings.profile.saveSuccess)
-  }
+  const weekdays = [0, 1, 6].map((i) => ({ i, label: new Date(2024, 0, 7 + i).toLocaleDateString(preferences.locale, { weekday: 'long' }) }))
+  const locales = [...new Set([...languages.map((l) => l.locale), 'ja-JP', 'vi-VN', 'en-US', 'en-GB'])]
 
   return (
-    <div className="animate-fade-in space-y-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            {t.localization.title}
-          </h2>
-          <p className="text-[var(--color-text-tertiary)] mt-1">
-            {t.localization.subtitle}
-          </p>
-        </div>
+    <div className="animate-fade-in max-w-3xl">
+      <PageTitle title={t.localization.title} subtitle={t.localization.subtitle} />
+      <div className="card-base px-5 mb-6">
+        <SettingRow label={t.prefs.language} hint={t.localization.displayLanguageSub}>
+          <select aria-label={t.prefs.language} className={selectClass} value={preferences.language_code}
+            onChange={async (e) => { const code = e.target.value; setLang(code as Lang, { persistRemote: false }); await save({ language_code: code }) }}>
+            {languages.filter((l) => l.is_active).map((l) => <option key={l.code} value={l.code}>{l.native_name}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.prefs.locale} hint={t.localization.regionalFormatSub}>
+          <select aria-label={t.prefs.locale} className={selectClass} value={preferences.locale} onChange={(e) => save({ locale: e.target.value })}>
+            {locales.map((l) => <option key={l} value={l}>{l} — {(1234567.89).toLocaleString(l)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.prefs.timezone} hint={t.localization.timezoneSub}>
+          <select aria-label={t.prefs.timezone} className={selectClass} value={preferences.timezone_code} onChange={(e) => save({ timezone_code: e.target.value })}>
+            {timeZones.map((z) => <option key={z.code} value={z.code}>{tk(z.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.prefs.currency}>
+          <select aria-label={t.prefs.currency} className={selectClass} value={preferences.default_currency_code} onChange={(e) => save({ default_currency_code: e.target.value })}>
+            {currencies.map((c) => <option key={c.code} value={c.code}>{c.code} · {tk(c.name_key)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.prefs.dateFormat}>
+          <select aria-label={t.prefs.dateFormat} className={selectClass} value={preferences.date_format} onChange={(e) => save({ date_format: e.target.value })}>
+            {DATE_FORMATS.map((f) => <option key={f} value={f}>{sampleDate(f)}</option>)}
+          </select>
+        </SettingRow>
+        <SettingRow label={t.prefs.weekStart}>
+          <select aria-label={t.prefs.weekStart} className={selectClass} value={preferences.week_starts_on} onChange={(e) => save({ week_starts_on: Number(e.target.value) })}>
+            {weekdays.map((w) => <option key={w.i} value={w.i}>{w.label}</option>)}
+          </select>
+        </SettingRow>
       </div>
-
-      <SettingsSection title={t.localization.displayLanguage}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div className="space-y-4">
-            <p className="text-sm text-[var(--color-text-tertiary)] leading-relaxed">
-              {t.localization.displayLanguageSub}
-            </p>
-            <div className="grid grid-cols-1 gap-2">
-              {LANG_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleLangChange(opt.value)}
-                  className={cn(
-                    "flex items-center justify-between px-4 py-3 rounded-xl border transition-all text-left",
-                    lang === opt.value
-                      ? "bg-[var(--color-brand-50)] border-[var(--color-brand-200)] ring-1 ring-[var(--color-brand-200)]"
-                      : "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] hover:bg-[var(--color-bg-sunken)]"
-                  )}
-                >
-                  <div className="flex items-center gap-3">
-                    <opt.icon className={cn("w-4 h-4", lang === opt.value ? "text-[var(--color-brand-600)]" : "text-[var(--color-text-quaternary)]")} />
-                    <span className={cn("text-sm font-medium", lang === opt.value ? "text-[var(--color-brand-900)]" : "text-[var(--color-text-primary)]")}>
-                      {opt.label}
-                    </span>
-                  </div>
-                  {lang === opt.value && <Check className="w-4 h-4 text-[var(--color-brand-600)]" />}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      </SettingsSection>
-
-      <SettingsSection title={t.localization.regionTimezone}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-              {t.localization.personalTimezone}
-            </label>
-            <CustomSelect 
-              options={TIMEZONES}
-              value={timezone}
-              onChange={handleTimezoneChange}
-            />
-            <p className="text-[10px] text-[var(--color-text-quaternary)] mt-2">
-              {t.localization.timezoneSub}
-            </p>
-          </div>
-
-          <div className="space-y-1.5">
-            <label className="text-[10px] font-bold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-              {t.localization.regionalFormat}
-            </label>
-            <CustomSelect 
-              options={LOCALES}
-              value={locale}
-              onChange={handleLocaleChange}
-            />
-            <p className="text-[10px] text-[var(--color-text-quaternary)] mt-2">
-              {t.localization.regionalFormatSub}
-            </p>
-          </div>
-        </div>
-      </SettingsSection>
+      <div className="card-base p-5 text-sm text-[var(--color-text-secondary)]">
+        <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] mb-2">{t.prefs.preview}</p>
+        <p>{sampleDate(preferences.date_format)} · {new Date().toLocaleTimeString(preferences.locale, { timeZone: preferences.timezone_code, hour: '2-digit', minute: '2-digit' })} · {formatMoney(1234567, preferences.default_currency_code)}</p>
+      </div>
     </div>
   )
 }

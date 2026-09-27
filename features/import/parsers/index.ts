@@ -1,4 +1,4 @@
-import type { ImportResult, PaymentProvider, Transaction } from '@/types'
+import type { ImportResult, LegacyTransaction, ParsedImportRow, PaymentProvider } from '@/types'
 import { parseRakutenPayCSV, decodeShiftJIS } from './rakuten_pay'
 import { parsePayPayCSV } from './paypay'
 import { parsePayPayCardCSV } from './paypay_card'
@@ -52,25 +52,29 @@ async function readFileText(file: File): Promise<string> {
   return text.replace(/^﻿/, '') // strip BOM
 }
 
-function mapToV3(legacy: any[]): Transaction[] {
-  return legacy.map((tx) => ({
-    id:              tx.id,
-    organizationId:  '',
-    workspaceId:     '',
-    ledgerId:        '',
-    transactionDate: tx.date,
-    description:     tx.description,
-    amount:          Math.abs(tx.amount),
-    transactionType: tx.amount >= 0 ? 'income' : 'expense',
-    categoryId:      tx.category,
-    paymentInstrumentId: tx.provider,
-    status:          'posted',
-    isReconciled:    false,
-    currencyCode:    'JPY',
-    metadata:        tx.rawData || {},
-    createdAt:       new Date().toISOString(),
-    updatedAt:       new Date().toISOString(),
-  }))
+const LEGACY_CATEGORY_SLUG: Record<string, string> = {
+  food: 'food', transport: 'transport', shopping: 'shopping', entertainment: 'entertainment',
+  health: 'health', utilities: 'utilities', other: 'other-expense',
+}
+
+/** Legacy parser output → ParsedImportRow (positive amount + type, raw cells kept). */
+function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
+  return legacy
+    .filter((tx) => tx.amount !== 0 && tx.date)
+    .map((tx, i) => {
+      const raw = (tx.rawData && typeof tx.rawData === 'object' ? tx.rawData : {}) as Record<string, unknown>
+      const values = Object.entries(raw).map(([name, value]) => ({ name, value: value == null ? '' : String(value) }))
+      return {
+        rowNumber: i + 1,
+        date: tx.date.slice(0, 10),
+        amount: Math.abs(tx.amount),
+        type: tx.amount >= 0 ? 'income' : 'expense',
+        description: tx.description || '—',
+        categoryHint: tx.amount < 0 ? LEGACY_CATEGORY_SLUG[tx.category] : undefined,
+        rawLine: values.map((v) => v.value).join(','),
+        values,
+      }
+    })
 }
 
 export async function parseFile(
@@ -85,7 +89,7 @@ export async function parseFile(
       try {
         const rakutenRes = await parseRakutenPayPDF(file)
         if (rakutenRes.transactions.length > 0) {
-          return { success: true, transactions: mapToV3(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_pay' }
+          return { success: true, rows: toRows(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_pay' }
         }
       } catch (e) {
         // ignore and try next
@@ -94,21 +98,21 @@ export async function parseFile(
       try {
         const paypayRes = await parsePayPayPDF(file)
         if (paypayRes.transactions.length > 0) {
-          return { success: true, transactions: mapToV3(paypayRes.transactions), errors: paypayRes.errors, fileName: file.name, provider: 'paypay' }
+          return { success: true, rows: toRows(paypayRes.transactions), errors: paypayRes.errors, fileName: file.name, provider: 'paypay' }
         }
       } catch (e) {
         // ignore
       }
 
       return {
-        success: false, transactions: [], fileName: file.name, provider: 'generic_csv',
+        success: false, rows: [], fileName: file.name, provider: 'generic_csv',
         errors: ['PDFの解析に失敗しました。対応しているのは楽天PayとPayPayの利用明細のみです。'],
       }
     }
 
     const text = await readFileText(file)
 
-    const parsers: Partial<Record<PaymentProvider, (t: string) => { transactions: any[]; errors: string[] }>> = {
+    const parsers: Partial<Record<PaymentProvider, (t: string) => { transactions: LegacyTransaction[]; errors: string[] }>> = {
       'rakuten_pay': parseRakutenPayCSV,
       'paypay':      parsePayPayCSV,
       'paypay_card': parsePayPayCardCSV,
@@ -120,22 +124,22 @@ export async function parseFile(
 
     if (provider === 'generic_csv') {
       const { transactions, errors } = parseGenericCSV(text, genericMapping)
-      return { success: transactions.length > 0, transactions: mapToV3(transactions), errors, fileName: file.name, provider }
+      return { success: transactions.length > 0, rows: toRows(transactions), errors, fileName: file.name, provider }
     }
 
     const parser = parsers[provider]
     if (parser) {
       const { transactions, errors } = parser(text)
-      return { success: errors.length === 0 || transactions.length > 0, transactions: mapToV3(transactions), errors, fileName: file.name, provider }
+      return { success: errors.length === 0 || transactions.length > 0, rows: toRows(transactions), errors, fileName: file.name, provider }
     }
 
     return {
-      success: false, transactions: [], fileName: file.name, provider,
+      success: false, rows: [], fileName: file.name, provider,
       errors: [`未対応のプロバイダー: ${provider}`],
     }
   } catch (err) {
     return {
-      success: false, transactions: [],
+      success: false, rows: [],
       errors: [err instanceof Error ? err.message : '解析エラーが発生しました'],
       fileName: file.name,
       provider,

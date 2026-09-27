@@ -52,7 +52,7 @@ export function normalizeDate(raw: string): string {
   }
   const d = new Date(cleaned)
   if (isNaN(d.getTime())) return ''
-  return d.toISOString().split('T')[0]
+  return toLocalISODate(d)
 }
 
 export function generateId(): string {
@@ -105,4 +105,9 @@ export function slugify(str: string) {
     .replace(/[^a-z0-9 -]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+}
+
+/** Local calendar date as YYYY-MM-DD (toISOString would give the UTC date). */
+export function toLocalISODate(d: Date = new Date()): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

@@ -1,70 +1,123 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Trash2, Pencil, Power, RefreshCw, X } from 'lucide-react'
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
+import { useEffect, useMemo, useState } from 'react'
+import { Plus, Trash2, Pencil, Power, RefreshCw, X, Check, SkipForward } from 'lucide-react'
+import { toast } from 'sonner'
+import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input, Select } from '@/components/ui/input'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
-import { useRecurringStore, type RecurringTransaction } from '@/stores/recurring'
+import { useRecurringStore, type Frequency, type RecurringInput, type RecurringRule } from '@/stores/recurring'
+import { useTransactionsStore } from '@/stores/transactions'
+import { useLedgerData } from '@/hooks/useLedgerData'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
-import { cn } from '@/lib/utils'
-import { CATEGORIES, PROVIDERS } from '@/lib/constants'
-import type { LegacyCategory as Category, PaymentProvider } from '@/types'
+import { cn, formatDate, toLocalISODate } from '@/lib/utils'
 
-interface FormState {
-  description: string; amount: string; category: Category
-  provider: PaymentProvider; dayOfMonth: string; note: string
+/** Rough monthly cost of a rule, for the header total. */
+function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'intervalCount'>) {
+  const perYear = { daily: 365, weekly: 52, monthly: 12, yearly: 1 }[r.frequency]
+  return (r.amount * perYear) / 12 / Math.max(1, r.intervalCount)
 }
 
-const DEFAULT_FORM: FormState = {
-  description: '', amount: '', category: 'other',
-  provider: 'manual', dayOfMonth: '1', note: '',
-}
-
-function RecurringForm({ initial, onSave, onCancel }: {
-  initial?: Partial<FormState>
-  onSave:  (data: FormState) => void
-  onCancel:() => void
-}) {
+function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose: () => void }) {
   const { t, lang } = useTranslation()
-  const [form, setForm] = useState<FormState>({ ...DEFAULT_FORM, ...initial })
+  const { ledger, accounts, categories } = useLedgerData()
+  const { create, update } = useRecurringStore()
+  const activeAccounts = accounts.filter((a) => !a.isArchived)
+  const [form, setForm] = useState<RecurringInput>(() => initial ?? {
+    name: '', transactionType: 'expense', amount: 0, currencyCode: ledger?.currency_code ?? 'JPY',
+    accountId: activeAccounts[0]?.id ?? '', transferAccountId: null, categoryId: null, description: '', notes: null,
+    frequency: 'monthly', intervalCount: 1, dayOfMonth: new Date().getDate(), dayOfWeek: null,
+    startDate: toLocalISODate(), endDate: null, autoPost: true, isActive: true,
+  })
+  const [saving, setSaving] = useState(false)
+  const set = <K extends keyof RecurringInput>(k: K, v: RecurringInput[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const weekdays = Array.from({ length: 7 }, (_, i) => new Date(2024, 0, 7 + i).toLocaleDateString(lang, { weekday: 'long' }))
+  const cats = categories.filter((c) => c.is_active && c.type === form.transactionType)
 
-  function setField<K extends keyof FormState>(k: K, v: FormState[K]) {
-    setForm((f) => ({ ...f, [k]: v }))
+  async function save() {
+    if (!ledger) return
+    if (!form.name.trim()) return toast.error(t.catform.errorName)
+    if (!(form.amount > 0)) return toast.error(t.txform.errorAmount)
+    if (!form.accountId) return toast.error(t.txform.errorAccount)
+    setSaving(true)
+    try {
+      const input = { ...form, description: form.description || form.name }
+      if (initial) await update(initial.id, input)
+      else await create(ledger.id, input)
+      toast.success(t.txform.saved)
+      onClose()
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-[var(--color-surface-default)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-md shadow-xl border border-[var(--color-border-default)] max-h-[90vh] overflow-y-auto">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div role="dialog" aria-modal="true" aria-label={initial ? t.recurring.edit : t.recurring.add}
+        className="relative bg-[var(--color-surface-default)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-xl border border-[var(--color-border-default)] max-h-[92vh] overflow-y-auto">
         <div className="sticky top-0 bg-[var(--color-surface-default)] border-b border-[var(--color-border-subtle)] px-5 py-4 flex items-center justify-between z-10">
-          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">
-            {initial ? (lang === 'vi' ? 'Chỉnh sửa định kỳ' : (lang === 'ja' ? '定期支払を編集' : 'Edit recurring')) : t.recurring.add}
-          </h2>
-          <button onClick={onCancel} className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors">
-            <X className="w-4 h-4" />
-          </button>
+          <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{initial ? t.recurring.edit : t.recurring.add}</h2>
+          <button onClick={onClose} aria-label={t.common.close} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><X className="w-4 h-4" /></button>
         </div>
         <div className="p-5 space-y-4">
-          <Input label={lang === 'vi' ? 'Mô tả' : (lang === 'ja' ? '内容' : 'Description')} value={form.description} onChange={(e) => setField('description', e.target.value)} placeholder={lang === 'vi' ? 'Ví dụ: Netflix, Gym' : (lang === 'ja' ? '例: Netflix, ジム' : 'e.g. Netflix, Gym')} />
-          <Input label={lang === 'vi' ? 'Số tiền' : (lang === 'ja' ? '金額' : 'Amount')} type="number" value={form.amount} onChange={(e) => setField('amount', e.target.value)} placeholder="0" />
-          <div className="grid grid-cols-2 gap-3">
-            <Select label={t.transactions.labelCategory} value={form.category} onChange={(e) => setField('category', e.target.value as Category)}>
-              {CATEGORIES.map((c) => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}
-            </Select>
-            <Input label={lang === 'vi' ? 'Ngày trong tháng' : (lang === 'ja' ? '毎月の日' : 'Day of month')} type="number" min="1" max="28" value={form.dayOfMonth} onChange={(e) => setField('dayOfMonth', e.target.value)} />
+          <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[var(--color-bg-sunken)]" role="radiogroup" aria-label={t.recurring.type}>
+            {(['expense', 'income', 'transfer'] as const).map((ty) => (
+              <button key={ty} role="radio" aria-checked={form.transactionType === ty} onClick={() => setForm((f) => ({ ...f, transactionType: ty, categoryId: null }))}
+                className={cn('h-9 rounded-lg text-sm font-medium', form.transactionType === ty ? 'bg-[var(--color-surface-default)] shadow-sm' : 'text-[var(--color-text-tertiary)]')}>
+                {ty === 'expense' ? t.transactions.typeExpense : ty === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer}
+              </button>
+            ))}
           </div>
-          <Select label={t.transactions.labelProvider} value={form.provider} onChange={(e) => setField('provider', e.target.value as PaymentProvider)}>
-            {PROVIDERS.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-          </Select>
-          <Input label={lang === 'vi' ? 'Ghi chú' : (lang === 'ja' ? 'メモ' : 'Note')} value={form.note} onChange={(e) => setField('note', e.target.value)} placeholder={lang === 'vi' ? 'Ghi chú thêm (tùy chọn)...' : (lang === 'ja' ? 'オプションのメモ...' : 'Optional note...')} />
-          <Button className="w-full" onClick={() => form.description && form.amount && onSave(form)}>
-            {t.common.save}
-          </Button>
+          <Input label={t.recurring.name} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Netflix, 家賃…" />
+          <Input label={`${t.recurring.amount} (${form.currencyCode})`} inputMode="decimal" value={form.amount || ''} onChange={(e) => set('amount', Number(e.target.value.replace(/[^0-9.]/g, '')))} />
+          <div className="grid grid-cols-2 gap-3">
+            <Select label={t.recurring.account} value={form.accountId} onChange={(e) => set('accountId', e.target.value)}>
+              {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+            </Select>
+            {form.transactionType === 'transfer' ? (
+              <Select label={t.txform.toAccount} value={form.transferAccountId ?? ''} onChange={(e) => set('transferAccountId', e.target.value || null)}>
+                <option value="">{t.bulk.choose}</option>
+                {activeAccounts.filter((a) => a.id !== form.accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+              </Select>
+            ) : (
+              <Select label={t.recurring.category} value={form.categoryId ?? ''} onChange={(e) => set('categoryId', e.target.value || null)}>
+                <option value="">{t.txform.uncategorized}</option>
+                {cats.map((c) => <option key={c.id} value={c.id}>{c.parent_id ? '— ' : ''}{c.name}</option>)}
+              </Select>
+            )}
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <Select label={t.recurring.frequencyLabel} value={form.frequency} onChange={(e) => set('frequency', e.target.value as Frequency)}>
+              {(['daily', 'weekly', 'monthly', 'yearly'] as const).map((f) => <option key={f} value={f}>{t.recurring.frequency[f]}</option>)}
+            </Select>
+            <Input label={t.recurring.every} type="number" min={1} value={form.intervalCount} onChange={(e) => set('intervalCount', Math.max(1, Number(e.target.value)))} />
+            {form.frequency === 'monthly' && (
+              <Input label={t.recurring.dayOfMonth} type="number" min={1} max={31} value={form.dayOfMonth ?? ''} onChange={(e) => set('dayOfMonth', Math.min(31, Math.max(1, Number(e.target.value))))} />
+            )}
+            {form.frequency === 'weekly' && (
+              <Select label={t.recurring.dayOfWeek} value={form.dayOfWeek ?? 1} onChange={(e) => set('dayOfWeek', Number(e.target.value))}>
+                {weekdays.map((w, i) => <option key={i} value={i}>{w}</option>)}
+              </Select>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Input label={t.recurring.startDate} type="date" value={form.startDate} onChange={(e) => set('startDate', e.target.value)} />
+            <Input label={t.recurring.endDate} type="date" value={form.endDate ?? ''} onChange={(e) => set('endDate', e.target.value || null)} />
+          </div>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input type="checkbox" checked={form.autoPost} onChange={(e) => set('autoPost', e.target.checked)} className="mt-1 accent-[var(--color-interactive-primary)]" />
+            <span><span className="text-sm font-medium text-[var(--color-text-primary)] block">{t.recurring.autoPost}</span><span className="text-xs text-[var(--color-text-tertiary)]">{t.recurring.autoPostSub}</span></span>
+          </label>
+          <Input label={t.recurring.notes} value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value || null)} />
+          <Button className="w-full" onClick={save} loading={saving}>{t.common.save}</Button>
         </div>
       </div>
     </div>
@@ -72,124 +125,93 @@ function RecurringForm({ initial, onSave, onCancel }: {
 }
 
 export default function RecurringPage() {
-  const { items, add, update, remove } = useRecurringStore()
-  const { t, lang } = useTranslation()
-  const { format }  = useMoney()
-  const [formOpen,  setFormOpen]  = useState(false)
-  const [editItem,  setEditItem]  = useState<RecurringTransaction | null>(null)
+  const { t } = useTranslation()
+  const { format } = useMoney()
+  const { ledger, accounts, categories } = useLedgerData()
+  const can = useLedgerStore((s) => s.can)
+  const { rules, pending, load, update, remove, confirmPending, skipPending } = useRecurringStore()
+  const [editing, setEditing] = useState<RecurringRule | 'new' | null>(null)
 
-  function handleSave(data: FormState) {
-    const payload = {
-      description: data.description,
-      amount:      Number(data.amount),
-      category:    data.category,
-      provider:    data.provider,
-      dayOfMonth:  Number(data.dayOfMonth),
-      note:        data.note || undefined,
-      isActive:    true,
-    }
-    if (editItem) {
-      update(editItem.id, payload)
-    } else {
-      add(payload)
-    }
-    setFormOpen(false)
-    setEditItem(null)
-  }
+  useEffect(() => { if (ledger) void load(ledger.id) }, [ledger, load])
 
-  const totalMonthly = items.filter((i) => i.isActive).reduce((s, i) => s + i.amount, 0)
+  const monthlyTotal = useMemo(() => rules.filter((r) => r.isActive && r.transactionType === 'expense').reduce((s, r) => s + monthlyEquivalent(r), 0), [rules])
+  const catName = (id: string | null) => categories.find((c) => c.id === id)?.name
+  const accName = (id: string) => accounts.find((a) => a.id === id)?.name
+  const bump = () => useTransactionsStore.setState((s) => ({ revision: s.revision + 1 }))
 
   return (
     <div className="animate-fade-in space-y-5">
-      <PageHeader
-        title={t.recurring.title}
-        subtitle={t.recurring.subtitle}
-        actions={
-          <Button size="sm" icon={<Plus />} onClick={() => { setEditItem(null); setFormOpen(true) }}>
-            {t.recurring.add}
-          </Button>
-        }
-      />
+      <PageHeader title={t.recurring.title} subtitle={t.recurring.subtitle}
+        actions={can('recurring.create') ? <Button size="sm" icon={<Plus />} onClick={() => setEditing('new')}>{t.recurring.add}</Button> : undefined} />
 
-      {items.length > 0 && (
-        <div className="grid grid-cols-2 gap-3">
-          <div className="card-base p-4">
-            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
-              {lang === 'vi' ? 'Đang hoạt động' : (lang === 'ja' ? '有効な項目' : 'Active items')}
-            </p>
-            <p className="text-lg font-semibold text-[var(--color-text-primary)]">{items.filter((i) => i.isActive).length}</p>
-          </div>
-          <div className="card-base p-4">
-            <p className="text-xs text-[var(--color-text-tertiary)] mb-1">
-              {lang === 'vi' ? 'Tổng hàng tháng' : (lang === 'ja' ? '月間合計' : 'Monthly total')}
-            </p>
-            <p className="text-lg font-semibold font-tabular text-[var(--color-text-loss)]">{format(totalMonthly)}</p>
-          </div>
+      <div className="grid grid-cols-2 gap-3">
+        <div className="card-base p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.recurring.monthlyTotal}</p>
+          <p className="text-2xl font-semibold font-tabular text-[var(--color-text-loss)] mt-1">{format(monthlyTotal)}</p>
         </div>
+        <div className="card-base p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.recurring.pendingTitle}</p>
+          <p className="text-2xl font-semibold font-tabular text-[var(--color-text-primary)] mt-1">{pending.length}</p>
+        </div>
+      </div>
+
+      {pending.length > 0 && (
+        <Card padding="none">
+          <CardHeader><CardTitle>{t.recurring.pendingTitle}</CardTitle></CardHeader>
+          <div className="divide-y divide-[var(--color-border-subtle)]">
+            {pending.map((p) => (
+              <div key={p.id} className="flex items-center gap-3 px-4 py-3">
+                <span className="text-xs text-[var(--color-text-quaternary)] w-20">{formatDate(p.date)}</span>
+                <span className="flex-1 text-sm text-[var(--color-text-primary)] truncate">{p.description}</span>
+                <span className="font-tabular text-sm">{format(p.amount)}</span>
+                <Button size="sm" icon={<Check />} onClick={async () => { await confirmPending(p.id); bump() }}>{t.recurring.confirm}</Button>
+                <Button size="sm" variant="ghost" icon={<SkipForward />} onClick={async () => { await skipPending(p.id); bump() }}>{t.recurring.skip}</Button>
+              </div>
+            ))}
+          </div>
+        </Card>
       )}
 
       <Card padding="none">
-        {items.length === 0 ? (
-          <EmptyState
-            icon={<RefreshCw className="w-6 h-6" />}
-            title={t.recurring.noData}
-            action={
-              <Button size="sm" icon={<Plus />} onClick={() => setFormOpen(true)}>
-                {t.recurring.add}
-              </Button>
-            }
-          />
+        {rules.length === 0 ? (
+          <EmptyState title={t.recurring.noData} action={can('recurring.create') ? <Button size="sm" icon={<Plus />} onClick={() => setEditing('new')}>{t.recurring.add}</Button> : undefined} />
         ) : (
           <div className="divide-y divide-[var(--color-border-subtle)]">
-            {items.map((item) => (
-              <div key={item.id} className={cn(
-                'flex items-center gap-3 px-4 py-3 transition-colors',
-                !item.isActive && 'opacity-50'
-              )}>
-                <div className="w-8 h-8 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center shrink-0">
-                  <RefreshCw className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                </div>
+            {rules.map((r) => (
+              <div key={r.id} className={cn('flex items-center gap-3 px-4 py-3.5', !r.isActive && 'opacity-50')}>
+                <div className="w-9 h-9 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center"><RefreshCw className="w-4 h-4 text-[var(--color-text-tertiary)]" /></div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{item.description}</p>
-                  <div className="flex items-center gap-2 mt-0.5">
-                    <span className="text-xs text-[var(--color-text-tertiary)]">
-                      {lang === 'vi' ? `Ngày ${item.dayOfMonth} mỗi tháng` : (lang === 'ja' ? `毎月${item.dayOfMonth}日` : `Day ${item.dayOfMonth} each month`)}
-                    </span>
-                    <Badge variant={item.isActive ? 'gain' : 'neutral'} size="sm" dot>
-                      {item.isActive ? (lang === 'vi' ? 'Hoạt động' : (lang === 'ja' ? '有効' : 'Active')) : (lang === 'vi' ? 'Tạm dừng' : (lang === 'ja' ? '無効' : 'Inactive'))}
-                    </Badge>
+                  <p className="text-sm font-medium text-[var(--color-text-primary)] truncate flex items-center gap-2">
+                    {r.name}
+                    {!r.isActive && <Badge variant="neutral" size="sm">{t.recurring.paused}</Badge>}
+                    {!r.autoPost && <Badge variant="info" size="sm">{t.recurring.confirm}</Badge>}
+                  </p>
+                  <p className="text-xs text-[var(--color-text-tertiary)] truncate">
+                    {r.intervalCount > 1 ? `${r.intervalCount}× ` : ''}{t.recurring.frequency[r.frequency]}
+                    {r.frequency === 'monthly' && r.dayOfMonth ? ` · ${r.dayOfMonth}` : ''}
+                    {' · '}{accName(r.accountId)}{catName(r.categoryId) ? ` · ${catName(r.categoryId)}` : ''}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className={cn('text-sm font-semibold font-tabular', r.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')}>{format(r.amount)}</p>
+                  <p className="text-[11px] text-[var(--color-text-quaternary)]">{t.recurring.next}: {formatDate(r.nextRunDate)}</p>
+                </div>
+                {can('recurring.update') && (
+                  <div className="flex items-center gap-0.5">
+                    <button aria-label={r.isActive ? t.recurring.paused : t.catui.active} onClick={() => void update(r.id, { isActive: !r.isActive })} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><Power className="w-3.5 h-3.5" /></button>
+                    <button aria-label={t.common.edit} onClick={() => setEditing(r)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><Pencil className="w-3.5 h-3.5" /></button>
+                    {can('recurring.delete') && (
+                      <button aria-label={t.common.delete} onClick={() => { if (confirm(t.recurring.deleteConfirm)) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                    )}
                   </div>
-                </div>
-                <p className="text-sm font-medium font-tabular text-[var(--color-text-loss)] shrink-0">
-                  −{format(item.amount)}
-                </p>
-                <div className="flex items-center gap-1 shrink-0">
-                  <button onClick={() => update(item.id, { isActive: !item.isActive })}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors">
-                    <Power className={cn('w-3.5 h-3.5', item.isActive ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-quaternary)]')} />
-                  </button>
-                  <button onClick={() => { setEditItem(item); setFormOpen(true) }}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-quaternary)]">
-                    <Pencil className="w-3.5 h-3.5" />
-                  </button>
-                  <button onClick={() => remove(item.id)}
-                    className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] hover:text-[var(--color-text-loss)] transition-colors text-[var(--color-text-quaternary)]">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                )}
               </div>
             ))}
           </div>
         )}
       </Card>
 
-      {formOpen && (
-        <RecurringForm
-          initial={editItem ? { description: editItem.description, amount: String(editItem.amount), category: editItem.category, provider: editItem.provider, dayOfMonth: String(editItem.dayOfMonth), note: editItem.note ?? '' } : undefined}
-          onSave={handleSave}
-          onCancel={() => { setFormOpen(false); setEditItem(null) }}
-        />
-      )}
+      {editing && <RecurringForm initial={editing === 'new' ? undefined : editing} onClose={() => { setEditing(null); bump() }} />}
     </div>
   )
 }

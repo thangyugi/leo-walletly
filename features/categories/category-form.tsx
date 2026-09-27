@@ -2,22 +2,20 @@
 
 import * as React from 'react'
 import { useCategoryStore, getCategoryDepth, getSubtreeHeight } from './store'
-import { GroupType } from '@/components/ui/group-primitives'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
-import { getTranslations, Lang } from '@/lib/i18n'
-import { useMembershipStore } from '@/features/user-management/membership-store'
+import { useTranslation } from '@/hooks/useTranslation'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
-import { Modal } from '@/components/ui/modal'
-import type { Category } from './types'
+import type { Category, CategoryType } from './types'
 
 interface CategoryFormProps {
-  lang?:        Lang
   onClose:      () => void
-  initialData?: any
+  /** Existing category to edit, or defaults (e.g. parent_id) for a new one. */
+  initialData?: Partial<Category>
 }
 
 // ─── Extended color palette (32 colors covering full spectrum) ──────────────
@@ -40,13 +38,6 @@ const PRESET_COLORS = [
   '#64748b', '#475569', '#1e293b', '#0f172a',
 ]
 
-const GROUP_TYPES: { value: GroupType; label: string }[] = [
-  { value: 'cost_center', label: 'Cost Center (Trung tâm chi phí)' },
-  { value: 'department',  label: 'Department (Phòng ban)' },
-  { value: 'project',     label: 'Project (Dự án)' },
-  { value: 'team',        label: 'Team (Nhóm)' },
-  { value: 'subsidiary',  label: 'Subsidiary (Công ty con)' },
-]
 
 // ─── Tree parent picker ──────────────────────────────────────────────────────
 
@@ -135,6 +126,7 @@ export function ParentTreeDropdown({
   disabled?: boolean
   allowNone?: boolean
 }) {
+  const { t } = useTranslation()
   const [open, setOpen] = React.useState(false)
   const ref = React.useRef<HTMLDivElement>(null)
 
@@ -178,7 +170,7 @@ export function ParentTreeDropdown({
           </>
         ) : (
           <span className="flex-1 text-[var(--color-text-placeholder)]">
-            {allowNone === false ? 'Chọn danh mục...' : '-- Không có danh mục cha --'}
+            {allowNone === false ? t.catform.chooseCategory : t.catform.noParent}
           </span>
         )}
         <ChevronDown className={cn('w-4 h-4 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
@@ -205,7 +197,7 @@ export function ParentTreeDropdown({
                 <span className="w-6 h-6 rounded-[6px] flex items-center justify-center bg-[var(--color-bg-sunken)]">
                   <span className="text-[10px]">—</span>
                 </span>
-                Không có nhóm cha
+                {t.catform.noParent}
                 {!value && <Check className="w-3.5 h-3.5 ml-auto" />}
               </button>
             </div>
@@ -216,7 +208,7 @@ export function ParentTreeDropdown({
             {renderTree(rootNodes, options, 0, value, (id) => { onChange(id); setOpen(false) })}
             {rootNodes.length === 0 && (
               <p className="text-[12px] text-[var(--color-text-quaternary)] text-center py-3">
-                Không có danh mục nào khả dụng
+                {t.catui.noData}
               </p>
             )}
           </div>
@@ -228,421 +220,238 @@ export function ParentTreeDropdown({
 
 // ─── Main form ───────────────────────────────────────────────────────────────
 
-export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryFormProps) {
-  getTranslations(lang)
-  const { currentContext } = useMembershipStore()
-  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
+export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
+  const { t } = useTranslation()
+  const ledger = useLedgerStore((s) => s.current)
   const { categories, createCategory, updateCategory } = useCategoryStore()
+  const parentDefault = initialData?.parent_id ? categories.find((c) => c.id === initialData.parent_id) : undefined
 
   const [formData, setFormData] = React.useState({
-    name:         initialData?.name          || '',
-    type:         (initialData?.type as GroupType) || 'cost_center',
-    parent_id:    initialData?.parent_id     || '',
-    color:        initialData?.color         || PRESET_COLORS[0],
-    emoji:        initialData?.emoji         || PRESET_ICONS[0],
-    budget_limit: initialData?.budget_limit  ?? 0,
-    keywords:     (initialData?.keywords     || []) as string[],
-    is_shared:    initialData?.is_shared     ?? false,
+    name:              initialData?.name ?? '',
+    type:              (initialData?.type ?? parentDefault?.type ?? 'expense') as CategoryType,
+    parent_id:         initialData?.parent_id ?? '',
+    color:             initialData?.color ?? parentDefault?.color ?? PRESET_COLORS[14],
+    emoji:             initialData?.emoji ?? parentDefault?.emoji ?? PRESET_ICONS[0],
+    description:       initialData?.description ?? '',
+    budget_limit:      initialData?.budget_limit ?? 0,
+    warning_threshold: initialData?.warning_threshold ?? 80,
+    keywords:          (initialData?.keywords ?? []) as string[],
+    is_shared:         initialData?.is_shared ?? false,
   })
-
   const [keywordInput, setKeywordInput] = React.useState('')
   const [isSaving, setIsSaving] = React.useState(false)
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
-  const [budgetWarning, setBudgetWarning] = React.useState<{ message: string; payload: any } | null>(null)
+  const isEdit = !!initialData?.id
 
-  const performSave = async (payload: any) => {
-    try {
-      if (initialData?.id) {
-        await updateCategory(initialData.id, payload)
-      } else {
-        await createCategory(payload)
-      }
-      onClose()
-    } catch (err: any) {
-      setErrorMsg(err.message || 'Có lỗi xảy ra khi lưu danh mục')
-    } finally {
-      setIsSaving(false)
-    }
+  const addKeyword = () => {
+    const kw = keywordInput.trim().toLowerCase()
+    if (kw && !formData.keywords.includes(kw)) setFormData((f) => ({ ...f, keywords: [...f.keywords, kw] }))
+    setKeywordInput('')
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
+    if (!formData.name.trim()) return setErrorMsg(t.catform.errorName)
+    if (!ledger) return
 
-    if (!formData.name.trim()) {
-      setErrorMsg('Vui lòng nhập tên danh mục')
-      return
-    }
+    const pending = keywordInput.trim().toLowerCase()
+    const keywords = pending && !formData.keywords.includes(pending) ? [...formData.keywords, pending] : formData.keywords
+    const parentId = formData.parent_id || null
+    const budget = Number(formData.budget_limit) || 0
 
-    if (!currentLedger?.id) return
-    setIsSaving(true)
-
-    let finalKeywords = formData.keywords
-    const kw = keywordInput.trim()
-    if (kw && !finalKeywords.includes(kw)) {
-      finalKeywords = [...finalKeywords, kw]
-      setFormData(prev => ({ ...prev, keywords: finalKeywords }))
-      setKeywordInput('')
-    }
-
-    const payload = {
-      ...formData,
-      keywords:     finalKeywords,
-      ledger_id:    currentLedger.id,
-      parent_id:    formData.parent_id === '' ? null : formData.parent_id,
-      budget_limit: Number(formData.budget_limit),
-    }
-
-    // Budget validation
-    if (payload.parent_id && payload.budget_limit > 0) {
-      const parentCat = categories.find(c => c.id === payload.parent_id)
-      if (parentCat && parentCat.budget_limit > 0) {
-        const otherSubs = categories.filter(c => c.parent_id === payload.parent_id && c.id !== initialData?.id)
-        const otherBudgets = otherSubs.reduce((acc, c) => acc + (c.budget_limit || 0), 0)
-        const total = otherBudgets + payload.budget_limit
-        if (total > parentCat.budget_limit) {
-          setIsSaving(false)
-          setBudgetWarning({
-            message: `Tổng ngân sách các danh mục con (${total.toLocaleString()}) vượt quá ngân sách danh mục cha "${parentCat.name}" (${parentCat.budget_limit.toLocaleString()}). Vui lòng điều chỉnh lại.`,
-            payload,
-          })
-          return
+    // Children's budgets should fit inside the parent's budget.
+    if (parentId && budget > 0) {
+      const parent = categories.find((c) => c.id === parentId)
+      if (parent && parent.budget_limit > 0) {
+        const siblings = categories.filter((c) => c.parent_id === parentId && c.id !== initialData?.id)
+        const total = siblings.reduce((sum, c) => sum + (c.budget_limit || 0), 0) + budget
+        if (total > parent.budget_limit) {
+          return setErrorMsg(t.catform.budgetOver
+            .replace('{{total}}', total.toLocaleString())
+            .replace('{{parent}}', parent.name)
+            .replace('{{limit}}', parent.budget_limit.toLocaleString()))
         }
       }
     }
 
-    await performSave(payload)
-  }
-
-  const addKeyword = () => {
-    const kw = keywordInput.trim()
-    if (kw && !formData.keywords.includes(kw)) {
-      setFormData({ ...formData, keywords: [...formData.keywords, kw] })
-      setKeywordInput('')
+    setIsSaving(true)
+    try {
+      const payload = {
+        name: formData.name,
+        type: formData.type,
+        parent_id: parentId,
+        color: formData.color,
+        emoji: formData.emoji,
+        description: formData.description || null,
+        budget_limit: budget,
+        warning_threshold: formData.warning_threshold,
+        keywords,
+        is_shared: formData.is_shared,
+        ledger_id: ledger.id,
+      }
+      if (isEdit) await updateCategory(initialData!.id!, payload)
+      else await createCategory(payload)
+      onClose()
+    } catch (err: any) {
+      setErrorMsg(err.message)
+    } finally {
+      setIsSaving(false)
     }
-  }
-
-  const removeKeyword = (kw: string) => {
-    setFormData({ ...formData, keywords: formData.keywords.filter((k) => k !== kw) })
   }
 
   const parentOptions = React.useMemo(() => {
     const currentId = initialData?.id
-    const currentCat = currentId ? categories.find(c => c.id === currentId) : null
+    const currentCat = currentId ? categories.find((c) => c.id === currentId) : null
     const height = currentCat ? getSubtreeHeight(currentCat, categories) : 1
-
     return categories.filter((c) => {
-      if (c.id === currentId) return false
-      // Prevent circular reference
+      if (c.id === currentId || c.type !== formData.type || !c.is_active) return false
+      // A category can't move under its own descendant.
       let curr = c
       while (curr.parent_id) {
         if (curr.parent_id === currentId) return false
-        const parent = categories.find(p => p.id === curr.parent_id)
-        if (parent) curr = parent
-        else break
+        const parent = categories.find((p) => p.id === curr.parent_id)
+        if (!parent) break
+        curr = parent
       }
-      const pDepth = getCategoryDepth(c, categories)
-      return (pDepth + height) <= 4
+      return getCategoryDepth(c, categories) + height <= 4
     })
-  }, [categories, initialData])
+  }, [categories, initialData?.id, formData.type])
 
-  // Icon grid split into rows of 8
-  const iconRows: string[][] = []
-  for (let i = 0; i < PRESET_ICONS.length; i += 8) {
-    iconRows.push(PRESET_ICONS.slice(i, i + 8))
-  }
+  const types: { value: CategoryType; label: string }[] = [
+    { value: 'expense', label: t.catui.typeExpense },
+    { value: 'income', label: t.catui.typeIncome },
+    { value: 'transfer', label: t.catui.typeTransfer },
+  ]
 
   return (
     <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-[24px] shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
-
-      {/* Header */}
-      <div className="flex items-center justify-between px-8 py-6 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
+      <div className="flex items-center justify-between px-6 sm:px-8 py-5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
         <div>
-          <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            {initialData?.id ? 'Cập nhật danh mục' : 'Tạo danh mục mới'}
-          </h2>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">
-            {initialData?.id ? 'Chỉnh sửa thông tin danh mục' : 'Thiết lập danh mục phân loại mới cho sổ cái'}
-          </p>
+          <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">{isEdit ? t.catform.editTitle : t.catform.createTitle}</h2>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{t.catform.subtitle}</p>
         </div>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[var(--color-border-default)] transition-colors cursor-pointer"
-        >
+        <button type="button" onClick={onClose} aria-label={t.common.close} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[var(--color-border-default)]">
           <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
         </button>
       </div>
 
-      {/* Body */}
-      <div className="px-8 py-6 space-y-7 overflow-y-auto flex-1">
-
-        {/* ── Basic info ── */}
+      <div className="px-6 sm:px-8 py-6 space-y-7 overflow-y-auto flex-1">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div className="md:col-span-2">
-            <Input
-              label="Tên nhóm"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="VD: Ăn uống, Mua sắm, Chi phí Marketing…"
-              required
-              className="h-12 text-base"
-            />
+            <Input label={t.catform.name} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder={t.catform.namePlaceholder} required className="h-12 text-base" />
           </div>
-
           <div>
-            <label className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">
-              Loại nhóm
-            </label>
-            <select
-              className={cn(
-                'w-full h-12 px-4 rounded-xl border text-sm font-medium',
-                'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
-                'border-[var(--color-border-default)] focus:border-[var(--color-border-focus)]',
-                'focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors appearance-none cursor-pointer',
-              )}
-              value={formData.type}
-              onChange={(e) => setFormData({ ...formData, type: e.target.value as GroupType })}
-            >
-              {GROUP_TYPES.map(({ value, label }) => (
-                <option key={value} value={value}>{label}</option>
+            <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-1.5">{t.catform.type}</p>
+            <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[var(--color-bg-sunken)]" role="radiogroup" aria-label={t.catform.type}>
+              {types.map((ty) => (
+                <button key={ty.value} type="button" role="radio" aria-checked={formData.type === ty.value} disabled={isEdit && !!initialData?.parent_id}
+                  onClick={() => setFormData({ ...formData, type: ty.value, parent_id: '' })}
+                  className={cn('h-10 rounded-lg text-sm font-medium', formData.type === ty.value ? 'bg-[var(--color-surface-default)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>
+                  {ty.label}
+                </button>
               ))}
-            </select>
-          </div>
-
-          {/* Custom tree parent picker */}
-          <div>
-            <label className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">
-              Danh mục cha (nếu có)
-            </label>
-            <ParentTreeDropdown
-              value={formData.parent_id}
-              onChange={(id) => setFormData({ ...formData, parent_id: id })}
-              options={parentOptions}
-              allCategories={categories}
-            />
-          </div>
-        </div>
-
-        {/* ── Flags ── */}
-        <div className="flex items-center gap-6">
-          {[
-            { key: 'is_shared',    label: 'Chia sẻ danh mục',  hint: 'Nhiều người dùng chung' },
-          ].map(flag => (
-            <div key={flag.key} className="flex items-center gap-3 select-none">
-              <button
-                type="button"
-                onClick={() => setFormData(prev => ({ ...prev, [flag.key]: !(prev as any)[flag.key] }))}
-                className={cn(
-                  'relative w-9 h-5 rounded-full transition-colors shrink-0 cursor-pointer',
-                  (formData as any)[flag.key]
-                    ? 'bg-[var(--color-interactive-primary)]'
-                    : 'bg-[var(--color-border-strong)]',
-                )}
-                aria-checked={(formData as any)[flag.key]}
-                role="switch"
-              >
-                <span className={cn(
-                  'absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform',
-                  (formData as any)[flag.key] ? 'translate-x-4' : 'translate-x-0',
-                )} />
-              </button>
-              <span className="min-w-0">
-                <span className="text-sm font-medium text-[var(--color-text-primary)] block">{flag.label}</span>
-                <span className="text-[11px] text-[var(--color-text-quaternary)]">{flag.hint}</span>
-              </span>
             </div>
-          ))}
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-1.5">{t.catform.parent}</p>
+            <ParentTreeDropdown value={formData.parent_id} onChange={(id) => setFormData({ ...formData, parent_id: id })} options={parentOptions} allCategories={categories} />
+          </div>
+          <div className="md:col-span-2">
+            <Input label={t.catform.description} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
+          </div>
         </div>
 
-        {/* ── Visual identity ── */}
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-5">
-          <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">Đặc điểm nhận diện</h3>
+        <div className="flex items-center gap-3 select-none">
+          <button type="button" role="switch" aria-checked={formData.is_shared} aria-label={t.catform.shared}
+            onClick={() => setFormData((f) => ({ ...f, is_shared: !f.is_shared }))}
+            className={cn('relative w-9 h-5 rounded-full transition-colors shrink-0', formData.is_shared ? 'bg-[var(--color-interactive-primary)]' : 'bg-[var(--color-border-strong)]')}>
+            <span className={cn('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', formData.is_shared && 'translate-x-4')} />
+          </button>
+          <span>
+            <span className="text-sm font-medium text-[var(--color-text-primary)] block">{t.catform.shared}</span>
+            <span className="text-[11px] text-[var(--color-text-quaternary)]">{t.catform.sharedHint}</span>
+          </span>
+        </div>
 
-          {/* Icons */}
+        <div className="p-5 rounded-2xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-5">
+          <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t.catform.look}</h3>
           <div>
-            <label className="text-xs font-medium text-[var(--color-text-tertiary)] block mb-2">
-              Biểu tượng (Icon) — {PRESET_ICONS.length} loại
-            </label>
+            <p className="text-xs font-medium text-[var(--color-text-tertiary)] mb-2">{t.catform.icon}</p>
             <div className="grid grid-cols-8 sm:grid-cols-12 gap-1.5">
               {PRESET_ICONS.map((iconName) => (
-                <button
-                  key={iconName}
-                  type="button"
-                  title={iconName}
+                <button key={iconName} type="button" title={iconName} aria-label={iconName} aria-pressed={formData.emoji === iconName}
                   onClick={() => setFormData({ ...formData, emoji: iconName })}
-                  className={cn(
-                    'h-10 flex items-center justify-center rounded-xl transition-all cursor-pointer',
-                    formData.emoji === iconName
-                      ? 'bg-white shadow-md border-2 scale-110 z-10'
-                      : 'hover:bg-white/70 text-[var(--color-text-quaternary)] hover:text-[var(--color-text-secondary)]',
-                  )}
-                  style={formData.emoji === iconName ? { color: formData.color, borderColor: formData.color } : {}}
-                >
-                  <CategoryIcon name={iconName} className="w-4.5 h-4.5" />
+                  className={cn('h-10 flex items-center justify-center rounded-xl transition-all',
+                    formData.emoji === iconName ? 'bg-[var(--color-surface-default)] shadow-md border-2' : 'hover:bg-[var(--color-surface-default)] text-[var(--color-text-quaternary)]')}
+                  style={formData.emoji === iconName ? { color: formData.color, borderColor: formData.color } : {}}>
+                  <CategoryIcon name={iconName} className="w-4 h-4" />
                 </button>
               ))}
             </div>
           </div>
-
-          {/* Colors — 32 colors */}
           <div>
-            <label className="text-xs font-medium text-[var(--color-text-tertiary)] block mb-2">
-              Màu sắc — {PRESET_COLORS.length} màu
-            </label>
+            <p className="text-xs font-medium text-[var(--color-text-tertiary)] mb-2">{t.catform.color}</p>
             <div className="grid grid-cols-8 gap-2">
               {PRESET_COLORS.map((color) => (
-                <button
-                  key={color}
-                  type="button"
-                  title={color}
-                  onClick={() => setFormData({ ...formData, color })}
-                  className={cn(
-                    'w-9 h-9 rounded-full flex items-center justify-center transition-all cursor-pointer',
-                    formData.color === color ? 'scale-110 ring-2 ring-offset-2 ring-[var(--color-border-focus)] shadow-md' : 'hover:scale-110',
-                  )}
-                  style={{ backgroundColor: color }}
-                >
-                  {formData.color === color && <Check className="w-4 h-4 text-white drop-shadow" />}
+                <button key={color} type="button" aria-label={color} aria-pressed={formData.color === color} onClick={() => setFormData({ ...formData, color })}
+                  className={cn('w-9 h-9 rounded-full flex items-center justify-center transition-all', formData.color === color ? 'ring-2 ring-offset-2 ring-[var(--color-border-focus)]' : 'hover:scale-110')}
+                  style={{ backgroundColor: color }}>
+                  {formData.color === color && <Check className="w-4 h-4 text-white" />}
                 </button>
               ))}
             </div>
-            {/* Preview */}
             <div className="mt-3 flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center shadow-sm"
-                style={{ background: `${formData.color}22` }}
-              >
-                <CategoryIcon name={formData.emoji} className="w-5 h-5" style={{ color: formData.color } as React.CSSProperties} />
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: `${formData.color}22`, color: formData.color }}>
+                <CategoryIcon name={formData.emoji} className="w-5 h-5" />
               </div>
-              <div>
-                <div className="text-sm font-semibold text-[var(--color-text-primary)]">{formData.name || 'Tên danh mục'}</div>
-                <div className="text-[11px] text-[var(--color-text-tertiary)]">{formData.color}</div>
-              </div>
+              <div className="text-sm font-semibold text-[var(--color-text-primary)]">{formData.name || t.catform.name}</div>
             </div>
           </div>
         </div>
 
-        {/* ── Budget ── */}
-        <div>
-          <NumberInput
-            label="Ngân sách hàng tháng"
-            value={formData.budget_limit}
-            onChange={(val) => setFormData({ ...formData, budget_limit: val })}
-            placeholder="0"
-          />
-        </div>
-
-        {/* ── Keywords ── */}
-        <div className="space-y-3">
-          <label className="text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-2">
-            <TagIcon className="w-4 h-4" />
-            Từ khóa tự động phân loại
-          </label>
-          <div className="flex gap-2.5">
-            <input
-              type="text"
-              value={keywordInput}
-              onChange={(e) => setKeywordInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-              placeholder="Nhập từ khóa và nhấn Enter…"
-              className={cn(
-                'flex-1 h-11 px-4 rounded-xl border text-sm',
-                'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
-                'placeholder:text-[var(--color-text-placeholder)]',
-                'border-[var(--color-border-default)] focus:border-[var(--color-border-focus)]',
-                'focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors',
-              )}
-            />
-            <Button type="button" size="sm" onClick={addKeyword} icon={<Plus />} className="h-11 px-5 rounded-xl shrink-0">
-              Thêm
-            </Button>
+        {formData.type === 'expense' && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <NumberInput label={t.catform.budget} value={formData.budget_limit} onChange={(val) => setFormData({ ...formData, budget_limit: val })} placeholder="0" />
+            <NumberInput label={t.catform.warning} value={formData.warning_threshold} onChange={(val) => setFormData({ ...formData, warning_threshold: Math.min(100, Math.max(1, val)) })} placeholder="80" />
           </div>
-          <div className="min-h-[72px] flex flex-wrap gap-2 p-4 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] content-start">
+        )}
+
+        <div className="space-y-3">
+          <label htmlFor="cat-kw" className="text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-2"><TagIcon className="w-4 h-4" />{t.catform.keywords}</label>
+          <p className="text-xs text-[var(--color-text-quaternary)] -mt-1">{t.catform.keywordsHint}</p>
+          <div className="flex gap-2.5">
+            <input id="cat-kw" type="text" value={keywordInput} onChange={(e) => setKeywordInput(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())} placeholder={t.catform.keywordPlaceholder}
+              className="flex-1 h-11 px-4 rounded-xl border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none" />
+            <Button type="button" size="sm" onClick={addKeyword} icon={<Plus />} className="h-11 px-5 rounded-xl shrink-0">{t.catform.add}</Button>
+          </div>
+          <div className="min-h-[56px] flex flex-wrap gap-2 p-3 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] content-start">
             {formData.keywords.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-1.5 opacity-50 w-full py-3 text-[var(--color-text-quaternary)]">
-                <TagIcon className="w-5 h-5" />
-                <p className="text-xs">Chưa có từ khóa nào</p>
-              </div>
+              <p className="text-xs text-[var(--color-text-quaternary)] m-auto">{t.catform.noKeywords}</p>
             ) : formData.keywords.map((kw) => (
-              <span
-                key={kw}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--color-surface-raised)] border border-[var(--color-border-default)] text-sm font-medium text-[var(--color-text-secondary)] shadow-sm"
-              >
+              <span key={kw} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-sm text-[var(--color-text-secondary)]">
                 {kw}
-                <button
-                  type="button"
-                  onClick={() => removeKeyword(kw)}
-                  className="text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)] transition-colors"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <button type="button" aria-label={`${t.common.delete} ${kw}`} onClick={() => setFormData({ ...formData, keywords: formData.keywords.filter((k) => k !== kw) })}
+                  className="text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)]"><X className="w-3.5 h-3.5" /></button>
               </span>
             ))}
           </div>
         </div>
       </div>
 
-      {/* Footer */}
-      <div className="flex flex-col">
-        {errorMsg && (
-          <div className="mx-6 mb-4 bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-100 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span className="flex-1">{errorMsg}</span>
-          </div>
-        )}
-        <div className="flex items-center justify-end gap-3 px-8 py-5 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
-          <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl text-sm cursor-pointer">
-            Hủy bỏ
-          </Button>
-          <Button
-            type="submit"
-            icon={<Save className="w-4 h-4" />}
-            disabled={isSaving}
-            className="h-11 px-8 rounded-xl text-sm font-semibold cursor-pointer"
-          >
-            {isSaving ? 'Đang lưu…' : (initialData?.id ? 'Lưu thay đổi' : 'Tạo danh mục')}
-          </Button>
+      {errorMsg && (
+        <div role="alert" className="mx-6 mb-3 bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] p-3 rounded-lg text-sm flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" /><span className="flex-1">{errorMsg}</span>
         </div>
+      )}
+      <div className="flex items-center justify-end gap-3 px-6 sm:px-8 py-4 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+        <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl">{t.common.cancel}</Button>
+        <Button type="submit" icon={<Save className="w-4 h-4" />} loading={isSaving} className="h-11 px-8 rounded-xl font-semibold">
+          {isEdit ? t.catform.save : t.catform.create}
+        </Button>
       </div>
-
-      {/* Budget Warning Modal — styled to match app theme */}
-      <Modal isOpen={!!budgetWarning} onClose={() => setBudgetWarning(null)} className="max-w-md">
-        <div className="flex flex-col gap-5">
-          {/* Header */}
-          <div className="flex items-start gap-3">
-            <div className="w-10 h-10 rounded-[10px] bg-[var(--color-status-warning-bg)] flex items-center justify-center shrink-0">
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-text-warning)]">
-                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/>
-                <path d="M12 9v4"/><path d="M12 17h.01"/>
-              </svg>
-            </div>
-            <div>
-              <h3 className="text-[15px] font-bold text-[var(--color-text-primary)]">Cảnh báo Ngân sách</h3>
-              <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">Tổng ngân sách vượt mức quy định</p>
-            </div>
-          </div>
-
-          {/* Body */}
-          <div className="px-1 py-3 rounded-[10px] bg-[var(--color-status-warning-bg)] border border-[var(--color-warning-500)]/30">
-            <p className="text-sm text-[var(--color-text-warning)] leading-relaxed px-2">
-              {budgetWarning?.message}
-            </p>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center justify-end gap-3">
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => setBudgetWarning(null)}
-              className="cursor-pointer h-9 px-5 text-sm"
-            >
-              Đã hiểu
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </form>
   )
 }

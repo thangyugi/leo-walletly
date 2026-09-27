@@ -1,132 +1,61 @@
 import { create } from 'zustand'
-import type { Member, MembershipContext, Role } from './types'
-import { MemberService, RoleService } from './services'
+import type { Invitation, Member } from './types'
+import { MemberService } from './services'
 
 interface UserManagementState {
+  ledgerId: string | null
   members: Member[]
-  invitations: Member[]
-  roles: Role[]
-  permissionCodes: string[]
+  invitations: Invitation[]
   loading: boolean
   error: string | null
 
-  // Actions
-  fetchMembers: (context: MembershipContext) => Promise<void>
-  fetchInvitations: (context: MembershipContext) => Promise<void>
-  fetchRoles: (context: MembershipContext) => Promise<void>
-  fetchPermissions: (roleId: string) => Promise<void>
-  inviteMember: (context: MembershipContext, email: string, roleCode: string) => Promise<void>
-  updateMemberRole: (memberId: string, roleCode: string) => Promise<void>
-  removeMember: (memberId: string) => Promise<void>
-  cancelInvitation: (memberId: string) => Promise<void>
-
-  // Helpers
-  hasPermission: (code: string) => boolean
+  load: (ledgerId: string, withInvitations?: boolean) => Promise<void>
+  invite: (email: string, roleCode: string, message?: string) => Promise<string>
+  revokeInvitation: (invitationId: string) => Promise<void>
+  updateRole: (memberId: string, roleCode: string) => Promise<void>
+  remove: (memberId: string) => Promise<void>
 }
 
 export const useUserManagementStore = create<UserManagementState>((set, get) => ({
+  ledgerId: null,
   members: [],
   invitations: [],
-  roles: [],
-  permissionCodes: [],
   loading: false,
   error: null,
 
-  fetchMembers: async (context) => {
-    set({ loading: true, error: null })
+  load: async (ledgerId, withInvitations = false) => {
+    set({ loading: true, error: null, ledgerId })
     try {
-      const members = await MemberService.getMembers(context)
-      set({ members: members.filter((m) => m.status === 'active'), loading: false })
-    } catch (err: any) {
-      set({ error: err.message, loading: false })
-    }
-  },
-
-  fetchInvitations: async (context) => {
-    try {
-      const invitations = await MemberService.getPendingInvitations(context)
-      set({ invitations })
-    } catch (err: any) {
-      console.error(err)
-    }
-  },
-
-  fetchRoles: async (context) => {
-    try {
-      const roles = await RoleService.getRoles(context.type)
-      set({ roles })
-    } catch (err: any) {
-      console.error(err)
-    }
-  },
-
-  fetchPermissions: async (roleId) => {
-    try {
-      const permissionCodes = await RoleService.getPermissionCodesForRole(roleId)
-      set({ permissionCodes })
-    } catch (err: any) {
-      console.error(err)
-    }
-  },
-
-  inviteMember: async (context, email, roleCode) => {
-    set({ loading: true, error: null })
-    try {
-      await MemberService.inviteMember(context, email, roleCode)
       const [members, invitations] = await Promise.all([
-        MemberService.getMembers(context),
-        MemberService.getPendingInvitations(context),
+        MemberService.getMembers(ledgerId),
+        withInvitations ? MemberService.getInvitations(ledgerId) : Promise.resolve([] as Invitation[]),
       ])
-      set({ members: members.filter((m) => m.status === 'active'), invitations, loading: false })
+      set({ members, invitations, loading: false })
     } catch (err: any) {
       set({ error: err.message, loading: false })
-      throw err
     }
   },
 
-  updateMemberRole: async (memberId, roleCode) => {
-    set({ loading: true, error: null })
-    try {
-      await MemberService.updateMemberRole(memberId, roleCode)
-      set((state) => ({
-        members: state.members.map((m) =>
-          m.id === memberId ? { ...m, role: state.roles.find((r) => r.code === roleCode) ?? m.role } : m
-        ),
-        loading: false,
-      }))
-    } catch (err: any) {
-      set({ error: err.message, loading: false })
-      throw err
-    }
+  invite: async (email, roleCode, message) => {
+    const ledgerId = get().ledgerId
+    if (!ledgerId) throw new Error('No ledger selected')
+    const token = await MemberService.invite(ledgerId, email, roleCode, message)
+    set({ invitations: await MemberService.getInvitations(ledgerId) })
+    return token
   },
 
-  removeMember: async (memberId) => {
-    set({ loading: true, error: null })
-    try {
-      await MemberService.removeMember(memberId)
-      set((state) => ({
-        members: state.members.filter((m) => m.id !== memberId),
-        loading: false,
-      }))
-    } catch (err: any) {
-      set({ error: err.message, loading: false })
-      throw err
-    }
+  revokeInvitation: async (invitationId) => {
+    await MemberService.revokeInvitation(invitationId)
+    set((s) => ({ invitations: s.invitations.filter((i) => i.id !== invitationId) }))
   },
 
-  cancelInvitation: async (memberId) => {
-    set({ loading: true, error: null })
-    try {
-      await MemberService.cancelInvitation(memberId)
-      set((state) => ({
-        invitations: state.invitations.filter((i) => i.id !== memberId),
-        loading: false,
-      }))
-    } catch (err: any) {
-      set({ error: err.message, loading: false })
-      throw err
-    }
+  updateRole: async (memberId, roleCode) => {
+    await MemberService.updateRole(memberId, roleCode)
+    set((s) => ({ members: s.members.map((m) => (m.id === memberId ? { ...m, role_code: roleCode } : m)) }))
   },
 
-  hasPermission: (code) => get().permissionCodes.includes(code),
+  remove: async (memberId) => {
+    await MemberService.remove(memberId)
+    set((s) => ({ members: s.members.filter((m) => m.id !== memberId) }))
+  },
 }))

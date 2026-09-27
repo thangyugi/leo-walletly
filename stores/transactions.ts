@@ -1,317 +1,353 @@
 'use client'
 
 import { create } from 'zustand'
-import type { Transaction, LegacyCategory as Category, PaymentProvider } from '@/types'
-import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { useMembershipStore } from '@/features/user-management/membership-store'
+import { mapTransaction, type Transaction, type TransactionType } from '@/types/domain'
+import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 
-const isUuid = (id: string | null | undefined) => {
-  if (!id) return null
-  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id) ? id : null
-}
+// Server-driven transaction access for schema v2.1. Lists are filtered,
+// sorted and paginated in Postgres; totals come from views. Mutations bump
+// `revision` so every screen that shows transactions refetches.
 
 export type SortOption = 'dateDesc' | 'dateAsc' | 'amountDesc' | 'amountAsc' | 'nameAsc' | 'nameDesc' | 'category'
 
 export interface TransactionFilters {
   search: string
-  provider: PaymentProvider | 'all'
-  category: Category | 'all'
+  type: 'all' | TransactionType
+  accountId: string | 'all'
+  /** 'all' | 'none' (uncategorized) | category id */
+  categoryId: string
+  paidByUserId: string | 'all'
+  reconciled: 'all' | 'yes' | 'no'
   dateFrom: string
   dateTo: string
-  type: 'expense' | 'income' | 'transfer' | 'all'
 }
+
+export const EMPTY_FILTERS: TransactionFilters = {
+  search: '', type: 'all', accountId: 'all', categoryId: 'all', paidByUserId: 'all', reconciled: 'all', dateFrom: '', dateTo: '',
+}
+
+export interface TransactionInput {
+  transactionType: TransactionType
+  amount: number
+  currencyCode: string
+  transactionDate: string
+  transactionTime?: string | null
+  description: string
+  accountId: string
+  transferAccountId?: string | null
+  categoryId?: string | null
+  notes?: string | null
+  paidByUserId?: string | null
+  tagIds?: string[]
+  /** Explicit split for shared categories; omitted = split by category members. */
+  shares?: { userId: string; amount: number }[]
+  documentId?: string | null
+  source?: 'manual' | 'scan'
+  status?: 'posted' | 'pending'
+}
+
+export interface PeriodSummary {
+  income: number
+  expense: number
+  net: number
+  count: number
+}
+
+const SELECT = '*, transaction_tags(tag_id)'
 
 interface TransactionsState {
-  transactions: Transaction[]
-  filters: TransactionFilters
+  revision: number
+  items: Transaction[]
+  total: number
+  page: number
+  pageSize: number
   sortOption: SortOption
-  addTransactions: (txns: Transaction[]) => void
-  addTransaction: (txn: Partial<Transaction>) => void
-  removeTransaction: (id: string) => void
-  updateTransaction: (id: string, update: Partial<Transaction>) => void
-  bulkUpdateTransactions: (updates: { id: string; update: Partial<Transaction> }[]) => void
-  setFilters: (filters: Partial<TransactionFilters>) => void
-  setSortOption: (option: SortOption) => void
-  resetFilters: () => void
-  clearAll: () => void
-  getFiltered: () => Transaction[]
+  filters: TransactionFilters
+  loading: boolean
+  error: string | null
 
-  // Supabase sync
-  syncTransactions: (limit?: number) => Promise<void>
+  setSortOption: (s: SortOption) => void
+  setFilters: (f: Partial<TransactionFilters>) => void
+  resetFilters: () => void
+  setPage: (p: number) => void
+  fetchPage: (ledgerId: string, range: { start: string; end: string }) => Promise<void>
+
+  fetchRange: (ledgerId: string, start: string, end: string, limit?: number) => Promise<Transaction[]>
+  fetchRecent: (ledgerId: string, limit?: number) => Promise<Transaction[]>
+  /** Income/expense rows with no category (newest first) for the classify screens. */
+  fetchUncategorized: (ledgerId: string, limit?: number) => Promise<{ items: Transaction[]; total: number }>
+  search: (ledgerId: string, term: string, limit?: number) => Promise<Transaction[]>
+  getById: (id: string) => Promise<Transaction | null>
+  summarize: (ledgerId: string, start: string, end: string) => Promise<PeriodSummary>
+  monthly: (ledgerId: string, fromMonth: string, toMonth: string) => Promise<{ month: string; income: number; expense: number; net: number }[]>
+  daily: (ledgerId: string, start: string, end: string) => Promise<{ date: string; income: number; expense: number; count: number }[]>
+
+  create: (ledgerId: string, input: TransactionInput) => Promise<Transaction>
+  update: (id: string, input: Partial<TransactionInput> & { isReconciled?: boolean; status?: 'posted' | 'pending' | 'void' }) => Promise<void>
+  remove: (id: string) => Promise<void>
+  restore: (id: string) => Promise<void>
+  bulkUpdate: (ids: string[], patch: { categoryId?: string; accountId?: string; isReconciled?: boolean; tagId?: string }) => Promise<number>
+  bulkDelete: (ids: string[]) => Promise<number>
 }
 
-const DEFAULT_FILTERS: TransactionFilters = {
-  search: '',
-  provider: 'all',
-  category: 'all',
-  dateFrom: '',
-  dateTo: '',
-  type: 'all',
+function fail(error: { message: string } | null) {
+  if (error) throw new Error(error.message)
+}
+
+function toRow(ledgerId: string, input: Partial<TransactionInput>): Partial<TablesInsert<'transactions'>> {
+  const row: Partial<TablesInsert<'transactions'>> = { ledger_id: ledgerId }
+  if (input.transactionType !== undefined) row.transaction_type = input.transactionType
+  if (input.amount !== undefined) row.amount = Math.abs(input.amount)
+  if (input.currencyCode !== undefined) row.currency_code = input.currencyCode
+  if (input.transactionDate !== undefined) row.transaction_date = input.transactionDate
+  if (input.transactionTime !== undefined) row.transaction_time = input.transactionTime || null
+  if (input.description !== undefined) row.description = input.description.trim() || '—'
+  if (input.accountId !== undefined) row.account_id = input.accountId
+  if (input.transferAccountId !== undefined || input.transactionType !== undefined) {
+    row.transfer_account_id = input.transactionType === 'transfer' ? input.transferAccountId ?? null : null
+  }
+  if (input.categoryId !== undefined) {
+    row.category_id = input.categoryId || null
+    row.categorized_by = input.categoryId ? 'manual' : null
+    row.needs_review = false
+  }
+  if (input.notes !== undefined) row.notes = input.notes || null
+  if (input.paidByUserId !== undefined) row.paid_by_user_id = input.paidByUserId
+  if (input.documentId !== undefined) row.document_id = input.documentId
+  if (input.source !== undefined) row.source = input.source
+  if (input.status !== undefined) row.status = input.status
+  return row
+}
+
+async function writeTagsAndShares(txId: string, input: Partial<TransactionInput>) {
+  if (input.tagIds) {
+    fail((await supabase.from('transaction_tags').delete().eq('transaction_id', txId)).error)
+    if (input.tagIds.length) {
+      fail((await supabase.from('transaction_tags').insert(input.tagIds.map((tag_id) => ({ transaction_id: txId, tag_id })))).error)
+    }
+  }
+  if (input.shares) {
+    fail((await supabase.from('transaction_shares').delete().eq('transaction_id', txId)).error)
+    if (input.shares.length) {
+      fail((await supabase.from('transaction_shares').insert(
+        input.shares.map((s) => ({ transaction_id: txId, user_id: s.userId, share_amount: s.amount }))
+      )).error)
+    }
+  }
 }
 
 export const useTransactionsStore = create<TransactionsState>((set, get) => ({
-  transactions: [],
-  filters: DEFAULT_FILTERS,
+  revision: 0,
+  items: [],
+  total: 0,
+  page: 1,
+  pageSize: 30,
   sortOption: 'dateDesc',
+  filters: EMPTY_FILTERS,
+  loading: false,
+  error: null,
 
-  syncTransactions: async (limit = 1000) => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
+  setSortOption: (sortOption) => set({ sortOption, page: 1 }),
+  setFilters: (f) => set((s) => ({ filters: { ...s.filters, ...f }, page: 1 })),
+  resetFilters: () => set({ filters: EMPTY_FILTERS, page: 1 }),
+  setPage: (page) => set({ page }),
 
-    const currentContext = useMembershipStore.getState().currentContext
-    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-    if (!currentLedger?.id) return
-
-    let query = supabase
+  fetchPage: async (ledgerId, range) => {
+    const { page, pageSize, sortOption, filters } = get()
+    set({ loading: true, error: null })
+    let q = supabase
       .from('transactions')
-      .select('*')
-      .eq('ledger_id', currentLedger.id)
+      .select(SELECT, { count: 'exact' })
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+      .gte('transaction_date', filters.dateFrom || range.start)
+      .lte('transaction_date', filters.dateTo || range.end)
+
+    if (filters.search.trim()) {
+      const term = filters.search.trim().replace(/[%,()]/g, ' ')
+      q = q.or(`description.ilike.%${term}%,merchant_name.ilike.%${term}%,notes.ilike.%${term}%`)
+    }
+    if (filters.type !== 'all') q = q.eq('transaction_type', filters.type)
+    if (filters.accountId !== 'all') q = q.or(`account_id.eq.${filters.accountId},transfer_account_id.eq.${filters.accountId}`)
+    if (filters.categoryId === 'none') q = q.is('category_id', null)
+    else if (filters.categoryId !== 'all') q = q.eq('category_id', filters.categoryId)
+    if (filters.paidByUserId !== 'all') q = q.eq('paid_by_user_id', filters.paidByUserId)
+    if (filters.reconciled !== 'all') q = q.eq('is_reconciled', filters.reconciled === 'yes')
+
+    switch (sortOption) {
+      case 'dateAsc': q = q.order('transaction_date', { ascending: true }).order('created_at', { ascending: true }); break
+      case 'amountDesc': q = q.order('base_amount', { ascending: false }); break
+      case 'amountAsc': q = q.order('base_amount', { ascending: true }); break
+      case 'nameAsc': q = q.order('description', { ascending: true }); break
+      case 'nameDesc': q = q.order('description', { ascending: false }); break
+      case 'category': q = q.order('category_id', { ascending: true, nullsFirst: true }).order('transaction_date', { ascending: false }); break
+      default: q = q.order('transaction_date', { ascending: false }).order('created_at', { ascending: false })
+    }
+
+    const from = (page - 1) * pageSize
+    const { data, count, error } = await q.range(from, from + pageSize - 1)
+    if (error) {
+      set({ loading: false, error: error.message })
+      return
+    }
+    set({ items: (data ?? []).map(mapTransaction), total: count ?? 0, loading: false })
+  },
+
+  fetchRange: async (ledgerId, start, end, limit = 5000) => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(SELECT)
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+      .gte('transaction_date', start)
+      .lte('transaction_date', end)
       .order('transaction_date', { ascending: false })
       .limit(limit)
-
-    const { data, error } = await query
-
-    if (data) {
-      const mapped: Transaction[] = data.map(t => ({
-        id: t.id,
-        organizationId: t.organization_id,
-        workspaceId: t.workspace_id,
-        ledgerId: t.ledger_id,
-        paymentInstrumentId: t.payment_instrument_id || undefined,
-        fundingSourceId: t.funding_source_id || undefined,
-        settlementAccountId: t.settlement_account_id || undefined,
-        categoryId: t.category_id || undefined,
-        status: t.status,
-        transactionType: t.transaction_type,
-        businessEventType: t.business_event_type || undefined,
-        source: t.source || undefined,
-        sourceReference: t.source_reference || undefined,
-        externalId: t.external_id || undefined,
-        externalHash: t.external_hash || undefined,
-        merchantName: t.merchant_name || undefined,
-        merchantNormalized: t.merchant_normalized || undefined,
-        merchantCategoryCode: t.merchant_category_code || undefined,
-        description: t.description || undefined,
-        notes: t.notes || undefined,
-        transactionDate: t.transaction_date,
-        valueDate: t.value_date || undefined,
-        postedDate: t.posted_date || undefined,
-        amount: Number(t.amount),
-        currencyCode: t.currency_code,
-        baseAmount: t.base_amount ? Number(t.base_amount) : undefined,
-        baseCurrencyCode: t.base_currency_code || undefined,
-        exchangeRate: t.exchange_rate ? Number(t.exchange_rate) : undefined,
-        exchangeRateSource: t.exchange_rate_source || undefined,
-        receiptDocumentId: t.receipt_document_id || undefined,
-        accountingPeriodId: t.accounting_period_id || undefined,
-        createdBy: t.created_by || undefined,
-        reviewedBy: t.reviewed_by || undefined,
-        reviewedAt: t.reviewed_at || undefined,
-        isReconciled: t.is_reconciled,
-        reconciledAt: t.reconciled_at || undefined,
-        metadata: t.metadata || {},
-        createdAt: t.created_at,
-        updatedAt: t.updated_at,
-        deletedAt: t.deleted_at || undefined,
-      }))
-      set({ transactions: mapped })
-    }
+    fail(error)
+    return (data ?? []).map(mapTransaction)
   },
 
-  addTransactions: (txns) => {
-    const currentContext = useMembershipStore.getState().currentContext
-    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-    if (!currentLedger) {
-      console.warn('No active ledger found. Transactions might fail to save.')
-    }
+  fetchRecent: async (ledgerId, limit = 8) => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(SELECT)
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+      .order('transaction_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(limit)
+    fail(error)
+    return (data ?? []).map(mapTransaction)
+  },
 
-    const processedTxns = txns.map(tx => ({
-      ...tx,
-      ledgerId: tx.ledgerId || currentLedger?.id || '',
-      workspaceId: tx.workspaceId || currentLedger?.workspace_id || '',
-      organizationId: tx.organizationId || (currentLedger as any)?.organization_id || '',
+  fetchUncategorized: async (ledgerId, limit = 500) => {
+    const { data, count, error } = await supabase
+      .from('transactions')
+      .select(SELECT, { count: 'exact' })
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .is('category_id', null)
+      .neq('status', 'void')
+      .neq('transaction_type', 'transfer')
+      .order('transaction_date', { ascending: false })
+      .limit(limit)
+    fail(error)
+    return { items: (data ?? []).map(mapTransaction), total: count ?? 0 }
+  },
+
+  search: async (ledgerId, term, limit = 8) => {
+    const clean = term.trim().replace(/[%,()]/g, ' ')
+    if (!clean) return []
+    const { data, error } = await supabase
+      .from('transactions')
+      .select(SELECT)
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .or(`description.ilike.%${clean}%,merchant_name.ilike.%${clean}%`)
+      .order('transaction_date', { ascending: false })
+      .limit(limit)
+    fail(error)
+    return (data ?? []).map(mapTransaction)
+  },
+
+  getById: async (id) => {
+    const { data } = await supabase.from('transactions').select(SELECT).eq('id', id).maybeSingle()
+    return data ? mapTransaction(data) : null
+  },
+
+  summarize: async (ledgerId, start, end) => {
+    const { data, error } = await supabase
+      .from('v_daily_summary')
+      .select('income, expense, tx_count')
+      .eq('ledger_id', ledgerId)
+      .gte('date', start)
+      .lte('date', end)
+    fail(error)
+    const income = (data ?? []).reduce((s, r) => s + Number(r.income ?? 0), 0)
+    const expense = (data ?? []).reduce((s, r) => s + Number(r.expense ?? 0), 0)
+    const count = (data ?? []).reduce((s, r) => s + Number(r.tx_count ?? 0), 0)
+    return { income, expense, net: income - expense, count }
+  },
+
+  monthly: async (ledgerId, fromMonth, toMonth) => {
+    const { data, error } = await supabase
+      .from('v_monthly_summary')
+      .select('month, income, expense, net')
+      .eq('ledger_id', ledgerId)
+      .gte('month', fromMonth)
+      .lte('month', toMonth)
+      .order('month')
+    fail(error)
+    return (data ?? []).map((r) => ({
+      month: r.month ?? '', income: Number(r.income ?? 0), expense: Number(r.expense ?? 0), net: Number(r.net ?? 0),
     }))
-
-    set((s) => {
-      const existing = new Set(s.transactions.map((t) => t.id))
-      const fresh = processedTxns.filter((t) => !existing.has(t.id))
-      return { transactions: [...s.transactions, ...fresh] }
-    })
-
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-
-      const toInsert = processedTxns.map(t => ({
-        id:                      t.id,
-        organization_id:         isUuid(t.organizationId),
-        workspace_id:            isUuid(t.workspaceId),
-        ledger_id:               isUuid(t.ledgerId),
-        payment_instrument_id:   isUuid(t.paymentInstrumentId),
-        funding_source_id:       isUuid(t.fundingSourceId),
-        settlement_account_id:   isUuid(t.settlementAccountId),
-        category_id:             isUuid(t.categoryId),
-        status:                  t.status || 'posted',
-        transaction_type:        t.transactionType,
-        business_event_type:     t.businessEventType || null,
-        source:                  t.source || 'manual',
-        description:             t.description || null,
-        notes:                   t.notes || null,
-        transaction_date:        t.transactionDate,
-        amount:                  t.amount,
-        currency_code:           t.currencyCode || 'JPY',
-        metadata:                t.metadata || {},
-      }))
-
-      const { error } = await supabase.from('transactions').upsert(toInsert)
-      if (error) {
-        console.error('Supabase insert error —', error.message)
-      }
-    })
   },
 
-  addTransaction: (txn) => {
-    const id = generateId()
-    const currentContext = useMembershipStore.getState().currentContext
-    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-    
-    const newTxn = { 
-      ...txn, 
-      id,
-      ledgerId: txn.ledgerId || currentLedger?.id || '',
-      workspaceId: txn.workspaceId || currentLedger?.workspace_id || '',
-      organizationId: txn.organizationId || (currentLedger as any)?.organization_id || '',
-    } as Transaction
-
-    set((s) => ({
-      transactions: [...s.transactions, newTxn],
+  daily: async (ledgerId, start, end) => {
+    const { data, error } = await supabase
+      .from('v_daily_summary')
+      .select('date, income, expense, tx_count')
+      .eq('ledger_id', ledgerId)
+      .gte('date', start)
+      .lte('date', end)
+    fail(error)
+    return (data ?? []).map((r) => ({
+      date: r.date ?? '', income: Number(r.income ?? 0), expense: Number(r.expense ?? 0), count: Number(r.tx_count ?? 0),
     }))
+  },
 
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
+  create: async (ledgerId, input) => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .insert(toRow(ledgerId, input) as TablesInsert<'transactions'>)
+      .select(SELECT)
+      .single()
+    fail(error)
+    await writeTagsAndShares(data!.id, input)
+    set((s) => ({ revision: s.revision + 1 }))
+    return mapTransaction(data!)
+  },
 
-      const { error } = await supabase.from('transactions').insert({
-        id,
-        organization_id:         isUuid(newTxn.organizationId),
-        workspace_id:            isUuid(newTxn.workspaceId),
-        ledger_id:               isUuid(newTxn.ledgerId),
-        payment_instrument_id:   isUuid(txn.paymentInstrumentId),
-        funding_source_id:       isUuid(txn.fundingSourceId),
-        category_id:             isUuid(txn.categoryId),
-        status:                  txn.status || 'posted',
-        transaction_type:        txn.transactionType,
-        description:             txn.description || null,
-        notes:                   txn.notes || null,
-        transaction_date:        txn.transactionDate,
-        amount:                  txn.amount,
-        currency_code:           txn.currencyCode || 'JPY',
-        metadata:                txn.metadata || {},
-      })
-      if (error) {
-        console.error('Supabase insert error —', error.message)
-      }
+  update: async (id, input) => {
+    const patch = toRow('', input) as TablesUpdate<'transactions'>
+    delete patch.ledger_id
+    if (input.isReconciled !== undefined) patch.is_reconciled = input.isReconciled
+    fail((await supabase.from('transactions').update(patch).eq('id', id)).error)
+    await writeTagsAndShares(id, input)
+    set((s) => ({ revision: s.revision + 1 }))
+  },
+
+  remove: async (id) => {
+    fail((await supabase.from('transactions').update({ deleted_at: new Date().toISOString() }).eq('id', id)).error)
+    set((s) => ({ revision: s.revision + 1 }))
+  },
+
+  restore: async (id) => {
+    fail((await supabase.from('transactions').update({ deleted_at: null }).eq('id', id)).error)
+    set((s) => ({ revision: s.revision + 1 }))
+  },
+
+  bulkUpdate: async (ids, patch) => {
+    const { data, error } = await supabase.rpc('bulk_update_transactions', {
+      p_ids: ids,
+      p_category_id: patch.categoryId ?? null,
+      p_account_id: patch.accountId ?? null,
+      p_is_reconciled: patch.isReconciled ?? null,
+      p_add_tag_id: patch.tagId ?? null,
     })
+    fail(error)
+    set((s) => ({ revision: s.revision + 1 }))
+    return data ?? 0
   },
 
-  removeTransaction: (id) => {
-    set((s) => ({ transactions: s.transactions.filter((t) => t.id !== id) }))
-    supabase.from('transactions').delete().eq('id', id).then()
-  },
-
-  updateTransaction: (id, update) => {
-    set((s) => ({
-      transactions: s.transactions.map((t) => (t.id === id ? { ...t, ...update } : t)),
-    }))
-
-    const patch: Record<string, unknown> = {}
-    if (update.transactionDate !== undefined) patch.transaction_date = update.transactionDate
-    if (update.amount          !== undefined) patch.amount           = update.amount
-    if (update.description     !== undefined) patch.description      = update.description
-    if (update.categoryId      !== undefined) patch.category_id      = update.categoryId
-    if (update.status          !== undefined) patch.status           = update.status
-    if (update.notes           !== undefined) patch.notes            = update.notes ?? null
-    if (update.metadata        !== undefined) patch.metadata         = update.metadata ?? null
-    
-    supabase.from('transactions').update(patch).eq('id', id).then(({ error }) => {
-      if (error) console.error('Supabase update error —', error.message)
-    })
-  },
-
-  bulkUpdateTransactions: (updates) => {
-    set((s) => {
-      const txnMap = new Map(s.transactions.map(t => [t.id, t]))
-      for (const { id, update } of updates) {
-        const existing = txnMap.get(id)
-        if (existing) {
-          txnMap.set(id, { ...existing, ...update })
-        }
-      }
-      return { transactions: Array.from(txnMap.values()) }
-    })
-
-    // Fire and forget individual updates for now (or could use an RPC for true bulk update)
-    // To prevent hitting rate limits with too many simultaneous requests, we can batch them.
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return
-      
-      // Instead of N roundtrips, we could do an upsert if we map all required fields, 
-      // but simple update in a loop is okay for typical auto-categorize sizes (10-100 txns).
-      // Let's do it in chunks of 10 to avoid connection pooling issues.
-      const chunked = []
-      for (let i = 0; i < updates.length; i += 10) {
-        chunked.push(updates.slice(i, i + 10))
-      }
-
-      for (const chunk of chunked) {
-        await Promise.all(chunk.map(({ id, update }) => {
-          const patch: Record<string, unknown> = {}
-          if (update.transactionDate !== undefined) patch.transaction_date = update.transactionDate
-          if (update.amount          !== undefined) patch.amount           = update.amount
-          if (update.description     !== undefined) patch.description      = update.description
-          if (update.categoryId      !== undefined) patch.category_id      = update.categoryId
-          if (update.status          !== undefined) patch.status           = update.status
-          if (update.notes           !== undefined) patch.notes            = update.notes ?? null
-          if (update.metadata        !== undefined) patch.metadata         = update.metadata ?? null
-          return supabase.from('transactions').update(patch).eq('id', id)
-        }))
-      }
-    })
-  },
-
-  setFilters: (filters) =>
-    set((s) => ({ filters: { ...s.filters, ...filters } })),
-
-  setSortOption: (sortOption) => set({ sortOption }),
-
-  resetFilters: () => set({ filters: DEFAULT_FILTERS }),
-
-  clearAll: () => {
-    const txns = get().transactions
-    if (txns.length === 0) return
-    const ledgerId = txns[0].ledgerId
-    set({ transactions: [] })
-    supabase.from('transactions').delete().eq('ledger_id', ledgerId).then()
-  },
-
-  getFiltered: () => {
-    const { transactions, filters } = get()
-    return transactions
-      .filter((t) => {
-        if (filters.search) {
-          const q = filters.search.toLowerCase()
-          if (!t.description?.toLowerCase().includes(q) && !t.notes?.toLowerCase().includes(q))
-            return false
-        }
-        if (filters.category !== 'all' && t.categoryId !== filters.category) return false
-        if (filters.dateFrom && t.transactionDate < filters.dateFrom) return false
-        if (filters.dateTo && t.transactionDate > filters.dateTo) return false
-        
-        if (filters.type === 'expense' && t.transactionType !== 'expense') return false
-        if (filters.type === 'income' && t.transactionType !== 'income') return false
-        if (filters.type === 'transfer' && t.transactionType !== 'transfer') return false
-        
-        return true
-      })
-      .sort((a, b) => b.transactionDate.localeCompare(a.transactionDate))
+  bulkDelete: async (ids) => {
+    const { data, error } = await supabase.rpc('bulk_delete_transactions', { p_ids: ids })
+    fail(error)
+    set((s) => ({ revision: s.revision + 1 }))
+    return data ?? 0
   },
 }))

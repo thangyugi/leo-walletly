@@ -1,16 +1,19 @@
 import { createClient } from '@supabase/supabase-js'
+import type { Database } from '@/types/supabase'
 
-// NOTE: not typed with <Database> yet. types/supabase.ts currently only covers
-// the Foundation schema (01_foundation_schema.html) — most existing feature code
-// (categories, ledgers, translations, ...) targets tables from schema parts that
-// haven't been migrated yet (02-13). Wiring <Database> here today would force a
-// premature rewrite of all of that unrelated code. Revisit once those parts land,
-// or once there's an explicit decision to migrate everything at once.
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+// Typed against schema v2.1 (supabase/migrations_v2). Regenerate the types with
+// `DATABASE_URL=... node scripts/gen-db-types.mjs` after any migration change.
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'missing-anon-key'
 
-if (!supabaseUrl || !supabaseAnonKey) {
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
   console.warn('Supabase credentials are missing. Please check your .env.local file.')
 }
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey)
+
+/** Throws the PostgREST error (so callers can toast `err.message`) or returns data. */
+export function unwrap<T>(result: { data: T; error: { message: string } | null }): T {
+  if (result.error) throw new Error(result.error.message)
+  return result.data
+}

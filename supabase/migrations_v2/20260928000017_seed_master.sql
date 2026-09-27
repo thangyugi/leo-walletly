@@ -65,13 +65,13 @@ from public.countries c where c.default_timezone_code = z.code and z.country_cod
 
 -- Account types & providers --------------------------------------------------
 insert into public.account_types (code, name_key, icon, is_liability, sort_order) values
-  ('cash', public._seed_t('account_type.cash.name', '現金', 'Tiền mặt', 'Cash'), 'banknote', false, 1),
-  ('bank', public._seed_t('account_type.bank.name', '銀行口座', 'Tài khoản ngân hàng', 'Bank account'), 'landmark', false, 2),
-  ('credit_card', public._seed_t('account_type.credit_card.name', 'クレジットカード', 'Thẻ tín dụng', 'Credit card'), 'credit-card', true, 3),
-  ('e_wallet', public._seed_t('account_type.e_wallet.name', '電子マネー・QR決済', 'Ví điện tử', 'E-wallet'), 'smartphone', false, 4),
-  ('investment', public._seed_t('account_type.investment.name', '投資', 'Đầu tư', 'Investment'), 'trending-up', false, 5),
-  ('loan', public._seed_t('account_type.loan.name', 'ローン', 'Khoản vay', 'Loan'), 'hand-coins', true, 6),
-  ('other', public._seed_t('account_type.other.name', 'その他', 'Khác', 'Other'), 'wallet', false, 7)
+  ('cash', public._seed_t('account_type.cash.name', '現金', 'Tiền mặt', 'Cash'), 'Banknote', false, 1),
+  ('bank', public._seed_t('account_type.bank.name', '銀行口座', 'Tài khoản ngân hàng', 'Bank account'), 'Landmark', false, 2),
+  ('credit_card', public._seed_t('account_type.credit_card.name', 'クレジットカード', 'Thẻ tín dụng', 'Credit card'), 'CreditCard', true, 3),
+  ('e_wallet', public._seed_t('account_type.e_wallet.name', '電子マネー・QR決済', 'Ví điện tử', 'E-wallet'), 'Smartphone', false, 4),
+  ('investment', public._seed_t('account_type.investment.name', '投資', 'Đầu tư', 'Investment'), 'TrendingUp', false, 5),
+  ('loan', public._seed_t('account_type.loan.name', 'ローン', 'Khoản vay', 'Loan'), 'HandCoins', true, 6),
+  ('other', public._seed_t('account_type.other.name', 'その他', 'Khác', 'Other'), 'Wallet', false, 7)
 on conflict (code) do nothing;
 
 select public._seed_t('account.default.cash', '現金', 'Tiền mặt', 'Cash');
@@ -162,51 +162,51 @@ on conflict do nothing;
 -- Category templates -----------------------------------------------------------
 insert into public.category_templates (code, name_key, description_key, icon, sort_order) values
   ('default_personal', public._seed_t('template.default_personal.name', '基本（個人・家族）', 'Cơ bản (cá nhân, gia đình)', 'Basic (personal & family)'),
-    public._seed_t('template.default_personal.description', '食費・交通・光熱費など日常の支出', 'Chi tiêu hằng ngày: ăn uống, đi lại, điện nước…', 'Everyday spending: food, transport, utilities…'), 'wallet', 1),
+    public._seed_t('template.default_personal.description', '食費・交通・光熱費など日常の支出', 'Chi tiêu hằng ngày: ăn uống, đi lại, điện nước…', 'Everyday spending: food, transport, utilities…'), 'Wallet', 1),
   ('household', public._seed_t('template.household.name', '家族', 'Hộ gia đình', 'Household'),
-    public._seed_t('template.household.description', '日用品・育児・ペット・保険', 'Đồ dùng, con cái, thú cưng, bảo hiểm', 'Daily goods, childcare, pets, insurance'), 'house', 2),
+    public._seed_t('template.household.description', '日用品・育児・ペット・保険', 'Đồ dùng, con cái, thú cưng, bảo hiểm', 'Daily goods, childcare, pets, insurance'), 'Home', 2),
   ('travel', public._seed_t('template.travel.name', '旅行', 'Du lịch', 'Travel'),
-    public._seed_t('template.travel.description', '移動・宿泊・観光・お土産', 'Di chuyển, lưu trú, tham quan, quà', 'Transport, lodging, sightseeing, souvenirs'), 'plane', 3),
+    public._seed_t('template.travel.description', '移動・宿泊・観光・お土産', 'Di chuyển, lưu trú, tham quan, quà', 'Transport, lodging, sightseeing, souvenirs'), 'Plane', 3),
   ('wedding', public._seed_t('template.wedding.name', '結婚式', 'Đám cưới', 'Wedding'),
-    public._seed_t('template.wedding.description', '会場・衣装・指輪・引き出物', 'Địa điểm, trang phục, nhẫn, quà cảm ơn', 'Venue, attire, rings, gifts'), 'heart', 4),
+    public._seed_t('template.wedding.description', '会場・衣装・指輪・引き出物', 'Địa điểm, trang phục, nhẫn, quà cảm ơn', 'Venue, attire, rings, gifts'), 'Heart', 4),
   ('business', public._seed_t('template.business.name', 'ビジネス', 'Kinh doanh', 'Business'),
-    public._seed_t('template.business.description', '売上と主な経費科目', 'Doanh thu và các khoản chi phí chính', 'Revenue and common expense accounts'), 'briefcase', 5)
+    public._seed_t('template.business.description', '売上と主な経費科目', 'Doanh thu và các khoản chi phí chính', 'Revenue and common expense accounts'), 'Briefcase', 5)
 on conflict (code) do nothing;
 
 insert into public.category_template_items (template_code, slug, name_key, category_type, icon, color, is_system, sort_order) values
-  ('default_personal', 'food', public._seed_t('category.default.food', '食費', 'Ăn uống', 'Food'), 'expense', 'utensils', '#10b981', false, 1),
-  ('default_personal', 'transport', public._seed_t('category.default.transport', '交通', 'Đi lại', 'Transport'), 'expense', 'train-front', '#3b82f6', false, 2),
-  ('default_personal', 'shopping', public._seed_t('category.default.shopping', '買い物', 'Mua sắm', 'Shopping'), 'expense', 'shopping-bag', '#f59e0b', false, 3),
-  ('default_personal', 'entertainment', public._seed_t('category.default.entertainment', '娯楽', 'Giải trí', 'Entertainment'), 'expense', 'gamepad-2', '#a855f7', false, 4),
-  ('default_personal', 'health', public._seed_t('category.default.health', '医療・健康', 'Sức khỏe', 'Health'), 'expense', 'heart-pulse', '#ec4899', false, 5),
-  ('default_personal', 'utilities', public._seed_t('category.default.utilities', '光熱費', 'Điện nước', 'Utilities'), 'expense', 'zap', '#14b8a6', false, 6),
-  ('default_personal', 'housing', public._seed_t('category.default.housing', '住居', 'Nhà ở', 'Housing'), 'expense', 'house', '#6366f1', false, 7),
-  ('default_personal', 'communication', public._seed_t('category.default.communication', '通信', 'Viễn thông', 'Phone & internet'), 'expense', 'smartphone', '#0ea5e9', false, 8),
-  ('default_personal', 'other-expense', public._seed_t('category.default.other_expense', 'その他', 'Khác', 'Other'), 'expense', 'package', '#94a3b8', false, 9),
-  ('default_personal', 'salary', public._seed_t('category.default.salary', '給与', 'Lương', 'Salary'), 'income', 'briefcase', '#059669', false, 20),
-  ('default_personal', 'other-income', public._seed_t('category.default.other_income', 'その他収入', 'Thu nhập khác', 'Other income'), 'income', 'piggy-bank', '#34d399', false, 21),
-  ('default_personal', 'transfer', public._seed_t('category.default.transfer', '振替', 'Chuyển khoản', 'Transfer'), 'transfer', 'arrow-left-right', '#64748b', true, 30),
-  ('household', 'household-daily-goods', public._seed_t('category.household.daily_goods', '日用品', 'Đồ dùng hằng ngày', 'Daily goods'), 'expense', 'spray-can', '#f97316', false, 1),
-  ('household', 'household-childcare', public._seed_t('category.household.childcare', '育児', 'Con cái', 'Childcare'), 'expense', 'baby', '#ec4899', false, 2),
-  ('household', 'household-pets', public._seed_t('category.household.pets', 'ペット', 'Thú cưng', 'Pets'), 'expense', 'paw-print', '#a855f7', false, 3),
-  ('household', 'household-insurance', public._seed_t('category.household.insurance', '保険', 'Bảo hiểm', 'Insurance'), 'expense', 'shield', '#3b82f6', false, 4),
-  ('travel', 'travel-transport', public._seed_t('category.travel.transport', '移動', 'Di chuyển', 'Getting there'), 'expense', 'plane', '#3b82f6', false, 1),
-  ('travel', 'travel-lodging', public._seed_t('category.travel.lodging', '宿泊', 'Lưu trú', 'Lodging'), 'expense', 'bed', '#6366f1', false, 2),
-  ('travel', 'travel-sightseeing', public._seed_t('category.travel.sightseeing', '観光', 'Tham quan', 'Sightseeing'), 'expense', 'camera', '#f59e0b', false, 3),
-  ('travel', 'travel-food', public._seed_t('category.travel.food', '旅行の食事', 'Ăn uống khi du lịch', 'Meals while travelling'), 'expense', 'utensils', '#10b981', false, 4),
-  ('travel', 'travel-souvenirs', public._seed_t('category.travel.souvenirs', 'お土産', 'Quà lưu niệm', 'Souvenirs'), 'expense', 'gift', '#ec4899', false, 5),
-  ('wedding', 'wedding-venue', public._seed_t('category.wedding.venue', '会場', 'Địa điểm', 'Venue'), 'expense', 'building', '#6366f1', false, 1),
-  ('wedding', 'wedding-attire', public._seed_t('category.wedding.attire', '衣装', 'Trang phục', 'Attire'), 'expense', 'shirt', '#ec4899', false, 2),
-  ('wedding', 'wedding-rings', public._seed_t('category.wedding.rings', '指輪', 'Nhẫn cưới', 'Rings'), 'expense', 'gem', '#f59e0b', false, 3),
-  ('wedding', 'wedding-gifts', public._seed_t('category.wedding.gifts', '引き出物', 'Quà cảm ơn', 'Guest gifts'), 'expense', 'gift', '#10b981', false, 4),
-  ('business', 'sales', public._seed_t('category.business.sales', '売上', 'Doanh thu', 'Sales'), 'income', 'trending-up', '#059669', false, 1),
-  ('business', 'supplies', public._seed_t('category.business.supplies', '消耗品費', 'Vật tư tiêu hao', 'Supplies'), 'expense', 'package', '#f59e0b', false, 2),
-  ('business', 'travel-expenses', public._seed_t('category.business.travel', '旅費交通費', 'Chi phí đi lại', 'Travel expenses'), 'expense', 'train-front', '#3b82f6', false, 3),
-  ('business', 'communication-expenses', public._seed_t('category.business.communication', '通信費', 'Chi phí viễn thông', 'Communication'), 'expense', 'smartphone', '#0ea5e9', false, 4),
-  ('business', 'rent', public._seed_t('category.business.rent', '地代家賃', 'Tiền thuê', 'Rent'), 'expense', 'building', '#6366f1', false, 5),
-  ('business', 'outsourcing', public._seed_t('category.business.outsourcing', '外注費', 'Thuê ngoài', 'Outsourcing'), 'expense', 'users', '#a855f7', false, 6),
-  ('business', 'client-entertainment', public._seed_t('category.business.entertainment', '接待交際費', 'Tiếp khách', 'Client entertainment'), 'expense', 'wine', '#ec4899', false, 7),
-  ('business', 'transfer', 'category.default.transfer', 'transfer', 'arrow-left-right', '#64748b', true, 30)
+  ('default_personal', 'food', public._seed_t('category.default.food', '食費', 'Ăn uống', 'Food'), 'expense', 'Utensils', '#10b981', false, 1),
+  ('default_personal', 'transport', public._seed_t('category.default.transport', '交通', 'Đi lại', 'Transport'), 'expense', 'Train', '#3b82f6', false, 2),
+  ('default_personal', 'shopping', public._seed_t('category.default.shopping', '買い物', 'Mua sắm', 'Shopping'), 'expense', 'ShoppingBag', '#f59e0b', false, 3),
+  ('default_personal', 'entertainment', public._seed_t('category.default.entertainment', '娯楽', 'Giải trí', 'Entertainment'), 'expense', 'Gamepad', '#a855f7', false, 4),
+  ('default_personal', 'health', public._seed_t('category.default.health', '医療・健康', 'Sức khỏe', 'Health'), 'expense', 'Pill', '#ec4899', false, 5),
+  ('default_personal', 'utilities', public._seed_t('category.default.utilities', '光熱費', 'Điện nước', 'Utilities'), 'expense', 'Zap', '#14b8a6', false, 6),
+  ('default_personal', 'housing', public._seed_t('category.default.housing', '住居', 'Nhà ở', 'Housing'), 'expense', 'Home', '#6366f1', false, 7),
+  ('default_personal', 'communication', public._seed_t('category.default.communication', '通信', 'Viễn thông', 'Phone & internet'), 'expense', 'Smartphone', '#0ea5e9', false, 8),
+  ('default_personal', 'other-expense', public._seed_t('category.default.other_expense', 'その他', 'Khác', 'Other'), 'expense', 'Package', '#94a3b8', false, 9),
+  ('default_personal', 'salary', public._seed_t('category.default.salary', '給与', 'Lương', 'Salary'), 'income', 'Briefcase', '#059669', false, 20),
+  ('default_personal', 'other-income', public._seed_t('category.default.other_income', 'その他収入', 'Thu nhập khác', 'Other income'), 'income', 'PiggyBank', '#34d399', false, 21),
+  ('default_personal', 'transfer', public._seed_t('category.default.transfer', '振替', 'Chuyển khoản', 'Transfer'), 'transfer', 'Wallet', '#64748b', true, 30),
+  ('household', 'household-daily-goods', public._seed_t('category.household.daily_goods', '日用品', 'Đồ dùng hằng ngày', 'Daily goods'), 'expense', 'Box', '#f97316', false, 1),
+  ('household', 'household-childcare', public._seed_t('category.household.childcare', '育児', 'Con cái', 'Childcare'), 'expense', 'Baby', '#ec4899', false, 2),
+  ('household', 'household-pets', public._seed_t('category.household.pets', 'ペット', 'Thú cưng', 'Pets'), 'expense', 'PawPrint', '#a855f7', false, 3),
+  ('household', 'household-insurance', public._seed_t('category.household.insurance', '保険', 'Bảo hiểm', 'Insurance'), 'expense', 'Heart', '#3b82f6', false, 4),
+  ('travel', 'travel-transport', public._seed_t('category.travel.transport', '移動', 'Di chuyển', 'Getting there'), 'expense', 'Plane', '#3b82f6', false, 1),
+  ('travel', 'travel-lodging', public._seed_t('category.travel.lodging', '宿泊', 'Lưu trú', 'Lodging'), 'expense', 'Hotel', '#6366f1', false, 2),
+  ('travel', 'travel-sightseeing', public._seed_t('category.travel.sightseeing', '観光', 'Tham quan', 'Sightseeing'), 'expense', 'Camera', '#f59e0b', false, 3),
+  ('travel', 'travel-food', public._seed_t('category.travel.food', '旅行の食事', 'Ăn uống khi du lịch', 'Meals while travelling'), 'expense', 'Utensils', '#10b981', false, 4),
+  ('travel', 'travel-souvenirs', public._seed_t('category.travel.souvenirs', 'お土産', 'Quà lưu niệm', 'Souvenirs'), 'expense', 'Gift', '#ec4899', false, 5),
+  ('wedding', 'wedding-venue', public._seed_t('category.wedding.venue', '会場', 'Địa điểm', 'Venue'), 'expense', 'Building', '#6366f1', false, 1),
+  ('wedding', 'wedding-attire', public._seed_t('category.wedding.attire', '衣装', 'Trang phục', 'Attire'), 'expense', 'Shirt', '#ec4899', false, 2),
+  ('wedding', 'wedding-rings', public._seed_t('category.wedding.rings', '指輪', 'Nhẫn cưới', 'Rings'), 'expense', 'Star', '#f59e0b', false, 3),
+  ('wedding', 'wedding-gifts', public._seed_t('category.wedding.gifts', '引き出物', 'Quà cảm ơn', 'Guest gifts'), 'expense', 'Gift', '#10b981', false, 4),
+  ('business', 'sales', public._seed_t('category.business.sales', '売上', 'Doanh thu', 'Sales'), 'income', 'TrendingUp', '#059669', false, 1),
+  ('business', 'supplies', public._seed_t('category.business.supplies', '消耗品費', 'Vật tư tiêu hao', 'Supplies'), 'expense', 'Package', '#f59e0b', false, 2),
+  ('business', 'travel-expenses', public._seed_t('category.business.travel', '旅費交通費', 'Chi phí đi lại', 'Travel expenses'), 'expense', 'Train', '#3b82f6', false, 3),
+  ('business', 'communication-expenses', public._seed_t('category.business.communication', '通信費', 'Chi phí viễn thông', 'Communication'), 'expense', 'Smartphone', '#0ea5e9', false, 4),
+  ('business', 'rent', public._seed_t('category.business.rent', '地代家賃', 'Tiền thuê', 'Rent'), 'expense', 'Building', '#6366f1', false, 5),
+  ('business', 'outsourcing', public._seed_t('category.business.outsourcing', '外注費', 'Thuê ngoài', 'Outsourcing'), 'expense', 'Users', '#a855f7', false, 6),
+  ('business', 'client-entertainment', public._seed_t('category.business.entertainment', '接待交際費', 'Tiếp khách', 'Client entertainment'), 'expense', 'Music', '#ec4899', false, 7),
+  ('business', 'transfer', 'category.default.transfer', 'transfer', 'Wallet', '#64748b', true, 30)
 on conflict (template_code, slug) do nothing;
 
 -- Sub-categories of food in the default template.
@@ -214,22 +214,22 @@ insert into public.category_template_items (template_code, parent_item_id, slug,
 select 'default_personal', p.id, v.slug, public._seed_t(v.key, v.ja, v.vi, v.en), 'expense', v.icon, '#10b981', v.ord
 from public.category_template_items p
 cross join (values
-  ('groceries', 'category.default.groceries', '食料品', 'Siêu thị', 'Groceries', 'shopping-cart', 1),
-  ('eating-out', 'category.default.eating_out', '外食', 'Ăn ngoài', 'Eating out', 'utensils-crossed', 2),
-  ('cafe', 'category.default.cafe', 'カフェ', 'Cà phê', 'Cafe', 'coffee', 3)
+  ('groceries', 'category.default.groceries', '食料品', 'Siêu thị', 'Groceries', 'ShoppingCart', 1),
+  ('eating-out', 'category.default.eating_out', '外食', 'Ăn ngoài', 'Eating out', 'Pizza', 2),
+  ('cafe', 'category.default.cafe', 'カフェ', 'Cà phê', 'Cafe', 'Coffee', 3)
 ) as v(slug, key, ja, vi, en, icon, ord)
 where p.template_code = 'default_personal' and p.slug = 'food'
 on conflict (template_code, slug) do nothing;
 
 insert into public.ledger_types (code, name_key, description_key, icon, default_fiscal_start_month, default_template_code, sort_order) values
   ('personal', public._seed_t('ledger_type.personal.name', '個人', 'Cá nhân', 'Personal'),
-    public._seed_t('ledger_type.personal.description', '自分のお金を管理', 'Quản lý tiền của riêng bạn', 'Track your own money'), 'user', 1, 'default_personal', 1),
+    public._seed_t('ledger_type.personal.description', '自分のお金を管理', 'Quản lý tiền của riêng bạn', 'Track your own money'), 'User', 1, 'default_personal', 1),
   ('family', public._seed_t('ledger_type.family.name', '家族', 'Gia đình', 'Family'),
-    public._seed_t('ledger_type.family.description', '家族で家計を共有', 'Chia sẻ chi tiêu cả nhà', 'Share a household budget'), 'users', 1, 'default_personal', 2),
+    public._seed_t('ledger_type.family.description', '家族で家計を共有', 'Chia sẻ chi tiêu cả nhà', 'Share a household budget'), 'Users', 1, 'default_personal', 2),
   ('business', public._seed_t('ledger_type.business.name', 'ビジネス', 'Doanh nghiệp', 'Business'),
-    public._seed_t('ledger_type.business.description', '会社の経費と売上', 'Chi phí và doanh thu công ty', 'Company expenses and revenue'), 'building-2', 4, 'business', 3),
+    public._seed_t('ledger_type.business.description', '会社の経費と売上', 'Chi phí và doanh thu công ty', 'Company expenses and revenue'), 'Building2', 4, 'business', 3),
   ('freelance', public._seed_t('ledger_type.freelance.name', 'フリーランス', 'Freelance', 'Freelance'),
-    public._seed_t('ledger_type.freelance.description', '個人事業の収支', 'Thu chi kinh doanh cá nhân', 'Self-employed income and costs'), 'briefcase', 1, 'business', 4)
+    public._seed_t('ledger_type.freelance.description', '個人事業の収支', 'Thu chi kinh doanh cá nhân', 'Self-employed income and costs'), 'Briefcase', 1, 'business', 4)
 on conflict (code) do nothing;
 
 -- Notifications ---------------------------------------------------------------
@@ -247,10 +247,10 @@ insert into public.notification_categories (code, name_key, is_mandatory, sort_o
 on conflict (code) do nothing;
 
 insert into public.notification_channels (code, name_key, icon, is_available, sort_order) values
-  ('in_app', public._seed_t('notification_channel.in_app.name', 'アプリ内', 'Trong ứng dụng', 'In-app'), 'bell', true, 1),
-  ('email', public._seed_t('notification_channel.email.name', 'メール', 'Email', 'Email'), 'mail', true, 2),
-  ('push', public._seed_t('notification_channel.push.name', 'プッシュ', 'Thông báo đẩy', 'Push'), 'smartphone', false, 3),
-  ('sms', public._seed_t('notification_channel.sms.name', 'SMS', 'SMS', 'SMS'), 'message-square', false, 4)
+  ('in_app', public._seed_t('notification_channel.in_app.name', 'アプリ内', 'Trong ứng dụng', 'In-app'), 'Bell', true, 1),
+  ('email', public._seed_t('notification_channel.email.name', 'メール', 'Email', 'Email'), 'Mail', true, 2),
+  ('push', public._seed_t('notification_channel.push.name', 'プッシュ', 'Thông báo đẩy', 'Push'), 'Smartphone', false, 3),
+  ('sms', public._seed_t('notification_channel.sms.name', 'SMS', 'SMS', 'SMS'), 'MessageSquare', false, 4)
 on conflict (code) do nothing;
 
 insert into public.notification_defaults (category_code, channel_code, is_enabled)
@@ -267,43 +267,43 @@ insert into public.notification_types (code, category_code, title_key, body_key,
   ('budget_warning', 'budget',
     public._seed_t('notification.budget_warning.title', '予算アラート: {{category}}', 'Cảnh báo ngân sách: {{category}}', 'Budget alert: {{category}}', 'category'),
     public._seed_t('notification.budget_warning.body', '{{category}} が今月の予算の {{pct}}% に達しました', '{{category}} đã dùng {{pct}}% ngân sách tháng này', '{{category}} has reached {{pct}}% of this month''s budget', 'category,pct'),
-    'alert-triangle', 'warning'),
+    'AlertTriangle', 'warning'),
   ('budget_exceeded', 'budget',
     public._seed_t('notification.budget_exceeded.title', '予算超過: {{category}}', 'Vượt ngân sách: {{category}}', 'Over budget: {{category}}', 'category'),
     public._seed_t('notification.budget_exceeded.body', '{{category}} が今月の予算を超えました（{{pct}}%）', '{{category}} đã vượt ngân sách tháng này ({{pct}}%)', '{{category}} is over this month''s budget ({{pct}}%)', 'category,pct'),
-    'alert-octagon', 'danger'),
+    'AlertOctagon', 'danger'),
   ('import_done', 'import',
     public._seed_t('notification.import_done.title', 'インポート完了', 'Nhập dữ liệu xong', 'Import complete'),
     public._seed_t('notification.import_done.body', '{{file}} から {{count}} 件を追加しました（重複 {{duplicates}} 件をスキップ）', 'Đã thêm {{count}} giao dịch từ {{file}} (bỏ qua {{duplicates}} trùng)', 'Added {{count}} transactions from {{file}} ({{duplicates}} duplicates skipped)', 'count,duplicates,file'),
-    'check-circle', 'success'),
+    'CheckCircle2', 'success'),
   ('report_ready', 'report',
     public._seed_t('notification.report_ready.title', '{{month}} のレポートができました', 'Báo cáo {{month}} đã sẵn sàng', 'Your {{month}} report is ready', 'month'),
     public._seed_t('notification.report_ready.body', '月次レポートを確認しましょう', 'Xem báo cáo tháng của bạn', 'Take a look at your monthly report'),
-    'file-text', 'info'),
+    'FileText', 'info'),
   ('unusual_expense', 'insight',
     public._seed_t('notification.unusual_expense.title', 'いつもと違う支出', 'Chi tiêu bất thường', 'Unusual expense detected'),
     public._seed_t('notification.unusual_expense.body', '{{description}}（{{amount}}）は普段より高額です', '{{description}} ({{amount}}) cao hơn thường lệ', '{{description}} ({{amount}}) is higher than usual', 'description,amount'),
-    'zap', 'warning'),
+    'Zap', 'warning'),
   ('recurring_due', 'recurring',
     public._seed_t('notification.recurring_due.title', '定期支出: {{name}}', 'Định kỳ: {{name}}', 'Recurring: {{name}}', 'name'),
     public._seed_t('notification.recurring_due.body', '{{date}} に記帳されます', 'Sẽ được ghi vào {{date}}', 'Will be recorded on {{date}}', 'date'),
-    'refresh-cw', 'info'),
+    'RefreshCw', 'info'),
   ('recurring_pending', 'recurring',
     public._seed_t('notification.recurring_pending.title', '確認待ち: {{name}}', 'Chờ xác nhận: {{name}}', 'Needs confirmation: {{name}}', 'name'),
     public._seed_t('notification.recurring_pending.body', '{{date}} の定期取引を確認してください', 'Hãy xác nhận giao dịch định kỳ ngày {{date}}', 'Please confirm the recurring transaction for {{date}}', 'date'),
-    'clock', 'warning'),
+    'Clock', 'warning'),
   ('invitation_received', 'members',
     public._seed_t('notification.invitation_received.title', '{{ledger}} への招待', 'Lời mời vào {{ledger}}', 'Invitation to {{ledger}}', 'ledger'),
     public._seed_t('notification.invitation_received.body', '{{inviter}} さんがあなたを招待しました', '{{inviter}} đã mời bạn', '{{inviter}} invited you', 'inviter'),
-    'user-plus', 'info'),
+    'UserPlus', 'info'),
   ('member_joined', 'members',
     public._seed_t('notification.member_joined.title', 'メンバーが参加しました', 'Có thành viên mới', 'A member joined'),
     public._seed_t('notification.member_joined.body', '{{name}} さんが元帳に参加しました', '{{name}} đã tham gia sổ', '{{name}} joined the ledger', 'name'),
-    'users', 'success'),
+    'Users', 'success'),
   ('new_login', 'security',
     public._seed_t('notification.new_login.title', '新しいログイン', 'Đăng nhập mới', 'New sign-in'),
     public._seed_t('notification.new_login.body', '{{device}} から新しくログインがありました', 'Có lượt đăng nhập mới từ {{device}}', 'New sign-in from {{device}}', 'device'),
-    'shield-alert', 'warning')
+    'ShieldAlert', 'warning')
 on conflict (code) do nothing;
 
 drop function public._seed_t(varchar, text, text, text, varchar);

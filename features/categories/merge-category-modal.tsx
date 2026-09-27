@@ -4,6 +4,7 @@ import * as React from 'react'
 import { Modal } from '@/components/ui/modal'
 import { Button } from '@/components/ui/button'
 import { Category } from './types'
+import { useTranslation } from '@/hooks/useTranslation'
 import { useCategoryStore } from './store'
 import { ParentTreeDropdown } from './category-form'
 import { AlertTriangle, GitMerge, ChevronDown, ChevronRight, Check } from 'lucide-react'
@@ -91,7 +92,7 @@ interface MergeCategoryModalProps {
   onClose: () => void
   sourceCategory: Category | null
   categories: Category[]
-  onSuccess?: () => void
+  onSuccess?: (targetId: string) => void
 }
 
 export function MergeCategoryModal({
@@ -105,6 +106,7 @@ export function MergeCategoryModal({
   const [isMerging, setIsMerging] = React.useState(false)
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null)
   const { mergeCategories } = useCategoryStore()
+  const { t } = useTranslation()
 
   // Reset target when modal opens
   React.useEffect(() => {
@@ -131,10 +133,10 @@ export function MergeCategoryModal({
     setErrorMsg(null)
     try {
       await mergeCategories(sourceCategory.id, targetId)
-      if (onSuccess) onSuccess()
+      onSuccess?.(targetId)
       onClose()
     } catch (err: any) {
-      setErrorMsg(err.message || 'Có lỗi xảy ra khi gộp danh mục')
+      setErrorMsg(err.message)
     } finally {
       setIsMerging(false)
     }
@@ -144,7 +146,7 @@ export function MergeCategoryModal({
     <Modal isOpen={isOpen} onClose={onClose} className="max-w-md">
       <div className="flex flex-col gap-6">
         {errorMsg && (
-          <div className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-100 flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <div role="alert" className="bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] p-3 rounded-md text-sm flex items-center gap-2">
             <span className="flex-1">{errorMsg}</span>
           </div>
         )}
@@ -153,9 +155,9 @@ export function MergeCategoryModal({
             <GitMerge className="w-6 h-6 text-[var(--color-interactive-primary)]" />
           </div>
           <div>
-            <h3 className="text-[17px] font-bold text-[var(--color-text-primary)] tracking-tight">Gộp Danh mục</h3>
+            <h3 className="text-[17px] font-bold text-[var(--color-text-primary)] tracking-tight">{t.merge.title}</h3>
             <p className="text-[13px] text-[var(--color-text-tertiary)] mt-1">
-              Chuyển toàn bộ dữ liệu từ danh mục hiện tại sang danh mục mới.
+              {t.merge.subtitle}
             </p>
           </div>
         </div>
@@ -163,7 +165,7 @@ export function MergeCategoryModal({
         <div className="space-y-4">
           <div>
             <label className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-              Danh mục bị gộp (sẽ xóa)
+              {t.merge.source}
             </label>
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--color-status-loss-bg)] border border-[var(--color-border-error)]/20">
               <span className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 bg-[var(--color-bg-canvas)] shadow-sm">
@@ -175,12 +177,12 @@ export function MergeCategoryModal({
 
           <div>
             <label className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
-              Danh mục Đích (nhận dữ liệu)
+              {t.merge.target}
             </label>
             <div className="border border-[var(--color-border-default)] rounded-[12px] bg-[var(--color-bg-canvas)] max-h-64 overflow-y-auto p-1.5">
               {validOptions.length === 0 ? (
                 <div className="p-4 text-center text-[13px] text-[var(--color-text-tertiary)]">
-                  Không có danh mục nào hợp lệ để gộp.
+                  {t.merge.none}
                 </div>
               ) : (
                 renderTree(
@@ -198,12 +200,12 @@ export function MergeCategoryModal({
         <div className="flex items-start gap-3 p-3 rounded-xl bg-[var(--color-status-warning-bg)] border border-[var(--color-warning-500)]/30">
           <AlertTriangle className="w-5 h-5 text-[var(--color-text-warning)] shrink-0 mt-0.5" />
           <p className="text-[12px] leading-relaxed text-[var(--color-text-warning)]">
-            Hành động này không thể hoàn tác. Mọi giao dịch, quy tắc, và danh mục con của "{sourceCategory.name}" sẽ được chuyển sang danh mục đích. Sau đó, "{sourceCategory.name}" sẽ bị xóa vĩnh viễn.
+            {t.merge.warning.replaceAll('{{name}}', sourceCategory.name)}
           </p>
         </div>
 
         <div className="flex items-center justify-end gap-3 pt-2">
-          <Button variant="secondary" onClick={onClose} className="h-10 px-5">Hủy bỏ</Button>
+          <Button variant="secondary" onClick={onClose} className="h-10 px-5">{t.common.cancel}</Button>
           <Button 
             variant="destructive" 
             disabled={!targetId || isMerging} 
@@ -211,7 +213,7 @@ export function MergeCategoryModal({
             onClick={handleMerge}
             className="h-10 px-6 font-semibold"
           >
-            Xác nhận Gộp
+            {t.merge.confirm}
           </Button>
         </div>
       </div>

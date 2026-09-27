@@ -1,207 +1,87 @@
 import { supabase } from '@/lib/supabase'
-import type { Member, MembershipContext, Role, Household, Organization, Ledger } from '../types'
+import type { Invitation, InvitationPreview, Member } from '../types'
 
-function contextColumn(context: MembershipContext): 'household_id' | 'organization_id' {
-  return context.type === 'household' ? 'household_id' : 'organization_id'
+function fail(error: { message: string } | null) {
+  if (error) throw new Error(error.message)
 }
 
 export const MemberService = {
-  async getMembers(context: MembershipContext): Promise<Member[]> {
+  async getMembers(ledgerId: string): Promise<Member[]> {
     const { data, error } = await supabase
-      .from('members')
-      .select('*, user:users(*), role:roles(*)')
-      .eq(contextColumn(context), context.id)
-      .order('created_at', { ascending: true })
-
-    if (error) throw error
+      .from('ledger_members')
+      .select('id, ledger_id, user_id, role_code, status, color, joined_at, user:users!ledger_members_user_id_fkey(id, email, display_name, avatar_path)')
+      .eq('ledger_id', ledgerId)
+      .eq('status', 'active')
+      .order('joined_at', { ascending: true })
+    fail(error)
     return (data ?? []) as unknown as Member[]
   },
 
-  async getPendingInvitations(context: MembershipContext): Promise<Member[]> {
+  async getInvitations(ledgerId: string): Promise<Invitation[]> {
     const { data, error } = await supabase
-      .from('members')
-      .select('*, user:users(*), role:roles(*)')
-      .eq(contextColumn(context), context.id)
+      .from('ledger_invitations')
+      .select('id, ledger_id, email, role_code, status, message, expires_at, created_at, invited_by')
+      .eq('ledger_id', ledgerId)
       .eq('status', 'pending')
-      .order('invited_at', { ascending: false })
-
-    if (error) throw error
-    return (data ?? []) as unknown as Member[]
+      .order('created_at', { ascending: false })
+    fail(error)
+    return (data ?? []) as Invitation[]
   },
 
-  async inviteMember(context: MembershipContext, email: string, roleCode: string): Promise<Member> {
+  /** Returns the one-time token; the join link is `${origin}/join?token=…`. */
+  async invite(ledgerId: string, email: string, roleCode: string, message?: string): Promise<string> {
     const { data, error } = await supabase.rpc('invite_member', {
-      p_household_id: context.type === 'household' ? context.id : null,
-      p_organization_id: context.type === 'organization' ? context.id : null,
-      p_invitee_email: email,
+      p_ledger_id: ledgerId,
+      p_email: email.trim(),
       p_role_code: roleCode,
+      p_message: message ?? null,
     })
-    if (error) throw error
-    return data as Member
+    fail(error)
+    return data?.[0]?.token ?? ''
   },
 
-  async cancelInvitation(memberId: string): Promise<void> {
-    const { error } = await supabase.rpc('cancel_invitation', { p_member_id: memberId })
-    if (error) throw error
+  async revokeInvitation(invitationId: string) {
+    const { error } = await supabase.rpc('revoke_invitation', { p_invitation_id: invitationId })
+    fail(error)
   },
 
-  async acceptInvitation(memberId: string): Promise<Member> {
-    const { data, error } = await supabase.rpc('accept_invitation', { p_member_id: memberId })
-    if (error) throw error
-    return data as Member
+  async getInvitation(token: string): Promise<InvitationPreview | null> {
+    const { data, error } = await supabase.rpc('get_invitation', { p_token: token })
+    fail(error)
+    return (data?.[0] as InvitationPreview | undefined) ?? null
   },
 
-  async acceptInvitationByToken(token: string): Promise<Member> {
-    const { data, error } = await supabase.rpc('accept_invitation_by_token', { p_token: token })
-    if (error) throw error
-    return data as Member
+  async acceptInvitation(token: string): Promise<string> {
+    const { data, error } = await supabase.rpc('accept_invitation', { p_token: token })
+    fail(error)
+    return data as string
   },
 
-  async rejectInvitation(memberId: string): Promise<void> {
-    const { error } = await supabase.rpc('reject_invitation', { p_member_id: memberId })
-    if (error) throw error
+  async declineInvitation(token: string) {
+    const { error } = await supabase.rpc('decline_invitation', { p_token: token })
+    fail(error)
   },
 
-  async updateMemberRole(memberId: string, roleCode: string): Promise<void> {
-    const { error } = await supabase.rpc('update_member_role', {
-      p_member_id: memberId,
-      p_role_code: roleCode,
-    })
-    if (error) throw error
+  async updateRole(memberId: string, roleCode: string) {
+    const { error } = await supabase.rpc('update_member_role', { p_member_id: memberId, p_role_code: roleCode })
+    fail(error)
   },
 
-  async removeMember(memberId: string): Promise<void> {
+  async remove(memberId: string) {
     const { error } = await supabase.rpc('remove_member', { p_member_id: memberId })
-    if (error) throw error
+    fail(error)
   },
 
-  async leaveMembership(memberId: string): Promise<void> {
-    const { error } = await supabase.rpc('leave_membership', { p_member_id: memberId })
-    if (error) throw error
+  async leave(ledgerId: string) {
+    const { error } = await supabase.rpc('leave_ledger', { p_ledger_id: ledgerId })
+    fail(error)
   },
 
-  /** All of the current user's memberships, across every household/organization. */
-  async getMyMemberships(): Promise<Member[]> {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return []
-
-    const { data: me } = await supabase
-      .from('users')
-      .select('id')
-      .eq('auth_user_id', user.id)
-      .single()
-    if (!me) return []
-
-    const { data, error } = await supabase
-      .from('members')
-      .select('*, household:households(*), organization:organizations(*), role:roles(*)')
-      .eq('user_id', me.id)
-      .eq('status', 'active')
-
-    if (error) throw error
-    return (data ?? []) as unknown as Member[]
-  },
-}
-
-export const RoleService = {
-  async getRoles(scope: 'household' | 'organization'): Promise<Role[]> {
-    const { data, error } = await supabase
-      .from('roles')
-      .select('*')
-      .eq('scope', scope)
-      .eq('status', 'active')
-      .order('priority', { ascending: false })
-
-    if (error) throw error
-    return (data ?? []) as Role[]
-  },
-
-  /** Permission codes granted to a role (allow, minus any deny override). */
-  async getPermissionCodesForRole(roleId: string): Promise<string[]> {
-    const { data, error } = await supabase
-      .from('role_permissions')
-      .select('effect, permission:permissions(code)')
-      .eq('role_id', roleId)
-
-    if (error) throw error
-    const rows = (data ?? []) as unknown as { effect: string; permission: { code: string } | null }[]
-    const denied = new Set(rows.filter((r) => r.effect === 'deny').map((r) => r.permission?.code))
-    return rows
-      .filter((r) => r.effect === 'allow' && r.permission?.code && !denied.has(r.permission.code))
-      .map((r) => r.permission!.code)
-  },
-}
-
-export const HouseholdService = {
-  async getHousehold(id: string): Promise<Household> {
-    const { data, error } = await supabase.from('households').select('*').eq('id', id).single()
-    if (error) throw error
-    return data as Household
-  },
-
-  async createHousehold(params: {
-    tenantId: string
-    code: string
-    name: string
-    currencyCode: string
-    timezoneId: string
-    fiscalCalendarId: string
-    countryCode?: string
-  }): Promise<Household> {
-    const { data, error } = await supabase.rpc('create_household', {
-      p_tenant_id: params.tenantId,
-      p_code: params.code,
-      p_name: params.name,
-      p_currency_code: params.currencyCode,
-      p_timezone_id: params.timezoneId,
-      p_fiscal_calendar_id: params.fiscalCalendarId,
-      p_country_code: params.countryCode ?? null,
+  async transferOwnership(ledgerId: string, newOwnerUserId: string) {
+    const { error } = await supabase.rpc('transfer_ledger_ownership', {
+      p_ledger_id: ledgerId,
+      p_new_owner_user_id: newOwnerUserId,
     })
-    if (error) throw error
-    return data as Household
-  },
-
-  async updateHousehold(id: string, updates: Partial<Pick<Household, 'name' | 'code' | 'currency_code' | 'timezone_id' | 'country_code'>>): Promise<void> {
-    const { error } = await supabase.from('households').update(updates).eq('id', id)
-    if (error) throw error
+    fail(error)
   },
 }
-
-export const OrganizationService = {
-  async getOrganization(id: string): Promise<Organization> {
-    const { data, error } = await supabase.from('organizations').select('*').eq('id', id).single()
-    if (error) throw error
-    return data as Organization
-  },
-
-  async createOrganization(params: {
-    tenantId: string
-    code: string
-    name: string
-    organizationType: string
-    currencyCode: string
-    timezoneId: string
-    fiscalCalendarId: string
-    countryCode?: string
-  }): Promise<Organization> {
-    const { data, error } = await supabase.rpc('create_organization', {
-      p_tenant_id: params.tenantId,
-      p_code: params.code,
-      p_name: params.name,
-      p_organization_type: params.organizationType,
-      p_currency_code: params.currencyCode,
-      p_timezone_id: params.timezoneId,
-      p_fiscal_calendar_id: params.fiscalCalendarId,
-      p_country_code: params.countryCode ?? null,
-    })
-    if (error) throw error
-    return data as Organization
-  },
-
-  async updateOrganization(id: string, updates: Partial<Pick<Organization, 'name' | 'code' | 'legal_name' | 'currency_code' | 'timezone_id' | 'country_code'>>): Promise<void> {
-    const { error } = await supabase.from('organizations').update(updates).eq('id', id)
-    if (error) throw error
-  },
-}
-
-// EOF

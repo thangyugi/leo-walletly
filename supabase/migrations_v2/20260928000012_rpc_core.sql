@@ -285,6 +285,25 @@ begin
 end;
 $$;
 
+-- Hard delete (children cascade). The caller must be the owner and retype the ledger name.
+create or replace function public.delete_ledger(p_ledger_id uuid, p_confirm_name text)
+returns void
+language plpgsql
+security definer
+set search_path = public, extensions
+as $$
+begin
+  if not exists (select 1 from public.ledgers where id = p_ledger_id and owner_user_id = auth.uid()) then
+    raise exception 'Only the owner can delete this ledger' using errcode = '42501';
+  end if;
+  if not exists (select 1 from public.ledgers where id = p_ledger_id and name = p_confirm_name) then
+    raise exception 'Ledger name does not match' using errcode = '22023';
+  end if;
+  update public.user_preferences set default_ledger_id = null where default_ledger_id = p_ledger_id;
+  delete from public.ledgers where id = p_ledger_id;
+end;
+$$;
+
 -- =========================================================================
 -- Invitations & membership
 -- =========================================================================

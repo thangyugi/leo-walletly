@@ -2,152 +2,122 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard,
-  ArrowDownUp,
-  Upload,
-  BarChart3,
-  Wallet,
-  CalendarDays,
-  Tag,
-  ScanLine,
-  RefreshCw,
-  FileText,
-  Users,
-  Settings,
-  Globe,
-  User,
-  Building2,
-  FolderTree,
-} from 'lucide-react'
+import { Wallet, Globe } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/constants'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useMasterStore } from '@/features/master/store'
 import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
+import { EditableText } from '@/components/i18n/editable-text'
+import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath, type NavGroup } from './nav'
 import type { Lang } from '@/lib/i18n'
 
-const LANG_OPTIONS: { value: Lang; label: string; flag: string }[] = [
-  { value: 'ja', label: '日本語', flag: '🇯🇵' },
-  { value: 'vi', label: 'Tiếng Việt', flag: '🇻🇳' },
-  { value: 'en', label: 'English', flag: '🇺🇸' },
+// Shown before the DB language list has loaded (and if it cannot be reached).
+const FALLBACK_LANGUAGES = [
+  { code: 'ja', native_name: '日本語', short_label: 'JA' },
+  { code: 'vi', native_name: 'Tiếng Việt', short_label: 'VI' },
+  { code: 'en', native_name: 'English', short_label: 'EN' },
 ]
 
-export function Sidebar() {
-  const pathname = usePathname()
-  const { t }   = useTranslation()
+export function LanguagePicker({ className }: { className?: string }) {
   const { lang, setLang } = useSettingsStore()
+  const dbLanguages = useMasterStore((s) => s.languages)
+  const languages = dbLanguages.length ? dbLanguages : FALLBACK_LANGUAGES
+  return (
+    <div className={cn('grid gap-1', className)} style={{ gridTemplateColumns: `repeat(${Math.min(languages.length, 4)}, minmax(0, 1fr))` }}>
+      {languages.map((opt) => (
+        <button
+          key={opt.code}
+          type="button"
+          onClick={() => setLang(opt.code as Lang)}
+          title={opt.native_name}
+          aria-pressed={lang === opt.code}
+          className={cn(
+            'flex flex-col items-center gap-0.5 py-1.5 rounded-md transition-all duration-100',
+            lang === opt.code
+              ? 'bg-[var(--color-interactive-primary)] text-white shadow-sm'
+              : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)]'
+          )}
+        >
+          <span className="text-[11px] font-semibold leading-none">{opt.short_label}</span>
+          <span className={cn('text-[9px] leading-none truncate max-w-full px-1', lang === opt.code ? 'text-white/80' : 'text-[var(--color-text-quaternary)]')}>
+            {opt.native_name}
+          </span>
+        </button>
+      ))}
+    </div>
+  )
+}
 
-  const navItems = [
-    { href: '/',               label: t.nav.dashboard,    icon: LayoutDashboard, group: 'main' },
-    { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp,     group: 'main' },
-    { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays,    group: 'main' },
-    { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3,       group: 'main' },
-    { href: '/categories',     label: t.nav.groups,       icon: FolderTree,      group: 'manage' },
-    { href: '/users',          label: t.nav.users,        icon: Users,           group: 'manage' },
-    { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw,       group: 'manage' },
-    { href: '/settings/ledger',  label: t.ledger_settings.title, icon: Settings,        group: 'settings' },
-    { href: '/settings/profile', label: t.settings.sidebar.profile, icon: User,            group: 'settings' },
-    { href: '/monthly-report', label: t.nav.report,       icon: FileText,        group: 'manage' },
-    { href: '/scan',           label: t.nav.scan,         icon: ScanLine,        group: 'tools' },
-    { href: '/import',         label: t.nav.import,       icon: Upload,          group: 'tools' },
-  ]
+export function NavList({ onNavigate }: { onNavigate?: () => void }) {
+  const pathname = usePathname()
+  const { tk } = useTranslation()
+  const groups: NavGroup[] = ['main', 'manage', 'tools', 'system']
+  return (
+    <>
+      {groups.map((group) => (
+        <div key={group} className={cn(group !== 'main' && 'mt-5')}>
+          {NAV_GROUP_LABEL_KEY[group] && (
+            <p className="px-2.5 mb-1 text-[10px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-widest">
+              {tk(NAV_GROUP_LABEL_KEY[group])}
+            </p>
+          )}
+          <div className="space-y-0.5">
+            {NAV_ITEMS.filter((n) => n.group === group).map(({ href, labelKey, icon: Icon }) => {
+              const active = isActivePath(pathname, href)
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  onClick={onNavigate}
+                  className={cn(
+                    'group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-100',
+                    active
+                      ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)] font-medium'
+                      : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-secondary)]'
+                  )}
+                >
+                  {active && <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-[var(--color-interactive-primary)]" />}
+                  <Icon
+                    className={cn('w-4 h-4 shrink-0', active ? 'text-[var(--color-sidebar-item-active-text)]' : 'text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-secondary)]')}
+                    strokeWidth={active ? 2 : 1.75}
+                  />
+                  <EditableText k={labelKey} />
+                </Link>
+              )
+            })}
+          </div>
+        </div>
+      ))}
+    </>
+  )
+}
 
-  const groups = [
-    { key: 'main',     label: null },
-    { key: 'manage',   label: t.common.manage },
-    { key: 'tools',    label: t.common.tools },
-    { key: 'settings', label: t.common.system },
-  ]
-
+export function Sidebar() {
+  const { t } = useTranslation()
   return (
     <aside className="hidden md:flex flex-col w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
-      {/* Logo */}
-      <div className="flex items-center gap-2.5 px-4 h-14">
+      <Link href="/" className="flex items-center gap-2.5 px-4 h-14">
         <div className="w-7 h-7 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />
         </div>
         <span className="font-semibold text-sm text-[var(--color-text-primary)] tracking-tight">{APP_NAME}</span>
-      </div>
+      </Link>
 
       <LedgerSwitcher />
 
-      {/* Navigation */}
       <nav className="flex-1 px-2.5 py-3 overflow-y-auto">
-        {groups.map(({ key, label }) => {
-          const items = navItems.filter((n) => n.group === key)
-          return (
-            <div key={key} className={cn(key !== 'main' && 'mt-5')}>
-              {label && (
-                <p className="px-2.5 mb-1 text-[10px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-widest">
-                  {label}
-                </p>
-              )}
-              <div className="space-y-0.5">
-                {items.map(({ href, label, icon: Icon }) => {
-                  const active = pathname === href || (href !== '/' && pathname.startsWith(href))
-                  return (
-                    <Link
-                      key={href}
-                      href={href}
-                      className={cn(
-                        'group relative flex items-center gap-2.5 px-2.5 py-2 rounded-lg text-sm transition-all duration-100',
-                        active
-                          ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)] font-medium'
-                          : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-secondary)]'
-                      )}
-                    >
-                      {active && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-4 rounded-full bg-[var(--color-interactive-primary)]" />
-                      )}
-                      <Icon
-                        className={cn(
-                          'w-4 h-4 shrink-0 transition-colors duration-100',
-                          active
-                            ? 'text-[var(--color-sidebar-item-active-text)]'
-                            : 'text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-secondary)]'
-                        )}
-                        strokeWidth={active ? 2 : 1.75}
-                      />
-                      {label}
-                    </Link>
-                  )
-                })}
-              </div>
-            </div>
-          )
-        })}
+        <NavList />
       </nav>
 
-      {/* Footer: language + version */}
       <div className="px-2.5 py-3 border-t border-[var(--color-sidebar-border)]">
         <p className="flex items-center gap-1.5 px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">
           <Globe className="w-3 h-3" />
           {t.common.language}
         </p>
-        <div className="grid grid-cols-3 gap-1">
-          {LANG_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => setLang(opt.value)}
-              title={opt.label}
-              className={cn(
-                'flex flex-col items-center gap-0.5 py-1.5 rounded-md transition-all duration-100',
-                lang === opt.value
-                  ? 'bg-[var(--color-interactive-primary)] text-white shadow-sm'
-                  : 'text-[var(--color-text-quaternary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-tertiary)]'
-              )}
-            >
-              <span className="text-sm leading-none">{opt.flag}</span>
-              <span className={cn('text-[9px] font-bold uppercase tracking-wide leading-none',
-                lang === opt.value ? 'text-white/80' : 'text-[var(--color-text-quaternary)]'
-              )}>
-                {opt.value}
-              </span>
-            </button>
-          ))}
-        </div>
-        <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · Leo Walletly</p>
+        <LanguagePicker />
+        <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.4.0 · {APP_NAME}</p>
       </div>
     </aside>
   )

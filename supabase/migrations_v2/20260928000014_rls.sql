@@ -231,6 +231,9 @@ create policy api_tokens_revoke on public.api_tokens for update to authenticated
 revoke select on public.api_tokens from authenticated, anon;
 grant select (id, user_id, ledger_id, name, token_prefix, access_level, last_used_at, expires_at, revoked_at,
   created_at) on public.api_tokens to authenticated;
+-- Clients may only rename or revoke; the hash, scope and expiry are fixed at creation.
+revoke update on public.api_tokens from authenticated, anon;
+grant update (name, revoked_at) on public.api_tokens to authenticated;
 
 -- Functions: only signed-in users may call RPCs (get_ui_texts / get_invitation
 -- were granted to anon explicitly where they are defined).

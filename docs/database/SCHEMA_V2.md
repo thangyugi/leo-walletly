@@ -94,7 +94,7 @@ Giai đoạn: 1 = làm cùng đợt dựng lại DB · 2 = ngay sau khi luồng 
 
 ---
 
-## 3. Tổng quan (52 bảng)
+## 3. Tổng quan (53 bảng)
 
 | Nhóm | Bảng |
 |---|---|
@@ -104,7 +104,7 @@ Giai đoạn: 1 = làm cùng đợt dựng lại DB · 2 = ngay sau khi luồng 
 | D. Sổ (4) | `ledger_types`, `ledgers`, `ledger_members`, `ledger_invitations` |
 | E. Tiền (16) | `financial_accounts`, `categories`, `category_translations`, `category_members`, `category_accounts`, `category_rules`, `category_templates`, `category_template_items`, `budgets`, `tags`, `transactions`, `transaction_tags`, `transaction_shares`, `settlements`, `recurring_rules`, `bank_connections` |
 | F. Nhập liệu (6) | `import_jobs`, `import_column_mappings`, `import_rows`, `import_row_values`, `documents`, `document_line_items` |
-| G. Thông báo & nhật ký (8) | `notification_categories`, `notification_channels`, `notification_types`, `user_notification_settings`, `notifications`, `notification_params`, `audit_logs`, `audit_log_changes` |
+| G. Thông báo & nhật ký (9) | `notification_categories`, `notification_channels`, `notification_defaults`, `notification_types`, `user_notification_settings`, `notifications`, `notification_params`, `audit_logs`, `audit_log_changes` |
 | H. Quyền riêng tư & nhà phát triển (2) | `data_requests`, `api_tokens` |
 
 ```
@@ -850,7 +850,7 @@ UNIQUE `(import_job_id, row_number)`.
 | `is_enabled` | boolean | ❌ | | |
 | `updated_at` | timestamptz | ❌ | `now()` | |
 
-Thêm kênh / nhóm mới → thêm dòng lookup; cài đặt thiếu dòng thì dùng mặc định trong seed (`notification_defaults` = view từ `notification_categories` × `notification_channels`).
+Thêm kênh / nhóm mới → thêm dòng lookup; người dùng chưa có dòng thì dùng bảng `notification_defaults` (PK `category_code, channel_code`, cột `is_enabled`). View `v_notification_settings` gộp mặc định + lựa chọn của người dùng cho màn hình cài đặt.
 
 ### G5. `notifications`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
@@ -948,7 +948,7 @@ Chỉ INSERT qua trigger/RPC.
 | `v_translation_coverage` (language, total, translated, pct) | Màn quản lý ngôn ngữ |
 
 ### I2. RPC chính
-`setup_onboarding`, `create_ledger`, `apply_category_template`, `invite_member`, `get_invitation`, `accept_invitation`, `decline_invitation`, `revoke_invitation`, `update_member_role`, `remove_member`, `leave_ledger`, `transfer_ledger_ownership`, `merge_categories`, `apply_category_rules`, `import_transactions`, `bulk_update_transactions`, `bulk_delete_transactions`, `settle_up`, `get_ui_texts`, `set_translation_override`, `reset_translation_override`, `list_my_sessions`, `revoke_session`, `request_data_export`, `delete_my_account`, `create_api_token`.
+`setup_onboarding`, `create_ledger`, `delete_ledger` (chỉ owner, phải gõ lại tên sổ), `apply_category_template`, `invite_member`, `get_invitation`, `accept_invitation`, `decline_invitation`, `revoke_invitation`, `update_member_role`, `remove_member`, `leave_ledger`, `transfer_ledger_ownership`, `merge_categories`, `apply_category_rules`, `check_import_duplicates`, `import_transactions`, `bulk_update_transactions`, `bulk_delete_transactions`, `run_due_recurring`, `get_ui_texts`, `translate`, `set_translation_override`, `reset_translation_override`, `record_session`, `revoke_session`, `delete_my_account`, `create_api_token`. Thanh toán lại (settle) ghi thẳng vào `settlements` (RLS), yêu cầu xuất dữ liệu ghi thẳng vào `data_requests`.
 
 ### I3. Storage
 `avatars` (công khai đọc), `receipts`, `imports`, `exports` (riêng tư), `public-assets` (logo nhà cung cấp).
@@ -977,25 +977,28 @@ Chỉ INSERT qua trigger/RPC.
 | Domain 03, 05, 06, phần lớn 07, 08, 11, 12, 13 | Chưa có màn hình |
 
 ## K. Thứ tự file migration
+
+Bộ migration mới nằm ở `supabase/migrations_v2/` (bộ cũ trong `supabase/migrations/` giữ nguyên). Khi dựng lại DB: xoá DB cũ, thay nội dung `supabase/migrations/` bằng các file trong `migrations_v2/`, rồi `supabase db reset` / `supabase db push`.
+
 ```
-0001_extensions.sql         citext, pgcrypto, pg_trgm, pg_cron
-0002_helpers.sql            tg_touch, tg_protect_columns
-0003_i18n.sql               languages, translation_keys, translations
-0004_master_data.sql        currencies, countries, time_zones, exchange_rates, account_types, providers
-0005_users.sql              users, user_preferences, user_sessions + trigger đăng ký
-0006_rbac.sql               roles, permissions, role_permissions, has_ledger_permission()
-0007_ledgers.sql            ledger_types, category_templates(+items), ledgers, ledger_members, ledger_invitations, translation_overrides
-0008_money.sql              financial_accounts, categories(+translations/members/accounts), category_rules, budgets, tags
-0009_transactions.sql       transactions, transaction_tags, transaction_shares, settlements, recurring_rules, bank_connections
-0010_import_documents.sql   import_jobs, import_column_mappings, import_rows, import_row_values, documents, document_line_items
-0011_notifications.sql      notification_categories/channels/types, user_notification_settings, notifications, notification_params
-0012_audit.sql              audit_logs, audit_log_changes, tg_audit
-0013_privacy_dev.sql        data_requests, api_tokens
-0014_views.sql
-0015_rpc.sql
-0016_rls.sql
-0017_storage.sql
-0018_cron.sql
-0019_seed_master.sql        languages, currencies, countries, time_zones, account_types, providers, ledger_types, roles, permissions, notifications lookup, templates
-0020_seed_translations.sql  sinh từ lib/i18n.ts bằng scripts/seed-translations.ts
+20260928000001_extensions_and_helpers.sql   citext, pgcrypto, pg_trgm; is_client_request, sha256_hex, tg_touch_audit
+20260928000002_i18n.sql                     languages, translation_keys, translations
+20260928000003_master_data.sql              currencies, countries, time_zones, exchange_rates, account_types, providers
+20260928000004_users.sql                    users, user_preferences, user_sessions + trigger đăng ký (auth.users → users)
+20260928000005_rbac.sql                     roles, permissions, role_permissions
+20260928000006_ledgers.sql                  ledger_types, category_templates(+items), ledgers, ledger_members, ledger_invitations,
+                                            translation_overrides, is_ledger_member / has_ledger_permission / shares_ledger_with
+20260928000007_money.sql                    financial_accounts, categories(+translations/members/accounts), category_rules, budgets, tags
+20260928000008_transactions.sql             transactions, transaction_tags, transaction_shares, settlements, recurring_rules, bank_connections
+20260928000009_import_documents.sql         import_jobs, import_column_mappings, import_rows, import_row_values, documents, document_line_items
+20260928000010_notifications_audit_privacy.sql  notification_*, notifications, notification_params, audit_logs(+changes), data_requests, api_tokens
+20260928000011_views.sql                    8 view (security_invoker)
+20260928000012_rpc_core.sql                 onboarding, sổ, lời mời, thành viên, phiên, i18n
+20260928000013_rpc_money.sql                danh mục, quy tắc, import, bulk, định kỳ, cảnh báo ngân sách
+20260928000014_rls.sql                      RLS + grant theo cột (token_hash không lộ; api_tokens chỉ sửa name/revoked_at)
+20260928000015_storage_cron.sql             bucket avatars / receipts / imports / exports + pg_cron (bỏ qua nếu không có)
+20260928000016_seed_translations.sql        sinh từ lib/i18n.ts: node scripts/generate-translation-seed.mjs
+20260928000017_seed_master.sql              ngôn ngữ, tiền tệ, quốc gia, múi giờ, loại tài khoản, nhà cung cấp, loại sổ, vai trò, quyền, thông báo, mẫu danh mục
 ```
+
+Sau khi đổi schema: `DATABASE_URL=... node scripts/gen-db-types.mjs` để sinh lại `types/supabase.ts`.

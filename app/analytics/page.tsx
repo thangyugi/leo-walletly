@@ -10,13 +10,12 @@ import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { SegmentedControl } from '@/components/ui/tabs'
-import { BudgetProgress } from '@/components/financial/budget-progress'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
-import { useTransactionsStore } from '@/stores/transactions'
+import { useRangeTransactions } from '@/hooks/useRangeTransactions'
+import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
-import { CATEGORIES } from '@/lib/constants'
 import { CHART_COLORS, CHART_AXIS, CHART_TOOLTIP, CHART_MARGINS } from '@/components/charts/chart-theme'
 
 function ChartTooltip({ active, payload, label }: any) {
@@ -42,8 +41,17 @@ function ChartTooltip({ active, payload, label }: any) {
 }
 
 export default function AnalyticsPage() {
-  const { transactions } = useTransactionsStore()
   const { t, lang } = useTranslation()
+  const { categories } = useLedgerData()
+  // Last 6 months including the current one.
+  const [from, to] = useMemo(() => {
+    const now = new Date()
+    const s = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+    const e = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+    const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+    return [iso(s), iso(e)]
+  }, [])
+  const transactions = useRangeTransactions(from, to)
   const { format } = useMoney()
 
   const hasData = transactions.length > 0
@@ -55,8 +63,8 @@ export default function AnalyticsPage() {
       const key    = `${y}-${m}`
       const label = lang === 'ja' ? `${y}/${m}` : (lang === 'vi' ? `${m}/${y}` : `${m}/${y}`)
       if (!map[key]) map[key] = { label, expense: 0, income: 0 }
-      if (tx.transactionType === 'expense') map[key].expense += Math.abs(tx.amount)
-      else if (tx.transactionType === 'income') map[key].income  += tx.amount
+      if (tx.transactionType === 'expense') map[key].expense += tx.baseAmount
+      else if (tx.transactionType === 'income') map[key].income  += tx.baseAmount
     })
     return Object.entries(map)
       .sort(([a], [b]) => a.localeCompare(b))
@@ -64,17 +72,22 @@ export default function AnalyticsPage() {
       .map(([, v]) => v)
   }, [transactions, lang])
 
+  // Expense by top-level category (children roll up into their parent).
   const categoryData = useMemo(() => {
-    const map: Record<string, number> = {}
+    const byId = new Map(categories.map((c) => [c.id, c]))
+    const map = new Map<string, number>()
     transactions.filter((tx) => tx.transactionType === 'expense').forEach((tx) => {
-      const catId = tx.categoryId || '__none'
-      map[catId] = (map[catId] ?? 0) + Math.abs(tx.amount)
+      const c = tx.categoryId ? byId.get(tx.categoryId) : undefined
+      const rootId = c?.parent_id && byId.has(c.parent_id) ? c.parent_id : c?.id ?? '__none'
+      map.set(rootId, (map.get(rootId) ?? 0) + tx.baseAmount)
     })
-    return CATEGORIES
-      .map((c) => ({ name: c.label, value: map[c.value] ?? 0, color: CHART_COLORS.palette[CATEGORIES.indexOf(c) % CHART_COLORS.palette.length] }))
-      .filter((d) => d.value > 0)
+    return [...map.entries()]
+      .map(([id, value], i) => {
+        const c = byId.get(id)
+        return { name: c?.name ?? t.txform.uncategorized, value, color: c?.color ?? CHART_COLORS.palette[i % CHART_COLORS.palette.length] }
+      })
       .sort((a, b) => b.value - a.value)
-  }, [transactions])
+  }, [transactions, categories, t.txform.uncategorized])
 
 
   const netData = useMemo(() => monthlyData.map((d) => ({ ...d, net: d.income - d.expense })), [monthlyData])

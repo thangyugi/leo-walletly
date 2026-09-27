@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils'
 import { formatMoney } from '@/lib/money'
 import type { CurrencyCode } from '@/types'
-import { useMembershipStore } from '@/features/user-management/membership-store'
+import { useLedgerCurrency } from '@/features/user-management/ledger-store'
 
 export interface BudgetProgressProps {
   spent: number
@@ -22,9 +22,8 @@ export function BudgetProgress({
   showAmounts = true,
   className,
 }: BudgetProgressProps) {
-  const { currentContext } = useMembershipStore()
-  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-  const activeCurrency = currency || (currentLedger?.base_currency as CurrencyCode) || 'JPY'
+  const ledgerCurrency = useLedgerCurrency()
+  const activeCurrency = currency || (ledgerCurrency as CurrencyCode)
 
   if (!limit) return null
 

@@ -4,6 +4,7 @@ import './globals.css'
 import { AppShell } from '@/components/layout/shell'
 import { AuthProvider } from '@/components/auth/auth-provider'
 import { CurrencyInitializer } from '@/features/currency/components/CurrencyInitializer'
+import { Toaster } from 'sonner'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
 const geistMono = Geist_Mono({ variable: '--font-geist-mono', subsets: ['latin'] })
@@ -15,12 +16,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="ja" className={`${geistSans.variable} ${geistMono.variable} h-full`}>
+    <html lang="ja" suppressHydrationWarning className={`${geistSans.variable} ${geistMono.variable} h-full`}>
       <body className="h-full bg-[var(--color-bg-base)] text-[var(--color-text-primary)] antialiased">
         <AuthProvider>
           <CurrencyInitializer />
           <AppShell>{children}</AppShell>
         </AuthProvider>
+        <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>
   )

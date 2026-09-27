@@ -1,28 +1,61 @@
-import { create } from 'zustand'
-import type { Ledger, LedgerMember } from './types'
-import { LedgerService } from './services'
-import { supabase } from '@/lib/supabase'
+'use client'
 
+import { create } from 'zustand'
+import { supabase } from '@/lib/supabase'
+import { useSettingsStore } from '@/stores/settings'
+import type { Lang } from '@/lib/i18n'
+import type { LedgerRow, LedgerWithRole, UserPreferencesRow, UserRow } from '@/types/domain'
+
+// Session-level state: who is signed in, which ledgers they belong to, which
+// ledger is open and what they may do in it. Every data store keys off
+// `current.id`; money formatting keys off `current.currency_code`.
 interface LedgerState {
-  currentLedger: Ledger | null
-  userMember: LedgerMember | null
-  ledgers: Ledger[]
-  loading: boolean
+  userId: string | null
+  profile: UserRow | null
+  preferences: UserPreferencesRow | null
+  ledgers: LedgerWithRole[]
+  current: LedgerWithRole | null
+  permissions: Set<string>
   initialized: boolean
+  loading: boolean
   error: string | null
 
-  // Actions
   initialize: () => Promise<void>
-  setCurrentLedger: (ledgerId: string) => Promise<void>
-  updateSettings: (updates: Partial<Ledger>) => Promise<void>
+  reset: () => void
+  switchLedger: (ledgerId: string) => Promise<void>
+  can: (permission: string) => boolean
+  updateCurrent: (patch: Partial<Pick<LedgerRow, 'name' | 'ledger_type_code' | 'currency_code' | 'timezone_code' | 'country_code' | 'locale' | 'fiscal_year_start_month' | 'color' | 'icon'>>) => Promise<void>
+  createLedger: (params: CreateLedgerParams) => Promise<LedgerRow>
+  setupOnboarding: (params: CreateLedgerParams) => Promise<LedgerRow>
+  refreshProfile: () => Promise<void>
+  updatePreferences: (patch: Partial<Omit<UserPreferencesRow, 'user_id' | 'updated_at'>>) => Promise<void>
+}
+
+export interface CreateLedgerParams {
+  name: string
+  ledgerTypeCode: string
+  currencyCode: string
+  timezoneCode: string
+  locale: string
+  fiscalYearStartMonth?: number | null
+  countryCode?: string | null
+}
+
+async function loadPermissions(roleCode: string | null): Promise<Set<string>> {
+  if (!roleCode) return new Set()
+  const { data } = await supabase.from('role_permissions').select('permission_code').eq('role_code', roleCode)
+  return new Set((data ?? []).map((r) => r.permission_code))
 }
 
 export const useLedgerStore = create<LedgerState>((set, get) => ({
-  currentLedger: null,
-  userMember: null,
+  userId: null,
+  profile: null,
+  preferences: null,
   ledgers: [],
-  loading: false,
+  current: null,
+  permissions: new Set(),
   initialized: false,
+  loading: false,
   error: null,
 
   initialize: async () => {
@@ -34,77 +67,125 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
         return
       }
 
-      const { data: members, error: memberError } = await supabase
-        .from('ledger_members')
-        .select('*, ledger:ledgers(*, workspace:workspaces(organization_id))')
-        .eq('user_id', user.id)
+      const [profileRes, prefsRes, membersRes] = await Promise.all([
+        supabase.from('users').select('*').eq('id', user.id).maybeSingle(),
+        supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
+        supabase
+          .from('ledger_members')
+          .select('id, role_code, ledger:ledgers(*)')
+          .eq('user_id', user.id)
+          .eq('status', 'active'),
+      ])
+      if (profileRes.error) throw profileRes.error
 
-      if (memberError) throw memberError
+      const ledgers: LedgerWithRole[] = (membersRes.data ?? [])
+        .filter((m) => m.ledger && !m.ledger.deleted_at && m.ledger.status === 'active')
+        .map((m) => ({ ...(m.ledger as LedgerRow), role_code: m.role_code, member_id: m.id }))
+        .sort((a, b) => a.created_at.localeCompare(b.created_at))
 
-      const ledgers = members?.map((m: any) => ({
-        ...m.ledger,
-        organization_id: m.ledger?.workspace?.organization_id || m.ledger?.workspace?.[0]?.organization_id
-      })) || []
-      
-      // Get last used ledger from localStorage
-      const lastId = typeof window !== 'undefined' ? localStorage.getItem('lastLedgerId') : null
-      const defaultLedger = ledgers.find(l => l.id === lastId) || ledgers[0] || null
-      const userMember = members?.find((m: any) => m.ledger_id === defaultLedger?.id) || null
+      const prefs = prefsRes.data
+      const current =
+        ledgers.find((l) => l.id === prefs?.default_ledger_id) ?? ledgers[0] ?? null
 
-      set({ 
-        ledgers, 
-        currentLedger: defaultLedger, 
-        userMember,
-        initialized: true, 
-        loading: false 
+      if (prefs?.language_code) {
+        useSettingsStore.getState().setLang(prefs.language_code as Lang, { persistRemote: false })
+      }
+
+      set({
+        userId: user.id,
+        profile: profileRes.data,
+        preferences: prefs,
+        ledgers,
+        current,
+        permissions: await loadPermissions(current?.role_code ?? null),
+        initialized: true,
+        loading: false,
       })
+
+      if (current) {
+        // Catch up recurring transactions for this ledger (pg_cron does it nightly
+        // in production; this makes them appear immediately in dev too).
+        void supabase.rpc('run_due_recurring', { p_ledger_id: current.id })
+      }
     } catch (err: any) {
       set({ error: err.message, initialized: true, loading: false })
     }
   },
 
-  setCurrentLedger: async (ledgerId) => {
-    set({ loading: true })
-    try {
-      const { ledgers } = get()
-      const ledger = ledgers.find((l) => l.id === ledgerId) || null
-      if (!ledger) return
+  reset: () =>
+    set({ userId: null, profile: null, preferences: null, ledgers: [], current: null, permissions: new Set(), initialized: false }),
 
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: member } = await supabase
-        .from('ledger_members')
-        .select('*')
-        .eq('ledger_id', ledgerId)
-        .eq('user_id', user.id)
-        .single()
-
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('lastLedgerId', ledgerId)
-      }
-      
-      set({ currentLedger: ledger, userMember: member, loading: false })
-      window.location.reload() // Full reload to refresh all context-dependent data
-    } catch (err) {
-      set({ loading: false })
+  switchLedger: async (ledgerId) => {
+    const target = get().ledgers.find((l) => l.id === ledgerId)
+    if (!target) return
+    set({ current: target, permissions: await loadPermissions(target.role_code) })
+    const userId = get().userId
+    if (userId) {
+      await supabase.from('user_preferences').update({ default_ledger_id: ledgerId }).eq('user_id', userId)
     }
+    void supabase.rpc('run_due_recurring', { p_ledger_id: ledgerId })
   },
 
-  updateSettings: async (updates) => {
-    const { currentLedger } = get()
-    if (!currentLedger) return
+  can: (permission) => get().permissions.has(permission),
 
-    set({ loading: true })
-    try {
-      await LedgerService.updateLedger(currentLedger.id, updates)
-      set({ 
-        currentLedger: { ...currentLedger, ...updates },
-        loading: false 
-      })
-    } catch (err: any) {
-      set({ error: err.message, loading: false })
-      throw err
-    }
-  }
+  updateCurrent: async (patch) => {
+    const current = get().current
+    if (!current) return
+    const { data, error } = await supabase.from('ledgers').update(patch).eq('id', current.id).select('*').single()
+    if (error) throw new Error(error.message)
+    const updated = { ...current, ...data }
+    set({ current: updated, ledgers: get().ledgers.map((l) => (l.id === updated.id ? updated : l)) })
+  },
+
+  createLedger: async (p) => {
+    const { data, error } = await supabase.rpc('create_ledger', {
+      p_name: p.name,
+      p_ledger_type_code: p.ledgerTypeCode,
+      p_currency_code: p.currencyCode,
+      p_timezone_code: p.timezoneCode,
+      p_locale: p.locale,
+      p_fiscal_year_start_month: p.fiscalYearStartMonth ?? null,
+      p_country_code: p.countryCode ?? null,
+    })
+    if (error) throw new Error(error.message)
+    await get().initialize()
+    await get().switchLedger(data.id)
+    return data
+  },
+
+  setupOnboarding: async (p) => {
+    const { data, error } = await supabase.rpc('setup_onboarding', {
+      p_ledger_type_code: p.ledgerTypeCode,
+      p_name: p.name,
+      p_currency_code: p.currencyCode,
+      p_timezone_code: p.timezoneCode,
+      p_locale: p.locale,
+      p_fiscal_year_start_month: p.fiscalYearStartMonth ?? null,
+      p_country_code: p.countryCode ?? null,
+    })
+    if (error) throw new Error(error.message)
+    await get().initialize()
+    return data
+  },
+
+  refreshProfile: async () => {
+    const userId = get().userId
+    if (!userId) return
+    const { data } = await supabase.from('users').select('*').eq('id', userId).maybeSingle()
+    if (data) set({ profile: data })
+  },
+
+  updatePreferences: async (patch) => {
+    const userId = get().userId
+    if (!userId) return
+    const { data, error } = await supabase.from('user_preferences').update(patch).eq('user_id', userId).select('*').single()
+    if (error) throw new Error(error.message)
+    set({ preferences: data })
+    if (patch.language_code) useSettingsStore.getState().setLang(patch.language_code as Lang, { persistRemote: false })
+  },
 }))
+
+/** Currency of the open ledger — the single source for money formatting. */
+export function useLedgerCurrency(): string {
+  return useLedgerStore((s) => s.current?.currency_code ?? 'JPY')
+}

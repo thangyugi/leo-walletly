@@ -1,60 +1,46 @@
 'use client'
 
+import { useCallback, useMemo } from 'react'
 import { useSettingsStore } from '@/stores/settings'
-import { getTranslations } from '@/lib/i18n'
-import { useEffect, useState } from 'react'
+import { getTranslations, type Translations } from '@/lib/i18n'
+import { useI18nStore, interpolate } from '@/features/i18n/store'
 
-const cache: Record<string, any> = {}
+// Applies flat DB keys ("dashboard.title", "calendar.days.0") onto a copy of
+// the static translations so `t.dashboard.title` keeps working and picks up
+// DB values and user/ledger overrides.
+function applyFlat(base: Translations, flat: Record<string, { value: string }>): Translations {
+  const out: any = structuredClone(base)
+  for (const [key, { value }] of Object.entries(flat)) {
+    const parts = key.split('.')
+    let cur = out
+    let ok = true
+    for (let i = 0; i < parts.length - 1; i++) {
+      const next = cur[parts[i]]
+      if (next == null || typeof next !== 'object') { ok = false; break }
+      cur = next
+    }
+    if (!ok) continue
+    const last = parts[parts.length - 1]
+    if (typeof cur[last] === 'string' || cur[last] === undefined) cur[last] = value
+  }
+  return out as Translations
+}
 
 export function useTranslation() {
   const lang = useSettingsStore((s) => s.lang)
-  const defaultT = getTranslations(lang)
-  
-  const [t, setT] = useState(defaultT)
+  const texts = useI18nStore((s) => s.texts)
 
-  useEffect(() => {
-    // If we have cached translations for this lang, use them immediately
-    if (cache[lang]) {
-      setT(cache[lang])
-      return
-    }
-    
-    // Otherwise fetch from database API
-    let isMounted = true
-    fetch(`/api/translations?locale=${lang}`)
-      .then(res => res.json())
-      .then(data => {
-        if (isMounted) {
-          if (!data || data.error || Object.keys(data).length === 0) {
-            // Fallback to static default translations if DB fails
-            cache[lang] = defaultT
-            setT(defaultT)
-          } else {
-            // Deep merge the fetched translations with default static translations
-            const merge = (target: any, source: any) => {
-              for (const key of Object.keys(source)) {
-                if (source[key] instanceof Object && key in target) {
-                  Object.assign(source[key], merge(target[key], source[key]))
-                }
-              }
-              return { ...target, ...source }
-            }
-            const mergedT = merge(defaultT, data)
-            cache[lang] = mergedT
-            setT(mergedT)
-          }
-        }
-      })
-      .catch(err => {
-        console.error('Failed to fetch translations:', err)
-        if (isMounted) {
-          cache[lang] = defaultT
-          setT(defaultT)
-        }
-      })
+  const t = useMemo(() => applyFlat(getTranslations(lang), texts), [lang, texts])
 
-    return () => { isMounted = false }
-  }, [lang])
+  /** Lookup by flat key — used for DB-driven labels (name_key columns). */
+  const tk = useCallback(
+    (key: string | null | undefined, params?: Record<string, string | number | null | undefined>, fallback?: string) => {
+      if (!key) return fallback ?? ''
+      const entry = texts[key]
+      return interpolate(entry?.value ?? fallback ?? key, params)
+    },
+    [texts]
+  )
 
-  return { t, lang }
+  return { t, tk, lang }
 }

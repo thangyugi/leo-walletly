@@ -1,118 +1,138 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
+import React, { Suspense, useEffect, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
+import { Wallet, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth'
 import { MemberService } from '@/features/user-management/services'
-import { useMembershipStore } from '@/features/user-management/membership-store'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { Button } from '@/components/ui/button'
-import { Wallet, Loader2, CheckCircle2, AlertCircle, ArrowRight } from 'lucide-react'
+import type { InvitationPreview } from '@/features/user-management/types'
 
 export default function JoinPage() {
+  return (
+    <Suspense fallback={null}>
+      <JoinContent />
+    </Suspense>
+  )
+}
+
+function JoinContent() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const { user, loading: authLoading } = useAuthStore()
-  const { initialize } = useMembershipStore()
-  const { t } = useTranslation()
-  
-  const [status, setStatus] = useState<'idle' | 'processing' | 'success' | 'error'>('idle')
+  const token = useSearchParams().get('token')
+  const { user, initialized } = useAuthStore()
+  const reloadLedgers = useLedgerStore((s) => s.initialize)
+  const { t, tk } = useTranslation()
+  const [preview, setPreview] = useState<InvitationPreview | null>(null)
+  const [status, setStatus] = useState<'loading' | 'ready' | 'working' | 'joined' | 'declined' | 'error'>('loading')
   const [error, setError] = useState<string | null>(null)
-  const token = searchParams.get('token')
 
   useEffect(() => {
-    if (authLoading) return
-
-    if (!user) {
-      // If not logged in, redirect to login but keep the join URL
-      const currentUrl = window.location.href
-      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`)
-      return
-    }
-
     if (!token) {
       setStatus('error')
       setError(t.join.noToken)
       return
     }
+    MemberService.getInvitation(token)
+      .then((inv) => {
+        if (!inv || inv.status !== 'pending') {
+          setStatus('error')
+          setError(t.join.expired)
+        } else {
+          setPreview(inv)
+          setStatus('ready')
+        }
+      })
+      .catch((e) => { setStatus('error'); setError(e.message) })
+  }, [token, t.join.noToken, t.join.expired])
 
-    handleJoin()
-  }, [user, authLoading, token, t])
-
-  const handleJoin = async () => {
-    if (!token || !user) return
-    
-    setStatus('processing')
+  async function accept() {
+    if (!token) return
+    setStatus('working')
     try {
-      await MemberService.acceptInvitationByToken(token)
-      await initialize()
-      setStatus('success')
-      
-      // Auto redirect after 3 seconds
-      setTimeout(() => {
-        router.push('/')
-      }, 3000)
-    } catch (err: any) {
-      setStatus('error')
-      setError(err.message || t.join.failed)
+      const ledgerId = await MemberService.acceptInvitation(token)
+      await reloadLedgers()
+      await useLedgerStore.getState().switchLedger(ledgerId)
+      setStatus('joined')
+      setTimeout(() => router.replace('/'), 1500)
+    } catch (e: any) {
+      setStatus('ready')
+      setError(e.message || t.join.failed)
     }
   }
 
+  async function decline() {
+    if (!token) return
+    setStatus('working')
+    try {
+      await MemberService.declineInvitation(token)
+      setStatus('declined')
+    } catch (e: any) {
+      setStatus('ready')
+      setError(e.message)
+    }
+  }
+
+  const nextUrl = `/join?token=${encodeURIComponent(token ?? '')}`
+
   return (
-    <div className="min-h-screen bg-[var(--color-bg-base)] flex items-center justify-center p-6 animate-fade-in">
-      <div className="w-full max-w-md bg-[var(--color-surface-default)] rounded-3xl border border-[var(--color-border-default)] shadow-2xl overflow-hidden">
-        <div className="p-8 text-center space-y-6">
-          <div className="flex justify-center">
-            <div className="w-16 h-16 rounded-2xl bg-[var(--color-interactive-primary)] flex items-center justify-center text-white shadow-lg">
-              <Wallet className="w-8 h-8" />
-            </div>
-          </div>
-
-          <div className="space-y-2">
-            <h1 className="text-2xl font-bold text-[var(--color-text-primary)]">{t.join.title}</h1>
-            <p className="text-sm text-[var(--color-text-tertiary)]">
-              {t.join.subtitle}
-            </p>
-          </div>
-
-          <div className="py-4">
-            {status === 'processing' && (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-8 h-8 text-[var(--color-interactive-primary)] animate-spin" />
-                <p className="text-sm font-medium text-[var(--color-text-secondary)]">{t.join.validating}</p>
-              </div>
-            )}
-
-            {status === 'success' && (
-              <div className="space-y-4 animate-scale-in">
-                <div className="flex justify-center">
-                  <CheckCircle2 className="w-12 h-12 text-[var(--color-gain-500)]" />
-                </div>
-                <div className="space-y-1">
-                  <p className="text-lg font-semibold text-[var(--color-text-primary)]">{t.join.welcome}</p>
-                  <p className="text-sm text-[var(--color-text-tertiary)]">{t.join.redirecting}</p>
-                </div>
-                <Button className="w-full" onClick={() => router.push('/')}>
-                  {t.join.goDashboard} <ArrowRight className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
-            )}
-
-            {status === 'error' && (
-              <div className="space-y-4 animate-shake">
-                <div className="flex justify-center">
-                  <AlertCircle className="w-12 h-12 text-[var(--color-loss-500)]" />
-                </div>
-                <p className="text-sm font-medium text-[var(--color-loss-700)] bg-[var(--color-loss-50)] p-3 rounded-xl border border-[var(--color-loss-100)]">
-                  {error}
-                </p>
-                <Button variant="outline" className="w-full" onClick={() => router.push('/')}>
-                  {t.join.backHome}
-                </Button>
-              </div>
-            )}
-          </div>
+    <div className="min-h-screen flex items-center justify-center bg-[var(--color-bg-base)] p-4">
+      <div className="w-full max-w-md bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-2xl shadow-xl p-8 text-center space-y-6">
+        <div className="w-14 h-14 rounded-2xl bg-[var(--color-interactive-primary)] flex items-center justify-center mx-auto">
+          <Wallet className="w-7 h-7 text-white" />
         </div>
+
+        {status === 'loading' && <Loader2 className="w-6 h-6 animate-spin mx-auto text-[var(--color-interactive-primary)]" />}
+
+        {(status === 'ready' || status === 'working') && preview && (
+          <>
+            <div className="space-y-2">
+              <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t.join.title}</h1>
+              <p className="text-sm text-[var(--color-text-tertiary)]">{t.join.invitedBy.replace('{{inviter}}', preview.inviter_name ?? '—')}</p>
+            </div>
+            <div className="rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] p-4 text-left space-y-1">
+              <p className="text-base font-semibold text-[var(--color-text-primary)]">{preview.ledger_name}</p>
+              <p className="text-xs text-[var(--color-text-tertiary)]">{preview.currency_code} · {t.join.role}: {tk(`role.${preview.role_code}.name`)}</p>
+              <p className="text-xs text-[var(--color-text-quaternary)]">{t.join.sentTo.replace('{{email}}', preview.email)}</p>
+            </div>
+            {error && <p role="alert" className="text-sm text-[var(--color-text-loss)]">{error}</p>}
+            {!initialized ? null : user ? (
+              <div className="flex gap-3">
+                <Button variant="outline" className="flex-1" onClick={decline} disabled={status === 'working'}>{t.join.decline}</Button>
+                <Button className="flex-1" onClick={accept} loading={status === 'working'}>{t.join.accept} <ArrowRight className="w-4 h-4" /></Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-sm text-[var(--color-text-secondary)]">{t.join.loginToAccept}</p>
+                <Button className="w-full" onClick={() => router.push(`/login?next=${encodeURIComponent(nextUrl)}`)}>{t.login.submit} / {t.login.register}</Button>
+              </div>
+            )}
+          </>
+        )}
+
+        {status === 'joined' && (
+          <div className="space-y-3">
+            <CheckCircle2 className="w-10 h-10 text-[var(--color-text-gain)] mx-auto" />
+            <h1 className="text-xl font-bold text-[var(--color-text-primary)]">{t.join.welcome}</h1>
+            <p className="text-sm text-[var(--color-text-tertiary)]">{t.join.redirecting}</p>
+          </div>
+        )}
+
+        {status === 'declined' && (
+          <div className="space-y-4">
+            <p className="text-sm text-[var(--color-text-secondary)]">{t.join.declined}</p>
+            <Button variant="outline" onClick={() => router.replace('/')}>{t.join.backHome}</Button>
+          </div>
+        )}
+
+        {status === 'error' && (
+          <div className="space-y-4">
+            <AlertCircle className="w-10 h-10 text-[var(--color-text-loss)] mx-auto" />
+            <p role="alert" className="text-sm text-[var(--color-text-secondary)]">{error}</p>
+            <Button variant="outline" onClick={() => router.replace('/')}>{t.join.backHome}</Button>
+          </div>
+        )}
       </div>
     </div>
   )

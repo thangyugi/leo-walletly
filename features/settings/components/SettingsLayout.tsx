@@ -54,7 +54,15 @@ function SettingsSidebarMobile() {
     { href: '/settings/account', label: t.settings.sidebar.account },
     { href: '/settings/security', label: t.settings.sidebar.security },
     { href: '/settings/notifications', label: t.settings.sidebar.notifications },
+    { href: '/settings/appearance', label: t.settings.sidebar.appearance },
+    { href: '/settings/localization', label: t.settings.sidebar.localization },
+    { href: '/settings/ledger', label: t.settingsNav.ledger },
+    { href: '/settings/texts', label: t.settingsNav.texts },
+    { href: '/settings/languages', label: t.settingsNav.languages },
     { href: '/settings/audit-log', label: t.settings.sidebar.auditLog },
+    { href: '/settings/devices', label: t.settings.sidebar.devices },
+    { href: '/settings/privacy', label: t.settings.sidebar.privacy },
+    { href: '/settings/developer', label: t.settingsNav.developer },
   ]
 
   return (

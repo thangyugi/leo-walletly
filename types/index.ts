@@ -437,71 +437,10 @@ export interface Category {
 // ----------------------------------------------------------
 // TRANSACTIONS V3 — core business event
 // ----------------------------------------------------------
-export interface Transaction {
-  id: string
-
-  // Tenant anchors
-  organizationId: string
-  workspaceId: string
-  ledgerId: string
-
-  // Payment separation (THE critical V3 distinction)
-  paymentInstrumentId?: string   // HOW you paid (Rakuten Pay, PayPay)
-  fundingSourceId?: string       // WHERE money came from (Rakuten Card, Bank)
-  settlementAccountId?: string   // WHERE settlement lands (credit liability)
-
-  categoryId?: string
-  status: TransactionStatus
-
-  transactionType: TransactionType
-  businessEventType?: BusinessEventType
-
-  // Origin / deduplication
-  source?: string              // manual | csv_import | pdf_import | ocr_scan | bank_feed
-  sourceReference?: string
-  externalId?: string
-  externalHash?: string
-
-  // Merchant
-  merchantName?: string
-  merchantNormalized?: string
-  merchantCategoryCode?: string
-
-  description?: string
-  notes?: string
-
-  // Dates
-  transactionDate: string       // ISO timestamp
-  valueDate?: string
-  postedDate?: string
-
-  // Amount (original currency)
-  amount: number
-  currencyCode: CurrencyCode
-
-  // Base currency (for multi-currency ledgers)
-  baseAmount?: number
-  baseCurrencyCode?: CurrencyCode
-  exchangeRate?: number
-  exchangeRateSource?: string
-
-  // Relationships
-  receiptDocumentId?: string
-  accountingPeriodId?: string
-
-  // Audit
-  createdBy?: string
-  reviewedBy?: string
-  reviewedAt?: string
-
-  isReconciled: boolean
-  reconciledAt?: string
-
-  metadata: Record<string, unknown>
-  createdAt: string
-  updatedAt: string
-  deletedAt?: string
-}
+// Transaction for schema v2.1 lives in ./domain (amount is always positive;
+// transactionType carries the direction).
+export type { Transaction, TransactionType as DomainTransactionType } from './domain'
+import type { Transaction } from './domain'
 
 // ----------------------------------------------------------
 // TRANSACTION SPLITS
@@ -913,9 +852,24 @@ export interface AnalyticsSnapshot {
 
 
 /** @deprecated Use ImportJob */
+/** One parsed line of an imported statement, before it becomes a transaction. */
+export interface ParsedImportRow {
+  rowNumber: number
+  date: string
+  /** Always positive. */
+  amount: number
+  type: 'expense' | 'income'
+  description: string
+  externalId?: string
+  /** Legacy parser guess (food, transport, …) — mapped to a category slug. */
+  categoryHint?: string
+  rawLine?: string
+  values: { name: string; value: string }[]
+}
+
 export interface ImportResult {
   success: boolean
-  transactions: Transaction[]
+  rows: ParsedImportRow[]
   errors: string[]
   fileName: string
   provider: PaymentProvider

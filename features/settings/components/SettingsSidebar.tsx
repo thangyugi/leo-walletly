@@ -10,10 +10,13 @@ import {
   Bell, 
   Palette, 
   Globe, 
-  Link2, 
   Monitor, 
   Lock, 
-  History 
+  History,
+  Type,
+  Languages,
+  Code2,
+  Users,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -32,14 +35,17 @@ export function SettingsSidebar() {
   ]
 
   const workspaceItems = [
-    { href: '/settings/ledger',        label: t.ledger_settings.title,                icon: Building2 },
+    { href: '/settings/ledger',        label: t.settingsNav.ledger,             icon: Building2 },
+    { href: '/users',                  label: t.settingsNav.members,            icon: Users },
+    { href: '/settings/texts',         label: t.settingsNav.texts,              icon: Type },
+    { href: '/settings/languages',     label: t.settingsNav.languages,          icon: Languages },
     { href: '/settings/audit-log',     label: t.settings.sidebar.auditLog,      icon: History },
   ]
 
   const dataItems = [
-    { href: '/settings/connected-apps',label: t.settings.sidebar.connectedApps, icon: Link2 },
     { href: '/settings/devices',       label: t.settings.sidebar.devices,       icon: Monitor },
     { href: '/settings/privacy',       label: t.settings.sidebar.privacy,       icon: Lock },
+    { href: '/settings/developer',     label: t.settingsNav.developer,          icon: Code2 },
   ]
 
   const renderItem = (item: any) => {

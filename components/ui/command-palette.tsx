@@ -2,44 +2,30 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import { 
-  Search, 
-  X, 
-  ArrowRight, 
-  LayoutDashboard, 
-  ArrowDownUp, 
-  BarChart3, 
-  CalendarDays, 
-  Tag, 
-  RefreshCw, 
-  FileText, 
-  ScanLine, 
-  Upload 
-} from 'lucide-react'
+import { Search, X, ArrowRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { NAV_ITEMS } from '@/components/layout/nav'
+import type { Transaction } from '@/types/domain'
 
 export function CommandPalette({ open, onClose }: { open: boolean; onClose: () => void }) {
   const router                  = useRouter()
-  const { transactions }        = useTransactionsStore()
-  const { t, lang }             = useTranslation()
+  const search                  = useTransactionsStore((s) => s.search)
+  const ledgerId                = useLedgerStore((s) => s.current?.id)
+  const { t, tk, lang }         = useTranslation()
+  const [txnResults, setTxnResults] = useState<Transaction[]>([])
   const { format }              = useMoney()
   const [query, setQuery]       = useState('')
   const inputRef                = useRef<HTMLInputElement>(null)
   const containerRef            = useRef<HTMLDivElement>(null)
 
-  const quickLinks = useMemo(() => [
-    { href: '/',               label: t.nav.dashboard,    icon: LayoutDashboard },
-    { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp     },
-    { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3       },
-    { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays    },
-    { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw       },
-    { href: '/monthly-report', label: t.nav.report,       icon: FileText        },
-    { href: '/scan',           label: t.nav.scan,         icon: ScanLine        },
-    { href: '/import',         label: t.nav.import,       icon: Upload          },
-  ], [t])
+  const quickLinks = useMemo(
+    () => NAV_ITEMS.map((n) => ({ href: n.href, label: tk(n.labelKey), icon: n.icon })),
+    [tk]
+  )
 
   useEffect(() => {
     if (open) {
@@ -65,13 +51,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
     return () => document.removeEventListener('mousedown', onClick)
   }, [open, onClose])
 
-  const txnResults = useMemo(() => {
-    if (!query.trim() || query.length < 2) return []
-    const q = query.toLowerCase()
-    return transactions
-      .filter((tx) => (tx.description?.toLowerCase() || '').includes(q) || tx.transactionDate.includes(q))
-      .slice(0, 5)
-  }, [query, transactions])
+  // Server-side search (debounced) over the open ledger.
+  useEffect(() => {
+    if (!ledgerId || query.trim().length < 2) { setTxnResults([]); return }
+    const handle = setTimeout(() => {
+      search(ledgerId, query, 5).then(setTxnResults).catch(() => setTxnResults([]))
+    }, 200)
+    return () => clearTimeout(handle)
+  }, [query, ledgerId, search])
 
   const navResults = useMemo(() => {
     if (!query.trim()) return quickLinks
@@ -121,7 +108,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
               {txnResults.map((tx) => (
                 <button
                   key={tx.id}
-                  onClick={() => navigate('/transactions')}
+                  onClick={() => navigate(`/transactions?tx=${tx.id}`)}
                   className="w-full flex items-center gap-3 px-4 py-2.5 hover:bg-[var(--color-bg-sunken)] transition-colors text-left group"
                 >
                   <div className="w-7 h-7 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center shrink-0 text-xs font-medium text-[var(--color-text-tertiary)]">
@@ -133,9 +120,9 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
                   </div>
                   <span className={cn(
                     'text-sm font-semibold font-tabular shrink-0',
-                    tx.amount < 0 ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]'
+                    tx.transactionType === 'expense' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]'
                   )}>
-                    {format(tx.amount, { sign: true })}
+                    {format(tx.transactionType === 'expense' ? -tx.amount : tx.amount, { sign: tx.transactionType === 'income' })}
                   </span>
                   <ArrowRight className="w-3.5 h-3.5 text-[var(--color-text-quaternary)] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
                 </button>

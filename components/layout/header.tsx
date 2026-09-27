@@ -1,32 +1,13 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import {
-  LayoutDashboard, ArrowDownUp, Upload, BarChart3, Wallet,
-  CalendarDays, Tag, ScanLine, RefreshCw, FileText, Menu, X,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { Wallet, Menu, X } from 'lucide-react'
 import { APP_NAME } from '@/lib/constants'
-import { useTranslation } from '@/hooks/useTranslation'
+import { NavList, LanguagePicker } from './sidebar'
+import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
 
 export function MobileHeader() {
   const [open, setOpen] = useState(false)
-  const pathname        = usePathname()
-  const { t }          = useTranslation()
-
-  const navItems = [
-    { href: '/',               label: t.nav.dashboard,    icon: LayoutDashboard },
-    { href: '/transactions',   label: t.nav.transactions, icon: ArrowDownUp     },
-    { href: '/calendar',       label: t.nav.calendar,     icon: CalendarDays    },
-    { href: '/analytics',      label: t.nav.analytics,    icon: BarChart3       },
-    { href: '/categories',     label: t.nav.groups,       icon: Tag             },
-    { href: '/recurring',      label: t.nav.recurring,    icon: RefreshCw       },
-    { href: '/monthly-report', label: t.nav.report,       icon: FileText        },
-    { href: '/scan',           label: t.nav.scan,         icon: ScanLine        },
-    { href: '/import',         label: t.nav.import,       icon: Upload          },
-  ]
 
   return (
     <>
@@ -39,8 +20,9 @@ export function MobileHeader() {
         </div>
         <button
           onClick={() => setOpen((v) => !v)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
-          aria-label="Toggle navigation menu"
+          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
+          aria-label="Menu"
+          aria-expanded={open}
         >
           {open ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
         </button>
@@ -49,30 +31,18 @@ export function MobileHeader() {
       {open && (
         <div className="md:hidden fixed inset-0 z-40" onClick={() => setOpen(false)}>
           <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" />
-          <nav
-            className="absolute top-14 left-0 right-0 bg-[var(--color-sidebar-bg)] border-b border-[var(--color-sidebar-border)] p-3 space-y-0.5 max-h-[calc(100vh-3.5rem)] overflow-y-auto"
+          <div
+            className="absolute top-14 left-0 bottom-0 w-72 bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] overflow-y-auto py-3"
             onClick={(e) => e.stopPropagation()}
           >
-            {navItems.map(({ href, label, icon: Icon }) => {
-              const active = pathname === href || (href !== '/' && pathname.startsWith(href))
-              return (
-                <Link
-                  key={href}
-                  href={href}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-sm transition-colors',
-                    active
-                      ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)] font-medium'
-                      : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-primary)]'
-                  )}
-                >
-                  <Icon className="w-4 h-4 shrink-0" />
-                  {label}
-                </Link>
-              )
-            })}
-          </nav>
+            <LedgerSwitcher />
+            <nav className="px-2.5">
+              <NavList onNavigate={() => setOpen(false)} />
+            </nav>
+            <div className="px-2.5 pt-4">
+              <LanguagePicker />
+            </div>
+          </div>
         </div>
       )}
     </>

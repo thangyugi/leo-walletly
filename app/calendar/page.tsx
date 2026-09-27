@@ -7,19 +7,20 @@ import { Button } from '@/components/ui/button'
 import { TransactionRow } from '@/components/financial/transaction-row'
 import { PageHeader } from '@/components/layout/page-header'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
-import { useTransactionsStore } from '@/stores/transactions'
+import { useRangeTransactions } from '@/hooks/useRangeTransactions'
+import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn } from '@/lib/utils'
-import type { Transaction } from '@/types'
+import type { Transaction } from '@/types/domain'
 
 function monthKey(year: number, month: number) {
   return `${year}-${String(month + 1).padStart(2, '0')}`
 }
 
 export default function CalendarPage() {
-  const { transactions } = useTransactionsStore()
   const { t, lang } = useTranslation()
+  const { categories, accounts } = useLedgerData()
   const { format } = useMoney()
   const today  = new Date()
   const [year, setYear]      = useState(today.getFullYear())
@@ -28,19 +29,16 @@ export default function CalendarPage() {
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
 
   const mk = monthKey(year, month)
-
-  const monthTxns = useMemo(
-    () => transactions.filter((tx) => tx.transactionDate.startsWith(mk)),
-    [transactions, mk]
-  )
+  const monthTxns = useRangeTransactions(`${mk}-01`, `${mk}-${String(new Date(year, month + 1, 0).getDate()).padStart(2, '0')}`)
+  const transactions = monthTxns
 
   const dayMap = useMemo(() => {
     const m: Record<string, { expense: number; income: number; count: number }> = {}
     monthTxns.forEach((tx) => {
       const date = tx.transactionDate.split('T')[0]
       if (!m[date]) m[date] = { expense: 0, income: 0, count: 0 }
-      if (tx.transactionType === 'expense') m[date].expense += Math.abs(tx.amount)
-      else if (tx.transactionType === 'income') m[date].income  += tx.amount
+      if (tx.transactionType === 'expense') m[date].expense += tx.baseAmount
+      else if (tx.transactionType === 'income') m[date].income  += tx.baseAmount
       m[date].count++
     })
     return m
@@ -58,14 +56,14 @@ export default function CalendarPage() {
     ...Array(firstDay).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ]
-  const todayStr = today.toISOString().split('T')[0]
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`
 
   function prevMonth() { if (month === 0) { setYear((y) => y - 1); setMonth(11) } else setMonth((m) => m - 1) }
   function nextMonth() { if (month === 11) { setYear((y) => y + 1); setMonth(0) } else setMonth((m) => m + 1) }
 
   const monthSummary = useMemo(() => ({
-    expense: monthTxns.reduce((s, t) => t.transactionType === 'expense' ? s + Math.abs(t.amount) : s, 0),
-    income:  monthTxns.reduce((s, t) => t.transactionType === 'income' ? s + t.amount : s, 0),
+    expense: monthTxns.reduce((s, t) => t.transactionType === 'expense' ? s + t.baseAmount : s, 0),
+    income:  monthTxns.reduce((s, t) => t.transactionType === 'income' ? s + t.baseAmount : s, 0),
   }), [monthTxns])
 
   const monthLabel = lang === 'ja' ? `${year}年 ${month + 1}月` : (lang === 'vi' ? `Tháng ${month + 1}/${year}` : `Month ${month + 1}/${year}`)
@@ -167,8 +165,9 @@ export default function CalendarPage() {
                 {selectedTxns.map((txn) => (
                   <TransactionRow
                     key={txn.id}
-                    txn={txn as any}
-                    compact
+                    txn={txn}
+                    category={categories.find((c) => c.id === txn.categoryId)}
+                    accountName={accounts.find((a) => a.id === txn.accountId)?.name}
                     onClick={() => setEditingTxn(txn)}
                   />
                 ))}

@@ -15,8 +15,22 @@ export const CURRENCY_META: Record<CurrencyCode, { precision: number; locale: st
   VND: { precision: 0, locale: 'vi-VN', symbol: '₫' },
 }
 
+// Currencies not listed above (KRW, THB, …) derive precision/symbol from Intl,
+// so a new row in `currencies` never breaks formatting.
+function metaFor(currency: CurrencyCode): { precision: number; locale: string; symbol: string } {
+  const known = CURRENCY_META[currency]
+  if (known) return known
+  try {
+    const nf = new Intl.NumberFormat('en-US', { style: 'currency', currency })
+    const symbol = nf.formatToParts(0).find((p) => p.type === 'currency')?.value ?? currency
+    return { precision: nf.resolvedOptions().maximumFractionDigits ?? 2, locale: 'en-US', symbol }
+  } catch {
+    return { precision: 2, locale: 'en-US', symbol: currency }
+  }
+}
+
 export function getCurrencyPrecision(currency: CurrencyCode): number {
-  return CURRENCY_META[currency]?.precision ?? 2
+  return metaFor(currency).precision
 }
 
 // ----------------------------------------------------------
@@ -33,7 +47,7 @@ export function formatMoney(
     precision?: number     // override decimal places
   } = {}
 ): string {
-  const meta = CURRENCY_META[currency]
+  const meta = metaFor(currency)
   const precision = options.precision ?? meta.precision
 
   if (options.compact) {
@@ -81,7 +95,7 @@ export function formatMoney(
 // Compact notation (e.g. ¥1.2M, $4.5K)
 // ----------------------------------------------------------
 function formatCompact(amount: number, currency: CurrencyCode, precision: number): string {
-  const meta = CURRENCY_META[currency]
+  const meta = metaFor(currency)
   const abs = Math.abs(amount)
   const sign = amount < 0 ? '-' : ''
   const sym = meta.symbol

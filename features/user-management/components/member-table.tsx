@@ -1,122 +1,109 @@
 'use client'
 
 import React from 'react'
-import { Badge } from '@/components/ui/badge'
-import { Trash2, Shield, User as UserIcon } from 'lucide-react'
-import type { Member, Role } from '../types'
-import { usePermissions } from '../hooks/use-permissions'
+import { Crown, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useLedgerStore } from '../ledger-store'
+import type { Member, Role } from '../types'
 
 interface MemberTableProps {
   members: Member[]
   roles: Role[]
+  canManage: boolean
+  maxRank: number
   onRoleChange: (memberId: string, roleCode: string) => void
-  onRemove: (memberId: string) => void
+  onRemove: (member: Member) => void
+  onTransfer: (member: Member) => void
 }
 
-export function MemberTable({ members, roles, onRoleChange, onRemove }: MemberTableProps) {
-  const { isAdmin } = usePermissions()
-  const { t } = useTranslation()
+export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, onRemove, onTransfer }: MemberTableProps) {
+  const { t, tk, lang } = useTranslation()
+  const userId = useLedgerStore((s) => s.userId)
+  const isOwner = useLedgerStore((s) => s.current?.owner_user_id === s.userId)
+  const rankOf = (code: string) => roles.find((r) => r.code === code)?.rank ?? 0
+
+  if (members.length === 0) {
+    return (
+      <div className="rounded-xl border border-dashed border-[var(--color-border-default)] p-10 text-center">
+        <p className="text-sm font-medium text-[var(--color-text-secondary)]">{t.members.noMembers}</p>
+        <p className="text-xs text-[var(--color-text-tertiary)] mt-1">{t.members.noMembersSub}</p>
+      </div>
+    )
+  }
 
   return (
-    <div className="w-full overflow-hidden rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-sm">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse">
-          <thead>
-            <tr className="border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]/50">
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-                {t.members.member}
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-                {t.members.role}
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)]">
-                {t.common.status}
-              </th>
-              <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-[var(--color-text-tertiary)] text-right">
-                {t.common.action}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--color-border-subtle)]">
-            {members.map((member) => (
-              <tr key={member.id} className="group hover:bg-[var(--color-bg-sunken)]/40 transition-all duration-200">
-                <td className="px-6 py-4">
+    <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] overflow-x-auto">
+      <table className="w-full text-left">
+        <thead className="bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
+          <tr>
+            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.email}</th>
+            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.role}</th>
+            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.joined}</th>
+            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.members.action}</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-[var(--color-border-subtle)]">
+          {members.map((m) => {
+            const isSelf = m.user_id === userId
+            const memberIsOwner = m.role_code === 'OWNER'
+            const editable = canManage && !isSelf && !memberIsOwner && rankOf(m.role_code) <= maxRank
+            const name = m.user?.display_name ?? '—'
+            return (
+              <tr key={m.id}>
+                <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-[var(--color-interactive-primary)]/10 flex items-center justify-center text-[var(--color-interactive-primary)] font-bold text-sm border border-[var(--color-interactive-primary)]/20 shadow-inner">
-                      {member.user?.display_name?.charAt(0) || '?'}
+                    <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: m.color ?? '#6b7280' }}>
+                      {name.slice(0, 2).toUpperCase()}
                     </div>
-                    <div>
-                      <p className="text-sm font-semibold text-[var(--color-text-primary)]">
-                        {member.user?.display_name || t.common.active}
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">
+                        {name}{isSelf && <span className="ml-1.5 text-[10px] text-[var(--color-text-quaternary)]">({t.members.you})</span>}
                       </p>
-                      <p className="text-[10px] font-mono text-[var(--color-text-quaternary)]">
-                        ID: {member.user_id.substring(0, 8)}...
-                      </p>
+                      <p className="text-xs text-[var(--color-text-quaternary)] truncate">{m.user?.email}</p>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  {isAdmin && !member.is_owner ? (
+                <td className="px-4 py-3">
+                  {editable ? (
                     <select
-                      value={member.role?.code ?? ''}
-                      onChange={(e) => onRoleChange(member.id, e.target.value)}
-                      className="bg-[var(--color-bg-sunken)] hover:bg-[var(--color-border-subtle)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)] text-xs px-3 py-1.5 rounded-xl cursor-pointer transition-all focus:ring-2 focus:ring-[var(--color-interactive-primary)] outline-none font-medium"
+                      aria-label={t.members.role}
+                      value={m.role_code}
+                      onChange={(e) => onRoleChange(m.id, e.target.value)}
+                      className="h-8 px-2 text-xs rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[var(--color-text-primary)]"
                     >
-                      {roles.map((r) => (
-                        <option key={r.code} value={r.code}>{r.name}</option>
+                      {roles.filter((r) => r.is_assignable && r.rank <= maxRank).map((r) => (
+                        <option key={r.code} value={r.code}>{tk(r.name_key)}</option>
                       ))}
                     </select>
                   ) : (
-                    <Badge variant={member.is_owner ? 'loss' : 'neutral'} className="capitalize px-3 py-1 rounded-lg">
-                      <Shield className="w-3 h-3 mr-1.5" />
-                      {member.role?.name ?? member.role?.code}
-                    </Badge>
-                  )}
-                </td>
-                <td className="px-6 py-4">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[var(--color-gain-50)] text-[var(--color-gain-700)] border border-[var(--color-gain-100)] shadow-sm">
-                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-gain-500)] animate-pulse" />
-                    {t.common.active}
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-right">
-                  {isAdmin && !member.is_owner ? (
-                    <button
-                      onClick={() => {
-                        const name = member.user?.display_name || t.members.member
-                        if (confirm(t.members.removeConfirm.replace('{{name}}', name))) {
-                          onRemove(member.id)
-                        }
-                      }}
-                      className="p-2.5 rounded-xl text-[var(--color-text-quaternary)] hover:text-[var(--color-loss-600)] hover:bg-[var(--color-loss-50)] transition-all opacity-0 group-hover:opacity-100 shadow-sm border border-transparent hover:border-[var(--color-loss-100)]"
-                      title={t.members.removeMember}
-                    >
-                      <Trash2 className="w-4.5 h-4.5" />
-                    </button>
-                  ) : (
-                    <span className="text-[10px] font-bold text-[var(--color-text-quaternary)] uppercase tracking-widest px-2">
-                      {t.common.system}
+                    <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
+                      {memberIsOwner && <Crown className="w-3 h-3 text-[var(--color-text-warning)]" />}
+                      {tk(`role.${m.role_code}.name`)}
                     </span>
                   )}
                 </td>
+                <td className="px-4 py-3 text-xs text-[var(--color-text-tertiary)] font-mono">
+                  {new Date(m.joined_at).toLocaleDateString(lang)}
+                </td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    {isOwner && !isSelf && (
+                      <button onClick={() => onTransfer(m)} className="text-xs px-2 py-1 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)]">
+                        {t.members.transferOwnership}
+                      </button>
+                    )}
+                    {editable && (
+                      <button onClick={() => onRemove(m)} aria-label={t.members.removeMember} className="w-8 h-8 inline-flex items-center justify-center rounded-lg text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </td>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {members.length === 0 && (
-        <div className="py-20 flex flex-col items-center justify-center text-center bg-[var(--color-bg-sunken)]/20">
-          <div className="w-16 h-16 rounded-3xl bg-[var(--color-surface-default)] shadow-sm flex items-center justify-center mb-4 border border-[var(--color-border-default)]">
-            <UserIcon className="w-8 h-8 text-[var(--color-text-quaternary)]" />
-          </div>
-          <h3 className="text-base font-bold text-[var(--color-text-primary)]">{t.members.noMembers}</h3>
-          <p className="text-sm text-[var(--color-text-tertiary)] max-w-xs mt-2">
-            {t.members.noMembersSub}
-          </p>
-        </div>
-      )}
+            )
+          })}
+        </tbody>
+      </table>
     </div>
   )
 }

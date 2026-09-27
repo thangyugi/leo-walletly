@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import { cn } from '@/lib/utils'
+import { cn, toLocalISODate } from '@/lib/utils'
 import type { Lang } from '@/lib/i18n'
 import { useTranslation } from '@/hooks/useTranslation'
 
@@ -21,7 +21,7 @@ export interface PickerValue {
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
-function todayStr() { return new Date().toISOString().split('T')[0] }
+function todayStr() { return toLocalISODate() }
 
 function dStr(y: number, m: number, d: number) {
   return `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
@@ -190,7 +190,7 @@ export function DateRangePicker({
 
   const presets = [
     { label: t.datepicker.today,       get: () => { const t_ = todayStr(); return { start: t_, end: t_, mode: 'day' as const, label: buildLabel(t_, t_, 'day', lang) } } },
-    { label: t.datepicker.thisWeek,    get: () => { const now = new Date(); const sun = new Date(now); sun.setDate(now.getDate() - now.getDay()); const sat = new Date(sun); sat.setDate(sun.getDate() + 6); const s = sun.toISOString().split('T')[0]; const e = sat.toISOString().split('T')[0]; return { start: s, end: e, mode: 'day' as const, label: buildLabel(s, e, 'day', lang) } } },
+    { label: t.datepicker.thisWeek,    get: () => { const now = new Date(); const sun = new Date(now); sun.setDate(now.getDate() - now.getDay()); const sat = new Date(sun); sat.setDate(sun.getDate() + 6); const s = toLocalISODate(sun); const e = toLocalISODate(sat); return { start: s, end: e, mode: 'day' as const, label: buildLabel(s, e, 'day', lang) } } },
     { label: t.datepicker.thisMonth,   get: () => { const now = new Date(); const s = firstOfMonth(now.getFullYear(), now.getMonth()); const e = lastOfMonth(now.getFullYear(), now.getMonth()); return { start: s, end: e, mode: 'month' as const, label: buildLabel(s, e, 'month', lang) } } },
     { label: t.datepicker.lastMonth,   get: () => { const now = new Date(); let m = now.getMonth(), y = now.getFullYear(); if (m === 0) { m = 11; y--; } else m--; const s = firstOfMonth(y, m); const e = lastOfMonth(y, m); return { start: s, end: e, mode: 'month' as const, label: buildLabel(s, e, 'month', lang) } } },
     { label: t.datepicker.thisQuarter, get: () => { const now = new Date(); const q = Math.floor(now.getMonth() / 3); const s = firstOfMonth(now.getFullYear(), q * 3); const e = lastOfMonth(now.getFullYear(), q * 3 + 2); return { start: s, end: e, mode: 'quarter' as const, label: buildLabel(s, e, 'quarter', lang) } } },
@@ -434,7 +434,7 @@ export function DateNavigator({
 
     if (mode === 'day') {
       const d = new Date(start + 'T00:00:00'); d.setDate(d.getDate() + dir)
-      ns = ne = d.toISOString().split('T')[0]
+      ns = ne = toLocalISODate(d)
     } else if (mode === 'month') {
       const nm = s.m + dir; const ny = s.y + Math.floor(nm < 0 ? -1 : nm > 11 ? 1 : 0)
       const fm = ((nm % 12) + 12) % 12

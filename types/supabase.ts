@@ -3715,6 +3715,13 @@ export type Database = {
         }
         Returns: undefined
       }
+      delete_ledger: {
+        Args: {
+          p_ledger_id: string
+          p_confirm_name: string
+        }
+        Returns: undefined
+      }
       delete_my_account: {
         Args: Record<PropertyKey, never>
         Returns: undefined
@@ -3875,6 +3882,12 @@ export type Database = {
       role_rank: {
         Args: {
           p_role: string
+        }
+        Returns: number
+      }
+      run_due_recurring: {
+        Args: {
+          p_ledger_id: string
         }
         Returns: number
       }

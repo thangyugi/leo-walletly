@@ -8,6 +8,8 @@ import {
   Train, Bike, Bus, Ship, Hotel, MapPin, TreePine, Sun,
   Baby, PawPrint, Scissors, Hammer, Zap, Wifi, Monitor, Tv,
   CreditCard, PiggyBank, TrendingUp, BarChart3, ShoppingCart, Package, Box, Briefcase,
+  // Account types (account_types.icon)
+  Banknote, Landmark, HandCoins, Building2,
 } from 'lucide-react'
 
 const LUCIDE_ICONS: Record<string, React.ElementType> = {
@@ -19,6 +21,7 @@ const LUCIDE_ICONS: Record<string, React.ElementType> = {
   Train, Bike, Bus, Ship, Hotel, MapPin, TreePine, Sun,
   Baby, PawPrint, Scissors, Hammer, Zap, Wifi, Monitor, Tv,
   CreditCard, PiggyBank, TrendingUp, BarChart3, ShoppingCart, Package, Box, Briefcase,
+  Banknote, Landmark, HandCoins, Building2,
 }
 
 export const PRESET_ICONS = Object.keys(LUCIDE_ICONS)

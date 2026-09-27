@@ -1,9 +1,9 @@
 import { useCallback } from 'react'
 import { useCurrencyStore } from '../store/useCurrencyStore'
 import { FXService } from '../services/fx-service'
-import { formatMoney, CURRENCY_META } from '@/lib/money'
+import { formatMoney } from '@/lib/money'
 import { CurrencyCode } from '../types'
-import { useMembershipStore } from '@/features/user-management/membership-store'
+import { useLedgerCurrency } from '@/features/user-management/ledger-store'
 
 interface FormatOptions {
   from?: CurrencyCode
@@ -15,49 +15,27 @@ interface FormatOptions {
   precision?: number
 }
 
+/** Money formatting in the open ledger's currency (`ledgers.currency_code`). */
 export function useMoney() {
-  const { currentContext } = useMembershipStore()
-  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-  const { exchangeRates } = useCurrencyStore() // Still needed for FX if data source is different
-  
-  // The base currency of the current workspace — THE source of truth
-  const ledgerCurrency = (currentLedger?.base_currency as CurrencyCode) || 'JPY'
+  const ledgerCurrency = useLedgerCurrency() as CurrencyCode
+  const { exchangeRates } = useCurrencyStore()
 
-  /**
-   * Convert and format a monetary amount.
-   * By default, it displays in the ledger's base currency.
-   */
   const format = useCallback((amount: number, options: FormatOptions = {}) => {
     const from = options.from || ledgerCurrency
-    const to = options.to || ledgerCurrency // Use ledger currency as target
-    
-    // 1. Convert
-    const convertedAmount = FXService.convert(amount, from, to, exchangeRates)
-    
-    // 2. Format
-    return formatMoney(convertedAmount, to, {
+    const to = options.to || ledgerCurrency
+    const converted = FXService.convert(amount, from, to, exchangeRates)
+    return formatMoney(converted, to, {
       compact: options.compact,
       accounting: options.accounting,
       sign: options.sign,
       noSymbol: options.noSymbol,
-      precision: options.precision
+      precision: options.precision,
     })
   }, [ledgerCurrency, exchangeRates])
 
-  /**
-   * Plain conversion logic for calculations or charts
-   */
-  const convert = useCallback((amount: number, from?: CurrencyCode, to?: CurrencyCode) => {
-    const fromCurrency = from || ledgerCurrency
-    const toCurrency = to || ledgerCurrency
-    return FXService.convert(amount, fromCurrency, toCurrency, exchangeRates)
-  }, [ledgerCurrency, exchangeRates])
+  const convert = useCallback((amount: number, from?: CurrencyCode, to?: CurrencyCode) =>
+    FXService.convert(amount, from || ledgerCurrency, to || ledgerCurrency, exchangeRates),
+  [ledgerCurrency, exchangeRates])
 
-  return {
-    format,
-    convert,
-    preferredCurrency: ledgerCurrency, // Preferred is now synced with Ledger
-    ledgerCurrency,
-    exchangeRates
-  }
+  return { format, convert, preferredCurrency: ledgerCurrency, ledgerCurrency, exchangeRates }
 }

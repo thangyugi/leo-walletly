@@ -1,910 +1,276 @@
 'use client'
 
 import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useTransactionsStore } from '@/stores/transactions'
-import { useGroupStore } from './store'
-import { useMembershipStore } from '@/features/user-management/membership-store'
-import type { Transaction } from '@/types'
-import type { Group } from './types'
+import Link from 'next/link'
+import { toast } from 'sonner'
+import { ArrowLeft, Check, CheckCheck, Loader2, Search, Zap, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  ArrowLeft, Check, CheckCheck, Loader2, Search,
-  Save, Zap, ChevronDown, ChevronUp,
-  ChevronLeft, ChevronRight, CalendarDays, ArrowUpDown,
-} from 'lucide-react'
 import { CategoryIcon } from './category-icon'
-import { cn } from '@/lib/utils'
-import { CURRENCY_META } from '@/lib/money'
-import { format } from 'date-fns'
+import { useCategoryStore } from './store'
+import { useTransactionsStore } from '@/stores/transactions'
+import { useLedgerData } from '@/hooks/useLedgerData'
+import { useTranslation } from '@/hooks/useTranslation'
+import { useMoney } from '@/features/currency/hooks/useMoney'
+import { cn, formatDate } from '@/lib/utils'
+import type { Category } from './types'
+import type { Transaction } from '@/types/domain'
 
-// ── Types ──────────────────────────────────────────────────────
-type TxnGroup = {
-  key: string
-  label: string
-  isIncome: boolean
-  transactions: Transaction[]
-  totalAmount: number
-  latestDate: string   // most recent transactionDate in the group
-}
-
-type HierarchicalGroup = Group & { children: Group[] }
 type SortMode = 'date' | 'amount' | 'count'
+interface TxnGroup { key: string; label: string; type: 'income' | 'expense'; txns: Transaction[]; total: number; latest: string }
 
-// ── Smart keyword extractor ─────────────────────────────────────
-function extractSmartKeywords(label: string): string[] {
-  const set = new Set<string>()
-  const clean = label.trim()
-  if (clean.length >= 2 && clean.length <= 25) set.add(clean.toLowerCase())
-  const parts = clean
-    .split(/[\s\-–・|/\\,、。·]+/)
-    .map(s => s.trim())
-    .filter(s => s.length >= 2)
-  parts.forEach(p => set.add(p.toLowerCase()))
-  for (let i = 0; i < parts.length - 1; i++) {
-    const combo = `${parts[i]} ${parts[i + 1]}`
-    if (combo.length <= 30) set.add(combo.toLowerCase())
-  }
-  return Array.from(set).filter(k => {
-    if (k.length < 2) return false
-    if (/^\d+$/.test(k)) return false
-    if (/^[号館棟店舗]+$/.test(k)) return false
-    return true
-  })
+const fill = (s: string, vars: Record<string, string | number>) =>
+  Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{{${k}}}`, String(v)), s)
+
+/** The keyword we'd store for a merchant: the label itself, trimmed, lower-case. */
+function keywordFor(label: string) {
+  return label.trim().toLowerCase().slice(0, 40)
 }
 
-// ── Source labels ───────────────────────────────────────────────
-const SOURCE_LABELS: Record<string, string> = {
-  manual: 'Thủ công', csv_import: 'CSV', bank_feed: 'Ngân hàng',
-  vcb: 'VCB', momo: 'MoMo', api: 'API', ocr_scan: 'OCR',
-  paypay: 'PayPay', rakuten: 'Rakuten', suica: 'Suica', icoca: 'ICOCA',
-  smbc: 'SMBC', mufg: 'MUFG', au_pay: 'au PAY', line_pay: 'LINE Pay',
-  seven_bank: '7Bank', jp_post: 'JP Post', epos: 'EPOS', d_payment: 'd払い',
-}
-
-// ── Fixed-position category picker ─────────────────────────────
-// Uses getBoundingClientRect + position:fixed to escape overflow:hidden parents
-function ClassifyCategoryPicker({
-  value,
-  onChange,
-  disabled,
-  groups,
-  hierarchical,
-}: {
-  value: string
-  onChange: (id: string) => void
-  disabled?: boolean
-  groups: Group[]
-  hierarchical: HierarchicalGroup[]
+function CategorySelect({ value, onChange, categories, type, disabled, label }: {
+  value: string; onChange: (id: string) => void; categories: Category[]; type: 'income' | 'expense'; disabled?: boolean; label: string
 }) {
-  const [open, setOpen] = React.useState(false)
-  const [dropPos, setDropPos] = React.useState<{ top: number; left: number; width: number } | null>(null)
-  const btnRef  = React.useRef<HTMLButtonElement>(null)
-  const dropRef = React.useRef<HTMLDivElement>(null)
-  const selected = groups.find(g => g.id === value)
-
-  const handleToggle = () => {
-    if (disabled) return
-    if (!open && btnRef.current) {
-      const r = btnRef.current.getBoundingClientRect()
-      setDropPos({ top: r.bottom + 4, left: r.left, width: Math.max(r.width, 232) })
-    }
-    setOpen(v => !v)
-  }
-
-  // Close on outside click
-  React.useEffect(() => {
-    if (!open) return
-    const onDown = (e: MouseEvent) => {
-      const t = e.target as Node
-      if (!btnRef.current?.contains(t) && !dropRef.current?.contains(t)) setOpen(false)
-    }
-    document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
-
-  // Close on scroll outside dropdown / resize (position would drift)
-  React.useEffect(() => {
-    if (!open) return
-    const onScroll = (e: Event) => {
-      if (dropRef.current?.contains(e.target as Node)) return   // scroll inside dropdown — keep open
-      setOpen(false)
-    }
-    const onResize = () => setOpen(false)
-    window.addEventListener('scroll', onScroll, true)
-    window.addEventListener('resize', onResize)
-    return () => {
-      window.removeEventListener('scroll', onScroll, true)
-      window.removeEventListener('resize', onResize)
-    }
-  }, [open])
-
+  const { t } = useTranslation()
+  const ofType = categories.filter((c) => c.is_active && c.type === type)
+  const roots = ofType.filter((c) => !c.parent_id || !ofType.some((p) => p.id === c.parent_id))
+  const selected = ofType.find((c) => c.id === value)
   return (
-    <div className="relative flex-1 sm:w-56">
-      {/* Trigger */}
-      <button
-        ref={btnRef}
-        type="button"
-        onClick={handleToggle}
-        className={cn(
-          'w-full h-9 px-3 rounded-lg border text-left flex items-center gap-2 transition-colors',
-          disabled && 'opacity-50 cursor-not-allowed',
-          !disabled && open && 'border-[var(--color-border-focus)] ring-2 ring-[var(--color-brand-100)]',
-          !disabled && !open && 'hover:border-[var(--color-border-focus)]',
-          selected
-            ? 'border-[var(--color-interactive-primary)] bg-[var(--color-brand-25)]'
-            : 'border-[var(--color-border-default)] bg-white',
-        )}
-      >
-        {selected ? (
-          <>
-            <span
-              className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0"
-              style={{ background: `${selected.color}22` }}
-            >
-              <CategoryIcon name={selected.emoji} className="w-3.5 h-3.5" />
-            </span>
-            <span className="flex-1 truncate text-[13px] font-medium text-[var(--color-text-primary)]">
-              {selected.name}
-            </span>
-          </>
-        ) : (
-          <span className="flex-1 text-[12px] text-[var(--color-text-placeholder)]">-- Chọn danh mục --</span>
-        )}
-        <ChevronDown className={cn('w-3.5 h-3.5 text-[var(--color-text-quaternary)] transition-transform shrink-0', open && 'rotate-180')} />
-      </button>
-
-      {/* Dropdown — fixed position to escape overflow:hidden ancestors */}
-      {open && dropPos && (
-        <div
-          ref={dropRef}
-          style={{ position: 'fixed', top: dropPos.top, left: dropPos.left, width: dropPos.width, zIndex: 9999 }}
-          className="rounded-xl border shadow-xl bg-[var(--color-surface-default)] border-[var(--color-border-default)]"
-        >
-          {/* Clear */}
-          <div className="p-1.5 border-b border-[var(--color-border-subtle)]">
-            <button
-              type="button"
-              onClick={() => { onChange(''); setOpen(false) }}
-              className={cn(
-                'w-full flex items-center gap-2 px-2.5 py-1.5 rounded-[7px] text-[12px] transition-colors cursor-pointer',
-                !value
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
-              )}
-            >
-              <span className="w-5 h-5 rounded-[5px] flex items-center justify-center bg-[var(--color-bg-sunken)] text-[10px] shrink-0">—</span>
-              <span className="flex-1 text-left">Chưa chọn</span>
-              {!value && <Check className="w-3 h-3 shrink-0" />}
-            </button>
-          </div>
-
-          {/* Tree */}
-          <div className="p-1.5 max-h-60 overflow-y-auto">
-            {hierarchical.map(parent => (
-              <div key={parent.id}>
-                {/* Parent row */}
-                <button
-                  type="button"
-                  onClick={() => { onChange(parent.id); setOpen(false) }}
-                  className={cn(
-                    'w-full flex items-center gap-2 px-2.5 py-[7px] rounded-[7px] text-[13px] font-medium transition-colors cursor-pointer',
-                    value === parent.id
-                      ? 'bg-[var(--color-brand-500)] text-white'
-                      : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
-                  )}
-                >
-                  <span
-                    className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0"
-                    style={{ background: value === parent.id ? 'rgba(255,255,255,0.2)' : `${parent.color}22` }}
-                  >
-                    <CategoryIcon name={parent.emoji} className="w-3.5 h-3.5" />
-                  </span>
-                  <span className="flex-1 truncate text-left">{parent.name}</span>
-                  {value === parent.id && <Check className="w-3.5 h-3.5 ml-auto shrink-0" />}
-                </button>
-
-                {/* Children */}
-                {parent.children.map(child => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => { onChange(child.id); setOpen(false) }}
-                    className={cn(
-                      'w-full flex items-center gap-2 pl-7 pr-2.5 py-[6px] rounded-[7px] text-[12px] transition-colors cursor-pointer',
-                      value === child.id
-                        ? 'bg-[var(--color-brand-100)] text-[var(--color-brand-800)] font-semibold'
-                        : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
-                    )}
-                  >
-                    <span
-                      className="w-5 h-5 rounded-[5px] flex items-center justify-center shrink-0"
-                      style={{ background: `${child.color}22` }}
-                    >
-                      <CategoryIcon name={child.emoji} className="w-3 h-3" />
-                    </span>
-                    <span className="flex-1 truncate text-left">{child.name}</span>
-                    {value === child.id && <Check className="w-3 h-3 ml-auto shrink-0" />}
-                  </button>
-                ))}
-              </div>
-            ))}
-            {hierarchical.length === 0 && (
-              <p className="text-[12px] text-[var(--color-text-quaternary)] text-center py-3">
-                Không có danh mục nào
-              </p>
-            )}
-          </div>
-        </div>
-      )}
+    <div className="relative flex-1 sm:w-60">
+      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-[5px] flex items-center justify-center pointer-events-none"
+        style={{ background: selected ? `${selected.color}22` : 'var(--color-bg-sunken)', color: selected?.color ?? undefined }}>
+        {selected ? <CategoryIcon name={selected.emoji} className="w-3.5 h-3.5" /> : '—'}
+      </span>
+      <select aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}
+        className={cn('w-full h-9 pl-9 pr-3 rounded-lg border text-[13px] bg-[var(--color-surface-default)] text-[var(--color-text-primary)] appearance-none disabled:opacity-50',
+          selected ? 'border-[var(--color-interactive-primary)]' : 'border-[var(--color-border-default)]')}>
+        <option value="">{t.classify.choose}</option>
+        {roots.map((r) => (
+          <optgroup key={r.id} label={r.name}>
+            <option value={r.id}>{r.name}</option>
+            {ofType.filter((c) => c.parent_id === r.id).map((c) => <option key={c.id} value={c.id}>— {c.name}</option>)}
+          </optgroup>
+        ))}
+      </select>
     </div>
   )
 }
 
-// ── Month picker popover ────────────────────────────────────────
-const MONTH_LABELS = ['T1','T2','T3','T4','T5','T6','T7','T8','T9','T10','T11','T12']
-
-function MonthPicker({
-  selectedYear,
-  selectedMonth,
-  onSelect,
-  onClose,
-}: {
-  selectedYear: number
-  selectedMonth: number
-  onSelect: (year: number, month: number) => void
-  onClose: () => void
-}) {
-  const [pickerYear, setPickerYear] = React.useState(selectedYear)
-  const ref = React.useRef<HTMLDivElement>(null)
-
-  React.useEffect(() => {
-    const handler = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) onClose()
-    }
-    document.addEventListener('mousedown', handler)
-    return () => document.removeEventListener('mousedown', handler)
-  }, [onClose])
-
-  return (
-    <div
-      ref={ref}
-      className="absolute top-[calc(100%+6px)] left-1/2 -translate-x-1/2 z-50 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl p-3 w-56 overflow-hidden"
-    >
-      <div className="flex items-center justify-between mb-2.5">
-        <button
-          type="button"
-          onClick={() => setPickerYear(y => y - 1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
-        >
-          <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
-        </button>
-        <span className="text-sm font-semibold text-[var(--color-text-primary)]">{pickerYear}</span>
-        <button
-          type="button"
-          onClick={() => setPickerYear(y => y + 1)}
-          className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer"
-        >
-          <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
-        </button>
-      </div>
-      <div className="grid grid-cols-4 gap-1">
-        {MONTH_LABELS.map((lbl, i) => {
-          const m = i + 1
-          const isActive = pickerYear === selectedYear && m === selectedMonth
-          return (
-            <button
-              key={m}
-              type="button"
-              onClick={() => { onSelect(pickerYear, m); onClose() }}
-              className={cn(
-                'py-2 rounded-lg text-[12px] font-medium transition-colors cursor-pointer',
-                isActive
-                  ? 'bg-[var(--color-brand-500)] text-white'
-                  : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]',
-              )}
-            >
-              {lbl}
-            </button>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
-
-// ── Sort mode labels ────────────────────────────────────────────
-const SORT_OPTIONS: { value: SortMode; label: string }[] = [
-  { value: 'date',   label: 'Gần nhất' },
-  { value: 'amount', label: 'Số tiền'  },
-  { value: 'count',  label: 'Nhiều nhất' },
-]
-
-// ── Main component ──────────────────────────────────────────────
 export function ClassifyPage() {
-  const router = useRouter()
-  const { currentContext } = useMembershipStore()
-  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
-  const { groups, updateGroup } = useGroupStore()
-  const { transactions, bulkUpdateTransactions } = useTransactionsStore()
+  const { t, lang } = useTranslation()
+  const { format } = useMoney()
+  const { ledger, categories } = useLedgerData()
+  const { fetchRange, bulkUpdate, revision } = useTransactionsStore()
+  const { addKeyword, applyRules } = useCategoryStore()
 
-  // ── Month navigation ──────────────────────────────────────────
   const now = new Date()
-  const [selectedYear,  setSelectedYear]  = React.useState(now.getFullYear())
-  const [selectedMonth, setSelectedMonth] = React.useState(now.getMonth() + 1)
-  const [isMonthPickerOpen, setIsMonthPickerOpen] = React.useState(false)
-
-  function prevMonth() {
-    if (selectedMonth === 1) { setSelectedYear(y => y - 1); setSelectedMonth(12) }
-    else setSelectedMonth(m => m - 1)
-  }
-  function nextMonth() {
-    if (selectedMonth === 12) { setSelectedYear(y => y + 1); setSelectedMonth(1) }
-    else setSelectedMonth(m => m + 1)
-  }
-
-  const monthLabel = `Tháng ${selectedMonth}/${selectedYear}`
-  const monthKey   = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`
-
-  // ── Sort mode — default: date (newest first) ──────────────────
+  const [year, setYear] = React.useState(now.getFullYear())
+  const [month, setMonth] = React.useState(now.getMonth() + 1)
+  const [pending, setPending] = React.useState<Transaction[]>([])
+  const [loading, setLoading] = React.useState(true)
+  const [search, setSearch] = React.useState('')
   const [sortBy, setSortBy] = React.useState<SortMode>('date')
+  const [choice, setChoice] = React.useState<Record<string, string>>({})
+  const [remember, setRemember] = React.useState<Record<string, boolean>>({})
+  const [busy, setBusy] = React.useState<Set<string>>(new Set())
+  const [expanded, setExpanded] = React.useState<Set<string>>(new Set())
+  const [confirming, setConfirming] = React.useState(false)
 
-  const [search,       setSearch]       = React.useState('')
-  const [selectedCats, setSelectedCats] = React.useState<Record<string, string>>({})
-  const [appliedKeys,  setAppliedKeys]  = React.useState<Set<string>>(new Set())
-  const [applyingKeys, setApplyingKeys] = React.useState<Set<string>>(new Set())
-  const [expandedKeys, setExpandedKeys] = React.useState<Set<string>>(new Set())
-  const [isConfirming, setIsConfirming] = React.useState(false)
-  const [isDirty,      setIsDirty]      = React.useState(false)
+  const mk = `${year}-${String(month).padStart(2, '0')}`
+  const lastDay = new Date(year, month, 0).getDate()
+  const ledgerId = ledger?.id
 
-  const currency = (currentLedger?.base_currency ?? 'JPY') as string
-  const currMeta = CURRENCY_META[currency] ?? CURRENCY_META['JPY']
-  const fmt = React.useCallback(
-    (n: number) => Math.round(n).toLocaleString(currMeta.locale),
-    [currMeta.locale],
-  )
-  const sym = currMeta.symbol
-
-  // ── All pending (used for month-selector context only) ────────
-  const allPendingTxns = React.useMemo(
-    () => transactions.filter(
-      (t: Transaction) => !t.categoryId &&
-        t.transactionType !== 'transfer' &&
-        t.transactionType !== 'asset_transfer',
-    ),
-    [transactions],
-  )
-
-  // ── Pending filtered to selected month ────────────────────────
-  const pendingTxns = React.useMemo(
-    () => allPendingTxns.filter(t => t.transactionDate?.startsWith(monthKey)),
-    [allPendingTxns, monthKey],
-  )
-
-  // ── Summary stats ─────────────────────────────────────────────
-  const summaryStats = React.useMemo(() => {
-    const expense = pendingTxns
-      .filter(t => t.transactionType !== 'income' && t.transactionType !== 'refund')
-      .reduce((s, t) => s + Math.abs(t.amount), 0)
-    const income = pendingTxns
-      .filter(t => t.transactionType === 'income' || t.transactionType === 'refund')
-      .reduce((s, t) => s + Math.abs(t.amount), 0)
-    const srcMap: Record<string, number> = {}
-    pendingTxns.forEach(t => {
-      const src = t.source || 'manual'
-      srcMap[src] = (srcMap[src] || 0) + 1
-    })
-    const topSources = Object.entries(srcMap)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([src, count]) => ({ label: SOURCE_LABELS[src] || src, count }))
-    return { expense, income, topSources }
-  }, [pendingTxns])
-
-  const suggestGroup = React.useCallback(
-    (label: string): Group | undefined => {
-      const hay = label.toLowerCase()
-      return groups.find((g: Group) =>
-        (g.keywords ?? []).some((kw: string) => hay.includes(kw.toLowerCase())),
-      )
-    },
-    [groups],
-  )
-
-  // ── Build + sort txn groups ───────────────────────────────────
-  const txnGroups = React.useMemo<TxnGroup[]>(() => {
-    const q = search.trim().toLowerCase()
-    const filtered = q
-      ? pendingTxns.filter(t =>
-          (t.merchantName || t.description || '').toLowerCase().includes(q),
-        )
-      : pendingTxns
-
-    // Build map: key = label|direction
-    const map = new Map<string, TxnGroup>()
-    for (const t of filtered) {
-      const label = t.merchantName || t.description || t.id.slice(0, 8)
-      const isIncome = t.transactionType === 'income' || t.transactionType === 'refund'
-      const key = label.toLowerCase().trim() + '|' + (isIncome ? 'in' : 'out')
-      if (!map.has(key)) {
-        map.set(key, { key, label, isIncome, transactions: [], totalAmount: 0, latestDate: '' })
-      }
-      const g = map.get(key)!
-      g.transactions.push(t)
-      g.totalAmount += Math.abs(t.amount)
-      if (!g.latestDate || (t.transactionDate ?? '') > g.latestDate) {
-        g.latestDate = t.transactionDate ?? ''
-      }
-    }
-
-    // Sort each group's transactions by date desc (newest first)
-    map.forEach(g => {
-      g.transactions.sort((a, b) =>
-        (b.transactionDate ?? '').localeCompare(a.transactionDate ?? ''),
-      )
-    })
-
-    const arr = Array.from(map.values())
-
-    // Sort groups by selected mode
-    if (sortBy === 'date') {
-      arr.sort((a, b) => b.latestDate.localeCompare(a.latestDate))
-    } else if (sortBy === 'amount') {
-      arr.sort((a, b) =>
-        b.totalAmount !== a.totalAmount ? b.totalAmount - a.totalAmount : b.transactions.length - a.transactions.length,
-      )
-    } else {
-      // count
-      arr.sort((a, b) =>
-        b.transactions.length !== a.transactions.length
-          ? b.transactions.length - a.transactions.length
-          : b.totalAmount - a.totalAmount,
-      )
-    }
-
-    return arr
-  }, [pendingTxns, search, sortBy])
-
-  // ── Pre-fill keyword suggestions ──────────────────────────────
   React.useEffect(() => {
-    const patch: Record<string, string> = {}
-    txnGroups.forEach(g => {
-      if (!selectedCats[g.key]) {
-        const sug = suggestGroup(g.label)
-        if (sug) patch[g.key] = sug.id
-      }
+    if (!ledgerId) return
+    setLoading(true)
+    void fetchRange(ledgerId, `${mk}-01`, `${mk}-${lastDay}`).then((rows) => {
+      setPending(rows.filter((x) => !x.categoryId && x.transactionType !== 'transfer'))
+      setLoading(false)
     })
-    if (Object.keys(patch).length > 0) {
-      setSelectedCats(prev => ({ ...prev, ...patch }))
+  }, [ledgerId, mk, lastDay, fetchRange, revision])
+
+  const suggest = React.useCallback((label: string, type: string) => {
+    const hay = label.toLowerCase()
+    return categories.find((c) => c.is_active && c.type === type && c.keywords.some((k) => hay.includes(k.toLowerCase())))
+  }, [categories])
+
+  const groups = React.useMemo<TxnGroup[]>(() => {
+    const q = search.trim().toLowerCase()
+    const map = new Map<string, TxnGroup>()
+    for (const tx of pending) {
+      const label = tx.merchantName || tx.description
+      if (q && !label.toLowerCase().includes(q)) continue
+      const type = tx.transactionType === 'income' ? 'income' : 'expense'
+      const key = `${label.toLowerCase().trim()}|${type}`
+      const g = map.get(key) ?? { key, label, type, txns: [], total: 0, latest: '' }
+      g.txns.push(tx)
+      g.total += tx.baseAmount
+      if (tx.transactionDate > g.latest) g.latest = tx.transactionDate
+      map.set(key, g)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txnGroups.length, suggestGroup])
+    const arr = [...map.values()]
+    if (sortBy === 'date') arr.sort((a, b) => b.latest.localeCompare(a.latest))
+    else if (sortBy === 'amount') arr.sort((a, b) => b.total - a.total)
+    else arr.sort((a, b) => b.txns.length - a.txns.length || b.total - a.total)
+    return arr
+  }, [pending, search, sortBy])
 
-  const hierarchicalGroups = React.useMemo<HierarchicalGroup[]>(() => {
-    const active = groups.filter((g: Group) => g.is_active)
-    const parents = active.filter((g: Group) => !g.parent_id)
-    return parents.map(p => ({ ...p, children: active.filter((c: Group) => c.parent_id === p.id) }))
-  }, [groups])
-
-  const appliedTxCount = React.useMemo(() => {
-    let n = 0
-    txnGroups.forEach(g => { if (appliedKeys.has(g.key)) n += g.transactions.length })
-    return n
-  }, [appliedKeys, txnGroups])
-
-  const pendingApplyCount = React.useMemo(() => {
-    let n = 0
-    txnGroups.forEach(g => {
-      if (selectedCats[g.key] && !appliedKeys.has(g.key)) n += g.transactions.length
+  // Pre-select keyword suggestions once per group.
+  React.useEffect(() => {
+    setChoice((prev) => {
+      const next = { ...prev }
+      for (const g of groups) if (!(g.key in next)) next[g.key] = suggest(g.label, g.type)?.id ?? ''
+      return next
     })
-    return n
-  }, [selectedCats, appliedKeys, txnGroups])
+  }, [groups, suggest])
 
-  const handleApplyGroup = async (gKey: string) => {
-    const categoryId = selectedCats[gKey]
+  async function applyGroup(g: TxnGroup) {
+    const categoryId = choice[g.key]
     if (!categoryId) return
-    const grp = txnGroups.find(g => g.key === gKey)
-    if (!grp) return
-
-    setApplyingKeys(prev => new Set(prev).add(gKey))
-    const updates = grp.transactions.map(t => ({
-      id: t.id,
-      update: { categoryId, metadata: { ...t.metadata, match_type: 'manual' } }
-    }))
-    await bulkUpdateTransactions(updates)
-
-    const cat = groups.find((g: Group) => g.id === categoryId)
-    if (cat) {
-      const newKws = extractSmartKeywords(grp.label)
-      const existing = cat.keywords || []
-      const merged = Array.from(new Set([...existing, ...newKws]))
-      if (merged.length > existing.length) await updateGroup(categoryId, { keywords: merged })
+    setBusy((s) => new Set(s).add(g.key))
+    try {
+      await bulkUpdate(g.txns.map((x) => x.id), { categoryId })
+      if (remember[g.key] ?? true) {
+        const cat = categories.find((c) => c.id === categoryId)
+        const kw = keywordFor(g.label)
+        if (cat && !cat.keywords.includes(kw)) await addKeyword(categoryId, kw)
+      }
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setBusy((s) => { const n = new Set(s); n.delete(g.key); return n })
     }
-
-    setAppliedKeys(prev => new Set(prev).add(gKey))
-    setApplyingKeys(prev => { const n = new Set(prev); n.delete(gKey); return n })
   }
 
-  const handleSaveTemp = () => setIsDirty(false)
-
-  const handleConfirmAll = async () => {
-    setIsConfirming(true)
-    const updates: { id: string; update: { categoryId: string } }[] = []
-    const kws: { catId: string; label: string }[] = []
-    txnGroups.forEach(g => {
-      const catId = selectedCats[g.key]
-      if (catId && !appliedKeys.has(g.key)) {
-        g.transactions.forEach(t => updates.push({
-          id: t.id,
-          update: { categoryId: catId, metadata: { ...t.metadata, match_type: 'manual' } }
-        }))
-        kws.push({ catId, label: g.label })
-      }
-    })
-    if (updates.length > 0) await bulkUpdateTransactions(updates)
-    for (const { catId, label } of kws) {
-      const cat = groups.find((g: Group) => g.id === catId)
-      if (cat) {
-        const merged = Array.from(new Set([...(cat.keywords || []), ...extractSmartKeywords(label)]))
-        if (merged.length > (cat.keywords || []).length) await updateGroup(catId, { keywords: merged })
-      }
+  async function confirmAll() {
+    setConfirming(true)
+    let n = 0
+    for (const g of groups) {
+      if (!choice[g.key]) continue
+      await applyGroup(g)
+      n += g.txns.length
     }
-    setIsConfirming(false)
-    router.push('/categories')
+    setConfirming(false)
+    toast.success(fill(t.catui.applied, { count: n }))
   }
 
-  const toggleExpand = (key: string) =>
-    setExpandedKeys(prev => {
-      const n = new Set(prev)
-      n.has(key) ? n.delete(key) : n.add(key)
-      return n
-    })
+  async function rerunRules() {
+    try {
+      const n = await applyRules(pending.map((x) => x.id))
+      toast.success(fill(t.catui.applied, { count: n }))
+      useTransactionsStore.setState((s) => ({ revision: s.revision + 1 }))
+    } catch (e: any) {
+      toast.error(e.message)
+    }
+  }
+
+  const ready = groups.filter((g) => choice[g.key]).reduce((s, g) => s + g.txns.length, 0)
+  const expense = pending.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
+  const income = pending.filter((x) => x.transactionType === 'income').reduce((s, x) => s + x.baseAmount, 0)
+  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(lang, { year: 'numeric', month: 'long' })
+  const shift = (d: number) => {
+    const dt = new Date(year, month - 1 + d, 1)
+    setYear(dt.getFullYear()); setMonth(dt.getMonth() + 1)
+  }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-5 animate-fade-in pb-20">
-
-      {/* ── Header ── */}
+    <div className="space-y-4 animate-fade-in pb-24">
       <div className="flex items-center gap-3 flex-wrap">
-        <button
-          onClick={() => router.push('/categories')}
-          className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-bg-sunken)] transition-colors shrink-0"
-        >
-          <ArrowLeft className="w-5 h-5 text-[var(--color-text-secondary)]" />
-        </button>
-
-        <div className="min-w-0">
-          <h1 className="text-[20px] font-semibold tracking-[-0.025em] text-[var(--color-text-primary)]">
-            Phân loại giao dịch
-          </h1>
-          <p className="text-[13px] text-[var(--color-text-tertiary)] mt-0.5">
-            {txnGroups.length} nhóm · {pendingTxns.length} giao dịch chờ phân loại
-            {appliedTxCount > 0 && (
-              <span className="ml-2 font-medium text-[var(--color-gain-600)]">· {appliedTxCount} đã áp dụng</span>
-            )}
-          </p>
+        <Link href="/categories" aria-label={t.common.back} className="w-9 h-9 rounded-lg border border-[var(--color-border-default)] flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><ArrowLeft className="w-4 h-4" /></Link>
+        <div>
+          <h1 className="text-[18px] font-semibold text-[var(--color-text-primary)]">{t.classify.title}</h1>
+          <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.classify.subtitle}</p>
         </div>
-
-        <div className="flex-1" />
-
-        {/* Month navigator */}
-        <div className="relative flex items-center gap-1">
-          <button
-            onClick={prevMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4 text-[var(--color-text-secondary)]" />
-          </button>
-
-          <button
-            onClick={() => setIsMonthPickerOpen(v => !v)}
-            className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors text-sm font-medium text-[var(--color-text-primary)] min-w-[130px] justify-center cursor-pointer"
-          >
-            <CalendarDays className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-            {monthLabel}
-          </button>
-
-          <button
-            onClick={nextMonth}
-            className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors cursor-pointer"
-          >
-            <ChevronRight className="w-4 h-4 text-[var(--color-text-secondary)]" />
-          </button>
-
-          {isMonthPickerOpen && (
-            <MonthPicker
-              selectedYear={selectedYear}
-              selectedMonth={selectedMonth}
-              onSelect={(y, m) => { setSelectedYear(y); setSelectedMonth(m) }}
-              onClose={() => setIsMonthPickerOpen(false)}
-            />
-          )}
+        <span className="flex-1" />
+        <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)]">
+          <button onClick={() => shift(-1)} aria-label="prev" className="w-8 h-9 flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>
+          <span className="text-sm font-medium px-1 min-w-[110px] text-center">{monthLabel}</span>
+          <button onClick={() => shift(1)} aria-label="next" className="w-8 h-9 flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>
         </div>
-
-        <button
-          onClick={handleSaveTemp}
-          disabled={!isDirty}
-          className={cn(
-            'inline-flex items-center gap-1.5 h-9 px-4 rounded-lg border text-sm font-medium transition-all',
-            isDirty
-              ? 'border-[var(--color-border-default)] bg-white text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] cursor-pointer'
-              : 'border-transparent text-[var(--color-text-quaternary)] cursor-not-allowed opacity-50',
-          )}
-        >
-          <Save className="w-4 h-4" />
-          Lưu tạm
-          {isDirty && <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />}
-        </button>
-
-        <Button
-          onClick={handleConfirmAll}
-          disabled={isConfirming || (pendingApplyCount === 0 && appliedTxCount === 0)}
-          className="gap-2"
-        >
-          {isConfirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
-          Xác nhận tất cả
-          {pendingApplyCount > 0 && (
-            <span className="font-mono text-[11px] bg-white/20 px-1.5 py-0.5 rounded-md">{pendingApplyCount}</span>
-          )}
-        </Button>
+        <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}>{t.classify.runRules}</Button>
       </div>
 
-      {/* ── Summary stats grid ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 gap-3">
         {[
-          { label: 'Chi tiêu chưa phân loại', value: fmt(summaryStats.expense), unit: sym, color: 'var(--color-text-loss)' },
-          { label: 'Tiền vào chưa phân loại', value: fmt(summaryStats.income),  unit: sym, color: 'var(--color-text-gain)' },
-          { label: 'Số nhóm giao dịch', value: String(txnGroups.length), unit: ' nhóm', color: 'var(--color-text-primary)' },
-          { label: 'Nguồn chính', value: summaryStats.topSources[0]?.label ?? '—', unit: summaryStats.topSources[0] ? ` (${summaryStats.topSources[0].count})` : '', color: 'var(--color-text-primary)' },
-        ].map((stat, i) => (
-          <div key={i} className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 shadow-[var(--shadow-card)]">
-            <p className="text-[11px] text-[var(--color-text-tertiary)] mb-1">{stat.label}</p>
-            <p className="text-[15px] font-semibold font-tabular" style={{ color: stat.color }}>
-              {stat.value}<span className="text-[11px] font-medium opacity-70">{stat.unit}</span>
-            </p>
-            {i === 3 && summaryStats.topSources.length > 1 && (
-              <div className="flex gap-1 mt-1 flex-wrap">
-                {summaryStats.topSources.slice(1).map(s => (
-                  <span key={s.label} className="text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">
-                    {s.label} {s.count}
-                  </span>
-                ))}
-              </div>
-            )}
+          [t.classify.pending, fill(t.classify.groupsCount, { groups: groups.length, count: pending.length })],
+          [t.catui.typeExpense, format(expense)],
+          [t.catui.typeIncome, format(income)],
+        ].map(([l, v]) => (
+          <div key={l} className="card-base p-4">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{l}</p>
+            <p className="text-lg font-semibold font-tabular text-[var(--color-text-primary)] mt-1">{v}</p>
           </div>
         ))}
       </div>
 
-      {/* ── Progress ── */}
-      {pendingTxns.length > 0 && (
-        <div className="bg-white border border-[var(--color-border-default)] rounded-[12px] px-4 py-3 flex items-center gap-4 shadow-[var(--shadow-card)]">
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center justify-between text-[11px] text-[var(--color-text-tertiary)] mb-1.5">
-              <span>Tiến độ phân loại tháng này</span>
-              <span className="font-mono font-semibold text-[var(--color-text-primary)]">
-                {appliedTxCount + pendingApplyCount} / {pendingTxns.length}
-              </span>
-            </div>
-            <div className="h-1.5 bg-[var(--color-bg-sunken)] rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all duration-500"
-                style={{
-                  width: `${Math.round(((appliedTxCount + pendingApplyCount) / pendingTxns.length) * 100)}%`,
-                  background: 'linear-gradient(90deg,var(--color-brand-500),var(--color-gain-500))',
-                }}
-              />
-            </div>
-          </div>
-          <div className="flex items-center gap-3 shrink-0 text-[11px]">
-            <span className="flex items-center gap-1 font-medium text-[var(--color-gain-700)]">
-              <span className="w-2 h-2 rounded-full bg-[var(--color-gain-500)]" />{appliedTxCount} đã lưu DB
-            </span>
-            <span className="flex items-center gap-1 font-medium text-[var(--color-brand-700)]">
-              <span className="w-2 h-2 rounded-full bg-[var(--color-brand-400)]" />{pendingApplyCount} chờ xác nhận
-            </span>
-          </div>
+      <div className="flex gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[200px]">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
+          <input type="search" aria-label={t.transactions.search} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.transactions.search}
+            className="w-full h-9 pl-9 pr-3 text-sm rounded-lg border bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-focus)]" />
         </div>
-      )}
-
-      {/* ── List ── */}
-      <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-
-        {/* Search + Sort toolbar */}
-        <div className="p-3 border-b border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/50 flex items-center gap-3 flex-wrap">
-          {/* Search */}
-          <div className="relative flex-1 min-w-[160px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-quaternary)]" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Tìm tên giao dịch..."
-              className="pl-9 pr-3 h-9 w-full rounded-lg border text-sm bg-white text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
-            />
-          </div>
-
-          {/* Sort controls */}
-          <div className="flex items-center gap-1 shrink-0">
-            <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)] mr-0.5" />
-            {SORT_OPTIONS.map(opt => (
-              <button
-                key={opt.value}
-                type="button"
-                onClick={() => setSortBy(opt.value)}
-                className={cn(
-                  'h-8 px-2.5 rounded-lg text-[12px] font-medium transition-colors cursor-pointer',
-                  sortBy === opt.value
-                    ? 'bg-[var(--color-brand-500)] text-white shadow-sm'
-                    : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] border border-transparent hover:border-[var(--color-border-default)]',
-                )}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
+        <div className="inline-flex rounded-lg border border-[var(--color-border-default)] p-0.5 bg-[var(--color-surface-default)]" role="radiogroup">
+          {([['date', t.classify.sortRecent], ['amount', t.classify.sortAmount], ['count', t.classify.sortCount]] as const).map(([v, l]) => (
+            <button key={v} role="radio" aria-checked={sortBy === v} onClick={() => setSortBy(v)}
+              className={cn('px-3 h-8 rounded-md text-xs font-medium', sortBy === v ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>{l}</button>
+          ))}
         </div>
+      </div>
 
-        {/* Groups */}
-        <div className="divide-y divide-[var(--color-border-subtle)]">
-          {txnGroups.length === 0 ? (
-            <div className="p-10 text-center">
-              <CalendarDays className="w-8 h-8 text-[var(--color-text-quaternary)] mx-auto mb-2" />
-              <p className="text-sm text-[var(--color-text-tertiary)]">Không có giao dịch chưa phân loại trong {monthLabel}</p>
-              <p className="text-xs text-[var(--color-text-quaternary)] mt-1">Dùng mũi tên ← → để xem tháng khác</p>
-            </div>
-          ) : txnGroups.map(grp => {
-            const isApplied  = appliedKeys.has(grp.key)
-            const isBusy     = applyingKeys.has(grp.key)
-            const isExpanded = expandedKeys.has(grp.key)
-            const selected   = selectedCats[grp.key] || ''
-            const suggested  = suggestGroup(grp.label)
-            const count      = grp.transactions.length
-            const sign       = grp.isIncome ? '+' : '−'
-
-            // Compact date display for the group's latest transaction
-            let latestDateDisplay = ''
-            try {
-              if (grp.latestDate) latestDateDisplay = format(new Date(grp.latestDate), 'dd/MM')
-            } catch { /* skip */ }
-
+      {loading ? (
+        <div className="flex justify-center py-16"><Loader2 className="w-6 h-6 animate-spin text-[var(--color-text-quaternary)]" /></div>
+      ) : groups.length === 0 ? (
+        <div className="card-base p-12 text-center">
+          <CheckCheck className="w-8 h-8 mx-auto text-[var(--color-text-gain)] mb-3" />
+          <p className="text-sm text-[var(--color-text-secondary)]">{t.catui.allClassified}</p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {groups.map((g) => {
+            const open = expanded.has(g.key)
             return (
-              <div key={grp.key} className={cn(isApplied ? 'bg-[var(--color-gain-25)]' : '')}>
-
-                {/* Group header row */}
-                <div className={cn(
-                  'px-4 py-3 flex items-center gap-3 flex-wrap sm:flex-nowrap transition-colors',
-                  !isApplied && 'hover:bg-[var(--color-bg-sunken)]',
-                )}>
-
-                  {/* Applied indicator — thin left border instead of a separate element */}
-                  {isApplied && (
-                    <span className="w-1.5 h-6 rounded-full bg-[var(--color-gain-500)] shrink-0" />
-                  )}
-
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-sm font-semibold text-[var(--color-text-primary)] truncate">{grp.label}</span>
-                      <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] border border-[var(--color-border-subtle)]">
-                        {count} giao dịch
-                      </span>
-                      {grp.isIncome
-                        ? <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-gain-50)] text-[var(--color-gain-700)]">Tiền vào</span>
-                        : <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-loss-50)] text-[var(--color-loss-700)]">Chi tiêu</span>
-                      }
-                      {latestDateDisplay && (
-                        <span className="text-[10px] text-[var(--color-text-quaternary)]">{latestDateDisplay}</span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-                      {suggested && (
-                        <span className="flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md border text-[var(--color-brand-700)] bg-[var(--color-brand-50)] border-[var(--color-brand-100)]">
-                          <Zap className="w-2.5 h-2.5" />Gợi ý: {suggested.name}
-                        </span>
-                      )}
-                      {isApplied && (
-                        <span className="text-[10px] text-[var(--color-gain-600)] font-medium">
-                          ✓ Đã thêm từ khóa tự động
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Total amount */}
-                  <div className="text-right shrink-0">
-                    <p className={cn(
-                      'text-sm font-bold font-tabular',
-                      grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
-                    )}>
-                      {sign} {fmt(grp.totalAmount)} <span className="text-[11px] font-medium opacity-70">{sym}</span>
-                    </p>
-                    <p className="text-[10px] text-[var(--color-text-tertiary)]">tổng cộng</p>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto">
-                    <ClassifyCategoryPicker
-                      value={selected}
-                      onChange={id => { setSelectedCats(prev => ({ ...prev, [grp.key]: id })); setIsDirty(true) }}
-                      disabled={isApplied || isBusy}
-                      groups={groups}
-                      hierarchical={hierarchicalGroups}
-                    />
-
-                    {isApplied ? (
-                      <span className="inline-flex items-center gap-1 h-9 px-3 rounded-lg text-[12px] font-semibold shrink-0 bg-[var(--color-gain-100)] text-[var(--color-gain-700)]">
-                        <Check className="w-3.5 h-3.5" />Đã lưu
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => handleApplyGroup(grp.key)}
-                        disabled={!selected || isBusy}
-                        className={cn(
-                          'inline-flex items-center gap-1.5 h-9 px-3 rounded-lg text-[12px] font-semibold transition-all shrink-0',
-                          selected && !isBusy
-                            ? 'bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] shadow-sm cursor-pointer'
-                            : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] border border-[var(--color-border-default)] cursor-not-allowed',
-                        )}
-                      >
-                        {isBusy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />}
-                        {isBusy ? 'Đang lưu…' : `Áp dụng (${count})`}
-                      </button>
-                    )}
-
-                    <button
-                      onClick={() => toggleExpand(grp.key)}
-                      className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] transition-colors shrink-0 cursor-pointer"
-                      title={isExpanded ? 'Thu gọn' : 'Xem chi tiết giao dịch'}
-                    >
-                      {isExpanded
-                        ? <ChevronUp className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                        : <ChevronDown className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-                      }
-                    </button>
+              <div key={g.key} className="card-base overflow-hidden">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-3.5">
+                  <button onClick={() => setExpanded((s) => { const n = new Set(s); if (n.has(g.key)) n.delete(g.key); else n.add(g.key); return n })}
+                    aria-expanded={open} className="flex items-center gap-3 flex-1 min-w-0 text-left">
+                    <span className={cn('w-2 h-8 rounded-full shrink-0', g.type === 'income' ? 'bg-[var(--color-gain-500)]' : 'bg-[var(--color-loss-500)]')} />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-semibold text-[var(--color-text-primary)] truncate">{g.label}</span>
+                      <span className="block text-[11px] text-[var(--color-text-tertiary)]">{fill(t.catui.txCount, { count: g.txns.length })} · {formatDate(g.latest)}</span>
+                    </span>
+                    <span className="font-tabular font-semibold text-sm text-[var(--color-text-primary)]">{format(g.total)}</span>
+                    {open ? <ChevronUp className="w-4 h-4 text-[var(--color-text-quaternary)]" /> : <ChevronDown className="w-4 h-4 text-[var(--color-text-quaternary)]" />}
+                  </button>
+                  <div className="flex items-center gap-2">
+                    <CategorySelect label={g.label} value={choice[g.key] ?? ''} onChange={(id) => setChoice((c) => ({ ...c, [g.key]: id }))} categories={categories} type={g.type} disabled={busy.has(g.key)} />
+                    <Button size="sm" onClick={() => void applyGroup(g)} disabled={!choice[g.key] || busy.has(g.key)} loading={busy.has(g.key)} icon={<Check />}>{t.classify.apply}</Button>
                   </div>
                 </div>
-
-                {/* Expanded sub-list */}
-                {isExpanded && (
-                  <div className="border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]/30">
-                    {grp.transactions.map((t, i) => {
-                      let fDate = t.transactionDate
-                      try { fDate = format(new Date(t.transactionDate), 'dd/MM/yyyy') } catch { /* keep */ }
-                      const tSign = grp.isIncome ? '+' : '−'
-                      const srcLabel = SOURCE_LABELS[t.source || 'manual'] || t.source || '—'
-                      return (
-                        <div
-                          key={t.id}
-                          className={cn(
-                            'flex items-center gap-3 px-5 py-2.5 text-[12px]',
-                            i < grp.transactions.length - 1 && 'border-b border-[var(--color-border-subtle)]',
-                          )}
-                        >
-                          <span className="w-4 h-4 rounded-full bg-[var(--color-border-default)] flex items-center justify-center text-[9px] font-mono text-[var(--color-text-tertiary)] shrink-0">{i + 1}</span>
-                          <span className="flex-1 text-[var(--color-text-secondary)] truncate">
-                            {t.merchantName || t.description || t.id.slice(0, 12)}
-                          </span>
-                          <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-bg-raised)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">
-                            {srcLabel}
-                          </span>
-                          <span className="text-[var(--color-text-tertiary)] bg-[var(--color-bg-sunken)] px-1.5 py-0.5 rounded-md border border-[var(--color-border-subtle)] shrink-0">
-                            {fDate}
-                          </span>
-                          <span className={cn(
-                            'font-mono font-semibold shrink-0',
-                            grp.isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
-                          )}>
-                            {tSign} {fmt(Math.abs(t.amount))} {sym}
-                          </span>
-                        </div>
-                      )
-                    })}
+                <label className="flex items-center gap-2 px-4 pb-3 -mt-1 text-[11px] text-[var(--color-text-tertiary)] cursor-pointer w-fit">
+                  <input type="checkbox" checked={remember[g.key] ?? true} onChange={(e) => setRemember((r) => ({ ...r, [g.key]: e.target.checked }))} className="accent-[var(--color-interactive-primary)]" />
+                  {t.catui.saveAsKeyword}: <code className="font-mono">{keywordFor(g.label)}</code>
+                </label>
+                {open && (
+                  <div className="border-t border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]">
+                    {g.txns.map((x) => (
+                      <div key={x.id} className="flex items-center gap-3 px-4 py-2 text-xs">
+                        <span className="text-[var(--color-text-quaternary)] w-20">{formatDate(x.transactionDate)}</span>
+                        <span className="flex-1 truncate text-[var(--color-text-secondary)]">{x.description}</span>
+                        <span className="font-tabular">{format(x.baseAmount)}</span>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
             )
           })}
         </div>
-      </div>
+      )}
+
+      {ready > 0 && (
+        <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#111827] text-white shadow-2xl">
+          <span className="text-sm">{fill(t.classify.readyCount, { count: ready })}</span>
+          <Button size="sm" onClick={confirmAll} loading={confirming} icon={<CheckCheck />}>{t.classify.confirmAll}</Button>
+        </div>
+      )}
     </div>
   )
 }

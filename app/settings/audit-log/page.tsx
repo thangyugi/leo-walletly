@@ -1,80 +1,84 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { AuditTimeline } from '@/features/settings/components/AuditTimeline'
-import { SettingsSection } from '@/features/settings/components/SettingsSection'
-import { SettingsService } from '@/features/settings/services'
-import { useAuthStore } from '@/stores/auth'
-import { AuditEvent } from '@/features/settings/types'
-import { Loader2, Download, Search } from 'lucide-react'
+import { useCallback, useEffect, useState } from 'react'
+import { ChevronDown, ChevronRight, Loader2, History } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { PageTitle, selectClass } from '@/features/settings/components/Field'
+import { SettingsService, type AuditEntry } from '@/features/settings/services'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
+import { cn } from '@/lib/utils'
+
+const ENTITY_TYPES = ['transactions', 'categories', 'financial_accounts', 'budgets', 'ledger_members', 'ledgers', 'recurring_rules']
 
 export default function AuditLogPage() {
-  const { user } = useAuthStore()
   const { t } = useTranslation()
-  const [events, setEvents] = useState<AuditEvent[]>([])
-  const [isLoading, setIsLoading] = useState(true)
+  const { current, can } = useLedgerStore()
+  const [rows, setRows] = useState<AuditEntry[] | null>(null)
+  const [entityType, setEntityType] = useState('')
+  const [open, setOpen] = useState<Set<number>>(new Set())
+  const [more, setMore] = useState(true)
 
-  useEffect(() => {
-    async function loadData() {
-      if (!user) return
-      try {
-        const data = await SettingsService.getAuditLogs(user.id)
-        setEvents(data)
-      } catch (error) {
-        console.error(error)
-      } finally {
-        setIsLoading(false)
-      }
-    }
-    loadData()
-  }, [user])
+  const load = useCallback(async (before?: number) => {
+    if (!current) return
+    const page = await SettingsService.getAuditLogs(current.id, { before, entityType: entityType || undefined })
+    setMore(page.length === 50)
+    setRows((prev) => (before ? [...(prev ?? []), ...page] : page))
+  }, [current, entityType])
+  useEffect(() => { if (can('audit.read')) void load() }, [load, can])
 
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-[var(--color-interactive-primary)]" />
-      </div>
-    )
-  }
+  if (!can('audit.read')) return <div className="animate-fade-in"><PageTitle title={t.auditx.title} /><p className="text-sm text-[var(--color-text-tertiary)]">{t.auditx.noAccess}</p></div>
+
+  const actionLabel = (a: string) => (t.auditx as Record<string, string>)[`action_${a}`] ?? a
 
   return (
-    <div className="space-y-12">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
-            {t.activity.title}
-          </h2>
-          <p className="text-[var(--color-text-tertiary)] mt-1">
-            {t.activity.subtitle}
-          </p>
+    <div className="animate-fade-in max-w-4xl">
+      <PageTitle title={t.auditx.title} subtitle={`${current?.name} · ${t.auditx.subtitle}`} />
+      <select aria-label={t.auditx.allTypes} className={cn(selectClass, 'max-w-xs mb-4')} value={entityType} onChange={(e) => setEntityType(e.target.value)}>
+        <option value="">{t.auditx.allTypes}</option>
+        {ENTITY_TYPES.map((e) => <option key={e} value={e}>{e}</option>)}
+      </select>
+      {!rows ? <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div> : rows.length === 0 ? (
+        <div className="card-base p-10 text-center text-sm text-[var(--color-text-tertiary)]"><History className="w-6 h-6 mx-auto mb-2" />{t.auditx.empty}</div>
+      ) : (
+        <div className="card-base divide-y divide-[var(--color-border-subtle)]">
+          {rows.map((r) => {
+            const isOpen = open.has(r.id)
+            return (
+              <div key={r.id}>
+                <button className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[var(--color-bg-sunken)]" aria-expanded={isOpen}
+                  onClick={() => setOpen((s) => { const n = new Set(s); if (n.has(r.id)) n.delete(r.id); else n.add(r.id); return n })}>
+                  {r.changes.length > 0 ? (isOpen ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />) : <span className="w-4" />}
+                  <span className={cn('text-[10px] font-semibold px-1.5 py-0.5 rounded',
+                    r.action === 'delete' ? 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]' : r.action === 'insert' ? 'bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)]' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]')}>
+                    {actionLabel(r.action)}
+                  </span>
+                  <span className="flex-1 min-w-0 text-sm text-[var(--color-text-primary)] truncate">
+                    <span className="text-[var(--color-text-tertiary)]">{r.entity_type}</span> · {r.entity_label ?? r.entity_id}
+                  </span>
+                  <span className="text-xs text-[var(--color-text-tertiary)] whitespace-nowrap">{r.actor?.display_name ?? t.auditx.system}</span>
+                  <span className="text-xs text-[var(--color-text-quaternary)] whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</span>
+                </button>
+                {isOpen && r.changes.length > 0 && (
+                  <table className="w-full text-xs bg-[var(--color-bg-sunken)]">
+                    <thead><tr className="text-[var(--color-text-quaternary)]"><th className="text-left px-10 py-1.5">{t.auditx.field}</th><th className="text-left px-2">{t.auditx.before}</th><th className="text-left px-2">{t.auditx.after}</th></tr></thead>
+                    <tbody>
+                      {r.changes.map((c) => (
+                        <tr key={c.field_name} className="border-t border-[var(--color-border-subtle)]">
+                          <td className="px-10 py-1.5 font-mono">{c.field_name}</td>
+                          <td className="px-2 text-[var(--color-text-loss)] break-all">{c.old_value ?? '—'}</td>
+                          <td className="px-2 text-[var(--color-text-gain)] break-all">{c.new_value ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            )
+          })}
         </div>
-        
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-colors">
-          <Download className="w-4 h-4" />
-          {t.activity.exportCsv}
-        </button>
-      </div>
-
-      <div className="relative mb-8">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--color-text-quaternary)]" />
-        <input 
-          placeholder={t.activity.filterPlaceholder}
-          className="w-full h-11 pl-10 pr-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-elevated)] outline-none focus:ring-2 focus:ring-[var(--color-interactive-primary)] transition-all"
-        />
-      </div>
-
-      <SettingsSection title={t.activity.recent}>
-        {events.length > 0 ? (
-          <AuditTimeline events={events} />
-        ) : (
-          <div className="text-center py-20 border-2 border-dashed border-[var(--color-border-default)] rounded-2xl">
-            <p className="text-[var(--color-text-tertiary)] text-sm">
-              {t.activity.noActivity}
-            </p>
-          </div>
-        )}
-      </SettingsSection>
+      )}
+      {rows && more && <Button variant="outline" size="sm" className="mt-4" onClick={() => void load(rows[rows.length - 1]?.id)}>{t.auditx.loadMore}</Button>}
     </div>
   )
 }

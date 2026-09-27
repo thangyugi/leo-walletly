@@ -13,10 +13,13 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
-import { useCategoryStore, resolveCategoryId } from '@/features/categories/store'
-import { cn } from '@/lib/utils'
+import { resolveCategoryId } from '@/features/categories/store'
+import { useLedgerData } from '@/hooks/useLedgerData'
+import { supabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+import { cn, toLocalISODate } from '@/lib/utils'
 import { formatMoney } from '@/lib/money'
-import type { ReceiptItem, Transaction } from '@/types'
+import type { ReceiptItem } from '@/types'
 
 type ScanState = 'idle' | 'previewing' | 'scanning' | 'confirming' | 'error' | 'saved'
 
@@ -113,10 +116,12 @@ const STEP_MAP: Record<ScanState, 1 | 2 | 3> = {
 }
 
 export default function ScanPage() {
-  const { addTransaction } = useTransactionsStore()
+  const { create }         = useTransactionsStore()
   const { lang }           = useSettingsStore()
   const { t }              = useTranslation()
-  const { categories }     = useCategoryStore()
+  const { ledger, accounts, categories: allCategories } = useLedgerData()
+  const [accountId, setAccountId] = useState('')
+  const [saving, setSaving] = useState(false)
 
   const L = (ja: string, vi: string, en: string) =>
     lang === 'ja' ? ja : lang === 'vi' ? vi : en
@@ -130,11 +135,13 @@ export default function ScanPage() {
   const [form,         setForm]         = useState<ScanForm>({
     description: '',
     amount: '',
-    date: new Date().toISOString().split('T')[0],
+    date: toLocalISODate(),
     category: '',
     note: '',
     isExpense: true,
   })
+  const activeAccounts = accounts.filter((a) => !a.isArchived)
+  const categories = allCategories.filter((c) => c.is_active && c.type === (form.isExpense ? 'expense' : 'income'))
   const [errorMsg,  setErrorMsg]  = useState('')
   const [errorCode, setErrorCode] = useState('')
 
@@ -198,8 +205,8 @@ export default function ScanPage() {
       setForm({
         description: result.storeName  ?? '',
         amount:      String(Math.abs(result.totalAmount ?? 0)),
-        date:        result.date       ?? new Date().toISOString().split('T')[0],
-        category:    resolveCategoryId(result.category, categories) ?? categories[0]?.id ?? '',
+        date:        result.date       ?? toLocalISODate(),
+        category:    resolveCategoryId(result.category, categories) ?? '',
         note:        '',
         isExpense:   true,
       })
@@ -210,21 +217,57 @@ export default function ScanPage() {
     }
   }
 
-  function handleSave() {
+  // Receipt image → storage (receipts/{ledger_id}/…) → documents (+ line items) → transaction.
+  async function handleSave() {
     const amt = parseFloat(form.amount.replace(/,/g, ''))
-    if (!form.description || isNaN(amt) || amt <= 0) return
-    
-    addTransaction({
-      transactionDate: form.date || new Date().toISOString().split('T')[0],
-      description:     form.description,
-      amount:          amt,
-      transactionType: form.isExpense ? 'expense' : 'income',
-      categoryId:      form.category,
-      paymentInstrumentId: 'ai-scan',
-      notes:           form.note || undefined,
-    } as Partial<Transaction>)
-    
-    setState('saved')
+    const account = accountId || activeAccounts[0]?.id
+    if (!ledger || !account || !form.description || isNaN(amt) || amt <= 0) return
+    setSaving(true)
+    try {
+      let documentId: string | null = null
+      if (selectedFile) {
+        const ext = (selectedFile.name.split('.').pop() || 'jpg').toLowerCase()
+        const path = `${ledger.id}/${crypto.randomUUID()}.${ext}`
+        const up = await supabase.storage.from('receipts').upload(path, selectedFile, { contentType: selectedFile.type })
+        if (up.error) throw up.error
+        const { data: doc, error } = await supabase.from('documents').insert({
+          ledger_id: ledger.id, document_type: 'receipt', storage_path: path, file_name: selectedFile.name,
+          mime_type: selectedFile.type || 'image/jpeg', file_size: selectedFile.size,
+          ocr_status: scanResult ? 'done' : 'skipped', ocr_provider: scanResult ? 'gemini' : null,
+          extracted_merchant: scanResult?.storeName ?? null, extracted_date: scanResult?.date ?? null,
+          extracted_total: scanResult?.totalAmount ?? null, extracted_currency: ledger.currency_code,
+          suggested_category_id: form.category || null,
+        }).select('id').single()
+        if (error) throw error
+        documentId = doc.id
+        const items = scanResult?.items ?? []
+        if (items.length) {
+          const { error: liErr } = await supabase.from('document_line_items').insert(items.map((it, i) => ({
+            document_id: doc.id, line_number: i + 1, name: it.name, quantity: it.quantity || 1,
+            unit_price: it.unitPrice ?? null, amount: it.subtotal ?? (it.unitPrice ?? 0) * (it.quantity || 1),
+          })))
+          if (liErr) throw liErr
+        }
+      }
+      const tx = await create(ledger.id, {
+        transactionType: form.isExpense ? 'expense' : 'income',
+        amount: amt,
+        currencyCode: ledger.currency_code,
+        transactionDate: form.date,
+        description: form.description,
+        accountId: account,
+        categoryId: form.category || null,
+        notes: form.note || null,
+        documentId,
+        source: 'scan',
+      })
+      if (documentId) await supabase.from('documents').update({ transaction_id: tx.id }).eq('id', documentId)
+      setState('saved')
+    } catch (e: any) {
+      toast.error(e.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   function handleReset() {
@@ -239,8 +282,8 @@ export default function ScanPage() {
     setForm({
       description: '',
       amount: '',
-      date: new Date().toISOString().split('T')[0],
-      category: categories[0]?.id ?? '',
+      date: toLocalISODate(),
+      category: '',
       note: '',
       isExpense: true,
     })
@@ -249,12 +292,11 @@ export default function ScanPage() {
   }
 
   const amtNum = parseFloat(form.amount.replace(/,/g, '')) || 0
-  const isFormDisabled = !form.description || amtNum <= 0 || !form.category
+  const isFormDisabled = !form.description || amtNum <= 0 || activeAccounts.length === 0
 
   const catLabels = categories.map((c) => ({
     value: c.id,
-    label: c.name,
-    emoji: c.emoji || '📦',
+    label: c.parent_id ? `— ${c.name}` : c.name,
   }))
 
   return (
@@ -562,9 +604,13 @@ export default function ScanPage() {
                   value={form.category}
                   onChange={(e) => setField('category', e.target.value )}
                 >
+                  <option value="">{t.txform.uncategorized}</option>
                   {catLabels.map((c) => (
-                    <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
+                    <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
+                </Select>
+                <Select label={t.txform.account} value={accountId || activeAccounts[0]?.id || ''} onChange={(e) => setAccountId(e.target.value)}>
+                  {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
                 </Select>
               </div>
 
@@ -580,7 +626,8 @@ export default function ScanPage() {
                 size="lg"
                 icon={<Save />}
                 onClick={handleSave}
-                disabled={isFormDisabled}
+                loading={saving}
+                disabled={isFormDisabled || saving}
               >
                 {L('取引を保存する', 'Lưu vào hệ thống', 'Save Transaction')}
               </Button>

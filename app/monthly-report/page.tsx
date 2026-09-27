@@ -6,17 +6,18 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { EmptyState } from '@/components/ui/async-state'
-import { useTransactionsStore } from '@/stores/transactions'
+import { useRangeTransactions } from '@/hooks/useRangeTransactions'
+import { useLedgerData } from '@/hooks/useLedgerData'
+import { CategoryIcon } from '@/features/categories/category-icon'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { formatDate, cn } from '@/lib/utils'
-import { CATEGORIES } from '@/lib/constants'
 
 function pad(n: number) { return String(n).padStart(2, '0') }
 
 export default function MonthlyReportPage() {
-  const { transactions } = useTransactionsStore()
   const { t, lang } = useTranslation()
+  const { categories } = useLedgerData()
   const { format } = useMoney()
   const today = new Date()
   const [year,  setYear]  = useState(today.getFullYear())
@@ -24,25 +25,26 @@ export default function MonthlyReportPage() {
 
   const mk = `${year}-${pad(month)}`
 
-  const monthTxns = useMemo(
-    () => transactions.filter((tx) => tx.transactionDate.startsWith(mk)),
-    [transactions, mk]
-  )
+  const monthTxns = useRangeTransactions(`${mk}-01`, `${mk}-${pad(new Date(year, month, 0).getDate())}`)
 
   const summary = useMemo(() => {
-    const expense = monthTxns.filter((t) => t.transactionType === 'expense').reduce((s, t) => s + Math.abs(t.amount), 0)
-    const income  = monthTxns.filter((t) => t.transactionType === 'income').reduce((s, t) => s + t.amount, 0)
+    const expense = monthTxns.filter((t) => t.transactionType === 'expense').reduce((s, t) => s + t.baseAmount, 0)
+    const income  = monthTxns.filter((t) => t.transactionType === 'income').reduce((s, t) => s + t.baseAmount, 0)
     return { expense, income, net: income - expense, count: monthTxns.length }
   }, [monthTxns])
 
   const byCategory = useMemo(() => {
-    const map: Record<string, number> = {}
+    const byId = new Map(categories.map((c) => [c.id, c]))
+    const map = new Map<string, number>()
     monthTxns.filter((t) => t.transactionType === 'expense').forEach((t) => {
       const catId = t.categoryId || '__none'
-      map[catId] = (map[catId] ?? 0) + Math.abs(t.amount)
+      map.set(catId, (map.get(catId) ?? 0) + t.baseAmount)
     })
-    return CATEGORIES.map((c) => ({ ...c, amount: map[c.value] ?? 0 })).filter((c) => c.amount > 0).sort((a, b) => b.amount - a.amount)
-  }, [monthTxns])
+    return [...map.entries()].map(([id, amount]) => {
+      const c = byId.get(id)
+      return { value: id, label: c?.name ?? t.txform.uncategorized, emoji: c?.emoji ?? 'HelpCircle', color: c?.color ?? '#94a3b8', amount }
+    }).sort((a, b) => b.amount - a.amount)
+  }, [monthTxns, categories, t.txform.uncategorized])
 
 
   function prevMonth() {
@@ -94,7 +96,7 @@ export default function MonthlyReportPage() {
               <CardContent className="space-y-2">
                 {byCategory.map((c) => (
                   <div key={c.value} className="flex items-center gap-2">
-                    <span className="text-base w-6">{c.emoji}</span>
+                    <span className="w-6 flex justify-center" style={{ color: c.color }}><CategoryIcon name={c.emoji} className="w-4 h-4" /></span>
                     <span className="flex-1 text-sm text-[var(--color-text-secondary)]">{c.label}</span>
                     <span className="text-sm font-medium font-tabular text-[var(--color-text-primary)]">{format(c.amount)}</span>
                     <span className="text-xs text-[var(--color-text-quaternary)] w-10 text-right">
@@ -123,12 +125,12 @@ export default function MonthlyReportPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {monthTxns.sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)).map((tx) => (
+                  {[...monthTxns].sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)).map((tx) => (
                     <tr key={tx.id}>
                       <td className="text-[var(--color-text-tertiary)] whitespace-nowrap">{formatDate(tx.transactionDate)}</td>
                       <td className="max-w-[200px] truncate">{tx.description}</td>
                       <td className={cn('cell-amount', tx.transactionType === 'income' ? 'gain' : 'loss')}>
-                        {format(tx.amount, { sign: true })}
+                        {format(tx.transactionType === 'expense' ? -tx.baseAmount : tx.baseAmount, { sign: tx.transactionType !== 'transfer' })}
                       </td>
                     </tr>
                   ))}

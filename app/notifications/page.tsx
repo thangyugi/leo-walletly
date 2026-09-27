@@ -1,190 +1,66 @@
 'use client'
 
-import { useState } from 'react'
-import { Check, AlertTriangle, Info, Zap, Bell, CheckCheck, Filter } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { CheckCheck, Archive, Bell, Settings } from 'lucide-react'
+import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
 import { Button } from '@/components/ui/button'
-import { SegmentedControl } from '@/components/ui/tabs'
-import { cn } from '@/lib/utils'
+import { NotificationItem } from '@/features/notifications/notification-item'
+import { useNotificationsStore } from '@/features/notifications/store'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
-
-type NotifType = 'all' | 'unread'
-
-const NOTIFICATIONS = [
-  {
-    id: '1',
-    icon: AlertTriangle,
-    iconColor: 'text-[var(--color-text-warning)]',
-    iconBg:    'bg-[var(--color-status-warning-bg)]',
-    category:  'Budget',
-    title:     'Budget alert: Food & Dining',
-    body:      'Your Food & Dining group has reached 85% of its monthly budget of ¥30,000. You have ¥4,500 remaining for the rest of the month.',
-    time:      '2 hours ago',
-    date:      '2026-05-08',
-    read:      false,
-  },
-  {
-    id: '2',
-    icon: Check,
-    iconColor: 'text-[var(--color-text-gain)]',
-    iconBg:    'bg-[var(--color-status-gain-bg)]',
-    category:  'Import',
-    title:     'Import complete',
-    body:      '128 transactions were successfully imported from your SMBC CSV file. 94 were auto-categorized based on your existing group rules.',
-    time:      '1 day ago',
-    date:      '2026-05-07',
-    read:      false,
-  },
-  {
-    id: '3',
-    icon: Info,
-    iconColor: 'text-[var(--color-text-info)]',
-    iconBg:    'bg-[var(--color-status-info-bg)]',
-    category:  'Report',
-    title:     'May 2026 report is ready',
-    body:      'Your monthly financial report for May 2026 has been generated. Total spend: ¥142,800. Click to view the full breakdown.',
-    time:      '3 days ago',
-    date:      '2026-05-05',
-    read:      true,
-  },
-  {
-    id: '4',
-    icon: Zap,
-    iconColor: 'text-[var(--color-text-loss)]',
-    iconBg:    'bg-[var(--color-status-loss-bg)]',
-    category:  'Insight',
-    title:     'Unusual expense detected',
-    body:      'A dining transaction of ¥18,400 at Sukiyabashi Jiro is 3× above your average restaurant spend. Check if this should be categorized differently.',
-    time:      '5 days ago',
-    date:      '2026-05-03',
-    read:      true,
-  },
-  {
-    id: '5',
-    icon: Check,
-    iconColor: 'text-[var(--color-text-gain)]',
-    iconBg:    'bg-[var(--color-status-gain-bg)]',
-    category:  'Recurring',
-    title:     'Recurring expenses detected',
-    body:      'We found 5 new recurring transactions: Netflix (¥1,490/mo), Spotify (¥980/mo), and 3 more. Review and confirm them in the Recurring section.',
-    time:      '1 week ago',
-    date:      '2026-05-01',
-    read:      true,
-  },
-]
+import { cn } from '@/lib/utils'
 
 export default function NotificationsPage() {
-  const [filter,   setFilter]   = useState<NotifType>('all')
-  const [readIds,  setReadIds]  = useState<Set<string>>(new Set(['3', '4', '5']))
-  const { t, lang } = useTranslation()
+  const { t } = useTranslation()
+  const router = useRouter()
+  const { items, load, markRead, markAllRead, archive } = useNotificationsStore()
+  const switchLedger = useLedgerStore((s) => s.switchLedger)
+  const currentId = useLedgerStore((s) => s.current?.id)
+  const [filter, setFilter] = useState<'all' | 'unread'>('all')
 
-  const displayed = NOTIFICATIONS.filter((n) =>
-    filter === 'all' ? true : !readIds.has(n.id)
-  )
-  const unreadCount = NOTIFICATIONS.filter((n) => !readIds.has(n.id)).length
+  useEffect(() => { void load() }, [load])
 
-  function markAllRead() {
-    setReadIds(new Set(NOTIFICATIONS.map((n) => n.id)))
-  }
-
-  function toggleRead(id: string) {
-    setReadIds((prev) => {
-      const next = new Set(prev)
-      if (next.has(id)) next.delete(id)
-      else next.add(id)
-      return next
-    })
-  }
+  const visible = filter === 'unread' ? items.filter((n) => !n.readAt) : items
+  const unread = items.filter((n) => !n.readAt).length
 
   return (
-    <div className="animate-fade-in space-y-5">
-      <PageHeader
-        title={t.notifications.title}
-        subtitle={lang === 'vi' ? `${unreadCount} chưa đọc` : (lang === 'ja' ? `未読 ${unreadCount}件` : `${unreadCount} unread`)}
-        actions={
-          unreadCount > 0 ? (
-            <Button variant="outline" size="sm" icon={<CheckCheck />} onClick={markAllRead}>
-              {lang === 'vi' ? 'Đánh dấu tất cả là đã đọc' : (lang === 'ja' ? 'すべて既読にする' : 'Mark all read')}
-            </Button>
-          ) : undefined
-        }
-      />
+    <div className="animate-fade-in space-y-5 max-w-3xl">
+      <PageHeader title={t.notifications.title} subtitle={t.notifications.subtitle}
+        actions={<>
+          <Button variant="outline" size="sm" icon={<CheckCheck />} disabled={unread === 0} onClick={() => void markAllRead()}>{t.notifications.markAllRead}</Button>
+          <Link href="/settings/notifications"><Button variant="ghost" size="sm" icon={<Settings />} aria-label={t.settings.sidebar.notifications} /></Link>
+        </>} />
 
-      <div className="flex items-center justify-between">
-        <SegmentedControl<NotifType>
-          value={filter}
-          onChange={setFilter}
-          items={[
-            { value: 'all',    label: lang === 'vi' ? `Tất cả (${NOTIFICATIONS.length})` : (lang === 'ja' ? `すべて (${NOTIFICATIONS.length})` : `All (${NOTIFICATIONS.length})`)  },
-            { value: 'unread', label: lang === 'vi' ? `Chưa đọc (${unreadCount})` : (lang === 'ja' ? `未読 (${unreadCount})` : `Unread (${unreadCount})`) },
-          ]}
-        />
-        <button className="flex items-center gap-1.5 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors">
-          <Filter className="w-3.5 h-3.5" />
-          {lang === 'vi' ? 'Lọc theo loại' : (lang === 'ja' ? 'タイプでフィルター' : 'Filter by type')}
-        </button>
+      <div className="inline-flex rounded-lg border border-[var(--color-border-default)] p-0.5 bg-[var(--color-surface-default)]" role="tablist">
+        {([['all', t.notifications.all, items.length], ['unread', t.notifications.unread, unread]] as const).map(([v, l, n]) => (
+          <button key={v} role="tab" aria-selected={filter === v} onClick={() => setFilter(v)}
+            className={cn('px-3 h-8 rounded-md text-xs font-medium', filter === v ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>
+            {l} <span className="ml-1 text-[var(--color-text-quaternary)]">{n}</span>
+          </button>
+        ))}
       </div>
 
-      <div className="card-base overflow-hidden">
-        {displayed.length === 0 ? (
-          <div className="py-16 flex flex-col items-center gap-3 text-center">
-            <div className="w-12 h-12 rounded-xl bg-[var(--color-bg-sunken)] flex items-center justify-center">
-              <Bell className="w-6 h-6 text-[var(--color-text-quaternary)]" />
+      <div className="card-base divide-y divide-[var(--color-border-subtle)] overflow-hidden">
+        {visible.length === 0 ? (
+          <div className="p-12 text-center text-sm text-[var(--color-text-tertiary)]"><Bell className="w-6 h-6 mx-auto mb-2" />{t.notifications.empty}</div>
+        ) : visible.map((n) => (
+          <div key={n.id} className={cn('flex items-center group', !n.readAt && 'bg-[var(--color-brand-25)]')}>
+            <div className="flex-1 min-w-0">
+              <NotificationItem n={n} onClick={async () => {
+                if (!n.readAt) await markRead(n.id)
+                // Notifications can belong to another ledger: open that one first.
+                if (n.ledgerId && n.ledgerId !== currentId) await switchLedger(n.ledgerId)
+                if (n.actionUrl) router.push(n.actionUrl)
+              }} />
             </div>
-            <p className="text-sm font-medium text-[var(--color-text-primary)]">
-              {lang === 'vi' ? 'Tuyệt vời, bạn đã xem hết!' : (lang === 'ja' ? 'すべて完了しました' : 'All caught up')}
-            </p>
-            <p className="text-xs text-[var(--color-text-tertiary)]">
-              {lang === 'vi' ? 'Không có thông báo chưa đọc nào' : (lang === 'ja' ? '未読の通知はありません' : 'No unread notifications')}
-            </p>
+            <button aria-label={t.notifications.archive} onClick={() => void archive(n.id)} className="mr-3 w-8 h-8 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 focus:opacity-100 hover:bg-[var(--color-bg-sunken)]">
+              <Archive className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+            </button>
           </div>
-        ) : (
-          <div className="divide-y divide-[var(--color-border-subtle)]">
-            {displayed.map((n) => {
-              const isRead = readIds.has(n.id)
-              return (
-                <div
-                  key={n.id}
-                  className={cn(
-                    'flex items-start gap-4 px-5 py-4 transition-colors hover:bg-[var(--color-bg-sunken)] cursor-pointer',
-                    !isRead && 'bg-[var(--color-brand-25)]'
-                  )}
-                  onClick={() => toggleRead(n.id)}
-                >
-                  <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0 mt-0.5', n.iconBg)}>
-                    <n.icon className={cn('w-4 h-4', n.iconColor)} />
-                  </div>
-
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-                          {n.category}
-                        </span>
-                        <p className={cn('text-sm text-[var(--color-text-primary)] mt-0.5', !isRead && 'font-semibold')}>
-                          {n.title}
-                        </p>
-                      </div>
-                      <span className="text-xs text-[var(--color-text-quaternary)] shrink-0 mt-0.5">{n.time}</span>
-                    </div>
-                    <p className="text-xs text-[var(--color-text-tertiary)] mt-1 leading-relaxed">{n.body}</p>
-                  </div>
-
-                  {!isRead && (
-                    <div className="w-2 h-2 rounded-full bg-[var(--color-interactive-primary)] shrink-0 mt-2" />
-                  )}
-                </div>
-              )
-            })}
-          </div>
-        )}
+        ))}
       </div>
-
-      <p className="text-xs text-center text-[var(--color-text-quaternary)]">
-        Real-time notifications via Supabase Realtime — <span className="font-medium">
-          {lang === 'vi' ? 'sắp ra mắt' : (lang === 'ja' ? '近日公開' : 'coming soon')}
-        </span>
-      </p>
     </div>
   )
 }

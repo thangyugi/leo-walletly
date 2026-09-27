@@ -279,8 +279,9 @@
 /* ============================================================
    DARK MODE OVERRIDES
    ============================================================ */
+/* Theme: follows the OS unless user_preferences.theme sets data-theme on <html>. */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]) {
     --color-bg-base:     #0c0e0f;
     --color-bg-elevated: #161a1d;
     --color-bg-overlay:  #1e2328;
@@ -342,6 +343,68 @@
     --color-text-muted: #64748b;
   }
 }
+:root[data-theme="dark"] {
+    --color-bg-base:     #0c0e0f;
+    --color-bg-elevated: #161a1d;
+    --color-bg-overlay:  #1e2328;
+    --color-bg-sunken:   #080a0b;
+    --color-bg-canvas:   #0c0e0f;
+    --color-bg-surface:  #161a1d;
+
+    --color-sidebar-bg:             #111417;
+    --color-sidebar-border:         #1e2428;
+    --color-sidebar-item-hover:     #1a1f24;
+    --color-sidebar-item-active-bg: #0d2218;
+    --color-sidebar-item-active-text:#34d399;
+
+    --color-surface-default: #161a1d;
+    --color-surface-subtle:  #111417;
+    --color-surface-raised:  #1e2328;
+
+    --color-border-default: #262c33;
+    --color-border-subtle:  #1a1f25;
+    --color-border-strong:  #363e48;
+    --color-border-focus:   #34d399;
+    --color-border-error:   #f87171;
+
+    --color-text-primary:    #f1f5f9;
+    --color-text-secondary:  #cbd5e1;
+    --color-text-tertiary:   #94a3b8;
+    --color-text-quaternary: #64748b;
+    --color-text-placeholder:#475569;
+    --color-text-inverse:    #0f172a;
+    --color-text-link:       #34d399;
+    --color-text-brand:      #6ee7b7;
+    --color-text-gain:       #34d399;
+    --color-text-loss:       #f87171;
+    --color-text-warning:    #fbbf24;
+    --color-text-info:       #60a5fa;
+
+    --color-interactive-primary:        #059669;
+    --color-interactive-primary-hover:  #047857;
+    --color-interactive-secondary:      #1e2328;
+    --color-interactive-secondary-hover:#262c33;
+
+    --color-status-gain-bg:     #0d2218;
+    --color-status-gain-text:   #34d399;
+    --color-status-loss-bg:     #1f0e0e;
+    --color-status-loss-text:   #f87171;
+    --color-status-warning-bg:  #1c1408;
+    --color-status-warning-text:#fbbf24;
+    --color-status-neutral-bg:  #1a1f25;
+    --color-status-neutral-text:#94a3b8;
+    --color-status-info-bg:     #0d1526;
+    --color-status-info-text:   #60a5fa;
+
+    /* compat */
+    --color-background: #0c0e0f;
+    --color-foreground: #f1f5f9;
+    --color-surface:    #161a1d;
+    --color-surface-alt:#1a1f25;
+    --color-border:     #262c33;
+    --color-text-muted: #64748b;
+  }
+
 
 /* ============================================================
    GLOBAL BASE STYLES
