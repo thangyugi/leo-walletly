@@ -24,23 +24,34 @@ export function useTranslation() {
     fetch(`/api/translations?locale=${lang}`)
       .then(res => res.json())
       .then(data => {
-        if (isMounted && data && !data.error && Object.keys(data).length > 0) {
-          // Deep merge the fetched translations with default static translations
-          // to ensure no keys are missing (preventing undefined errors)
-          const merge = (target: any, source: any) => {
-            for (const key of Object.keys(source)) {
-              if (source[key] instanceof Object && key in target) {
-                Object.assign(source[key], merge(target[key], source[key]))
+        if (isMounted) {
+          if (!data || data.error || Object.keys(data).length === 0) {
+            // Fallback to static default translations if DB fails
+            cache[lang] = defaultT
+            setT(defaultT)
+          } else {
+            // Deep merge the fetched translations with default static translations
+            const merge = (target: any, source: any) => {
+              for (const key of Object.keys(source)) {
+                if (source[key] instanceof Object && key in target) {
+                  Object.assign(source[key], merge(target[key], source[key]))
+                }
               }
+              return { ...target, ...source }
             }
-            return { ...target, ...source }
+            const mergedT = merge(defaultT, data)
+            cache[lang] = mergedT
+            setT(mergedT)
           }
-          const mergedT = merge(defaultT, data)
-          cache[lang] = mergedT
-          setT(mergedT)
         }
       })
-      .catch(err => console.error('Failed to fetch translations:', err))
+      .catch(err => {
+        console.error('Failed to fetch translations:', err)
+        if (isMounted) {
+          cache[lang] = defaultT
+          setT(defaultT)
+        }
+      })
 
     return () => { isMounted = false }
   }, [lang])

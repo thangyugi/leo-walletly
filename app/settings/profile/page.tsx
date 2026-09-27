@@ -23,8 +23,8 @@ export default function ProfileSettingsPage() {
       try {
         const data = await SettingsService.getProfile(user.id)
         setProfile(data)
-      } catch (error) {
-        console.error('Failed to load profile:', error)
+      } catch (error: any) {
+        console.error('Failed to load profile:', error?.message || error)
         toast.error(t.common.error)
       } finally {
         setIsLoading(false)
@@ -96,11 +96,13 @@ export default function ProfileSettingsPage() {
   if (!profile) return null
 
   const initialData = {
-    fullName: profile.fullName || '',
-    legalName: profile.legalName || '',
+    firstName: profile.firstName || '',
+    lastName: profile.lastName || '',
+    displayName: profile.displayName || '',
     email: user?.email || '',
     phoneNumber: profile.phoneNumber || '',
-    jobTitle: profile.jobTitle || '',
+    gender: profile.gender || '',
+    birthDate: profile.birthDate || '',
     avatarUrl: profile.avatarUrl
   }
 

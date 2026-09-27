@@ -43,20 +43,6 @@ export interface Permission {
   module: string
 }
 
-export interface Tenant {
-  id: string
-  code: string
-  name: string
-  display_name: string | null
-  owner_user_id: string
-  default_language_code: string
-  default_currency_code: string
-  default_timezone_id: string
-  status: string
-  created_at: string
-  updated_at: string
-}
-
 export interface Household {
   id: string
   tenant_id: string
@@ -117,54 +103,4 @@ export interface Member {
   role?: Role
 }
 
-// =========================================================================
-// LEGACY (pre-Foundation) types — kept only because features/user-management/
-// ledger-store.ts and features/categories/category-detail-view.tsx still import
-// them. Ledger/Workspace are not part of the Foundation schema and the tables
-// they query (`ledgers`) don't exist in the fresh Foundation-only database — this
-// is stale, out-of-scope surface pending a later schema part, not something to
-// build against. See docs/database/FOUNDATION_CHECKLIST.md.
-// =========================================================================
-
-export type UserRole = 'owner' | 'admin' | 'accountant' | 'auditor' | 'viewer'
-export type LegacyMemberStatus = 'active' | 'suspended' | 'pending'
-
-export interface LegacyProfile {
-  id: string
-  full_name: string | null
-  avatar_url: string | null
-  created_at: string
-  updated_at: string
-}
-
-export interface LedgerSettings {
-  number_formatting: 'standard' | 'compact'
-  decimal_precision: number
-  accounting_format: 'standard' | 'brackets'
-  exchange_rate_source: string
-}
-
-export interface Ledger {
-  id: string
-  workspace_id: string
-  name: string
-  code: string | null
-  base_currency: string
-  timezone: string
-  fiscal_year_start: string | null
-  locale: string
-  settings: LedgerSettings
-  created_at: string
-  updated_at: string
-}
-
-export interface LedgerMember {
-  id: string
-  ledger_id: string
-  user_id: string
-  role: UserRole
-  status: LegacyMemberStatus
-  joined_at: string
-  last_active_at: string | null
-  profile?: LegacyProfile
-}
+// EOF

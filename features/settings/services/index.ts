@@ -4,36 +4,72 @@ import { ProfileFormValues, AccountPreferencesFormValues } from '../schemas'
 
 export class SettingsService {
   static async getProfile(userId: string): Promise<UserProfile> {
-    const { data, error } = await supabase
-      .from('profiles')
+    let { data, error } = await supabase
+      .from('users')
       .select('*')
-      .eq('id', userId)
+      .eq('auth_user_id', userId)
       .single()
 
-    if (error) throw error
+    if (error && error.code === 'PGRST116') {
+      // Auto-heal orphaned auth user by creating a public.users row
+      const { data: authData } = await supabase.auth.getUser()
+      const authUser = authData?.user
+      
+      const { data: newData, error: insertError } = await supabase
+        .from('users')
+        .insert({
+          auth_user_id: userId,
+          email: authUser?.email || '',
+          display_name: authUser?.user_metadata?.full_name || authUser?.email?.split('@')[0] || 'Unknown',
+          language_code: 'en',
+          default_currency_code: 'USD'
+        })
+        .select('*')
+        .single()
+        
+      if (insertError) {
+        if (insertError.code === '23505') {
+          throw new Error('UNIQUE_VIOLATION: Your profile exists in the database but RLS (Row Level Security) is preventing you from seeing it. Infinite recursion or bad policy detected.')
+        }
+        throw new Error(`Insert error: ${insertError.message || insertError.code || String(insertError)} | Details: ${insertError.details || ''}`)
+      }
+      data = newData
+      error = null
+    } else if (error) {
+      throw new Error(`Select error: ${error.message || error.code || String(error)} | Details: ${error.details || ''}`)
+    }
     return {
       id: data.id,
-      fullName: data.full_name,
-      legalName: data.legal_name,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      displayName: data.display_name,
       avatarUrl: data.avatar_url,
-      email: '', // Email usually comes from auth.users, handled in hook
-      phoneNumber: data.phone_number,
-      jobTitle: data.job_title,
+      email: data.email || '', 
+      phoneNumber: data.phone,
+      gender: data.gender,
+      birthDate: data.birth_date,
+      languageCode: data.language_code,
+      defaultCurrencyCode: data.default_currency_code,
+      timezoneId: data.timezone_id,
+      countryCode: data.country_code,
       createdAt: data.created_at,
       updatedAt: data.updated_at
     }
   }
 
-  static async updateProfile(userId: string, values: Partial<ProfileFormValues>): Promise<void> {
+  static async updateProfile(userId: string, values: Partial<ProfileFormValues> & { avatarUrl?: string }): Promise<void> {
     const { error } = await supabase
-      .from('profiles')
+      .from('users')
       .update({
-        full_name: values.fullName,
-        legal_name: values.legalName,
-        phone_number: values.phoneNumber,
-        job_title: values.jobTitle,
+        first_name: values.firstName,
+        last_name: values.lastName,
+        display_name: values.displayName,
+        phone: values.phoneNumber,
+        gender: values.gender,
+        birth_date: values.birthDate,
+        ...(values.avatarUrl !== undefined && { avatar_url: values.avatarUrl })
       })
-      .eq('id', userId)
+      .eq('auth_user_id', userId)
 
     if (error) throw error
   }

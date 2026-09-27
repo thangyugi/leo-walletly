@@ -4,7 +4,7 @@ import React, { useState } from 'react'
 import { X, Wallet, ArrowRight, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { supabase } from '@/lib/supabase'
 
 interface CreateLedgerModalProps {
@@ -18,7 +18,8 @@ const REGIONAL_DEFAULTS: Record<string, { timezone: string; fiscalYear: string; 
 }
 
 export function CreateLedgerModal({ onClose }: CreateLedgerModalProps) {
-  const { currentLedger, initialize } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const [name, setName] = useState('')
   const [currency, setCurrency] = useState('USD')
   const [timezone, setTimezone] = useState('UTC')

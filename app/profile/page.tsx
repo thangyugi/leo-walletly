@@ -5,6 +5,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useAuthStore } from '@/stores/auth'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
+import Link from 'next/link'
 
 export default function ProfilePage() {
   const { user } = useAuthStore()
@@ -17,6 +18,7 @@ export default function ProfilePage() {
       icon: Mail,
       label: lang === 'vi' ? 'Thông tin cá nhân' : (lang === 'ja' ? '個人情報' : 'Personal Information'),
       description: lang === 'vi' ? 'Tên, email, số điện thoại' : (lang === 'ja' ? '名前、メールアドレス、電話番号' : 'Name, email, phone number'),
+      path: '/settings/profile'
     },
     {
       icon: Lock,
@@ -51,13 +53,13 @@ export default function ProfilePage() {
         subtitle={lang === 'vi' ? 'Quản lý tài khoản và tùy chọn của bạn' : (lang === 'ja' ? 'アカウントと設定を管理します' : 'Manage your account and preferences')}
       />
 
-      {/* Coming-soon banner */}
-      <div className="rounded-xl border border-[var(--color-status-warning-bg)] bg-[var(--color-status-warning-bg)] px-4 py-3 flex items-center gap-3">
-        <Clock className="w-4 h-4 text-[var(--color-text-warning)] shrink-0" />
-        <p className="text-sm text-[var(--color-text-warning)] font-medium">
+      {/* Info banner */}
+      <div className="rounded-xl border border-[var(--color-brand-100)] bg-[var(--color-brand-50)] px-4 py-3 flex items-center gap-3">
+        <User className="w-4 h-4 text-[var(--color-brand-600)] shrink-0" />
+        <p className="text-sm text-[var(--color-brand-700)] font-medium">
           {lang === 'vi' 
-            ? 'Tính năng quản lý hồ sơ sắp ra mắt. Dữ liệu của bạn luôn an toàn — phần này đang được phát triển.' 
-            : (lang === 'ja' ? 'プロフィール管理機能は近日公開予定です。データは安全です。このセクションは現在開発中です。' : 'Profile management is coming soon. Your data is safe — this section is under active development.')}
+            ? 'Hiện tại bạn đã có thể cập nhật Hồ sơ cá nhân. Các mục cài đặt khác đang được hoàn thiện.' 
+            : (lang === 'ja' ? '現在、個人情報の更新が可能です。その他の設定は現在開発中です。' : 'You can now update your Personal Information. Other settings are currently under development.')}
         </p>
       </div>
 
@@ -86,15 +88,12 @@ export default function ProfilePage() {
               {lang === 'vi' ? `Thành viên từ ${joinDate}` : (lang === 'ja' ? `${joinDate}からのメンバー` : `Member since ${joinDate}`)}
             </span>
           </div>
-          <button
-            disabled
-            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-text-link)] cursor-not-allowed opacity-50"
+          <Link
+            href="/settings/profile"
+            className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-[var(--color-interactive-primary)] hover:text-[var(--color-interactive-primary-hover)] transition-colors"
           >
             {lang === 'vi' ? 'Chỉnh sửa hồ sơ' : (lang === 'ja' ? 'プロフィールを編集' : 'Edit profile')}
-            <span className="text-[10px] bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)] px-1.5 py-0.5 rounded font-semibold">
-              {lang === 'vi' ? 'Sớm' : (lang === 'ja' ? '近日' : 'Soon')}
-            </span>
-          </button>
+          </Link>
         </div>
       </div>
 
@@ -103,29 +102,32 @@ export default function ProfilePage() {
         <p className="text-xs font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] px-1 mb-3">
           {lang === 'vi' ? 'CÁC MỤC CÀI ĐẶT' : (lang === 'ja' ? '設定セクション' : 'SETTINGS SECTIONS')}
         </p>
-        {sections.map(({ icon: Icon, label, description }) => (
-          <div
+        {sections.map(({ icon: Icon, label, description, path }) => (
+          <Link
             key={label}
+            href={path || '#'}
             className={cn(
-              'card-base p-4 flex items-center gap-4',
-              'opacity-50 cursor-not-allowed select-none'
+              'card-base p-4 flex items-center gap-4 transition-all',
+              !path ? 'opacity-50 cursor-not-allowed select-none' : 'hover:border-[var(--color-interactive-primary)] hover:shadow-md'
             )}
-            aria-disabled
+            onClick={(e) => !path && e.preventDefault()}
           >
             <div className="w-9 h-9 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center shrink-0">
-              <Icon className="w-4 h-4 text-[var(--color-text-tertiary)]" />
+              <Icon className={cn("w-4 h-4", path ? "text-[var(--color-interactive-primary)]" : "text-[var(--color-text-tertiary)]")} />
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-[var(--color-text-primary)]">{label}</p>
               <p className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{description}</p>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[10px] font-semibold bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)] px-1.5 py-0.5 rounded">
-                {lang === 'vi' ? 'Sớm' : (lang === 'ja' ? '近日' : 'Soon')}
-              </span>
+              {!path && (
+                <span className="text-[10px] font-semibold bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)] px-1.5 py-0.5 rounded">
+                  {lang === 'vi' ? 'Sớm' : (lang === 'ja' ? '近日' : 'Soon')}
+                </span>
+              )}
               <ChevronRight className="w-4 h-4 text-[var(--color-text-quaternary)]" />
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>

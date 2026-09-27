@@ -1,40 +1,49 @@
 'use client'
+import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Edit3, Save, Loader2, ShieldAlert } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { profileSchema, type ProfileFormValues } from '../schemas'
 import { SettingsSection } from './SettingsSection'
 import { ProfileAvatar } from './ProfileAvatar'
-import { useTranslation } from '@/hooks/useTranslation'
-import { useState } from 'react'
-import { toast } from 'sonner'
-import { Loader2, Edit3, Save, ShieldAlert } from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
 import { Badge } from '@/components/ui/badge'
+import { useTranslation } from '@/hooks/useTranslation'
+import { cn } from '@/lib/utils'
 
 interface ProfileFormProps {
-  initialData: ProfileFormValues & { avatarUrl?: string | null }
-  onSave: (values: Partial<ProfileFormValues>) => Promise<void>
+  initialData: {
+    firstName: string
+    lastName: string
+    displayName: string
+    email: string
+    phoneNumber: string
+    gender: 'male' | 'female' | 'other' | 'prefer_not_to_say' | ''
+    birthDate: string
+    avatarUrl: string | null
+  }
+  onSave: (data: Partial<ProfileFormValues>) => Promise<void>
   onAvatarUpload: (file: File) => Promise<void>
   onAvatarDelete: () => Promise<void>
 }
 
 export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelete }: ProfileFormProps) {
   const { t } = useTranslation()
-  const [isSaving, setIsSaving] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors, isDirty },
-    reset,
-  } = useForm<ProfileFormValues>({
+  const { register, handleSubmit, formState: { errors, isDirty }, reset } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
-    defaultValues: initialData
+    defaultValues: initialData as any,
   })
+
+  const handleCancel = () => {
+    reset(initialData as any)
+    setIsEditing(false)
+    setShowWarning(false)
+  }
 
   const handleFinalSave = async (data: ProfileFormValues) => {
     setIsSaving(true)
@@ -42,25 +51,19 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
       await onSave(data)
       setIsEditing(false)
       setShowWarning(false)
-      toast.success(t.settings.profile.saveSuccess)
+      reset(data)
     } catch (error) {
-      toast.error(t.settings.profile.profileUpdateFailed || t.common.error)
+      // Error handled by parent
     } finally {
       setIsSaving(false)
     }
   }
 
-  const handleCancel = () => {
-    reset(initialData)
-    setIsEditing(false)
-    setShowWarning(false)
-  }
-
   return (
-    <div className="space-y-12">
-      <div className="flex items-center justify-between sticky top-0 z-10 bg-[var(--color-bg-base)]/80 backdrop-blur-md py-4 -mt-4">
+    <div className="space-y-6">
+      <div className="flex items-start justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[var(--color-text-primary)]">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
             {t.settings.profile.title}
           </h2>
           <p className="text-[var(--color-text-tertiary)] mt-1">
@@ -155,44 +158,26 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
 
       <SettingsSection title={t.settings.profile.personalInfo}>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <ProfileField 
-            label={t.settings.profile.fullName}
-            error={errors.fullName?.message}
-            isEditing={isEditing}
-          >
-            <input 
-              {...register('fullName')}
-              disabled={!isEditing}
-              className={cn(
-                "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm",
-                isEditing 
-                  ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" 
-                  : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]"
-              )}
+          
+          <ProfileField label="Họ (Last Name)" error={errors.lastName?.message} isEditing={isEditing}>
+            <input {...register('lastName')} disabled={!isEditing} placeholder="Nguyễn"
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             />
           </ProfileField>
 
-          <ProfileField 
-            label={t.settings.profile.legalName}
-            isEditing={isEditing}
-          >
-            <input 
-              {...register('legalName')}
-              disabled={!isEditing}
-              placeholder={t.settings.profile.legalName}
-              className={cn(
-                "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm",
-                isEditing 
-                  ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" 
-                  : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]"
-              )}
+          <ProfileField label="Tên (First Name)" error={errors.firstName?.message} isEditing={isEditing}>
+            <input {...register('firstName')} disabled={!isEditing} placeholder="Văn A"
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             />
           </ProfileField>
 
-          <ProfileField 
-            label={t.settings.profile.email}
-            isEditing={false}
-          >
+          <ProfileField label="Tên hiển thị (Display Name)" error={errors.displayName?.message} isEditing={isEditing} className="md:col-span-2">
+            <input {...register('displayName')} disabled={!isEditing} placeholder="Nguyễn Văn A"
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
+            />
+          </ProfileField>
+
+          <ProfileField label={t.settings.profile.email} isEditing={false}>
             <div className="flex items-center gap-2 h-11 text-sm font-semibold text-[var(--color-text-tertiary)]">
               {initialData.email}
               <Badge variant="neutral" className="text-[10px] uppercase">
@@ -201,40 +186,30 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
             </div>
           </ProfileField>
 
-          <ProfileField 
-            label={t.settings.profile.phone}
-            isEditing={isEditing}
-          >
-            <input 
-              {...register('phoneNumber')}
-              disabled={!isEditing}
-              placeholder="+1234567890"
-              className={cn(
-                "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm",
-                isEditing 
-                  ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" 
-                  : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]"
-              )}
+          <ProfileField label={t.settings.profile.phone} error={errors.phoneNumber?.message} isEditing={isEditing}>
+            <input {...register('phoneNumber')} disabled={!isEditing} placeholder="+84123456789"
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             />
           </ProfileField>
 
-          <ProfileField 
-            label={t.settings.profile.jobTitle}
-            isEditing={isEditing}
-            className="md:col-span-2"
-          >
-            <input 
-              {...register('jobTitle')}
-              disabled={!isEditing}
-              placeholder={t.settings.profile.jobTitle}
-              className={cn(
-                "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm",
-                isEditing 
-                  ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" 
-                  : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]"
-              )}
+          <ProfileField label="Giới tính" error={errors.gender?.message} isEditing={isEditing}>
+            <select {...register('gender')} disabled={!isEditing}
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm appearance-none", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
+            >
+              <option value="">Chọn giới tính...</option>
+              <option value="male">Nam</option>
+              <option value="female">Nữ</option>
+              <option value="other">Khác</option>
+              <option value="prefer_not_to_say">Không muốn tiết lộ</option>
+            </select>
+          </ProfileField>
+
+          <ProfileField label="Ngày sinh" error={errors.birthDate?.message} isEditing={isEditing}>
+            <input type="date" {...register('birthDate')} disabled={!isEditing}
+              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             />
           </ProfileField>
+
         </div>
       </SettingsSection>
     </div>

@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { getTranslations, Lang } from '@/lib/i18n'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
@@ -230,7 +230,8 @@ export function ParentTreeDropdown({
 
 export function CategoryForm({ lang = 'ja', onClose, initialData }: CategoryFormProps) {
   getTranslations(lang)
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const { categories, createCategory, updateCategory } = useCategoryStore()
 
   const [formData, setFormData] = React.useState({

@@ -3,7 +3,7 @@ import { useCurrencyStore } from '../store/useCurrencyStore'
 import { FXService } from '../services/fx-service'
 import { formatMoney, CURRENCY_META } from '@/lib/money'
 import { CurrencyCode } from '../types'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 
 interface FormatOptions {
   from?: CurrencyCode
@@ -16,7 +16,8 @@ interface FormatOptions {
 }
 
 export function useMoney() {
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const { exchangeRates } = useCurrencyStore() // Still needed for FX if data source is different
   
   // The base currency of the current workspace — THE source of truth

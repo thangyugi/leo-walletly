@@ -3,12 +3,13 @@
 import { useEffect } from 'react'
 import { useCurrencyStore } from '../store/useCurrencyStore'
 import { FXService } from '../services/fx-service'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { CurrencyCode } from '../types'
 
 export function CurrencyInitializer() {
   const { setExchangeRates, setFetching } = useCurrencyStore()
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const ledgerCurrency = (currentLedger?.base_currency as CurrencyCode) || 'JPY'
 
   useEffect(() => {

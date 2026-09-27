@@ -4,7 +4,7 @@ import { create } from 'zustand'
 import type { Transaction, LegacyCategory as Category, PaymentProvider } from '@/types'
 import { generateId } from '@/lib/utils'
 import { supabase } from '@/lib/supabase'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 
 const isUuid = (id: string | null | undefined) => {
   if (!id) return null
@@ -59,7 +59,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
 
-    const currentLedger = useLedgerStore.getState().currentLedger
+    const currentContext = useMembershipStore.getState().currentContext
+    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
     if (!currentLedger?.id) return
 
     let query = supabase
@@ -119,7 +120,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   },
 
   addTransactions: (txns) => {
-    const currentLedger = useLedgerStore.getState().currentLedger
+    const currentContext = useMembershipStore.getState().currentContext
+    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
     if (!currentLedger) {
       console.warn('No active ledger found. Transactions might fail to save.')
     }
@@ -170,7 +172,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
   addTransaction: (txn) => {
     const id = generateId()
-    const currentLedger = useLedgerStore.getState().currentLedger
+    const currentContext = useMembershipStore.getState().currentContext
+    const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
     
     const newTxn = { 
       ...txn, 

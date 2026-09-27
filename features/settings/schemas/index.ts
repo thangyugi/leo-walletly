@@ -1,11 +1,13 @@
 import * as z from 'zod'
 
 export const profileSchema = z.object({
-  fullName: z.string().min(2, 'Name must be at least 2 characters').max(100),
-  legalName: z.string().max(100).nullable(),
-  email: z.string().email('Invalid email address'),
+  firstName: z.string().max(100).nullable(),
+  lastName: z.string().max(100).nullable(),
+  displayName: z.string().min(2, 'Name must be at least 2 characters').max(150),
+  email: z.string().email('Invalid email address').optional(),
   phoneNumber: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number').nullable().or(z.literal('')),
-  jobTitle: z.string().max(100).nullable(),
+  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say']).nullable().optional(),
+  birthDate: z.string().nullable().optional(),
 })
 
 export const accountPreferencesSchema = z.object({

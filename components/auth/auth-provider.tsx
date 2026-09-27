@@ -33,12 +33,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Sync data when user is present
         syncTransactions()
         syncRecurring()
-
+        
         if (pathname === '/login') {
           router.push('/')
         } else if (!currentContext && pathname !== '/onboarding') {
-          // Logged in but not a member of any household/organization yet —
-          // send them through onboarding to create their first one.
+          // If logged in but no active membership context, redirect to onboarding
           router.push('/onboarding')
         }
       }

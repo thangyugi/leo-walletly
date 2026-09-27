@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { useCategoryStore } from './store'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { useSettingsStore } from '@/stores/settings'
 import { useTransactionsStore } from '@/stores/transactions'
 import type { Category } from './types'
@@ -590,7 +590,8 @@ export function CategoriesBentoPage() {
   const [statsLoading, setStatsLoading] = React.useState(true)
 
   const { lang } = useSettingsStore()
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const { categories, isLoading, fetchCategories } = useCategoryStore()
   const { transactions, syncTransactions, bulkUpdateTransactions } = useTransactionsStore()
 

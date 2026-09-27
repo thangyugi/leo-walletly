@@ -4,7 +4,7 @@ import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useGroupStore } from './store'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import type { Transaction } from '@/types'
 import type { Group } from './types'
 import { Button } from '@/components/ui/button'
@@ -323,7 +323,8 @@ const SORT_OPTIONS: { value: SortMode; label: string }[] = [
 // ── Main component ──────────────────────────────────────────────
 export function ClassifyPage() {
   const router = useRouter()
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const { groups, updateGroup } = useGroupStore()
   const { transactions, bulkUpdateTransactions } = useTransactionsStore()
 

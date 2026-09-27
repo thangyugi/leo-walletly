@@ -1,22 +1,29 @@
 'use client'
 
 import React from 'react'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
-import { ChevronDown, Plus, Wallet, Check } from 'lucide-react'
+import { useMembershipStore } from '@/features/user-management/membership-store'
+import { ChevronDown, Plus, Wallet, Check, Building2, User } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useRouter } from 'next/navigation'
 import { CreateLedgerModal } from './create-ledger-modal'
 import { useTranslation } from '@/hooks/useTranslation'
 
 export function LedgerSwitcher() {
-  const { currentLedger, ledgers, setCurrentLedger } = useLedgerStore()
+  const { households, organizations, currentContext, setContext } = useMembershipStore()
   const [isOpen, setIsOpen] = React.useState(false)
   const [isCreateModalOpen, setIsCreateModalOpen] = React.useState(false)
   const router = useRouter()
   const { t } = useTranslation()
   const s = t.ledger_switcher
 
-  if (ledgers.length === 0) return null
+  const items = [
+    ...households.map(h => ({ ...h, _type: 'household' as const })),
+    ...organizations.map(o => ({ ...o, _type: 'organization' as const }))
+  ]
+
+  const currentEntity = items.find(i => i.id === currentContext?.id)
+
+  if (items.length === 0) return null
 
   return (
     <div className="relative px-2.5 mb-4">
@@ -26,14 +33,14 @@ export function LedgerSwitcher() {
       >
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="w-8 h-8 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center text-white shrink-0 shadow-sm">
-            <Wallet className="w-4 h-4" />
+            {currentEntity?._type === 'organization' ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
           </div>
           <div className="text-left overflow-hidden">
             <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">
-              {currentLedger?.name || s.select}
+              {currentEntity?.name || s.select}
             </p>
             <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-semibold tracking-wider">
-              {currentLedger?.base_currency || 'USD'} Ledger
+              {currentEntity?.currency_code || 'USD'}
             </p>
           </div>
         </div>
@@ -51,22 +58,22 @@ export function LedgerSwitcher() {
               {s.title}
             </p>
             <div className="max-h-48 overflow-y-auto space-y-1 py-1">
-              {ledgers.map((ledger) => (
+              {items.map((item) => (
                 <button
-                  key={ledger.id}
+                  key={item.id}
                   onClick={() => {
-                    setCurrentLedger(ledger.id)
+                    setContext({ type: item._type, id: item.id })
                     setIsOpen(false)
                   }}
                   className={cn(
                     "w-full flex items-center justify-between p-2 rounded-lg text-sm transition-colors",
-                    currentLedger?.id === ledger.id 
+                    currentEntity?.id === item.id 
                       ? "bg-[var(--color-interactive-primary)]/10 text-[var(--color-interactive-primary)] font-medium" 
                       : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]"
                   )}
                 >
-                  <span className="truncate">{ledger.name}</span>
-                  {currentLedger?.id === ledger.id && <Check className="w-4 h-4" />}
+                  <span className="truncate">{item.name}</span>
+                  {currentEntity?.id === item.id && <Check className="w-4 h-4" />}
                 </button>
               ))}
             </div>

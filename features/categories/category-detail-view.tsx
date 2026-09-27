@@ -10,12 +10,12 @@ import {
   Pencil, Trash2, GitMerge,
 } from 'lucide-react'
 import { useGroupStore } from './store'
-import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMembershipStore } from '@/features/user-management/membership-store'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useUserManagementStore } from '@/features/user-management/store'
 import type { Group, GroupBalance } from './types'
 import type { Transaction } from '@/types'
-import type { LedgerMember } from '@/features/user-management/types'
+
 import { CURRENCY_META } from '@/lib/money'
 import { CategoryIcon as GroupIcon } from './category-icon'
 import { Modal } from '@/components/ui/modal'
@@ -98,7 +98,7 @@ function HeroCover({
   onMerge,
 }: {
   group: Group
-  members: LedgerMember[]
+  members: any[]
   onEdit: () => void
   onDelete: () => void
   onMerge: () => void
@@ -297,7 +297,7 @@ function StatsStrip({
 }: {
   group: Group
   groupTxns: Transaction[]
-  members: LedgerMember[]
+  members: any[]
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
   const totalExpense = groupTxns
@@ -1112,7 +1112,7 @@ function SettleUpSection({
 }: {
   group: Group
   groupTxns: Transaction[]
-  members: LedgerMember[]
+  members: any[]
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
   const totalExpense = groupTxns
@@ -1176,7 +1176,7 @@ function BalancesSection({
   balance,
 }: {
   group: Group
-  members: LedgerMember[]
+  members: any[]
   balance: GroupBalance | undefined
 }) {
   const { fmt, sym } = React.useContext(FmtCtx)
@@ -1248,7 +1248,8 @@ function GroupDetailView({ groupId, isNested, onClose }: { groupId: string; isNe
 
   const { groups, balances, fetchGroups, isLoading, updateGroup, deleteGroup } = useGroupStore()
   const { transactions, syncTransactions } = useTransactionsStore()
-  const { currentLedger } = useLedgerStore()
+  const { currentContext } = useMembershipStore()
+  const currentLedger = currentContext ? { id: currentContext.id, base_currency: 'USD', name: 'Mock Ledger', workspace_id: currentContext.id, organization_id: currentContext.id } : null
   const { members, fetchMembers } = useUserManagementStore()
   const [deleteConfirm, setDeleteConfirm] = React.useState<{ id: string; isCurrent: boolean } | null>(null)
 

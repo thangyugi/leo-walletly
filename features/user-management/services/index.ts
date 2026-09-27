@@ -1,13 +1,5 @@
 import { supabase } from '@/lib/supabase'
-import type { Member, MembershipContext, Role, Household, Organization, Tenant, Ledger } from '../types'
-
-/** Resolves the current auth session to the internal users.id row. */
-export async function getCurrentUserId(): Promise<string | null> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return null
-  const { data } = await supabase.from('users').select('id').eq('auth_user_id', user.id).single()
-  return data?.id ?? null
-}
+import type { Member, MembershipContext, Role, Household, Organization, Ledger } from '../types'
 
 function contextColumn(context: MembershipContext): 'household_id' | 'organization_id' {
   return context.type === 'household' ? 'household_id' : 'organization_id'
@@ -90,13 +82,20 @@ export const MemberService = {
 
   /** All of the current user's memberships, across every household/organization. */
   async getMyMemberships(): Promise<Member[]> {
-    const userId = await getCurrentUserId()
-    if (!userId) return []
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return []
+
+    const { data: me } = await supabase
+      .from('users')
+      .select('id')
+      .eq('auth_user_id', user.id)
+      .single()
+    if (!me) return []
 
     const { data, error } = await supabase
       .from('members')
       .select('*, household:households(*), organization:organizations(*), role:roles(*)')
-      .eq('user_id', userId)
+      .eq('user_id', me.id)
       .eq('status', 'active')
 
     if (error) throw error
@@ -130,32 +129,6 @@ export const RoleService = {
     return rows
       .filter((r) => r.effect === 'allow' && r.permission?.code && !denied.has(r.permission.code))
       .map((r) => r.permission!.code)
-  },
-}
-
-export const TenantService = {
-  async createTenant(params: {
-    code: string
-    name: string
-    ownerUserId: string
-    defaultLanguageCode: string
-    defaultCurrencyCode: string
-    defaultTimezoneId: string
-  }): Promise<Tenant> {
-    const { data, error } = await supabase
-      .from('tenants')
-      .insert({
-        code: params.code,
-        name: params.name,
-        owner_user_id: params.ownerUserId,
-        default_language_code: params.defaultLanguageCode,
-        default_currency_code: params.defaultCurrencyCode,
-        default_timezone_id: params.defaultTimezoneId,
-      })
-      .select()
-      .single()
-    if (error) throw error
-    return data as Tenant
   },
 }
 
@@ -231,29 +204,4 @@ export const OrganizationService = {
   },
 }
 
-// =========================================================================
-// LEGACY (pre-Foundation) — kept only for features/user-management/ledger-store.ts.
-// `ledgers` is not a Foundation table and doesn't exist in the fresh database;
-// this will throw at runtime until a Ledger/Workspace schema part is designed
-// and migrated. See docs/database/FOUNDATION_CHECKLIST.md.
-// =========================================================================
-
-export const LedgerService = {
-  async getLedgers(): Promise<Ledger[]> {
-    const { data, error } = await supabase
-      .from('ledgers')
-      .select('*')
-
-    if (error) throw error
-    return data as Ledger[]
-  },
-
-  async updateLedger(ledgerId: string, updates: Partial<Ledger>): Promise<void> {
-    const { error } = await supabase
-      .from('ledgers')
-      .update(updates)
-      .eq('id', ledgerId)
-
-    if (error) throw error
-  },
-}
+// EOF

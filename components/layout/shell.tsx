@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { usePathname } from 'next/navigation'
 import { Sidebar } from '@/components/layout/sidebar'
 import { MobileHeader } from '@/components/layout/header'
 import { TopBar } from '@/components/layout/topbar'
@@ -8,6 +9,7 @@ import { CommandPalette } from '@/components/ui/command-palette'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false)
+  const pathname = usePathname()
 
   // Global Cmd+K shortcut
   useEffect(() => {
@@ -20,6 +22,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
   }, [])
+
+  const isAuthRoute = ['/login', '/join', '/onboarding'].includes(pathname)
+
+  if (isAuthRoute) {
+    return <>{children}</>
+  }
 
   return (
     <div className="flex h-full min-h-screen">

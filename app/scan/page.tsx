@@ -560,7 +560,7 @@ export default function ScanPage() {
                 <Select
                   label={L('カテゴリ', 'Danh mục', 'Category')}
                   value={form.category}
-                  onChange={(e) => setField('category', e.target.value as Category)}
+                  onChange={(e) => setField('category', e.target.value )}
                 >
                   {catLabels.map((c) => (
                     <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>
