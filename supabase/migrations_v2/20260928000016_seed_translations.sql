@@ -150,6 +150,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.deleteConfirm', 'catui', null, false),
   ('catui.inactive', 'catui', null, false),
   ('catui.keywordAdded', 'catui', null, false),
+  ('catui.kind', 'catui', null, false),
   ('catui.kpiActive', 'catui', 'count', false),
   ('catui.kpiAllReconciled', 'catui', null, false),
   ('catui.kpiAuto', 'catui', null, false),
@@ -160,6 +161,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.kpiSpend', 'catui', null, false),
   ('catui.kpiUnreconciled', 'catui', null, false),
   ('catui.kpiUnreconciledSub', 'catui', null, false),
+  ('catui.learnMore', 'catui', null, false),
+  ('catui.learnMoreBody', 'catui', null, false),
   ('catui.linkAccount', 'catui', null, false),
   ('catui.linkedAccounts', 'catui', null, false),
   ('catui.memberBalances', 'catui', null, false),
@@ -191,6 +194,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.tabKeywords', 'catui', null, false),
   ('catui.tabMembers', 'catui', null, false),
   ('catui.tabOverview', 'catui', null, false),
+  ('catui.tabRecurring', 'catui', null, false),
   ('catui.tabSettings', 'catui', null, false),
   ('catui.tabShared', 'catui', null, false),
   ('catui.tabSub', 'catui', null, false),
@@ -204,6 +208,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.totalSpent', 'catui', null, false),
   ('catui.totalTx', 'catui', null, false),
   ('catui.txCount', 'catui', 'count', false),
+  ('catui.txUnit', 'catui', null, false),
   ('catui.typeExpense', 'catui', null, false),
   ('catui.typeIncome', 'catui', null, false),
   ('catui.typeTransfer', 'catui', null, false),
@@ -251,6 +256,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.manage', 'common', null, false),
   ('common.maximize', 'common', null, false),
   ('common.minimize', 'common', null, false),
+  ('common.nextPage', 'common', null, false),
   ('common.no', 'common', null, false),
   ('common.noDescription', 'common', null, false),
   ('common.noPermission', 'common', null, false),
@@ -258,6 +264,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.optional', 'common', null, false),
   ('common.overview', 'common', null, false),
   ('common.page', 'common', null, false),
+  ('common.prevPage', 'common', null, false),
   ('common.restore', 'common', null, false),
   ('common.retry', 'common', null, false),
   ('common.save', 'common', null, false),
@@ -400,17 +407,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.deleteConfirm', 'groups', null, true),
   ('groups.department', 'groups', null, true),
   ('groups.editTitle', 'groups', null, true),
-  ('groups.emoji', 'groups', null, true),
+  ('groups.emoji', 'groups', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('groups.formTitle', 'groups', null, true),
   ('groups.hierarchy', 'groups', null, true),
   ('groups.iconLabel', 'groups', null, true),
   ('groups.keywords', 'groups', null, true),
   ('groups.keywordsHint', 'groups', null, true),
   ('groups.keywordsLabel', 'groups', null, true),
-  ('groups.keywordsPlaceholder', 'groups', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('groups.keywordsPlaceholder', 'groups', null, true),
   ('groups.match', 'groups', null, true),
   ('groups.mismatch', 'groups', null, true),
   ('groups.name', 'groups', null, true),
@@ -432,6 +439,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.txnCount', 'groups', null, true),
   ('groups.type', 'groups', null, true),
   ('groups.warning', 'groups', null, true),
+  ('import.accountCreated', 'import', 'name', true),
   ('import.addAccount', 'import', null, true),
   ('import.alreadyImported', 'import', 'date', true),
   ('import.autoDetectHint', 'import', null, true),
@@ -802,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('sessions.unknownLocation', 'sessions', null, false),
   ('sessions.untrust', 'sessions', null, false),
   ('settings.account.comfortable', 'settings', null, false),
-  ('settings.account.comfortableSub', 'settings', null, false),
+  ('settings.account.comfortableSub', 'settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('settings.account.compact', 'settings', null, false),
   ('settings.account.compactSub', 'settings', null, false),
   ('settings.account.configuring', 'settings', null, false),
@@ -810,10 +821,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.account.densitySub', 'settings', null, false),
   ('settings.account.hiddenBalances', 'settings', null, false),
   ('settings.account.hiddenBalancesSub', 'settings', null, false),
-  ('settings.account.privacyTitle', 'settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.account.privacyTitle', 'settings', null, false),
   ('settings.account.regionalTitle', 'settings', null, false),
   ('settings.account.startPage', 'settings', null, false),
   ('settings.account.subtitle', 'settings', null, false),
@@ -1161,6 +1169,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.deleteConfirm', 'ja', 'このカテゴリを削除しますか？取引は未分類になります。'),
   ('catui.inactive', 'ja', '停止中'),
   ('catui.keywordAdded', 'ja', 'キーワードを追加しました'),
+  ('catui.kind', 'ja', '区分'),
   ('catui.kpiActive', 'ja', '{{count}} 件のカテゴリ'),
   ('catui.kpiAllReconciled', 'ja', 'すべて照合済み'),
   ('catui.kpiAuto', 'ja', '自動分類率（今月）'),
@@ -1171,6 +1180,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.kpiSpend', 'ja', '今月の支出'),
   ('catui.kpiUnreconciled', 'ja', '未照合'),
   ('catui.kpiUnreconciledSub', 'ja', '確認が必要です'),
+  ('catui.learnMore', 'ja', '詳しく'),
+  ('catui.learnMoreBody', 'ja', 'キーワードは取引の内容・店名に含まれる文字で一致します。インポート時と取引追加時に自動で適用され、手動で分類した取引は上書きしません。'),
   ('catui.linkAccount', 'ja', '口座を連携'),
   ('catui.linkedAccounts', 'ja', '連携口座'),
   ('catui.memberBalances', 'ja', 'メンバー別の残高'),
@@ -1202,6 +1213,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.tabKeywords', 'ja', 'キーワード'),
   ('catui.tabMembers', 'ja', 'メンバー'),
   ('catui.tabOverview', 'ja', '概要'),
+  ('catui.tabRecurring', 'ja', '定期'),
   ('catui.tabSettings', 'ja', '設定'),
   ('catui.tabShared', 'ja', '共有'),
   ('catui.tabSub', 'ja', 'サブカテゴリ'),
@@ -1215,6 +1227,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.totalSpent', 'ja', '合計支出'),
   ('catui.totalTx', 'ja', '取引数'),
   ('catui.txCount', 'ja', '{{count}} 件'),
+  ('catui.txUnit', 'ja', ' 件'),
   ('catui.typeExpense', 'ja', '支出'),
   ('catui.typeIncome', 'ja', '収入'),
   ('catui.typeTransfer', 'ja', '振替'),
@@ -1262,6 +1275,7 @@ insert into public.translations (key, language_code, value) values
   ('common.manage', 'ja', '管理'),
   ('common.maximize', 'ja', '最大化'),
   ('common.minimize', 'ja', '最小化'),
+  ('common.nextPage', 'ja', '次のページ'),
   ('common.no', 'ja', 'いいえ'),
   ('common.noDescription', 'ja', '説明なし'),
   ('common.noPermission', 'ja', '権限がありません'),
@@ -1269,6 +1283,7 @@ insert into public.translations (key, language_code, value) values
   ('common.optional', 'ja', '任意'),
   ('common.overview', 'ja', '概要'),
   ('common.page', 'ja', 'ページ'),
+  ('common.prevPage', 'ja', '前のページ'),
   ('common.restore', 'ja', '復元'),
   ('common.retry', 'ja', '再試行'),
   ('common.save', 'ja', '保存'),
@@ -1411,17 +1426,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.deleteConfirm', 'ja', 'グループを削除しますか？'),
   ('groups.department', 'ja', '部署'),
   ('groups.editTitle', 'ja', 'グループを編集'),
-  ('groups.emoji', 'ja', '絵文字'),
+  ('groups.emoji', 'ja', '絵文字')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'ja', 'グループを作成'),
   ('groups.hierarchy', 'ja', '階層構造'),
   ('groups.iconLabel', 'ja', 'アイコン'),
   ('groups.keywords', 'ja', 'キーワード'),
   ('groups.keywordsHint', 'ja', 'キーワードを入力してEnterを押してください'),
   ('groups.keywordsLabel', 'ja', '自動判定キーワード'),
-  ('groups.keywordsPlaceholder', 'ja', 'キーワードを入力してEnter...')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.keywordsPlaceholder', 'ja', 'キーワードを入力してEnter...'),
   ('groups.match', 'ja', '一致'),
   ('groups.mismatch', 'ja', '不一致'),
   ('groups.name', 'ja', 'グループ名'),
@@ -1443,6 +1458,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.txnCount', 'ja', '件'),
   ('groups.type', 'ja', 'タイプ'),
   ('groups.warning', 'ja', '警告しきい値 (%)'),
+  ('import.accountCreated', 'ja', '口座「{{name}}」を自動で作成しました'),
   ('import.addAccount', 'ja', '口座を追加'),
   ('import.alreadyImported', 'ja', 'このファイルは {{date}} にインポート済みです'),
   ('import.autoDetectHint', 'ja', 'ファイルをアップロードすると、形式を自動的に検出します'),
@@ -1813,7 +1829,10 @@ insert into public.translations (key, language_code, value) values
   ('sessions.unknownLocation', 'ja', '不明な場所'),
   ('sessions.untrust', 'ja', '信頼を解除'),
   ('settings.account.comfortable', 'ja', '標準'),
-  ('settings.account.comfortableSub', 'ja', '読みやすさとゆとりのあるレイアウトに最適化。'),
+  ('settings.account.comfortableSub', 'ja', '読みやすさとゆとりのあるレイアウトに最適化。')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.compact', 'ja', 'コンパクト'),
   ('settings.account.compactSub', 'ja', 'パワーユーザー向けの最大情報密度。'),
   ('settings.account.configuring', 'ja', 'ワークスペースのデフォルトを設定しています'),
@@ -1821,10 +1840,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'ja', '画面に表示する情報の量を選択します。'),
   ('settings.account.hiddenBalances', 'ja', '金額を非表示'),
   ('settings.account.hiddenBalancesSub', 'ja', 'ダッシュボードで金額をマスクします'),
-  ('settings.account.privacyTitle', 'ja', 'プライバシーと可視性')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.privacyTitle', 'ja', 'プライバシーと可視性'),
   ('settings.account.regionalTitle', 'ja', '地域のデフォルト設定'),
   ('settings.account.startPage', 'ja', '開始ページ'),
   ('settings.account.subtitle', 'ja', '好みの表示方法やデフォルト設定を管理します'),
@@ -2154,8 +2170,8 @@ insert into public.translations (key, language_code, value) values
   ('catform.subtitle', 'vi', 'Thiết lập danh mục để phân loại giao dịch'),
   ('catform.type', 'vi', 'Loại'),
   ('catform.warning', 'vi', 'Ngưỡng cảnh báo (%)'),
-  ('catui.accuracy', 'vi', '{{pct}}% tự động'),
-  ('catui.active', 'vi', 'Đang dùng'),
+  ('catui.accuracy', 'vi', '{{pct}}% chính xác'),
+  ('catui.active', 'vi', 'Đang hoạt động'),
   ('catui.addTile', 'vi', 'Tạo danh mục mới'),
   ('catui.allClassified', 'vi', 'Tất cả giao dịch đã được phân loại'),
   ('catui.andMore', 'vi', 'và {{count}} danh mục khác'),
@@ -2170,18 +2186,21 @@ insert into public.translations (key, language_code, value) values
   ('catui.classified', 'vi', 'Đã phân loại'),
   ('catui.create', 'vi', 'Tạo danh mục mới'),
   ('catui.deleteConfirm', 'vi', 'Xoá danh mục? Giao dịch sẽ thành chưa phân loại.'),
-  ('catui.inactive', 'vi', 'Tạm dừng'),
+  ('catui.inactive', 'vi', 'Không hoạt động'),
   ('catui.keywordAdded', 'vi', 'Đã thêm từ khoá'),
-  ('catui.kpiActive', 'vi', '{{count}} danh mục đang dùng'),
+  ('catui.kind', 'vi', 'Loại nhóm'),
+  ('catui.kpiActive', 'vi', '{{count}} danh mục đang hoạt động'),
   ('catui.kpiAllReconciled', 'vi', 'Đã đối soát hết'),
   ('catui.kpiAuto', 'vi', 'Tự động phân loại (tháng)'),
   ('catui.kpiAutoSub', 'vi', '{{done}} / {{total}} giao dịch'),
   ('catui.kpiBudgetLeft', 'vi', 'Ngân sách còn lại'),
-  ('catui.kpiBudgetLeftSub', 'vi', 'Còn {{pct}}% ngân sách'),
+  ('catui.kpiBudgetLeftSub', 'vi', '{{pct}}% ngân sách còn lại'),
   ('catui.kpiNoBudget', 'vi', 'Chưa đặt ngân sách'),
   ('catui.kpiSpend', 'vi', 'Chi tiêu tháng này'),
-  ('catui.kpiUnreconciled', 'vi', 'Chưa đối soát'),
+  ('catui.kpiUnreconciled', 'vi', 'Chờ đối soát'),
   ('catui.kpiUnreconciledSub', 'vi', 'Cần xem lại'),
+  ('catui.learnMore', 'vi', 'Tìm hiểu'),
+  ('catui.learnMoreBody', 'vi', 'Từ khóa được so với nội dung / tên cửa hàng của giao dịch. Áp dụng tự động khi import và khi thêm giao dịch; giao dịch bạn đã tự phân loại sẽ không bị ghi đè.'),
   ('catui.linkAccount', 'vi', 'Liên kết tài khoản'),
   ('catui.linkedAccounts', 'vi', 'Tài khoản liên kết'),
   ('catui.memberBalances', 'vi', 'Số dư từng người'),
@@ -2191,11 +2210,11 @@ insert into public.translations (key, language_code, value) values
   ('catui.needsReview', 'vi', 'Cần xem lại'),
   ('catui.noData', 'vi', 'Chưa có dữ liệu'),
   ('catui.noSubcategories', 'vi', 'Chưa có danh mục con'),
-  ('catui.orTemplate', 'vi', 'Hoặc bắt đầu từ mẫu:'),
+  ('catui.orTemplate', 'vi', 'Hoặc bắt đầu từ template:'),
   ('catui.owes', 'vi', '{{from}} → {{to}}'),
   ('catui.owner', 'vi', 'Chủ nhóm'),
   ('catui.pendingCount', 'vi', '{{count}} giao dịch chờ xử lý'),
-  ('catui.pendingSub', 'vi', 'Tổng chi chưa phân loại: {{amount}}'),
+  ('catui.pendingSub', 'vi', 'Tổng chi tiêu chưa phân loại: {{amount}}'),
   ('catui.pendingTitle', 'vi', '{{groups}} nhóm · {{count}} giao dịch chờ phân loại'),
   ('catui.perPerson', 'vi', 'Trung bình / người'),
   ('catui.remaining', 'vi', 'còn {{amount}}'),
@@ -2206,26 +2225,28 @@ insert into public.translations (key, language_code, value) values
   ('catui.shared', 'vi', 'Chia sẻ'),
   ('catui.subcategories', 'vi', '{{count}} danh mục con'),
   ('catui.system', 'vi', 'Hệ thống'),
-  ('catui.tabActive', 'vi', 'Đang dùng'),
+  ('catui.tabActive', 'vi', 'Đang hoạt động'),
   ('catui.tabAll', 'vi', 'Tất cả'),
   ('catui.tabArchived', 'vi', 'Lưu trữ'),
   ('catui.tabBalances', 'vi', 'Số dư'),
   ('catui.tabKeywords', 'vi', 'Từ khoá'),
   ('catui.tabMembers', 'vi', 'Thành viên'),
   ('catui.tabOverview', 'vi', 'Tổng quan'),
+  ('catui.tabRecurring', 'vi', 'Định kỳ'),
   ('catui.tabSettings', 'vi', 'Cài đặt'),
   ('catui.tabShared', 'vi', 'Chia sẻ'),
   ('catui.tabSub', 'vi', 'Danh mục con'),
   ('catui.tabTransactions', 'vi', 'Giao dịch'),
   ('catui.templateApplied', 'vi', 'Đã thêm {{count}} danh mục'),
-  ('catui.tipAction', 'vi', 'Mở màn phân loại'),
-  ('catui.tipBody', 'vi', 'Ví dụ: thêm "starbucks" vào Cà phê → mọi giao dịch chứa từ này tự vào Cà phê'),
-  ('catui.tipTitle', 'vi', 'Đặt từ khoá để tự động phân loại giao dịch về sau'),
+  ('catui.tipAction', 'vi', 'Mở quản lý từ khóa'),
+  ('catui.tipBody', 'vi', 'Ví dụ: thêm "starbucks", "highlands" vào danh mục Cà phê → tự động phân loại mọi giao dịch chứa từ này'),
+  ('catui.tipTitle', 'vi', 'Đặt từ khóa cho danh mục giúp tự động phân loại 95% giao dịch trong tương lai'),
   ('catui.title', 'vi', 'Quản lý danh mục'),
   ('catui.topTitle', 'vi', 'Danh mục chi nhiều nhất (tháng này)'),
   ('catui.totalSpent', 'vi', 'Tổng chi tiêu'),
   ('catui.totalTx', 'vi', 'Tổng giao dịch'),
   ('catui.txCount', 'vi', '{{count}} giao dịch'),
+  ('catui.txUnit', 'vi', ' giao dịch'),
   ('catui.typeExpense', 'vi', 'Chi tiêu'),
   ('catui.typeIncome', 'vi', 'Thu nhập'),
   ('catui.typeTransfer', 'vi', 'Chuyển khoản'),
@@ -2273,6 +2294,7 @@ insert into public.translations (key, language_code, value) values
   ('common.manage', 'vi', 'Quản lý'),
   ('common.maximize', 'vi', 'Phóng to'),
   ('common.minimize', 'vi', 'Thu nhỏ'),
+  ('common.nextPage', 'vi', 'Trang sau'),
   ('common.no', 'vi', 'Không'),
   ('common.noDescription', 'vi', 'Không có mô tả'),
   ('common.noPermission', 'vi', 'Bạn không có quyền'),
@@ -2280,6 +2302,7 @@ insert into public.translations (key, language_code, value) values
   ('common.optional', 'vi', 'Tuỳ chọn'),
   ('common.overview', 'vi', 'Tổng quan'),
   ('common.page', 'vi', 'Trang'),
+  ('common.prevPage', 'vi', 'Trang trước'),
   ('common.restore', 'vi', 'Khôi phục'),
   ('common.retry', 'vi', 'Thử lại'),
   ('common.save', 'vi', 'Lưu'),
@@ -2343,7 +2366,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.startSub', 'vi', 'Nhập các giao dịch đầu tiên để bắt đầu theo dõi chi tiêu của bạn.'),
   ('dashboard.subtitle', 'vi', 'Theo dõi dòng tiền & quản lý chi tiêu'),
   ('dashboard.summary', 'vi', 'Tóm tắt'),
-  ('dashboard.tipContent', 'vi', 'Kiểm tra lại các chi phí cố định có thể giúp bạn tiết kiệm tới 15% mỗi năm.'),
+  ('dashboard.tipContent', 'vi', 'Đặt từ khóa cho danh mục để 95% giao dịch sau này được tự động phân loại.'),
   ('dashboard.title', 'vi', 'Tổng quan'),
   ('dashboard.total', 'vi', 'Tổng'),
   ('dashboard.totalBalance', 'vi', 'Tổng số dư'),
@@ -2422,17 +2445,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.deleteConfirm', 'vi', 'Xóa nhóm này?'),
   ('groups.department', 'vi', 'Phòng ban'),
   ('groups.editTitle', 'vi', 'Chỉnh sửa nhóm'),
-  ('groups.emoji', 'vi', 'Biểu tượng'),
+  ('groups.emoji', 'vi', 'Biểu tượng')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'vi', 'Tạo nhóm'),
   ('groups.hierarchy', 'vi', 'Cấu trúc phân cấp'),
   ('groups.iconLabel', 'vi', 'Biểu tượng'),
   ('groups.keywords', 'vi', 'Từ khóa'),
   ('groups.keywordsHint', 'vi', 'Nhập từ khóa và nhấn Enter'),
   ('groups.keywordsLabel', 'vi', 'Từ khóa nhận diện tự động'),
-  ('groups.keywordsPlaceholder', 'vi', 'Nhập từ khóa và nhấn Enter...')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.keywordsPlaceholder', 'vi', 'Nhập từ khóa và nhấn Enter...'),
   ('groups.match', 'vi', 'Khớp'),
   ('groups.mismatch', 'vi', 'Lệch'),
   ('groups.name', 'vi', 'Tên nhóm'),
@@ -2454,6 +2477,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.txnCount', 'vi', 'giao dịch'),
   ('groups.type', 'vi', 'Loại nhóm'),
   ('groups.warning', 'vi', 'Ngưỡng cảnh báo (%)'),
+  ('import.accountCreated', 'vi', 'Đã tự tạo tài khoản "{{name}}"'),
   ('import.addAccount', 'vi', 'Thêm tài khoản'),
   ('import.alreadyImported', 'vi', 'File này đã được nhập ngày {{date}}'),
   ('import.autoDetectHint', 'vi', 'Tự động nhận diện định dạng sau khi tải file'),
@@ -2824,7 +2848,10 @@ insert into public.translations (key, language_code, value) values
   ('sessions.unknownLocation', 'vi', 'Không rõ vị trí'),
   ('sessions.untrust', 'vi', 'Bỏ tin cậy'),
   ('settings.account.comfortable', 'vi', 'Thoái mái'),
-  ('settings.account.comfortableSub', 'vi', 'Tối ưu cho việc đọc và bố cục thoáng đãng.'),
+  ('settings.account.comfortableSub', 'vi', 'Tối ưu cho việc đọc và bố cục thoáng đãng.')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.compact', 'vi', 'Gọn gàng'),
   ('settings.account.compactSub', 'vi', 'Mật độ thông tin tối đa cho người dùng nâng cao.'),
   ('settings.account.configuring', 'vi', 'Cấu hình mặc định không gian làm việc'),
@@ -2832,10 +2859,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'vi', 'Chọn mức độ thông tin bạn muốn thấy trên màn hình.'),
   ('settings.account.hiddenBalances', 'vi', 'Ẩn số dư'),
   ('settings.account.hiddenBalancesSub', 'vi', 'Mặc định ẩn các số dư nhạy cảm trên dashboard'),
-  ('settings.account.privacyTitle', 'vi', 'Quyền riêng tư & Hiển thị')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.privacyTitle', 'vi', 'Quyền riêng tư & Hiển thị'),
   ('settings.account.regionalTitle', 'vi', 'Mặc định vùng'),
   ('settings.account.startPage', 'vi', 'Trang bắt đầu'),
   ('settings.account.subtitle', 'vi', 'Quản lý tùy chọn hiển thị và thiết lập mặc định'),
@@ -3183,6 +3207,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.deleteConfirm', 'en', 'Delete this category? Its transactions become uncategorized.'),
   ('catui.inactive', 'en', 'Inactive'),
   ('catui.keywordAdded', 'en', 'Keyword added'),
+  ('catui.kind', 'en', 'Kind'),
   ('catui.kpiActive', 'en', '{{count}} active categories'),
   ('catui.kpiAllReconciled', 'en', 'All reconciled'),
   ('catui.kpiAuto', 'en', 'Auto-categorized (month)'),
@@ -3193,6 +3218,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.kpiSpend', 'en', 'Spent this month'),
   ('catui.kpiUnreconciled', 'en', 'Not reconciled'),
   ('catui.kpiUnreconciledSub', 'en', 'Needs review'),
+  ('catui.learnMore', 'en', 'Learn more'),
+  ('catui.learnMoreBody', 'en', 'Keywords match text in the description or merchant. They apply automatically on import and when adding a transaction, and never overwrite a category you set by hand.'),
   ('catui.linkAccount', 'en', 'Link account'),
   ('catui.linkedAccounts', 'en', 'Linked accounts'),
   ('catui.memberBalances', 'en', 'Balance per member'),
@@ -3224,6 +3251,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.tabKeywords', 'en', 'Keywords'),
   ('catui.tabMembers', 'en', 'Members'),
   ('catui.tabOverview', 'en', 'Overview'),
+  ('catui.tabRecurring', 'en', 'Recurring'),
   ('catui.tabSettings', 'en', 'Settings'),
   ('catui.tabShared', 'en', 'Shared'),
   ('catui.tabSub', 'en', 'Subcategories'),
@@ -3237,6 +3265,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.totalSpent', 'en', 'Total spent'),
   ('catui.totalTx', 'en', 'Transactions'),
   ('catui.txCount', 'en', '{{count}} transactions'),
+  ('catui.txUnit', 'en', ' transactions'),
   ('catui.typeExpense', 'en', 'Expense'),
   ('catui.typeIncome', 'en', 'Income'),
   ('catui.typeTransfer', 'en', 'Transfer'),
@@ -3284,6 +3313,7 @@ insert into public.translations (key, language_code, value) values
   ('common.manage', 'en', 'Manage'),
   ('common.maximize', 'en', 'Maximize'),
   ('common.minimize', 'en', 'Minimize'),
+  ('common.nextPage', 'en', 'Next page'),
   ('common.no', 'en', 'No'),
   ('common.noDescription', 'en', 'No description'),
   ('common.noPermission', 'en', 'You do not have permission'),
@@ -3291,6 +3321,7 @@ insert into public.translations (key, language_code, value) values
   ('common.optional', 'en', 'Optional'),
   ('common.overview', 'en', 'Overview'),
   ('common.page', 'en', 'Page'),
+  ('common.prevPage', 'en', 'Previous page'),
   ('common.restore', 'en', 'Restore'),
   ('common.retry', 'en', 'Retry'),
   ('common.save', 'en', 'Save'),
@@ -3354,7 +3385,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.startSub', 'en', 'Import your first transactions to start tracking your spending.'),
   ('dashboard.subtitle', 'en', 'Track your cash flow & manage spending'),
   ('dashboard.summary', 'en', 'Summary'),
-  ('dashboard.tipContent', 'en', 'Reviewing fixed expenses can save you up to 15% annually.'),
+  ('dashboard.tipContent', 'en', 'Add keywords to your categories and 95% of future transactions are categorised automatically.'),
   ('dashboard.title', 'en', 'Dashboard'),
   ('dashboard.total', 'en', 'Total'),
   ('dashboard.totalBalance', 'en', 'Total Balance'),
@@ -3433,17 +3464,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.deleteConfirm', 'en', 'Delete this group?'),
   ('groups.department', 'en', 'Department'),
   ('groups.editTitle', 'en', 'Edit Group'),
-  ('groups.emoji', 'en', 'Emoji'),
+  ('groups.emoji', 'en', 'Emoji')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'en', 'Create Group'),
   ('groups.hierarchy', 'en', 'Hierarchy Structure'),
   ('groups.iconLabel', 'en', 'Icon'),
   ('groups.keywords', 'en', 'Keywords'),
   ('groups.keywordsHint', 'en', 'Type a keyword and press Enter'),
   ('groups.keywordsLabel', 'en', 'Auto-classification Keywords'),
-  ('groups.keywordsPlaceholder', 'en', 'Type keyword and press Enter...')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.keywordsPlaceholder', 'en', 'Type keyword and press Enter...'),
   ('groups.match', 'en', 'Match'),
   ('groups.mismatch', 'en', 'Mismatch'),
   ('groups.name', 'en', 'Group Name'),
@@ -3465,6 +3496,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.txnCount', 'en', 'transactions'),
   ('groups.type', 'en', 'Group Type'),
   ('groups.warning', 'en', 'Warning threshold (%)'),
+  ('import.accountCreated', 'en', 'Created account "{{name}}"'),
   ('import.addAccount', 'en', 'Add account'),
   ('import.alreadyImported', 'en', 'This file was already imported on {{date}}'),
   ('import.autoDetectHint', 'en', 'Upload a file and we will detect the format automatically'),
@@ -3835,7 +3867,10 @@ insert into public.translations (key, language_code, value) values
   ('sessions.unknownLocation', 'en', 'Unknown location'),
   ('sessions.untrust', 'en', 'Remove trust'),
   ('settings.account.comfortable', 'en', 'Comfortable'),
-  ('settings.account.comfortableSub', 'en', 'Optimized for readability and spacious layout.'),
+  ('settings.account.comfortableSub', 'en', 'Optimized for readability and spacious layout.')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.compact', 'en', 'Compact'),
   ('settings.account.compactSub', 'en', 'Maximum information density for power users.'),
   ('settings.account.configuring', 'en', 'Configuring workspace defaults'),
@@ -3843,10 +3878,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'en', 'Choose how much information you want to see on your screen at once.'),
   ('settings.account.hiddenBalances', 'en', 'Hide Balances'),
   ('settings.account.hiddenBalancesSub', 'en', 'Mask sensitive amounts on the dashboard'),
-  ('settings.account.privacyTitle', 'en', 'Privacy & Visibility')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.privacyTitle', 'en', 'Privacy & Visibility'),
   ('settings.account.regionalTitle', 'en', 'Regional Defaults'),
   ('settings.account.startPage', 'en', 'Start Page'),
   ('settings.account.subtitle', 'en', 'Manage your preferences and default views'),

@@ -41,6 +41,9 @@ function lastOfMonth(y: number, m: number) {
 export function buildLabel(start: string, end: string, mode: DatePickerMode, lang: Lang): string {
   const s = parseDate(start)
   if (lang === 'vi') {
+    if (mode === 'year') return `Năm ${s.y}`
+    if (mode === 'quarter') return `Quý ${Math.floor(s.m / 3) + 1}/${s.y}`
+    if (mode === 'month') return `Tháng ${s.m + 1}/${s.y}`
     const fmtD = (p: { y: number; m: number; d: number }) =>
       `${String(p.d).padStart(2, '0')}/${String(p.m + 1).padStart(2, '0')}/${p.y}`
     if (start === end) return fmtD(s)
