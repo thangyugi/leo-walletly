@@ -7,7 +7,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Search, Filter, Trash2, Upload, X, ArrowUpDown,
   ArrowUp, ArrowDown, ChevronDown, ChevronLeft, ChevronRight,
-  Maximize2, Minimize2, Edit2, CheckSquare, Square, Minus, CheckCircle2,
+  Maximize2, Minimize2, Edit2, CheckSquare, Square, Minus, CheckCircle2, Plus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
@@ -584,6 +584,7 @@ function TransactionsContent() {
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
   const [detailTxn, setDetailTxn] = useState<Transaction | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [adding, setAdding] = useState(false)
 
   const ledgerId = ledger?.id
   const range = useMemo(() => ({ start: filters.dateFrom || picker.start, end: filters.dateTo || picker.end }), [filters.dateFrom, filters.dateTo, picker.start, picker.end])
@@ -686,6 +687,9 @@ function TransactionsContent() {
           <>
             <DateNavigator value={picker} onChange={setPicker} lang={lang} />
             <SortDropdown value={sortOption} onChange={setSortOption} />
+            {can('transaction.create') && (
+              <Button variant="outline" size="sm" icon={<Plus />} onClick={() => setAdding(true)}>{t.dashboard.addTransaction}</Button>
+            )}
             <Link href="/import">
               <Button size="sm" icon={<Upload />}>{t.transactions.import}</Button>
             </Link>
@@ -835,6 +839,7 @@ function TransactionsContent() {
       )}
 
       {editingTxn && <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />}
+      {adding && <TransactionEditModal txn={null} defaults={{ transactionDate: picker.end < toLocalISODate() ? picker.end : toLocalISODate() }} onClose={() => setAdding(false)} />}
     </div>
   )
 }
