@@ -1,663 +1,1001 @@
 # Leo Walletly — Database Schema V2 (bản dựng lại sạch)
 
 > Trạng thái: **ĐỀ XUẤT** — dùng làm đặc tả để viết lại toàn bộ `supabase/migrations/` trước khi xoá và tạo lại database trên Supabase.
-> Thay thế: 23 migration Foundation hiện tại (`20260720000001` → `20260720000023`) và các bảng cũ mà code còn gọi (`ledgers`, `ledger_members`, `transactions`, `categories`, `category_budgets`, `category_balances`, `category_translations`, `recurring_transactions`, `audit_logs`, `device_verifications`, `ui_translations`).
-> Nguồn: rút gọn từ `docs/database/01…13_*.html` (≈140 bảng) xuống **25 bảng** đủ cho mọi màn hình hiện có của app.
+> Thay thế: 23 migration Foundation hiện tại và các bảng cũ mà code còn gọi (`ledgers`, `ledger_members`, `transactions`, `categories`, `category_budgets`, `category_balances`, `category_translations`, `recurring_transactions`, `audit_logs`, `device_verifications`, `ui_translations`).
+> Luồng màn hình: `docs/SCREEN_FLOWS.md`.
+
+**Phiên bản 2.1** — thay đổi so với bản trước:
+- **Không dùng `jsonb`**: mọi dữ liệu có cấu trúc được tách thành bảng con (xem §1.3). Không dùng mảng `text[]`.
+- **Đa ngôn ngữ bằng bảng** `translation_keys` / `translations` / `translation_overrides`: thêm ngôn ngữ mới chỉ cần thêm dòng, người dùng sửa được chữ hiển thị trên màn hình.
+- **Giữ bảng cho mọi màn hình đã có UI nhưng chưa nối DB** (xem §2) để làm tiếp, không phải thiết kế lại.
 
 ---
 
-## 0. Các quyết định thiết kế (cần xác nhận trước khi viết migration)
+## 0. Các quyết định thiết kế
 
 | # | Quyết định | Lý do |
 |---|---|---|
-| D1 | **Gộp `tenants` + `households` + `organizations` thành 1 bảng `ledgers`** (có `ledger_type`). Mọi bảng nghiệp vụ chỉ có `ledger_id`. | UI chỉ có khái niệm "元帳 / sổ". Bỏ được CHECK `household XOR organization` trên mọi bảng và một nửa độ phức tạp RLS. |
-| D2 | **`users.id` = `auth.users.id`** (không có `auth_user_id` riêng). | Bỏ hàm `current_user_id()`, RLS chỉ cần `auth.uid()`. |
-| D3 | **`amount` luôn dương**, chiều tiền do `transaction_type` quyết định. | Đúng tài liệu 04; tránh loạn dấu âm/dương. Parser import phải đổi sang `Math.abs`. |
-| D4 | **`category_id` nằm trên `transactions`** (không dùng `transaction_items` ở MVP). | App không có chức năng chia 1 giao dịch nhiều danh mục. Chia tiền giữa **người** dùng `transaction_shares`. |
-| D5 | **Tài khoản là bảng thật `financial_accounts`**, có `provider_code` để khớp bộ parser (`paypay`, `smbc`…). | Hiện tại `'paypay'` bị `isUuid()` biến thành `null` khi lưu → mất thông tin tài khoản. |
-| D6 | **Loại danh mục = `expense / income / transfer`**. Bỏ `cost_center / department / project / team / subsidiary`. | App quản lý chi tiêu cá nhân/gia đình. |
-| D7 | **Lời mời tách thành bảng `ledger_invitations`** (không nằm trong `ledger_members`). | Mời được email chưa đăng ký, mời lại người đã rời/từ chối, token có hạn và chỉ lưu hash. |
-| D8 | Master data dùng **mã tự nhiên làm khoá chính** (`currencies.code`, `countries.code`, `languages.code`, `time_zones.code`). | FK đọc được, không cần tra uuid. |
-| D9 | Chuỗi hiển thị cho 3 ngôn ngữ nằm trong `lib/i18n.ts`; dữ liệu người dùng đa ngôn ngữ dùng cột `jsonb` (`name_i18n`). Bỏ `ui_translations`, `category_translations`. | Ít bảng, không cần API dịch. |
+| D1 | Gộp `tenants` + `households` + `organizations` thành **`ledgers`** (có `ledger_type`). Mọi bảng nghiệp vụ chỉ có `ledger_id`. | UI chỉ có khái niệm "元帳 / sổ". Bỏ CHECK `household XOR organization` trên mọi bảng. |
+| D2 | **`users.id` = `auth.users.id`**. | RLS chỉ cần `auth.uid()`. |
+| D3 | **`amount` luôn dương**, chiều tiền do `transaction_type` quyết định. | Đúng tài liệu 04; tránh loạn dấu. |
+| D4 | **`category_id` nằm trên `transactions`**. Chia tiền giữa **người** dùng `transaction_shares`. | App không chia 1 giao dịch nhiều danh mục. |
+| D5 | Tài khoản là bảng **`financial_accounts`**; nhà cung cấp là bảng **`providers`** (thay hằng số `PROVIDERS`). | Hiện `'paypay'` bị `isUuid()` biến thành `null` khi lưu. |
+| D6 | Loại danh mục = `expense / income / transfer`. | App quản lý chi tiêu cá nhân/gia đình. |
+| D7 | Lời mời là bảng riêng **`ledger_invitations`**. | Mời email chưa đăng ký, mời lại được, token có hạn và chỉ lưu hash. |
+| D8 | Master data dùng **mã tự nhiên làm PK** (`currencies.code`…). | FK đọc được. |
+| D9 | **Không `jsonb`, không mảng.** Dữ liệu có cấu trúc → bảng con có FK; chữ đa ngôn ngữ → bảng dịch. | Dễ truy vấn, có ràng buộc, dễ mở rộng, sửa được từ UI. |
+| D10 | Enum **người dùng nhìn thấy và có thể thêm** (loại sổ, loại tài khoản, kênh thông báo, nhà cung cấp) → **bảng lookup**. Enum **nội bộ** (status) → `varchar` + `CHECK`. | Thêm lựa chọn mới không cần sửa schema. |
 
 ## 1. Quy ước chung
 
-**Kiểu dữ liệu**
-- Tiền: `numeric(20,4)`; tỷ giá: `numeric(20,10)`.
-- Ngày giao dịch: `date` (và `time` tuỳ chọn); mốc hệ thống: `timestamptz`.
-- Email: `citext` (so sánh không phân biệt hoa/thường).
-- Enum: `varchar` + `CHECK` (dễ thêm giá trị hơn Postgres enum).
+### 1.1 Kiểu dữ liệu
+- Tiền `numeric(20,4)`; tỷ giá `numeric(20,10)`; tỷ lệ `numeric(7,4)`.
+- Ngày giao dịch `date` (+ `time` tuỳ chọn); mốc hệ thống `timestamptz`.
+- Email `citext`. Chữ dài `text`, chữ ngắn `varchar(n)`.
 
-**Khối cột AUDIT** — mọi bảng ghi *AUDIT* trong bảng cột dưới đây đều có đủ 7 cột này:
+### 1.2 Khối cột AUDIT
+Bảng ghi *AUDIT* có đủ 6 cột:
 
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
-| `created_at` | timestamptz | ❌ | `now()` | Thời điểm tạo |
-| `updated_at` | timestamptz | ❌ | `now()` | Trigger `tg_touch` cập nhật |
-| `deleted_at` | timestamptz | ✅ | | Xoá mềm. Mọi RLS/UNIQUE lọc `deleted_at is null` |
+| `created_at` | timestamptz | ❌ | `now()` | |
+| `updated_at` | timestamptz | ❌ | `now()` | Trigger `tg_touch` |
+| `deleted_at` | timestamptz | ✅ | | Xoá mềm. RLS/UNIQUE lọc `deleted_at is null` |
 | `created_by` | uuid | ✅ | `auth.uid()` | FK → `users.id` `on delete set null` |
-| `updated_by` | uuid | ✅ | | Trigger `tg_touch` gán `auth.uid()` |
-| `version` | integer | ❌ | `1` | Khoá lạc quan, trigger tăng +1 |
-| `metadata` | jsonb | ❌ | `'{}'` | Dữ liệu mở rộng |
+| `updated_by` | uuid | ✅ | | Trigger gán `auth.uid()` |
+| `version` | integer | ❌ | `1` | Khoá lạc quan |
 
-**Trigger chung**
-- `tg_touch` (BEFORE UPDATE): `updated_at = now()`, `updated_by = auth.uid()`, `version += 1`.
-- `tg_audit` (AFTER INSERT/UPDATE/DELETE) trên các bảng nghiệp vụ → ghi `audit_logs`.
-- `tg_protect_columns`: chặn client sửa cột hệ thống (`created_by`, `version`, `ledger_id`, `owner_user_id`…).
+Trigger chung: `tg_touch` (BEFORE UPDATE), `tg_audit` (AFTER I/U/D → `audit_logs` + `audit_log_changes`), `tg_protect_columns` (chặn client sửa cột hệ thống).
 
-**Khoá ngoại**: FK tới `users` dùng `on delete set null` (cột người tạo) hoặc `cascade` (quan hệ sở hữu), để **xoá được tài khoản**.
+### 1.3 Thay thế jsonb (so với bản 2.0)
+
+| Trước (jsonb / mảng) | Nay |
+|---|---|
+| `metadata jsonb` trên mọi bảng | **Bỏ.** Cần thêm thông tin → thêm cột có tên |
+| `*.name_i18n`, `roles.description_i18n` | Cột `name_key` / `description_key` → `translation_keys` (§B) |
+| `categories.name_i18n` | `name_key` (danh mục mặc định) + bảng `category_translations` (tên người dùng tự dịch) |
+| `user_preferences.notification_settings` | `notification_categories` × `notification_channels` → `user_notification_settings` |
+| `notifications.params` | `notification_params` (tên–giá trị) |
+| `import_jobs.column_mapping` | `import_column_mappings` (lưu được làm preset theo tài khoản) |
+| `import_rows.raw_data`, `transactions.raw_data` | `import_row_values` (từng ô của dòng gốc) + `transactions.import_row_id` |
+| `documents.ocr_result` | Cột `extracted_*` + `ocr_raw_text` + bảng `document_line_items` |
+| `audit_logs.old_values / new_values` | `audit_log_changes` (1 dòng / cột thay đổi) |
+| `transactions.tags text[]` | `tags` + `transaction_tags` |
+| `PROVIDERS.fileTypes` (mảng trong code) | Cột `supports_csv`, `supports_pdf`, `supports_api` trong `providers` |
 
 ---
 
-## 2. Tổng quan 25 bảng
+## 2. Kiểm kê: màn hình có UI nhưng chưa nối DB → bảng được giữ
 
-| Nhóm | Bảng | Ghi bởi |
-|---|---|---|
-| A. Master data | `currencies`, `countries`, `languages`, `time_zones`, `exchange_rates` | service_role |
-| B. Người dùng & quyền | `users`, `user_preferences`, `roles`, `permissions`, `role_permissions` | user (giới hạn cột) / service_role |
-| C. Sổ & thành viên | `ledgers`, `ledger_members`, `ledger_invitations` | RPC |
-| D. Tiền | `financial_accounts`, `categories`, `category_rules`, `budgets`, `transactions`, `transaction_shares`, `recurring_rules` | thành viên theo quyền |
-| E. Nhập liệu | `import_jobs`, `import_rows`, `documents` | thành viên + server |
-| F. Hệ thống | `notifications`, `audit_logs` | server/trigger |
+| # | Màn hình / thành phần | Hiện trạng code | Bảng giữ / thêm | Giai đoạn |
+|---|---|---|---|---|
+| 1 | `/notifications` + chuông TopBar | Mảng `NOTIFICATIONS` / `DEMO_NOTIFS` cứng (5 loại: Budget, Import, Report, Insight, Recurring) | `notifications`, `notification_params`, `notification_types`, `notification_categories` | 2 |
+| 2 | `/settings/notifications` | Ma trận 4 nhóm (security, billing, transactions, product_updates) × 4 kênh (email, push, sms, inApp); ghi vào cột không tồn tại | `notification_channels`, `user_notification_settings` | 2 |
+| 3 | `/settings/security` | Danh sách phiên (thiết bị, trình duyệt, OS, IP, vị trí, rủi ro) đọc bảng `device_verifications` không tồn tại; MFA/passkey luôn `false`; đổi mật khẩu, xoá tài khoản chưa làm | `user_sessions` (+ Supabase Auth MFA) | 2 |
+| 4 | `/settings/audit-log` | Đọc `audit_logs` không tồn tại | `audit_logs`, `audit_log_changes` | 2 |
+| 5 | `/settings/appearance` | Theme chỉ là `useState` | `user_preferences.theme` | 1 |
+| 6 | `/settings/localization` | Chỉ lưu localStorage (`useSettingsStore`) | `user_preferences`, `languages`, `time_zones` | 1 |
+| 7 | `/settings/account` | Ghi sai tên cột, sai `user_id` | `user_preferences` | 1 |
+| 8 | `/settings/connected-apps`, `/profile` mục "連携アカウント", nguồn "Kết nối ngân hàng" ở chi tiết danh mục | Trang `ComingSoon`, nút không có đường dẫn | `bank_connections` | 3 |
+| 9 | `/settings/devices` | `ComingSoon` | `user_sessions` (dùng chung #3) | 2 |
+| 10 | `/settings/privacy` | `ComingSoon` | `data_requests` (xuất dữ liệu / xoá tài khoản) | 3 |
+| 11 | Menu TopBar "開発者ツール" | Mục bị khoá, không có trang | `api_tokens` | 3 |
+| 12 | Dashboard: panel "ユーザー", nút "取引を追加", "招待" | Dữ liệu giả; nút bị tắt | `ledger_members`, `transactions` | 1 |
+| 13 | Chi tiết danh mục: tab **メンバー** ("chủ nhóm"), **残高** ("Số dư từng người", "Trung bình / người", "Bạn đã trả"), "Liên kết tài khoản", "Quy tắc mới", "Tự động khớp" | Tính giả từ số thành viên; nút không có hành động | `category_members`, `transaction_shares`, `settlements`, `category_accounts`, `category_rules` | 2 |
+| 14 | Trang Danh mục: KPI "Chờ đối soát", ô mẫu "Du lịch / Hộ gia đình / Đám cưới", dải lưu trữ | KPI đọc bảng cũ; mẫu chỉ là chữ | `transactions.is_reconciled…`, `category_templates`, `category_template_items`, `categories.archived_at` | 2 |
+| 15 | Thanh chọn nhiều ở `/transactions`: "Đổi tài khoản", "Đổi danh mục" | Nút bị tắt | RPC `bulk_update_transactions` | 1 |
+| 16 | `/import`: thẻ nhà cung cấp theo vùng JP / VN / Global, mô tả 3 ngôn ngữ | Hằng số `PROVIDERS` trong `lib/constants.ts` | `providers` | 1 |
+| 17 | `/recurring` | Đọc bảng cũ `recurring_transactions` | `recurring_rules` | 1 |
+| 18 | `/analytics`: `BudgetProgress` được import; chuỗi "予算アラート" có sẵn | Chưa hiển thị | `budgets` | 2 |
+| 19 | Mời thành viên: chuỗi i18n có vai trò **会計士 (accountant)**, **監査人 (auditor)** | Chưa có trong seed | `roles` seed thêm `ACCOUNTANT`, `AUDITOR` | 1 |
+| 20 | `/api/translations` + `useTranslation` | Đọc bảng `ui_translations` đã bị xoá, rơi về file tĩnh | `translation_keys`, `translations`, `translation_overrides` | 1 |
+
+Giai đoạn: 1 = làm cùng đợt dựng lại DB · 2 = ngay sau khi luồng chính chạy · 3 = tạo bảng sẵn, làm UI sau.
+
+---
+
+## 3. Tổng quan (52 bảng)
+
+| Nhóm | Bảng |
+|---|---|
+| A. Master data (7) | `currencies`, `countries`, `languages`, `time_zones`, `exchange_rates`, `providers`, `account_types` |
+| B. Đa ngôn ngữ (3) | `translation_keys`, `translations`, `translation_overrides` |
+| C. Người dùng & quyền (6) | `users`, `user_preferences`, `user_sessions`, `roles`, `permissions`, `role_permissions` |
+| D. Sổ (4) | `ledger_types`, `ledgers`, `ledger_members`, `ledger_invitations` |
+| E. Tiền (16) | `financial_accounts`, `categories`, `category_translations`, `category_members`, `category_accounts`, `category_rules`, `category_templates`, `category_template_items`, `budgets`, `tags`, `transactions`, `transaction_tags`, `transaction_shares`, `settlements`, `recurring_rules`, `bank_connections` |
+| F. Nhập liệu (6) | `import_jobs`, `import_column_mappings`, `import_rows`, `import_row_values`, `documents`, `document_line_items` |
+| G. Thông báo & nhật ký (8) | `notification_categories`, `notification_channels`, `notification_types`, `user_notification_settings`, `notifications`, `notification_params`, `audit_logs`, `audit_log_changes` |
+| H. Quyền riêng tư & nhà phát triển (2) | `data_requests`, `api_tokens` |
 
 ```
-auth.users 1─1 users 1─1 user_preferences
-users ─< ledger_members >─ ledgers ─< ledger_invitations
-roles ─< role_permissions >─ permissions ;  ledger_members.role_code → roles
-ledgers ─< financial_accounts ─< transactions >─ categories (cây parent_id)
-ledgers ─< categories ─< category_rules ;  categories ─< budgets
-transactions ─< transaction_shares >─ users
-recurring_rules ─< transactions ;  import_jobs ─< import_rows ─ transactions
-documents ─ transactions ;  users ─< notifications ;  audit_logs (ghi lại mọi thay đổi)
+auth.users 1─1 users 1─1 user_preferences ;  users ─< user_sessions
+users ─< ledger_members >─ ledgers ─< ledger_invitations ;  ledgers → ledger_types
+roles ─< role_permissions >─ permissions
+translation_keys ─< translations >─ languages ;  translation_keys ─< translation_overrides
+ledgers ─< financial_accounts → providers, account_types
+ledgers ─< categories ─< category_rules / category_members / category_accounts / category_translations / budgets
+transactions → financial_accounts, categories ;  transactions ─< transaction_tags >─ tags
+transactions ─< transaction_shares ;  ledgers ─< settlements
+import_jobs ─< import_rows ─< import_row_values ;  import_rows ─ transactions
+documents ─< document_line_items ;  documents ─ transactions
+notification_types → notification_categories ;  users ─< user_notification_settings >─ notification_channels
+users ─< notifications ─< notification_params ;  audit_logs ─< audit_log_changes
 ```
 
 ---
 
 ## A. Master data
 
-### A1. `currencies` — Tiền tệ ISO 4217
+### A1. `currencies`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
-| `code` | char(3) | ❌ | | **PK**. `JPY`, `VND`, `USD`… |
-| `numeric_code` | char(3) | ❌ | | UNIQUE. `392` |
-| `name` | varchar(100) | ❌ | | Tên tiếng Anh |
-| `name_i18n` | jsonb | ❌ | `'{}'` | `{"ja":"日本円","vi":"Yên Nhật"}` |
+| `code` | char(3) | ❌ | | **PK**. `JPY`, `VND` |
+| `numeric_code` | char(3) | ❌ | | UNIQUE |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` (`currency.JPY.name`) |
 | `symbol` | varchar(10) | ❌ | | `¥`, `₫` |
-| `decimal_places` | smallint | ❌ | | 0–4. JPY/VND = 0. `lib/money.ts` đọc từ đây |
-| `is_active` | boolean | ❌ | `true` | Hiện trong dropdown |
+| `decimal_places` | smallint | ❌ | | 0–4. `lib/money.ts` đọc từ đây |
+| `is_active` | boolean | ❌ | `true` | |
 | `sort_order` | smallint | ❌ | `0` | |
 | `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
 
-Seed: JPY, VND, USD, EUR, GBP, SGD, AUD, KRW, CNY, THB.
-
-### A2. `countries` — Quốc gia ISO 3166
+### A2. `countries`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
-| `code` | char(2) | ❌ | | **PK**. `JP`, `VN` |
+| `code` | char(2) | ❌ | | **PK** |
 | `code3` | char(3) | ❌ | | UNIQUE |
-| `name` | varchar(100) | ❌ | | |
-| `native_name` | varchar(100) | ✅ | | `日本`, `Việt Nam` |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` |
 | `currency_code` | char(3) | ❌ | | FK → `currencies.code` |
 | `default_timezone_code` | varchar(64) | ✅ | | FK → `time_zones.code` |
 | `default_locale` | varchar(10) | ✅ | | `ja-JP` |
-| `phone_code` | varchar(8) | ✅ | | `+81` |
+| `phone_code` | varchar(8) | ✅ | | |
 | `is_active` | boolean | ❌ | `true` | |
 | `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
 
-### A3. `languages` — Ngôn ngữ giao diện
+### A3. `languages` — thêm ngôn ngữ mới = thêm 1 dòng
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
-| `code` | varchar(10) | ❌ | | **PK**. `ja`, `vi`, `en` |
+| `code` | varchar(10) | ❌ | | **PK**. `ja`, `vi`, `en`, sau này `ko`, `zh-TW`… |
 | `locale` | varchar(10) | ❌ | | UNIQUE. `ja-JP` |
-| `name` | varchar(50) | ❌ | | `Japanese` |
-| `native_name` | varchar(50) | ❌ | | `日本語` |
-| `is_active` | boolean | ❌ | `true` | |
-| `is_default` | boolean | ❌ | `false` | Partial UNIQUE: chỉ 1 dòng `true` (`ja`) |
+| `name` | varchar(50) | ❌ | | Tên tiếng Anh |
+| `native_name` | varchar(50) | ❌ | | Tên hiển thị ở nút chọn ngôn ngữ (`日本語`) |
+| `short_label` | varchar(5) | ❌ | | Nhãn ngắn ở Sidebar (`JA`) |
+| `text_direction` | varchar(3) | ❌ | `'ltr'` | `ltr / rtl` |
+| `fallback_code` | varchar(10) | ✅ | | FK → `languages.code`. Thiếu bản dịch thì lấy ngôn ngữ này (mặc định `en`) |
+| `is_active` | boolean | ❌ | `false` | Chỉ ngôn ngữ `true` xuất hiện ở Sidebar |
+| `is_default` | boolean | ❌ | `false` | Partial UNIQUE: 1 dòng `true` (`ja`) |
+| `sort_order` | smallint | ❌ | `0` | |
 | `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
 
-### A4. `time_zones` — Múi giờ IANA
+### A4. `time_zones`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `code` | varchar(64) | ❌ | | **PK**. `Asia/Tokyo` |
-| `name` | varchar(100) | ❌ | | `Japan Standard Time` |
-| `utc_offset_minutes` | smallint | ❌ | | Chỉ để hiển thị; tính toán dùng tên IANA |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` |
+| `utc_offset_minutes` | smallint | ❌ | | Chỉ để hiển thị |
 | `country_code` | char(2) | ✅ | | FK → `countries.code` |
 | `is_active` | boolean | ❌ | `true` | |
 | `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
 
-### A5. `exchange_rates` — Tỷ giá theo ngày
+### A5. `exchange_rates`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `base_currency` | char(3) | ❌ | | FK → `currencies.code` |
-| `quote_currency` | char(3) | ❌ | | FK → `currencies.code`. CHECK khác `base_currency` |
-| `rate` | numeric(20,10) | ❌ | | CHECK `> 0`. 1 base = rate quote |
-| `rate_date` | date | ❌ | | Ngày áp dụng |
-| `source` | varchar(30) | ❌ | `'api'` | `api` / `manual` |
+| `base_currency` | char(3) | ❌ | | FK |
+| `quote_currency` | char(3) | ❌ | | FK. CHECK khác `base_currency` |
+| `rate` | numeric(20,10) | ❌ | | CHECK `> 0` |
+| `rate_date` | date | ❌ | | |
+| `source` | varchar(30) | ❌ | `'api'` | `api / manual` |
 | `fetched_at` | timestamptz | ❌ | `now()` | |
 
-UNIQUE `(base_currency, quote_currency, rate_date, source)`. **Chỉ service_role ghi** (Edge Function lấy tỷ giá hằng ngày); client chỉ đọc. Thay cho `FXService` gọi API trực tiếp từ trình duyệt.
+UNIQUE `(base_currency, quote_currency, rate_date, source)`. Chỉ service_role ghi.
+
+### A6. `providers` — Nhà cung cấp / định dạng import (thay hằng số `PROVIDERS`)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(30) | ❌ | | **PK**. `paypay, paypay_card, rakuten_pay, smbc, mufg, vcb, mbbank, generic_csv, manual, ai_scan` |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` (`PayPayカード`) |
+| `description_key` | varchar(150) | ✅ | | FK. Thay `descJa / descVi / descEn` |
+| `account_type_code` | varchar(20) | ✅ | | FK → `account_types.code`. Loại tài khoản đề xuất |
+| `region` | varchar(10) | ❌ | `'global'` | `jp / vn / global` (tab vùng ở màn Import) |
+| `country_code` | char(2) | ✅ | | FK |
+| `color` | varchar(9) | ❌ | | `#FF0033` |
+| `initials` | varchar(4) | ❌ | | `PP` |
+| `logo_path` | text | ✅ | | Bucket `public-assets` |
+| `parser_code` | varchar(30) | ✅ | | Tên parser trong `features/import/parsers` |
+| `supports_csv` | boolean | ❌ | `false` | |
+| `supports_pdf` | boolean | ❌ | `false` | |
+| `supports_api` | boolean | ❌ | `false` | Có thể kết nối tự động (`bank_connections`) |
+| `is_active` | boolean | ❌ | `true` | |
+| `sort_order` | smallint | ❌ | `0` | |
+| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
+
+### A7. `account_types` — Loại tài khoản
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(20) | ❌ | | **PK**. `cash, bank, credit_card, e_wallet, investment, loan, other` |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` |
+| `icon` | varchar(50) | ❌ | | Tên icon lucide |
+| `is_liability` | boolean | ❌ | `false` | Thẻ tín dụng, khoản vay: số dư âm là bình thường |
+| `sort_order` | smallint | ❌ | `0` | |
 
 ---
 
-## B. Người dùng & quyền
+## B. Đa ngôn ngữ (thay `lib/i18n.ts` làm nguồn chính và thay `ui_translations`)
 
-### B1. `users` — Hồ sơ người dùng (1-1 với `auth.users`)
+### B1. `translation_keys` — Danh sách mọi chuỗi có thể dịch
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
-| `id` | uuid | ❌ | | **PK = `auth.users.id`**, FK `on delete cascade` |
-| `email` | citext | ❌ | | UNIQUE. **Đồng bộ từ `auth.users` bằng trigger, client không sửa được** |
-| `display_name` | varchar(100) | ❌ | | Mặc định = phần trước `@` của email |
+| `key` | varchar(150) | ❌ | | **PK**. Dạng chấm: `nav.transactions`, `dashboard.totalBalance`, `currency.JPY.name`, `category.default.food` |
+| `namespace` | varchar(50) | ❌ | | Phần đầu của key (`nav`, `dashboard`…): lọc trong màn biên tập |
+| `description` | text | ✅ | | Chuỗi này hiện ở đâu (cho người dịch) |
+| `placeholders` | varchar(200) | ✅ | | Tham số được phép, cách nhau dấu phẩy: `count,total` (giá trị dùng `{{count}}`) |
+| `max_length` | smallint | ✅ | | Giới hạn độ dài để không vỡ layout |
+| `is_user_editable` | boolean | ❌ | `false` | `true` = người dùng được đổi chữ này trên màn hình (tên menu, tên KPI…) |
+| `is_active` | boolean | ❌ | `true` | Key không còn dùng → `false` thay vì xoá |
+| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
+
+Chuỗi dạng mảng trong `lib/i18n.ts` (ví dụ `calendar.days`) tách thành từng key: `calendar.days.0` … `calendar.days.6`.
+
+### B2. `translations` — Bản dịch chuẩn của hệ thống
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `key` | varchar(150) | ❌ | | FK → `translation_keys.key` cascade. PK ghép |
+| `language_code` | varchar(10) | ❌ | | FK → `languages.code`. PK ghép |
+| `value` | text | ❌ | | Chuỗi hiển thị, có thể chứa `{{placeholder}}` |
+| `status` | varchar(20) | ❌ | `'approved'` | `draft / machine / approved` (bản máy dịch cần duyệt) |
+| `updated_by` | uuid | ✅ | | FK → `users.id` set null |
+| `updated_at` | timestamptz | ❌ | `now()` | |
+
+### B3. `translation_overrides` — Người dùng sửa chữ trên màn hình
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `key` | varchar(150) | ❌ | | FK → `translation_keys.key` cascade. Trigger: key phải `is_user_editable` |
+| `language_code` | varchar(10) | ❌ | | FK → `languages.code` |
+| `ledger_id` | uuid | ✅ | | FK → `ledgers.id` cascade. Áp cho mọi thành viên của sổ (cần `ledger.update`) |
+| `user_id` | uuid | ✅ | | FK → `users.id` cascade. Chỉ áp cho riêng người này |
+| `value` | text | ❌ | | Chữ thay thế |
+| *AUDIT* | | | | |
+
+CHECK: đúng 1 trong `ledger_id` / `user_id` khác null. UNIQUE `(key, language_code, ledger_id, user_id)` NULLS NOT DISTINCT.
+
+**Thứ tự lấy chữ** (RPC `get_ui_texts(p_language, p_ledger_id)`, cache ở `/api/translations`):
+1. `translation_overrides` của người dùng
+2. `translation_overrides` của sổ đang chọn
+3. `translations` đúng ngôn ngữ, `status <> 'draft'`
+4. `translations` của `languages.fallback_code`
+5. Chính `key` (để dễ phát hiện chuỗi thiếu)
+
+**Thêm ngôn ngữ mới:** insert `languages` (`is_active=false`) → điền `translations` (tay hoặc máy dịch, `status='machine'`) → view `v_translation_coverage` báo % đã dịch → bật `is_active` là nút ngôn ngữ xuất hiện trên Sidebar. Không sửa code, không sửa schema.
+
+**Nguồn ban đầu:** script `scripts/seed-translations.ts` đọc `lib/i18n.ts` và sinh SQL seed cho `translation_keys` + `translations` (ja/vi/en). Sau đó DB là nguồn chính; `lib/i18n.ts` chỉ còn là bản dự phòng khi offline.
+
+---
+
+## C. Người dùng & quyền
+
+### C1. `users`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | | **PK = `auth.users.id`**, FK cascade |
+| `email` | citext | ❌ | | UNIQUE. Đồng bộ từ `auth.users` bằng trigger, client không sửa |
+| `display_name` | varchar(100) | ❌ | | |
 | `first_name` | varchar(100) | ✅ | | |
 | `last_name` | varchar(100) | ✅ | | |
-| `avatar_path` | text | ✅ | | Đường dẫn trong bucket `avatars` (không lưu URL công khai) |
+| `avatar_path` | text | ✅ | | Bucket `avatars` |
 | `phone` | varchar(30) | ✅ | | |
 | `birth_date` | date | ✅ | | |
 | `gender` | varchar(20) | ✅ | | `male / female / other / prefer_not_to_say` |
-| `country_code` | char(2) | ✅ | | FK → `countries.code` |
-| `status` | varchar(20) | ❌ | `'active'` | `active / disabled`. Client không sửa được |
-| `onboarded_at` | timestamptz | ✅ | | Set khi xong onboarding → quyết định chuyển hướng `/onboarding` |
+| `country_code` | char(2) | ✅ | | FK |
+| `status` | varchar(20) | ❌ | `'active'` | `active / disabled`. Client không sửa |
+| `onboarded_at` | timestamptz | ✅ | | Quyết định chuyển hướng `/onboarding` |
 | `last_seen_at` | timestamptz | ✅ | | |
 | *AUDIT* | | | | |
 
-Trigger: `on_auth_user_created` → tạo `users` + `user_preferences`; `on_auth_user_email_changed` → đồng bộ `email`.
-Client được sửa: `display_name, first_name, last_name, avatar_path, phone, birth_date, gender, country_code`.
+Trigger `on_auth_user_created` → tạo `users`, `user_preferences`, `user_notification_settings` mặc định.
 
-### B2. `user_preferences` — Cài đặt cá nhân (1-1)
+### C2. `user_preferences`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `user_id` | uuid | ❌ | | **PK**, FK → `users.id` cascade |
-| `language_code` | varchar(10) | ❌ | `'ja'` | FK → `languages.code`. Nút chọn ngôn ngữ ở Sidebar ghi vào đây |
-| `locale` | varchar(10) | ❌ | `'ja-JP'` | Định dạng số/ngày |
-| `timezone_code` | varchar(64) | ❌ | `'Asia/Tokyo'` | FK → `time_zones.code` |
-| `default_currency_code` | char(3) | ❌ | `'JPY'` | FK. Tiền tệ đề xuất khi tạo sổ mới |
-| `default_ledger_id` | uuid | ✅ | | FK → `ledgers.id` `on delete set null`. Sổ mở khi đăng nhập (thay `localStorage lastMembershipContext`) |
-| `date_format` | varchar(20) | ❌ | `'yyyy-MM-dd'` | `yyyy-MM-dd / dd/MM/yyyy / yyyy年M月d日` |
-| `week_starts_on` | smallint | ❌ | `0` | 0 = Chủ nhật (lịch Nhật), 1 = Thứ hai |
-| `theme` | varchar(10) | ❌ | `'system'` | `light / dark / system` |
+| `language_code` | varchar(10) | ❌ | `'ja'` | FK → `languages.code` |
+| `locale` | varchar(10) | ❌ | `'ja-JP'` | |
+| `timezone_code` | varchar(64) | ❌ | `'Asia/Tokyo'` | FK |
+| `default_currency_code` | char(3) | ❌ | `'JPY'` | FK. Đề xuất khi tạo sổ |
+| `default_ledger_id` | uuid | ✅ | | FK → `ledgers.id` set null |
+| `date_format` | varchar(20) | ❌ | `'yyyy-MM-dd'` | |
+| `week_starts_on` | smallint | ❌ | `0` | 0 = Chủ nhật |
+| `theme` | varchar(10) | ❌ | `'system'` | `light / dark / system` (`/settings/appearance`) |
 | `dashboard_density` | varchar(15) | ❌ | `'comfortable'` | `comfortable / compact` |
-| `hide_balances` | boolean | ❌ | `false` | Ẩn số tiền (chế độ riêng tư) |
-| `start_page` | varchar(50) | ❌ | `'/'` | Trang mở sau đăng nhập |
-| `notification_settings` | jsonb | ❌ | *xem dưới* | Ma trận loại thông báo × kênh |
+| `hide_balances` | boolean | ❌ | `false` | |
+| `start_page` | varchar(50) | ❌ | `'/'` | |
 | `updated_at` | timestamptz | ❌ | `now()` | |
 
-`notification_settings` mặc định:
-```json
-{ "budget_warning": {"in_app": true, "email": true},
-  "budget_exceeded": {"in_app": true, "email": true},
-  "import_done": {"in_app": true, "email": false},
-  "recurring_due": {"in_app": true, "email": false},
-  "member_activity": {"in_app": true, "email": false},
-  "weekly_summary": {"in_app": false, "email": true} }
-```
-
-### B3. `roles` — Vai trò trong sổ
-| Cột | Kiểu | Null | Mặc định | Mô tả |
-|---|---|---|---|---|
-| `code` | varchar(20) | ❌ | | **PK**. `OWNER / ADMIN / MEMBER / VIEWER` |
-| `name_i18n` | jsonb | ❌ | | `{"ja":"オーナー","vi":"Chủ sổ","en":"Owner"}` |
-| `description_i18n` | jsonb | ❌ | `'{}'` | Hiện trong modal mời |
-| `rank` | smallint | ❌ | | 400/300/200/100 — so sánh "ít nhất ADMIN" |
-| `is_assignable` | boolean | ❌ | `true` | OWNER = `false` (chỉ đổi qua RPC chuyển quyền sở hữu) |
-| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
-
-### B4. `permissions` — Quyền nguyên tử
-| Cột | Kiểu | Null | Mặc định | Mô tả |
-|---|---|---|---|---|
-| `code` | varchar(50) | ❌ | | **PK**. Dạng `resource.action`: `transaction.create` |
-| `resource` | varchar(30) | ❌ | | `ledger, member, account, category, transaction, budget, recurring, import, report` |
-| `action` | varchar(20) | ❌ | | `read, create, update, delete, invite, export, manage` |
-| `description` | text | ✅ | | |
-
-### B5. `role_permissions` — Vai trò ↔ quyền
-| Cột | Kiểu | Null | Mặc định | Mô tả |
-|---|---|---|---|---|
-| `role_code` | varchar(20) | ❌ | | FK → `roles.code`. PK ghép |
-| `permission_code` | varchar(50) | ❌ | | FK → `permissions.code`. PK ghép |
-
-Ma trận seed:
-
-| Quyền | OWNER | ADMIN | MEMBER | VIEWER |
-|---|:-:|:-:|:-:|:-:|
-| `ledger.read` | ✅ | ✅ | ✅ | ✅ |
-| `ledger.update` | ✅ | ✅ | | |
-| `ledger.delete` | ✅ | | | |
-| `member.invite / member.update / member.remove` | ✅ | ✅ | | |
-| `account.* / category.* / budget.* / recurring.*` (create/update/delete) | ✅ | ✅ | ✅ | |
-| `transaction.create / transaction.update` | ✅ | ✅ | ✅ | |
-| `transaction.delete` | ✅ | ✅ | | |
-| `import.create` | ✅ | ✅ | ✅ | |
-| `report.read` | ✅ | ✅ | ✅ | ✅ |
-| `report.export` | ✅ | ✅ | ✅ | |
-
-Hàm RLS: `has_ledger_permission(p_ledger_id uuid, p_permission varchar) returns boolean` (SECURITY DEFINER, `search_path=public`, chỉ cấp EXECUTE cho `authenticated`).
-
----
-
-## C. Sổ & thành viên
-
-### C1. `ledgers` — Sổ (thay tenants/households/organizations)
+### C3. `user_sessions` — Phiên đăng nhập / thiết bị (`/settings/security`, `/settings/devices`)
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `name` | varchar(100) | ❌ | | `個人財務`, `Gia đình` |
-| `ledger_type` | varchar(20) | ❌ | `'personal'` | `personal / family / business / freelance` (bước "Mục đích" ở onboarding) |
-| `currency_code` | char(3) | ❌ | | FK. **Tiền tệ gốc — nguồn duy nhất cho mọi hiển thị số tiền** (thay "Mock Ledger USD") |
-| `timezone_code` | varchar(64) | ❌ | | FK → `time_zones.code` |
-| `country_code` | char(2) | ✅ | | FK → `countries.code` |
+| `user_id` | uuid | ❌ | | FK → `users.id` cascade |
+| `auth_session_id` | uuid | ✅ | | UNIQUE. `auth.sessions.id` — thu hồi phiên thật |
+| `device_name` | varchar(100) | ✅ | | `MacBook Pro`, `iPhone` |
+| `device_type` | varchar(10) | ❌ | `'desktop'` | `desktop / mobile / tablet` |
+| `browser` | varchar(50) | ✅ | | Parse từ User-Agent |
+| `os` | varchar(50) | ✅ | | |
+| `ip_address` | inet | ✅ | | |
+| `city` | varchar(100) | ✅ | | |
+| `country_code` | char(2) | ✅ | | FK |
+| `risk_level` | varchar(10) | ❌ | `'low'` | `low / medium / high` (IP/thiết bị mới) |
+| `is_trusted` | boolean | ❌ | `false` | |
+| `created_at` | timestamptz | ❌ | `now()` | |
+| `last_active_at` | timestamptz | ❌ | `now()` | |
+| `revoked_at` | timestamptz | ✅ | | |
+
+Ghi bởi Edge Function khi đăng nhập / middleware định kỳ. MFA và passkey dùng Supabase Auth (`auth.mfa_factors`), không cần bảng riêng.
+
+### C4. `roles`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(20) | ❌ | | **PK**. `OWNER, ADMIN, MEMBER, VIEWER, ACCOUNTANT, AUDITOR` |
+| `name_key` | varchar(150) | ❌ | | FK → `translation_keys.key` |
+| `description_key` | varchar(150) | ✅ | | FK. Mô tả trong modal mời |
+| `rank` | smallint | ❌ | | 400/300/200/100 |
+| `is_assignable` | boolean | ❌ | `true` | OWNER = `false` |
+| `sort_order` | smallint | ❌ | `0` | |
+| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
+
+### C5. `permissions`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(50) | ❌ | | **PK**. `transaction.create` |
+| `resource` | varchar(30) | ❌ | | |
+| `action` | varchar(20) | ❌ | | |
+| `description_key` | varchar(150) | ✅ | | FK |
+
+### C6. `role_permissions`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `role_code` | varchar(20) | ❌ | | FK. PK ghép |
+| `permission_code` | varchar(50) | ❌ | | FK. PK ghép |
+
+| Quyền | OWNER | ADMIN | MEMBER | ACCOUNTANT | AUDITOR | VIEWER |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|
+| `ledger.read`, `report.read` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `ledger.update`, `translation.override` | ✅ | ✅ | | | | |
+| `ledger.delete` | ✅ | | | | | |
+| `member.invite / update / remove` | ✅ | ✅ | | | | |
+| `account.* / category.* / budget.* / recurring.*` | ✅ | ✅ | ✅ | ✅ | | |
+| `transaction.create / update`, `import.create` | ✅ | ✅ | ✅ | ✅ | | |
+| `transaction.delete`, `transaction.reconcile` | ✅ | ✅ | | ✅ | | |
+| `report.export`, `audit.read` | ✅ | ✅ | | ✅ | ✅ | |
+
+---
+
+## D. Sổ & thành viên
+
+### D1. `ledger_types`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(20) | ❌ | | **PK**. `personal, family, business, freelance` |
+| `name_key` | varchar(150) | ❌ | | FK |
+| `description_key` | varchar(150) | ✅ | | FK. Mô tả thẻ ở onboarding |
+| `icon` | varchar(50) | ❌ | | |
+| `default_fiscal_start_month` | smallint | ❌ | `1` | business = 4 |
+| `default_template_code` | varchar(30) | ✅ | | FK → `category_templates.code` |
+| `sort_order` | smallint | ❌ | `0` | |
+| `is_active` | boolean | ❌ | `true` | |
+
+### D2. `ledgers`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `name` | varchar(100) | ❌ | | |
+| `ledger_type_code` | varchar(20) | ❌ | `'personal'` | FK → `ledger_types.code` |
+| `currency_code` | char(3) | ❌ | | FK. Nguồn duy nhất cho hiển thị tiền |
+| `timezone_code` | varchar(64) | ❌ | | FK |
+| `country_code` | char(2) | ✅ | | FK |
 | `locale` | varchar(10) | ❌ | | |
-| `fiscal_year_start_month` | smallint | ❌ | `1` | 1–12. Doanh nghiệp Nhật = 4 |
-| `icon` | varchar(50) | ✅ | | Tên icon lucide |
+| `fiscal_year_start_month` | smallint | ❌ | `1` | 1–12 |
+| `icon` | varchar(50) | ✅ | | |
 | `color` | varchar(9) | ✅ | | |
-| `owner_user_id` | uuid | ❌ | | FK → `users.id`. Chỉ đổi qua RPC `transfer_ledger_ownership` |
+| `owner_user_id` | uuid | ❌ | | FK → `users.id`. Chỉ đổi qua RPC chuyển quyền sở hữu |
 | `status` | varchar(20) | ❌ | `'active'` | `active / archived` |
 | *AUDIT* | | | | |
 
-Tạo **chỉ qua RPC** `create_ledger(...)` hoặc `setup_onboarding(...)` (insert sổ + thành viên OWNER + danh mục mặc định + tài khoản "Tiền mặt" trong 1 transaction).
-
-### C2. `ledger_members` — Thành viên của sổ
+### D3. `ledger_members`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `ledger_id` | uuid | ❌ | | FK → `ledgers.id` cascade |
-| `user_id` | uuid | ❌ | | FK → `users.id` cascade |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `user_id` | uuid | ❌ | | FK cascade |
 | `role_code` | varchar(20) | ❌ | `'MEMBER'` | FK → `roles.code` |
 | `status` | varchar(20) | ❌ | `'active'` | `active / left / removed` |
-| `color` | varchar(9) | ✅ | | Màu avatar trong sổ (cột "ユーザー" ở bảng giao dịch) |
+| `color` | varchar(9) | ✅ | | Màu avatar trong sổ |
 | `joined_at` | timestamptz | ❌ | `now()` | |
 | `left_at` | timestamptz | ✅ | | |
-| `invitation_id` | uuid | ✅ | | FK → `ledger_invitations.id`. Vào sổ qua lời mời nào |
+| `invitation_id` | uuid | ✅ | | FK → `ledger_invitations.id` set null |
 | *AUDIT* | | | | |
 
-UNIQUE `(ledger_id, user_id)`. Mời lại người đã `left/removed` → RPC **kích hoạt lại** dòng cũ thay vì insert (sửa lỗi `duplicate key`).
-Ràng buộc: mỗi sổ có đúng 1 thành viên `role_code='OWNER'` và `status='active'` (partial UNIQUE + trigger).
+UNIQUE `(ledger_id, user_id)`; mời lại → kích hoạt dòng cũ. Mỗi sổ đúng 1 OWNER active.
 
-### C3. `ledger_invitations` — Lời mời
+### D4. `ledger_invitations`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `ledger_id` | uuid | ❌ | | FK → `ledgers.id` cascade |
-| `email` | citext | ❌ | | Mời được **cả email chưa đăng ký** |
-| `role_code` | varchar(20) | ❌ | `'MEMBER'` | FK → `roles.code`. CHECK `<> 'OWNER'` |
-| `token_hash` | text | ❌ | | UNIQUE. SHA-256 của token; token gốc chỉ trả về 1 lần cho người mời (link `/join?token=`) |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `email` | citext | ❌ | | Kể cả email chưa đăng ký |
+| `role_code` | varchar(20) | ❌ | `'MEMBER'` | FK. CHECK `<> 'OWNER'` |
+| `token_hash` | char(64) | ❌ | | UNIQUE. SHA-256; không đọc được qua RLS |
 | `status` | varchar(20) | ❌ | `'pending'` | `pending / accepted / declined / revoked / expired` |
+| `message` | text | ✅ | | |
 | `expires_at` | timestamptz | ❌ | `now() + 7 days` | |
-| `invited_by` | uuid | ✅ | | FK → `users.id` set null |
-| `accepted_by` | uuid | ✅ | | FK → `users.id` set null |
+| `invited_by` | uuid | ✅ | | FK set null |
+| `accepted_by` | uuid | ✅ | | FK set null |
 | `responded_at` | timestamptz | ✅ | | |
-| `message` | text | ✅ | | Lời nhắn kèm theo |
 | `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
 
-Partial UNIQUE `(ledger_id, email) where status = 'pending'`. `token_hash` **không** đọc được qua RLS.
+Partial UNIQUE `(ledger_id, email) where status = 'pending'`.
 
 ---
 
-## D. Tiền
+## E. Tiền
 
-### D1. `financial_accounts` — Ví / ngân hàng / thẻ
+### E1. `financial_accounts`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `ledger_id` | uuid | ❌ | | FK → `ledgers.id` cascade |
-| `name` | varchar(100) | ❌ | | `PayPay`, `三井住友銀行 普通` |
-| `account_type` | varchar(20) | ❌ | | `cash / bank / credit_card / e_wallet / investment / loan / other` |
-| `provider_code` | varchar(30) | ✅ | | `paypay, paypay_card, rakuten_pay, smbc, mufg, vcb, mbbank, generic_csv` — khớp `lib/constants.ts PROVIDERS` và bộ parser |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `name` | varchar(100) | ❌ | | |
+| `account_type_code` | varchar(20) | ❌ | | FK → `account_types.code` |
+| `provider_code` | varchar(30) | ✅ | | FK → `providers.code`. Chọn parser khi import |
 | `institution_name` | varchar(100) | ✅ | | |
-| `account_number_last4` | varchar(4) | ✅ | | Không lưu số tài khoản đầy đủ |
-| `currency_code` | char(3) | ❌ | | FK. Mặc định = tiền tệ của sổ |
-| `opening_balance` | numeric(20,4) | ❌ | `0` | Số dư đầu kỳ (có thể âm với thẻ tín dụng) |
+| `account_number_last4` | varchar(4) | ✅ | | |
+| `currency_code` | char(3) | ❌ | | FK |
+| `opening_balance` | numeric(20,4) | ❌ | `0` | |
 | `opening_date` | date | ❌ | `current_date` | |
-| `credit_limit` | numeric(20,4) | ✅ | | Chỉ thẻ tín dụng |
-| `color` | varchar(9) | ✅ | | Màu chip tài khoản |
+| `credit_limit` | numeric(20,4) | ✅ | | |
+| `color` | varchar(9) | ✅ | | |
 | `icon` | varchar(50) | ✅ | | |
-| `include_in_net_worth` | boolean | ❌ | `true` | Tính vào "総残高" |
+| `include_in_net_worth` | boolean | ❌ | `true` | |
 | `is_archived` | boolean | ❌ | `false` | |
 | `sort_order` | smallint | ❌ | `0` | |
 | *AUDIT* | | | | |
 
-Số dư hiện tại **không lưu**, tính bằng view `v_account_balances`.
-
-### D2. `categories` — Danh mục (cây)
+### E2. `categories`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `ledger_id` | uuid | ❌ | | FK → `ledgers.id` cascade |
-| `parent_id` | uuid | ✅ | | FK → `categories.id`. Trigger: cùng `ledger_id`, sâu tối đa 3 cấp, không vòng lặp |
-| `slug` | varchar(80) | ❌ | | UNIQUE `(ledger_id, slug)`. Dùng cho URL `/categories/[slug]` |
-| `name` | varchar(100) | ❌ | | |
-| `name_i18n` | jsonb | ❌ | `'{}'` | Tên theo ngôn ngữ (danh mục mặc định) |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `parent_id` | uuid | ✅ | | FK self. Cùng sổ, tối đa 3 cấp, không vòng |
+| `slug` | varchar(80) | ❌ | | UNIQUE `(ledger_id, slug)` → URL `/categories/[slug]` |
+| `name` | varchar(100) | ❌ | | Tên người dùng đặt / đã sửa |
+| `name_key` | varchar(150) | ✅ | | FK → `translation_keys.key`. Có ở danh mục mặc định; hiển thị theo ngôn ngữ cho tới khi người dùng đổi tên |
+| `description` | text | ✅ | | |
 | `category_type` | varchar(20) | ❌ | `'expense'` | `expense / income / transfer` |
-| `icon` | varchar(50) | ✅ | | Tên icon lucide (thay emoji) |
+| `icon` | varchar(50) | ✅ | | Tên icon lucide |
 | `color` | varchar(9) | ✅ | | |
 | `sort_order` | smallint | ❌ | `0` | |
 | `is_system` | boolean | ❌ | `false` | `未分類`, `振替` — không xoá được |
-| `is_shared` | boolean | ❌ | `false` | Danh mục chia tiền giữa thành viên (tab "Số dư / Thành viên") |
-| `is_archived` | boolean | ❌ | `false` | Tab "Lưu trữ" |
-| `archived_at` | timestamptz | ✅ | | |
+| `is_shared` | boolean | ❌ | `false` | Chia tiền giữa thành viên |
+| `is_archived` | boolean | ❌ | `false` | |
+| `archived_at` | timestamptz | ✅ | | Dải "Lưu trữ" |
+| `template_item_id` | uuid | ✅ | | FK → `category_template_items.id` set null. Sinh từ mẫu nào |
 | *AUDIT* | | | | |
 
-Seed khi tạo sổ: 食費, 交通, 買い物, 娯楽, 医療・健康, 光熱費, 住居, 通信, 給与, その他収入, 振替, 未分類 (thay hằng số `CATEGORIES` trong code).
-Gộp danh mục: RPC `merge_categories(source_id, target_id)` chuyển giao dịch, quy tắc, ngân sách rồi lưu trữ nguồn.
+Tên hiển thị: `category_translations[ngôn ngữ]` → (nếu `name_key` còn) bản dịch của key → `name`.
 
-### D3. `category_rules` — Từ khoá tự phân loại
+### E3. `category_translations` — Người dùng tự dịch tên danh mục
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `category_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `language_code` | varchar(10) | ❌ | | FK. PK ghép |
+| `name` | varchar(100) | ❌ | | |
+| `description` | text | ✅ | | |
+| `updated_at` | timestamptz | ❌ | `now()` | |
+
+### E4. `category_members` — Thành viên của danh mục chia sẻ (tab "メンバー")
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `category_id` | uuid | ❌ | | FK cascade |
+| `user_id` | uuid | ❌ | | FK cascade. Phải là thành viên active của sổ |
+| `role` | varchar(10) | ❌ | `'member'` | `owner / member` ("chủ nhóm") |
+| `share_ratio` | numeric(7,4) | ✅ | | Tỷ lệ chia mặc định; `NULL` = chia đều |
+| `joined_at` | timestamptz | ❌ | `now()` | |
+| `left_at` | timestamptz | ✅ | | |
+
+UNIQUE `(category_id, user_id)`.
+
+### E5. `category_accounts` — Tài khoản liên kết với danh mục ("Liên kết tài khoản")
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `category_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `account_id` | uuid | ❌ | | FK → `financial_accounts.id` cascade. PK ghép |
+| `is_default` | boolean | ❌ | `false` | Tài khoản chọn sẵn khi thêm giao dịch vào danh mục này |
+| `created_at` | timestamptz | ❌ | `now()` | |
+
+### E6. `category_rules`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
 | `ledger_id` | uuid | ❌ | | FK cascade |
-| `category_id` | uuid | ❌ | | FK → `categories.id` cascade |
+| `category_id` | uuid | ❌ | | FK cascade |
 | `match_field` | varchar(20) | ❌ | `'description'` | `description / merchant` |
 | `match_type` | varchar(20) | ❌ | `'contains'` | `contains / equals / starts_with / regex` |
-| `pattern` | varchar(200) | ❌ | | `starbucks`, `セブン` (so khớp không phân biệt hoa/thường, đã chuẩn hoá full/half-width) |
-| `account_id` | uuid | ✅ | | Chỉ áp cho 1 tài khoản |
+| `pattern` | varchar(200) | ❌ | | Đã chuẩn hoá hoa/thường, full/half-width |
+| `account_id` | uuid | ✅ | | FK. Chỉ áp cho 1 tài khoản |
+| `transaction_type` | varchar(20) | ✅ | | |
 | `amount_min` | numeric(20,4) | ✅ | | |
 | `amount_max` | numeric(20,4) | ✅ | | |
-| `transaction_type` | varchar(20) | ✅ | | Chỉ áp cho chi / thu |
-| `priority` | smallint | ❌ | `100` | Nhỏ hơn chạy trước |
+| `priority` | smallint | ❌ | `100` | |
+| `apply_on_import` | boolean | ❌ | `true` | "áp dụng tự động khi import" |
 | `is_active` | boolean | ❌ | `true` | |
-| `hit_count` | integer | ❌ | `0` | Hiện "đã khớp N lần" |
+| `hit_count` | integer | ❌ | `0` | |
 | `last_matched_at` | timestamptz | ✅ | | |
 | *AUDIT* | | | | |
 
-UNIQUE `(ledger_id, match_field, match_type, pattern)`. Áp dụng phía server bằng RPC `apply_category_rules(ledger_id, transaction_ids[])` (khi import, khi bấm "Áp dụng N gợi ý").
+UNIQUE `(ledger_id, match_field, match_type, pattern)`.
 
-### D4. `budgets` — Ngân sách
+### E7. `category_templates` — Bộ danh mục mẫu (Du lịch, Hộ gia đình, Đám cưới…)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(30) | ❌ | | **PK**. `default_personal, household, travel, wedding, business` |
+| `name_key` | varchar(150) | ❌ | | FK |
+| `description_key` | varchar(150) | ✅ | | FK |
+| `icon` | varchar(50) | ✅ | | |
+| `sort_order` | smallint | ❌ | `0` | |
+| `is_active` | boolean | ❌ | `true` | |
+
+### E8. `category_template_items`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `template_code` | varchar(30) | ❌ | | FK cascade |
+| `parent_item_id` | uuid | ✅ | | FK self |
+| `slug` | varchar(80) | ❌ | | |
+| `name_key` | varchar(150) | ❌ | | FK |
+| `category_type` | varchar(20) | ❌ | `'expense'` | |
+| `icon` | varchar(50) | ✅ | | |
+| `color` | varchar(9) | ✅ | | |
+| `is_system` | boolean | ❌ | `false` | |
+| `sort_order` | smallint | ❌ | `0` | |
+
+UNIQUE `(template_code, slug)`. RPC `apply_category_template(ledger_id, template_code)` sao chép vào `categories`.
+
+### E9. `budgets`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
 | `ledger_id` | uuid | ❌ | | FK cascade |
-| `category_id` | uuid | ✅ | | FK → `categories.id` cascade. `NULL` = ngân sách tổng của sổ |
+| `category_id` | uuid | ✅ | | FK cascade. `NULL` = ngân sách tổng |
 | `period_type` | varchar(10) | ❌ | `'monthly'` | `monthly / yearly` |
-| `period_start` | date | ✅ | | `NULL` = áp mọi kỳ; có giá trị = chỉ kỳ đó (ghi đè) |
+| `period_start` | date | ✅ | | `NULL` = mọi kỳ |
 | `amount` | numeric(20,4) | ❌ | | CHECK `> 0` |
-| `warning_threshold_pct` | smallint | ❌ | `80` | 1–100. Vượt → thông báo `budget_warning` |
-| `rollover` | boolean | ❌ | `false` | Chuyển phần dư sang kỳ sau |
+| `warning_threshold_pct` | smallint | ❌ | `80` | |
+| `rollover` | boolean | ❌ | `false` | |
 | *AUDIT* | | | | |
 
-UNIQUE `(ledger_id, category_id, period_type, period_start)` (NULLS NOT DISTINCT).
+UNIQUE `(ledger_id, category_id, period_type, period_start)` NULLS NOT DISTINCT.
 
-### D5. `transactions` — Giao dịch
-| Cột | Kiểu | Null | Mặc định | Mô tả |
-|---|---|---|---|---|
-| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `ledger_id` | uuid | ❌ | | FK → `ledgers.id` cascade |
-| `account_id` | uuid | ❌ | | FK → `financial_accounts.id`. Tài khoản phát sinh |
-| `transfer_account_id` | uuid | ✅ | | FK. Bắt buộc khi `transaction_type='transfer'` (tài khoản nhận) |
-| `transaction_type` | varchar(20) | ❌ | | `expense / income / transfer` |
-| `status` | varchar(20) | ❌ | `'posted'` | `pending / posted / void` (pending = định kỳ chờ xác nhận) |
-| `amount` | numeric(20,4) | ❌ | | **CHECK `> 0`** (luôn dương) |
-| `currency_code` | char(3) | ❌ | | FK. Tiền tệ gốc của giao dịch |
-| `exchange_rate` | numeric(20,10) | ❌ | `1` | Quy đổi sang tiền của sổ |
-| `base_amount` | numeric(20,4) | ❌ | | = `amount × exchange_rate` (trigger tính). Mọi báo cáo dùng cột này |
-| `transaction_date` | date | ❌ | | Ngày giao dịch (múi giờ của sổ) |
-| `transaction_time` | time | ✅ | | |
-| `description` | text | ❌ | | Nội dung gốc từ ngân hàng / người nhập |
-| `merchant_name` | varchar(200) | ✅ | | Tên cửa hàng đã làm sạch |
-| `category_id` | uuid | ✅ | | FK → `categories.id` set null. `NULL` = chưa phân loại |
-| `categorized_by` | varchar(10) | ✅ | | `manual / rule / ai / import` — tab "Tự động / Cần xem lại" |
-| `category_rule_id` | uuid | ✅ | | FK → `category_rules.id` set null |
-| `needs_review` | boolean | ❌ | `false` | Badge "Cần xem lại" |
-| `notes` | text | ✅ | | Ghi chú của người dùng |
-| `tags` | text[] | ❌ | `'{}'` | Nhãn tự do (GIN index) |
-| `paid_by_user_id` | uuid | ✅ | | FK → `users.id` set null. Người trả (cột "ユーザー"), mặc định = người tạo |
-| `source` | varchar(20) | ❌ | `'manual'` | `manual / import / scan / recurring` |
-| `import_job_id` | uuid | ✅ | | FK → `import_jobs.id` set null |
-| `document_id` | uuid | ✅ | | FK → `documents.id` set null (ảnh hoá đơn) |
-| `recurring_rule_id` | uuid | ✅ | | FK → `recurring_rules.id` set null |
-| `recurring_occurrence` | date | ✅ | | Kỳ định kỳ đã sinh |
-| `external_id` | varchar(255) | ✅ | | Mã giao dịch từ ngân hàng |
-| `dedupe_hash` | char(64) | ✅ | | SHA-256(`account_id|date|amount|description`) khi không có `external_id` |
-| `exclude_from_reports` | boolean | ❌ | `false` | Ví dụ: nạp tiền PayPay từ thẻ (tránh tính chi 2 lần) |
-| `raw_data` | jsonb | ✅ | | Dòng gốc khi import ("元データ" trong panel chi tiết) |
-| *AUDIT* | | | | |
-
-Ràng buộc & index:
-- CHECK `(transaction_type = 'transfer') = (transfer_account_id is not null)`; CHECK `transfer_account_id <> account_id`.
-- Partial UNIQUE `(account_id, external_id) where external_id is not null and deleted_at is null`.
-- Partial UNIQUE `(account_id, dedupe_hash) where dedupe_hash is not null and deleted_at is null`.
-- Partial UNIQUE `(recurring_rule_id, recurring_occurrence) where recurring_rule_id is not null`.
-- Index: `(ledger_id, transaction_date desc)`, `(ledger_id, category_id, transaction_date)`, `(account_id, transaction_date)`, GIN `tags`, trigram `description` (tìm kiếm).
-- Trigger: `category_id` và `account_id` phải cùng `ledger_id`; tính `base_amount`; kiểm tra ngân sách → tạo `notifications`.
-
-### D6. `transaction_shares` — Chia tiền giữa thành viên
-| Cột | Kiểu | Null | Mặc định | Mô tả |
-|---|---|---|---|---|
-| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `transaction_id` | uuid | ❌ | | FK → `transactions.id` cascade |
-| `user_id` | uuid | ❌ | | FK → `users.id` cascade. Phải là thành viên của sổ |
-| `share_amount` | numeric(20,4) | ❌ | | Phần phải chịu. Tổng = `transactions.amount` (trigger kiểm tra) |
-| `is_settled` | boolean | ❌ | `false` | Đã thanh toán lại cho người trả |
-| `settled_at` | timestamptz | ✅ | | |
-| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
-
-UNIQUE `(transaction_id, user_id)`. Chỉ dùng cho giao dịch thuộc danh mục `is_shared = true`. Nguồn cho tab "Số dư từng người / Bạn đã trả".
-
-### D7. `recurring_rules` — Giao dịch định kỳ
+### E10. `tags`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
 | `ledger_id` | uuid | ❌ | | FK cascade |
-| `name` | varchar(100) | ❌ | | `家賃`, `Netflix` |
-| `transaction_type` | varchar(20) | ❌ | `'expense'` | `expense / income / transfer` |
+| `name` | varchar(50) | ❌ | | UNIQUE `(ledger_id, lower(name))` |
+| `color` | varchar(9) | ✅ | | |
+| *AUDIT* | | | | |
+
+### E11. `transactions`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `account_id` | uuid | ❌ | | FK → `financial_accounts.id` |
+| `transfer_account_id` | uuid | ✅ | | FK. Bắt buộc khi `transfer` |
+| `transaction_type` | varchar(20) | ❌ | | `expense / income / transfer` |
+| `status` | varchar(20) | ❌ | `'posted'` | `pending / posted / void` |
 | `amount` | numeric(20,4) | ❌ | | CHECK `> 0` |
 | `currency_code` | char(3) | ❌ | | FK |
-| `account_id` | uuid | ❌ | | FK → `financial_accounts.id` |
-| `transfer_account_id` | uuid | ✅ | | Khi là chuyển khoản |
-| `category_id` | uuid | ✅ | | FK → `categories.id` set null |
-| `description` | text | ❌ | | Nội dung giao dịch sinh ra |
+| `exchange_rate` | numeric(20,10) | ❌ | `1` | |
+| `base_amount` | numeric(20,4) | ❌ | | Trigger tính = `amount × exchange_rate` |
+| `transaction_date` | date | ❌ | | |
+| `transaction_time` | time | ✅ | | |
+| `description` | text | ❌ | | |
+| `merchant_name` | varchar(200) | ✅ | | |
+| `category_id` | uuid | ✅ | | FK set null |
+| `categorized_by` | varchar(10) | ✅ | | `manual / rule / ai / import` |
+| `category_rule_id` | uuid | ✅ | | FK set null |
+| `needs_review` | boolean | ❌ | `false` | |
 | `notes` | text | ✅ | | |
-| `frequency` | varchar(10) | ❌ | `'monthly'` | `daily / weekly / monthly / yearly` |
-| `interval_count` | smallint | ❌ | `1` | Mỗi N kỳ |
-| `day_of_month` | smallint | ✅ | | 1–31; ngày không tồn tại → ngày cuối tháng |
-| `day_of_week` | smallint | ✅ | | 0–6 |
-| `month_of_year` | smallint | ✅ | | 1–12 |
-| `start_date` | date | ❌ | | |
-| `end_date` | date | ✅ | | |
-| `next_run_date` | date | ❌ | | Cron server đọc cột này |
-| `last_generated_date` | date | ✅ | | |
-| `auto_post` | boolean | ❌ | `true` | `false` → sinh giao dịch `status='pending'` chờ xác nhận |
-| `is_active` | boolean | ❌ | `true` | Nút bật/tắt ở màn Định kỳ |
+| `paid_by_user_id` | uuid | ✅ | | FK set null. Cột "ユーザー" |
+| `source` | varchar(20) | ❌ | `'manual'` | `manual / import / scan / recurring / bank_sync` |
+| `import_job_id` | uuid | ✅ | | FK set null |
+| `import_row_id` | uuid | ✅ | | FK → `import_rows.id` set null. Xem "元データ" |
+| `document_id` | uuid | ✅ | | FK set null |
+| `recurring_rule_id` | uuid | ✅ | | FK set null |
+| `recurring_occurrence` | date | ✅ | | |
+| `bank_connection_id` | uuid | ✅ | | FK set null (giai đoạn 3) |
+| `external_id` | varchar(255) | ✅ | | |
+| `dedupe_hash` | char(64) | ✅ | | |
+| `exclude_from_reports` | boolean | ❌ | `false` | |
+| `is_reconciled` | boolean | ❌ | `false` | KPI "Chờ đối soát" / "要確認" |
+| `reconciled_at` | timestamptz | ✅ | | |
+| `reconciled_by` | uuid | ✅ | | FK set null |
 | *AUDIT* | | | | |
 
-Sinh giao dịch bằng `pg_cron` (hoặc Edge Function) mỗi ngày, idempotent nhờ UNIQUE `(recurring_rule_id, recurring_occurrence)`. Thay cho `applied_months` tính ở client.
+Ràng buộc: CHECK transfer ⇔ `transfer_account_id`; partial UNIQUE `(account_id, external_id)`, `(account_id, dedupe_hash)`, `(recurring_rule_id, recurring_occurrence)`. Index `(ledger_id, transaction_date desc)`, `(ledger_id, category_id, transaction_date)`, `(account_id, transaction_date)`, trigram `description`.
+
+### E12. `transaction_tags`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `transaction_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `tag_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `created_at` | timestamptz | ❌ | `now()` | |
+
+### E13. `transaction_shares`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `transaction_id` | uuid | ❌ | | FK cascade |
+| `user_id` | uuid | ❌ | | FK cascade |
+| `share_amount` | numeric(20,4) | ❌ | | Tổng = `transactions.amount` (trigger) |
+| `created_at`, `updated_at` | timestamptz | ❌ | `now()` | |
+
+UNIQUE `(transaction_id, user_id)`.
+
+### E14. `settlements` — Thanh toán lại giữa thành viên
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `category_id` | uuid | ✅ | | FK set null. Trong danh mục chia sẻ nào |
+| `from_user_id` | uuid | ❌ | | FK. Người trả lại |
+| `to_user_id` | uuid | ❌ | | FK. Người nhận. CHECK khác `from_user_id` |
+| `amount` | numeric(20,4) | ❌ | | CHECK `> 0` |
+| `currency_code` | char(3) | ❌ | | FK |
+| `settled_on` | date | ❌ | `current_date` | |
+| `note` | text | ✅ | | |
+| `transaction_id` | uuid | ✅ | | FK set null. Giao dịch chuyển tiền tương ứng (nếu có) |
+| *AUDIT* | | | | |
+
+View `v_member_balances` = Σ đã trả − Σ phần phải chịu ± settlements.
+
+### E15. `recurring_rules`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `name` | varchar(100) | ❌ | | |
+| `transaction_type` | varchar(20) | ❌ | `'expense'` | |
+| `amount` | numeric(20,4) | ❌ | | CHECK `> 0` |
+| `currency_code` | char(3) | ❌ | | FK |
+| `account_id` | uuid | ❌ | | FK |
+| `transfer_account_id` | uuid | ✅ | | FK |
+| `category_id` | uuid | ✅ | | FK set null |
+| `description` | text | ❌ | | |
+| `notes` | text | ✅ | | |
+| `frequency` | varchar(10) | ❌ | `'monthly'` | `daily / weekly / monthly / yearly` |
+| `interval_count` | smallint | ❌ | `1` | |
+| `day_of_month` | smallint | ✅ | | |
+| `day_of_week` | smallint | ✅ | | |
+| `month_of_year` | smallint | ✅ | | |
+| `start_date` | date | ❌ | | |
+| `end_date` | date | ✅ | | |
+| `next_run_date` | date | ❌ | | |
+| `last_generated_date` | date | ✅ | | |
+| `auto_post` | boolean | ❌ | `true` | |
+| `is_active` | boolean | ❌ | `true` | |
+| *AUDIT* | | | | |
+
+### E16. `bank_connections` — Kết nối ngân hàng / ứng dụng (giai đoạn 3)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `provider_code` | varchar(30) | ❌ | | FK → `providers.code` (`supports_api = true`) |
+| `account_id` | uuid | ✅ | | FK → `financial_accounts.id` set null |
+| `external_connection_id` | varchar(255) | ✅ | | ID phía nhà cung cấp |
+| `vault_secret_id` | uuid | ✅ | | Token lưu trong Supabase Vault — **không bao giờ lưu mật khẩu/token trong bảng** |
+| `status` | varchar(20) | ❌ | `'pending'` | `pending / active / error / expired / revoked` |
+| `consent_expires_at` | timestamptz | ✅ | | |
+| `last_synced_at` | timestamptz | ✅ | | |
+| `last_error` | text | ✅ | | |
+| *AUDIT* | | | | |
 
 ---
 
-## E. Nhập liệu
+## F. Nhập liệu
 
-### E1. `import_jobs` — Một lần import file
+### F1. `import_jobs`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
 | `ledger_id` | uuid | ❌ | | FK cascade |
-| `account_id` | uuid | ❌ | | FK → `financial_accounts.id`. Import vào tài khoản nào |
-| `provider_code` | varchar(30) | ❌ | | Parser đã dùng (tự nhận diện hoặc người dùng chọn) |
+| `account_id` | uuid | ❌ | | FK |
+| `provider_code` | varchar(30) | ❌ | | FK → `providers.code` |
 | `file_name` | varchar(255) | ❌ | | |
 | `file_type` | varchar(10) | ❌ | | `csv / pdf` |
-| `file_path` | text | ✅ | | Đường dẫn trong bucket `imports` (tuỳ chọn lưu) |
-| `file_size` | integer | ✅ | | byte |
-| `checksum` | char(64) | ❌ | | SHA-256 file. Cảnh báo "file này đã import ngày …" |
-| `column_mapping` | jsonb | ✅ | | Mapping cột cho CSV chung |
+| `file_path` | text | ✅ | | Bucket `imports` |
+| `file_size` | integer | ✅ | | |
+| `checksum` | char(64) | ❌ | | Cảnh báo file đã import |
 | `status` | varchar(20) | ❌ | `'parsed'` | `parsed / importing / completed / failed / cancelled` |
 | `total_rows` | integer | ❌ | `0` | |
 | `imported_rows` | integer | ❌ | `0` | |
 | `duplicate_rows` | integer | ❌ | `0` | |
-| `skipped_rows` | integer | ❌ | `0` | Người dùng bỏ chọn |
+| `skipped_rows` | integer | ❌ | `0` | |
 | `error_rows` | integer | ❌ | `0` | |
 | `error_message` | text | ✅ | | |
 | `completed_at` | timestamptz | ✅ | | |
 | *AUDIT* | | | | |
 
-### E2. `import_rows` — Từng dòng đã parse
+### F2. `import_column_mappings` — Mapping cột CSV chung
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `import_job_id` | uuid | ❌ | | FK → `import_jobs.id` cascade |
+| `import_job_id` | uuid | ✅ | | FK cascade. Mapping của 1 lần import |
+| `account_id` | uuid | ✅ | | FK cascade. Preset lưu cho tài khoản (lần sau tự áp) |
+| `target_field` | varchar(20) | ❌ | | `date / time / description / amount / debit / credit / currency / reference` |
+| `source_column` | varchar(100) | ❌ | | Tên cột trong file |
+| `source_index` | smallint | ✅ | | Vị trí cột |
+| `date_format` | varchar(20) | ✅ | | `yyyy/MM/dd` |
+| `created_at` | timestamptz | ❌ | `now()` | |
+
+CHECK: đúng 1 trong `import_job_id` / `account_id`. UNIQUE `(import_job_id, target_field)`, `(account_id, target_field)`.
+
+### F3. `import_rows`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `import_job_id` | uuid | ❌ | | FK cascade |
 | `row_number` | integer | ❌ | | |
-| `raw_data` | jsonb | ❌ | | Dòng gốc |
+| `raw_line` | text | ✅ | | Dòng gốc nguyên văn (CSV) |
 | `parsed_date` | date | ✅ | | |
 | `parsed_amount` | numeric(20,4) | ✅ | | Luôn dương |
-| `parsed_type` | varchar(20) | ✅ | | `expense / income / transfer` |
+| `parsed_type` | varchar(20) | ✅ | | |
 | `parsed_description` | text | ✅ | | |
-| `suggested_category_id` | uuid | ✅ | | FK set null (từ `category_rules`) |
+| `suggested_category_id` | uuid | ✅ | | FK set null |
 | `status` | varchar(20) | ❌ | `'new'` | `new / duplicate / error / skipped / imported` |
 | `duplicate_of_id` | uuid | ✅ | | FK → `transactions.id` set null |
-| `transaction_id` | uuid | ✅ | | FK → `transactions.id` set null. Giao dịch đã tạo |
 | `error_message` | text | ✅ | | |
 | `created_at` | timestamptz | ❌ | `now()` | |
 
-UNIQUE `(import_job_id, row_number)`. Tự xoá sau 90 ngày (cron), giữ `import_jobs`.
+UNIQUE `(import_job_id, row_number)`.
 
-### E3. `documents` — Ảnh hoá đơn và kết quả OCR
+### F4. `import_row_values` — Từng ô của dòng gốc (hiện ở "元データ")
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `import_row_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `column_index` | smallint | ❌ | | PK ghép |
+| `column_name` | varchar(100) | ❌ | | Tiêu đề cột trong file (`利用日`, `金額`) |
+| `value` | text | ✅ | | |
+
+### F5. `documents` — Hoá đơn
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
 | `ledger_id` | uuid | ❌ | | FK cascade |
 | `document_type` | varchar(20) | ❌ | `'receipt'` | `receipt / invoice / statement / other` |
-| `storage_path` | text | ❌ | | Đường dẫn trong bucket riêng tư `receipts` |
+| `storage_path` | text | ❌ | | Bucket `receipts` |
 | `file_name` | varchar(255) | ❌ | | |
-| `mime_type` | varchar(50) | ❌ | | `image/jpeg, image/png, image/heic, application/pdf` |
-| `file_size` | integer | ❌ | | ≤ 10 MB |
+| `mime_type` | varchar(50) | ❌ | | |
+| `file_size` | integer | ❌ | | ≤ 10MB |
 | `ocr_status` | varchar(20) | ❌ | `'pending'` | `pending / processing / done / failed` |
 | `ocr_provider` | varchar(30) | ✅ | | `gemini` |
 | `ocr_model` | varchar(50) | ✅ | | |
-| `ocr_result` | jsonb | ✅ | | JSON gốc AI trả về (dòng hàng, thuế…) |
+| `ocr_raw_text` | text | ✅ | | Toàn bộ chữ đọc được |
 | `extracted_merchant` | varchar(200) | ✅ | | |
 | `extracted_date` | date | ✅ | | |
 | `extracted_total` | numeric(20,4) | ✅ | | |
-| `extracted_currency` | char(3) | ✅ | | |
-| `confidence` | numeric(4,3) | ✅ | | 0–1 |
+| `extracted_tax` | numeric(20,4) | ✅ | | |
+| `extracted_currency` | char(3) | ✅ | | FK |
+| `suggested_category_id` | uuid | ✅ | | FK set null |
+| `confidence` | numeric(4,3) | ✅ | | |
 | `error_message` | text | ✅ | | |
-| `transaction_id` | uuid | ✅ | | FK → `transactions.id` set null. Giao dịch đã tạo từ hoá đơn |
+| `transaction_id` | uuid | ✅ | | FK set null |
 | *AUDIT* | | | | |
 
----
-
-## F. Hệ thống
-
-### F1. `notifications` — Thông báo trong app
+### F6. `document_line_items` — Dòng hàng trên hoá đơn
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | uuid | ❌ | `gen_random_uuid()` | PK |
-| `user_id` | uuid | ❌ | | FK → `users.id` cascade. Người nhận |
+| `document_id` | uuid | ❌ | | FK cascade |
+| `line_number` | smallint | ❌ | | UNIQUE `(document_id, line_number)` |
+| `name` | varchar(200) | ❌ | | |
+| `quantity` | numeric(10,3) | ❌ | `1` | |
+| `unit_price` | numeric(20,4) | ✅ | | |
+| `amount` | numeric(20,4) | ❌ | | |
+| `tax_rate` | numeric(5,2) | ✅ | | 8 / 10 (%) |
+| `category_id` | uuid | ✅ | | FK set null |
+
+---
+
+## G. Thông báo & nhật ký
+
+### G1. `notification_categories` — Nhóm thông báo (hàng của ma trận cài đặt)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(30) | ❌ | | **PK**. `security, billing, transactions, budget, import, report, insight, recurring, members, product_updates` |
+| `name_key` | varchar(150) | ❌ | | FK |
+| `description_key` | varchar(150) | ✅ | | FK |
+| `is_mandatory` | boolean | ❌ | `false` | `security` không tắt được kênh in-app |
+| `sort_order` | smallint | ❌ | `0` | |
+
+### G2. `notification_channels` — Kênh (cột của ma trận)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(20) | ❌ | | **PK**. `in_app, email, push, sms` (sau này `line`) |
+| `name_key` | varchar(150) | ❌ | | FK |
+| `icon` | varchar(50) | ❌ | | |
+| `is_available` | boolean | ❌ | `true` | `sms` / `push` = `false` cho tới khi có hạ tầng (UI hiện mờ) |
+| `sort_order` | smallint | ❌ | `0` | |
+
+### G3. `notification_types`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(40) | ❌ | | **PK**. `budget_warning, budget_exceeded, import_done, report_ready, unusual_expense, recurring_due, recurring_pending, invitation_received, member_joined, new_login` |
+| `category_code` | varchar(30) | ❌ | | FK → `notification_categories.code` |
+| `title_key` | varchar(150) | ❌ | | FK. Có thể chứa `{{placeholder}}` |
+| `body_key` | varchar(150) | ❌ | | FK |
+| `icon` | varchar(50) | ❌ | | |
+| `severity` | varchar(10) | ❌ | `'info'` | `info / success / warning / danger` → màu icon |
+| `default_action_path` | varchar(200) | ✅ | | `/categories/{{category_slug}}` |
+| `is_active` | boolean | ❌ | `true` | |
+
+### G4. `user_notification_settings`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `user_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `category_code` | varchar(30) | ❌ | | FK. PK ghép |
+| `channel_code` | varchar(20) | ❌ | | FK. PK ghép |
+| `is_enabled` | boolean | ❌ | | |
+| `updated_at` | timestamptz | ❌ | `now()` | |
+
+Thêm kênh / nhóm mới → thêm dòng lookup; cài đặt thiếu dòng thì dùng mặc định trong seed (`notification_defaults` = view từ `notification_categories` × `notification_channels`).
+
+### G5. `notifications`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `user_id` | uuid | ❌ | | FK cascade |
 | `ledger_id` | uuid | ✅ | | FK cascade |
-| `type` | varchar(30) | ❌ | | `budget_warning / budget_exceeded / import_done / recurring_due / recurring_pending / invitation / member_joined / system` |
-| `title_key` | varchar(100) | ❌ | | Khoá i18n, ví dụ `notif.budget_warning.title` |
-| `body_key` | varchar(100) | ❌ | | |
-| `params` | jsonb | ❌ | `'{}'` | `{"category":"食費","pct":85}` — UI dịch theo ngôn ngữ hiện tại |
-| `action_url` | text | ✅ | | `/categories/food` |
+| `type_code` | varchar(40) | ❌ | | FK → `notification_types.code` |
+| `action_url` | text | ✅ | | Đã thay tham số |
 | `entity_type` | varchar(30) | ✅ | | |
 | `entity_id` | uuid | ✅ | | |
 | `read_at` | timestamptz | ✅ | | |
+| `archived_at` | timestamptz | ✅ | | |
 | `created_at` | timestamptz | ❌ | `now()` | |
 | `expires_at` | timestamptz | ✅ | | |
 
-Index `(user_id, read_at, created_at desc)`. Chỉ server/trigger tạo; người dùng chỉ cập nhật `read_at`.
+### G6. `notification_params` — Tham số của thông báo
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `notification_id` | uuid | ❌ | | FK cascade. PK ghép |
+| `name` | varchar(50) | ❌ | | PK ghép. `category`, `pct`, `count` |
+| `value` | text | ❌ | | UI thay vào `{{name}}` của chuỗi đã dịch |
 
-### F2. `audit_logs` — Nhật ký hoạt động
+### G7. `audit_logs`
 | Cột | Kiểu | Null | Mặc định | Mô tả |
 |---|---|---|---|---|
 | `id` | bigint | ❌ | identity | PK |
 | `ledger_id` | uuid | ✅ | | FK set null |
-| `actor_user_id` | uuid | ✅ | | FK → `users.id` set null |
-| `action` | varchar(30) | ❌ | | `create / update / delete / import / invite / join / leave / role_change / login / export` |
-| `entity_type` | varchar(30) | ❌ | | `transaction / category / account / ledger / member / budget / recurring / import` |
+| `actor_user_id` | uuid | ✅ | | FK set null |
+| `action` | varchar(30) | ❌ | | `create / update / delete / import / invite / join / leave / role_change / login / export / translation_override` |
+| `entity_type` | varchar(30) | ❌ | | |
 | `entity_id` | uuid | ✅ | | |
-| `summary` | text | ✅ | | Dòng mô tả ngắn cho UI |
-| `old_values` | jsonb | ✅ | | Chỉ các cột thay đổi |
-| `new_values` | jsonb | ✅ | | |
+| `entity_label` | varchar(200) | ✅ | | Tên hiển thị lúc ghi (vẫn đọc được khi đối tượng đã xoá) |
 | `ip_address` | inet | ✅ | | |
 | `user_agent` | text | ✅ | | |
 | `created_at` | timestamptz | ❌ | `now()` | |
 
-Chỉ INSERT qua trigger `tg_audit` / RPC; không ai UPDATE/DELETE. Index `(actor_user_id, created_at desc)`, `(ledger_id, created_at desc)`.
+### G8. `audit_log_changes`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `audit_log_id` | bigint | ❌ | | FK cascade. PK ghép |
+| `field_name` | varchar(50) | ❌ | | PK ghép |
+| `old_value` | text | ✅ | | |
+| `new_value` | text | ✅ | | |
+
+Chỉ INSERT qua trigger/RPC.
 
 ---
 
-## G. View, RPC, Storage, RLS
+## H. Quyền riêng tư & nhà phát triển (giai đoạn 3)
 
-### G1. View (thay `category_balances` và phần tính toán ở client)
-| View | Cột chính | Dùng ở |
-|---|---|---|
-| `v_account_balances` | `account_id, ledger_id, name, account_type, currency_code, balance` (= opening + thu − chi ± chuyển khoản) | Dashboard (総残高, アカウント), màn Tài khoản |
-| `v_monthly_summary` | `ledger_id, month, income, expense, net, tx_count` | Dashboard dòng tiền, Phân tích, Báo cáo tháng |
-| `v_daily_summary` | `ledger_id, date, income, expense, tx_count` | Lịch |
-| `v_category_monthly` | `ledger_id, category_id, month, expense, income, tx_count, budget_amount, budget_used_pct` | Danh mục, Phân tích, Báo cáo |
-| `v_classification_stats` | `ledger_id, month, total, classified, needs_review, auto_pct` | KPI trang Danh mục |
-| `v_member_balances` | `ledger_id, category_id, user_id, paid, owed, balance` | Tab "Số dư" danh mục chia sẻ |
+### H1. `data_requests` — `/settings/privacy`
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `user_id` | uuid | ❌ | | FK cascade |
+| `ledger_id` | uuid | ✅ | | FK cascade. Xuất 1 sổ hay toàn bộ |
+| `request_type` | varchar(10) | ❌ | | `export / delete` |
+| `file_format` | varchar(10) | ✅ | | `csv / xlsx` |
+| `status` | varchar(20) | ❌ | `'pending'` | `pending / processing / ready / completed / failed / cancelled` |
+| `file_path` | text | ✅ | | Bucket `exports` |
+| `expires_at` | timestamptz | ✅ | | Link tải hết hạn |
+| `error_message` | text | ✅ | | |
+| `requested_at` | timestamptz | ❌ | `now()` | |
+| `completed_at` | timestamptz | ✅ | | |
 
-Tất cả view `security_invoker = true` để RLS của bảng gốc vẫn áp dụng.
+### H2. `api_tokens` — Menu "開発者ツール"
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `id` | uuid | ❌ | `gen_random_uuid()` | PK |
+| `user_id` | uuid | ❌ | | FK cascade |
+| `ledger_id` | uuid | ❌ | | FK cascade |
+| `name` | varchar(100) | ❌ | | |
+| `token_prefix` | varchar(8) | ❌ | | Hiện để nhận biết (`lw_ab12`) |
+| `token_hash` | char(64) | ❌ | | UNIQUE. Token gốc chỉ hiện 1 lần |
+| `access_level` | varchar(10) | ❌ | `'read'` | `read / write` |
+| `last_used_at` | timestamptz | ✅ | | |
+| `expires_at` | timestamptz | ✅ | | |
+| `revoked_at` | timestamptz | ✅ | | |
+| `created_at` | timestamptz | ❌ | `now()` | |
 
-### G2. RPC (SECURITY DEFINER, tự kiểm tra quyền)
-| RPC | Mô tả |
+---
+
+## I. View, RPC, Storage, RLS
+
+### I1. View (`security_invoker = true`)
+| View | Dùng ở |
 |---|---|
-| `setup_onboarding(p_purpose, p_name, p_currency, p_timezone, p_locale, p_fiscal_start_month)` | Tạo sổ + OWNER + danh mục mặc định + tài khoản 現金; set `users.onboarded_at`, `default_ledger_id` |
-| `create_ledger(...)` | Tạo thêm sổ (modal "新しい元帳を作成") |
-| `invite_member(p_ledger_id, p_email, p_role)` → trả **token gốc 1 lần** | Kiểm tra `member.invite`, role ≠ OWNER |
-| `get_invitation(p_token)` | Trang `/join` hiển thị tên sổ, người mời trước khi chấp nhận |
-| `accept_invitation(p_token)` / `decline_invitation(p_token)` | Kiểm tra email khớp, còn hạn; kích hoạt lại thành viên cũ nếu có |
-| `revoke_invitation(p_id)` | |
-| `update_member_role(p_member_id, p_role)` | Không gán OWNER; ADMIN không sửa ADMIN khác |
-| `remove_member(p_member_id)` / `leave_ledger(p_ledger_id)` | |
-| `transfer_ledger_ownership(p_ledger_id, p_new_owner_user_id)` | |
-| `merge_categories(p_source_id, p_target_id)` | |
-| `apply_category_rules(p_ledger_id, p_transaction_ids uuid[] default null)` | Trả số giao dịch đã phân loại |
-| `import_transactions(p_job_id, p_rows jsonb)` | Insert hàng loạt, bỏ trùng theo `external_id / dedupe_hash`, cập nhật đếm |
-| `bulk_update_transactions(p_ids uuid[], p_patch jsonb)` / `bulk_delete_transactions(p_ids uuid[])` | Thanh thao tác hàng loạt |
-| `list_my_sessions()` / `revoke_session(p_session_id)` | Đọc `auth.sessions` — thay bảng `device_verifications` |
-| `delete_my_account()` | Chặn nếu còn là OWNER của sổ có thành viên khác |
+| `v_account_balances` | Dashboard, `/accounts` |
+| `v_monthly_summary`, `v_daily_summary` | Dashboard, Lịch, Phân tích, Báo cáo |
+| `v_category_monthly` (chi, thu, số GD, ngân sách, % dùng) | Danh mục, Phân tích, Báo cáo |
+| `v_classification_stats` | KPI trang Danh mục |
+| `v_member_balances` | Tab "残高" danh mục chia sẻ |
+| `v_ui_texts` (key, language, value đã áp fallback) | `/api/translations` |
+| `v_translation_coverage` (language, total, translated, pct) | Màn quản lý ngôn ngữ |
 
-### G3. Storage buckets
-| Bucket | Công khai | Đường dẫn | Policy |
-|---|---|---|---|
-| `avatars` | Có (đọc) | `{user_id}/{uuid}.webp` | Chỉ chủ sở hữu ghi/xoá |
-| `receipts` | Không | `{ledger_id}/{uuid}.{ext}` | Thành viên sổ đọc; `transaction.create` ghi |
-| `imports` | Không | `{ledger_id}/{uuid}.{ext}` | Chỉ người tải lên và OWNER/ADMIN đọc |
+### I2. RPC chính
+`setup_onboarding`, `create_ledger`, `apply_category_template`, `invite_member`, `get_invitation`, `accept_invitation`, `decline_invitation`, `revoke_invitation`, `update_member_role`, `remove_member`, `leave_ledger`, `transfer_ledger_ownership`, `merge_categories`, `apply_category_rules`, `import_transactions`, `bulk_update_transactions`, `bulk_delete_transactions`, `settle_up`, `get_ui_texts`, `set_translation_override`, `reset_translation_override`, `list_my_sessions`, `revoke_session`, `request_data_export`, `delete_my_account`, `create_api_token`.
 
-### G4. RLS tóm tắt
-| Bảng | SELECT | INSERT / UPDATE / DELETE |
+### I3. Storage
+`avatars` (công khai đọc), `receipts`, `imports`, `exports` (riêng tư), `public-assets` (logo nhà cung cấp).
+
+### I4. RLS tóm tắt
+| Bảng | SELECT | Ghi |
 |---|---|---|
-| Master data (A1–A5), `roles`, `permissions`, `role_permissions` | `authenticated` | service_role |
-| `users` | chính mình + người cùng sổ | UPDATE chính mình, chỉ các cột cho phép |
-| `user_preferences` | chính mình | chính mình |
-| `ledgers` | thành viên active | qua RPC; UPDATE cần `ledger.update` |
-| `ledger_members` | thành viên cùng sổ | qua RPC |
-| `ledger_invitations` | người có `member.invite` (trừ `token_hash`) | qua RPC |
-| D1–D7, `import_*`, `documents` | thành viên active của `ledger_id` | theo quyền ở B5 |
-| `notifications` | `user_id = auth.uid()` | UPDATE `read_at` của chính mình |
-| `audit_logs` | chính mình + OWNER/ADMIN của sổ | trigger |
+| Nhóm A, `roles`, `permissions`, `role_permissions`, `ledger_types`, `category_templates*`, `notification_categories/channels/types` | `authenticated` | service_role |
+| `translation_keys`, `translations` | `authenticated` (+ `anon` cho màn đăng nhập) | service_role / người có vai trò dịch (sau) |
+| `translation_overrides` | của mình + của sổ mình | của mình; của sổ cần `translation.override` |
+| `users` | mình + người cùng sổ | mình, chỉ cột cho phép |
+| `user_preferences`, `user_notification_settings`, `user_sessions`, `data_requests`, `api_tokens` | của mình | của mình / RPC |
+| `ledgers`, `ledger_members`, `ledger_invitations` | thành viên | RPC |
+| Nhóm E, F | thành viên active của `ledger_id` | theo quyền ở C6 |
+| `notifications`, `notification_params` | `user_id = auth.uid()` | UPDATE `read_at / archived_at` |
+| `audit_logs`, `audit_log_changes` | mình + quyền `audit.read` của sổ | trigger |
 
----
-
-## H. Bảng đã bỏ so với hiện tại / tài liệu
-
+## J. Bảng đã bỏ
 | Bảng | Lý do |
 |---|---|
-| `tenants`, `households`, `organizations`, `members` | Gộp thành `ledgers` + `ledger_members` + `ledger_invitations` |
-| `fiscal_calendars`, `fiscal_periods` | Thay bằng `ledgers.fiscal_year_start_month` |
-| `feature_flags`, `system_settings` | Chưa màn hình nào dùng |
-| `ui_translations`, `category_translations` | `lib/i18n.ts` + `name_i18n` |
-| `category_balances`, `category_budgets` | View `v_category_monthly` + bảng `budgets` |
-| `recurring_transactions` | `recurring_rules` |
-| `device_verifications` | `auth.sessions` qua RPC |
-| Domain 03, 05, 06, 07 (phần lớn), 08, 11 (trừ notifications), 12, 13 (trừ audit_logs) | Ngoài phạm vi app; bổ sung khi có màn hình tương ứng |
+| `tenants`, `households`, `organizations`, `members` | → `ledgers`, `ledger_members`, `ledger_invitations` |
+| `fiscal_calendars`, `fiscal_periods` | → `ledgers.fiscal_year_start_month` |
+| `feature_flags`, `system_settings` | Không màn hình nào dùng |
+| `ui_translations` | → `translation_keys` + `translations` + `translation_overrides` |
+| `category_balances`, `category_budgets`, `recurring_transactions`, `device_verifications` | → view, `budgets`, `recurring_rules`, `user_sessions` |
+| Domain 03, 05, 06, phần lớn 07, 08, 11, 12, 13 | Chưa có màn hình |
 
-## I. Thứ tự file migration
-
+## K. Thứ tự file migration
 ```
-0001_extensions.sql            citext, pgcrypto, pg_trgm, pg_cron
-0002_helpers.sql               tg_touch, tg_protect_columns
-0003_master_data.sql           currencies, countries, languages, time_zones, exchange_rates
-0004_users.sql                 users, user_preferences, trigger đăng ký/đổi email
-0005_rbac.sql                  roles, permissions, role_permissions, has_ledger_permission()
-0006_ledgers.sql               ledgers, ledger_members, ledger_invitations
-0007_money.sql                 financial_accounts, categories, category_rules, budgets
-0008_transactions.sql          transactions, transaction_shares, recurring_rules
-0009_import_documents.sql      import_jobs, import_rows, documents
-0010_system.sql                notifications, audit_logs, tg_audit
-0011_views.sql                 v_* views
-0012_rpc.sql                   toàn bộ RPC ở G2
-0013_rls.sql                   toàn bộ policy
-0014_storage.sql               buckets + policies
-0015_cron.sql                  recurring, dọn import_rows, tỷ giá, hết hạn lời mời
-0016_seed.sql                  master data + roles/permissions
+0001_extensions.sql         citext, pgcrypto, pg_trgm, pg_cron
+0002_helpers.sql            tg_touch, tg_protect_columns
+0003_i18n.sql               languages, translation_keys, translations
+0004_master_data.sql        currencies, countries, time_zones, exchange_rates, account_types, providers
+0005_users.sql              users, user_preferences, user_sessions + trigger đăng ký
+0006_rbac.sql               roles, permissions, role_permissions, has_ledger_permission()
+0007_ledgers.sql            ledger_types, category_templates(+items), ledgers, ledger_members, ledger_invitations, translation_overrides
+0008_money.sql              financial_accounts, categories(+translations/members/accounts), category_rules, budgets, tags
+0009_transactions.sql       transactions, transaction_tags, transaction_shares, settlements, recurring_rules, bank_connections
+0010_import_documents.sql   import_jobs, import_column_mappings, import_rows, import_row_values, documents, document_line_items
+0011_notifications.sql      notification_categories/channels/types, user_notification_settings, notifications, notification_params
+0012_audit.sql              audit_logs, audit_log_changes, tg_audit
+0013_privacy_dev.sql        data_requests, api_tokens
+0014_views.sql
+0015_rpc.sql
+0016_rls.sql
+0017_storage.sql
+0018_cron.sql
+0019_seed_master.sql        languages, currencies, countries, time_zones, account_types, providers, ledger_types, roles, permissions, notifications lookup, templates
+0020_seed_translations.sql  sinh từ lib/i18n.ts bằng scripts/seed-translations.ts
 ```
