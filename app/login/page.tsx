@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/hooks/useTranslation'
 import { APP_NAME } from '@/lib/constants'
-import { LanguagePicker } from '@/components/layout/sidebar'
 
 export default function LoginPage() {
   return (
@@ -66,28 +65,15 @@ function LoginForm() {
     }
   }
 
-  async function handleForgot() {
-    if (!email) {
-      setError(t.login.enterEmailFirst)
-      return
-    }
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/settings/security`,
-    })
-    if (error) setError(error.message)
-    else setSuccess(t.login.resetSent)
-  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-[var(--color-bg-base)] relative overflow-hidden">
       <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-[var(--color-interactive-primary)]/10 blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-[var(--color-interactive-secondary)]/10 blur-[100px] pointer-events-none" />
 
-      <div className="absolute top-4 right-4 w-64">
-        <LanguagePicker />
-      </div>
 
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="w-full max-w-[420px] relative z-10">
-        <div className="bg-[var(--color-surface-default)]/80 backdrop-blur-2xl border border-[var(--color-border-subtle)] rounded-3xl p-8 shadow-2xl">
+        <div className="bg-[var(--color-surface-default)]/60 backdrop-blur-2xl border border-[var(--color-border-subtle)] rounded-3xl p-8 shadow-2xl">
           <div className="text-center mb-8">
             <div className="inline-flex w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--color-interactive-primary)] to-[var(--color-interactive-primary-hover)] items-center justify-center mb-5 shadow-xl">
               <Wallet className="w-8 h-8 text-white" strokeWidth={2} />
@@ -121,12 +107,6 @@ function LoginForm() {
             )}
             <Input label={t.login.email} type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" leading={<Mail />} autoComplete="email" />
             <Input label={t.login.password} type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} placeholder="••••••••" leading={<Lock />} autoComplete={mode === 'login' ? 'current-password' : 'new-password'} />
-
-            {mode === 'login' && (
-              <div className="flex justify-end -mt-2">
-                <button type="button" onClick={handleForgot} className="text-xs font-medium text-[var(--color-text-link)] hover:underline">{t.login.forgot}</button>
-              </div>
-            )}
 
             <Button type="submit" className="w-full h-12 text-[15px] font-semibold" loading={loading} disabled={loading}>
               {mode === 'login' ? t.login.submit : t.login.signupSubmit}

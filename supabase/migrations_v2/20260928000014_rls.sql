@@ -8,7 +8,7 @@ begin
     'languages', 'translation_keys', 'translations', 'translation_overrides',
     'currencies', 'time_zones', 'countries', 'exchange_rates', 'account_types', 'providers',
     'users', 'user_preferences', 'user_sessions', 'roles', 'permissions', 'role_permissions',
-    'category_templates', 'category_template_items', 'ledger_types',
+    'category_templates', 'category_template_items', 'ledger_types', 'category_kinds',
     'ledgers', 'ledger_members', 'ledger_invitations',
     'financial_accounts', 'categories', 'category_translations', 'category_members', 'category_accounts',
     'category_rules', 'budgets', 'tags',
@@ -33,7 +33,7 @@ declare
 begin
   foreach t in array array[
     'currencies', 'time_zones', 'countries', 'exchange_rates', 'account_types', 'providers',
-    'roles', 'permissions', 'role_permissions', 'category_templates', 'category_template_items', 'ledger_types',
+    'roles', 'permissions', 'role_permissions', 'category_templates', 'category_template_items', 'ledger_types', 'category_kinds',
     'notification_categories', 'notification_channels', 'notification_defaults', 'notification_types'
   ] loop
     execute format('create policy %I on public.%I for select to authenticated using (true)', t || '_read', t);

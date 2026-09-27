@@ -17,6 +17,8 @@ export interface Category {
   /** Translation key for seeded categories; display follows the language until renamed. */
   name_key: string | null
   type: CategoryType
+  /** category_kinds.code — shown on cards (Trung tâm chi phí, Dự án…). */
+  kind_code: string
   color: string
   /** Lucide icon name (PascalCase), rendered by CategoryIcon. */
   emoji: string

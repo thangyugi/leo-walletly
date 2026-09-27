@@ -164,9 +164,9 @@ insert into public.category_templates (code, name_key, description_key, icon, so
   ('default_personal', public._seed_t('template.default_personal.name', '基本（個人・家族）', 'Cơ bản (cá nhân, gia đình)', 'Basic (personal & family)'),
     public._seed_t('template.default_personal.description', '食費・交通・光熱費など日常の支出', 'Chi tiêu hằng ngày: ăn uống, đi lại, điện nước…', 'Everyday spending: food, transport, utilities…'), 'Wallet', 1),
   ('household', public._seed_t('template.household.name', '家族', 'Hộ gia đình', 'Household'),
-    public._seed_t('template.household.description', '日用品・育児・ペット・保険', 'Đồ dùng, con cái, thú cưng, bảo hiểm', 'Daily goods, childcare, pets, insurance'), 'Home', 2),
+    public._seed_t('template.household.description', '日用品・育児・ペット・保険', 'Đồ dùng, con cái, thú cưng, bảo hiểm', 'Daily goods, childcare, pets, insurance'), 'Home', 3),
   ('travel', public._seed_t('template.travel.name', '旅行', 'Du lịch', 'Travel'),
-    public._seed_t('template.travel.description', '移動・宿泊・観光・お土産', 'Di chuyển, lưu trú, tham quan, quà', 'Transport, lodging, sightseeing, souvenirs'), 'Plane', 3),
+    public._seed_t('template.travel.description', '移動・宿泊・観光・お土産', 'Di chuyển, lưu trú, tham quan, quà', 'Transport, lodging, sightseeing, souvenirs'), 'Plane', 2),
   ('wedding', public._seed_t('template.wedding.name', '結婚式', 'Đám cưới', 'Wedding'),
     public._seed_t('template.wedding.description', '会場・衣装・指輪・引き出物', 'Địa điểm, trang phục, nhẫn, quà cảm ơn', 'Venue, attire, rings, gifts'), 'Heart', 4),
   ('business', public._seed_t('template.business.name', 'ビジネス', 'Kinh doanh', 'Business'),
@@ -304,6 +304,14 @@ insert into public.notification_types (code, category_code, title_key, body_key,
     public._seed_t('notification.new_login.title', '新しいログイン', 'Đăng nhập mới', 'New sign-in'),
     public._seed_t('notification.new_login.body', '{{device}} から新しくログインがありました', 'Có lượt đăng nhập mới từ {{device}}', 'New sign-in from {{device}}', 'device'),
     'ShieldAlert', 'warning')
+on conflict (code) do nothing;
+
+insert into public.category_kinds (code, name_key, sort_order) values
+  ('cost_center', public._seed_t('category_kind.cost_center.name', 'コストセンター', 'Trung tâm chi phí', 'Cost center'), 1),
+  ('department', public._seed_t('category_kind.department.name', '部門', 'Phòng ban', 'Department'), 2),
+  ('project', public._seed_t('category_kind.project.name', 'プロジェクト', 'Dự án', 'Project'), 3),
+  ('team', public._seed_t('category_kind.team.name', 'チーム', 'Nhóm', 'Team'), 4),
+  ('subsidiary', public._seed_t('category_kind.subsidiary.name', '子会社', 'Công ty con', 'Subsidiary'), 5)
 on conflict (code) do nothing;
 
 drop function public._seed_t(varchar, text, text, text, varchar);

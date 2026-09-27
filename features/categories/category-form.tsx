@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
+import { useMasterStore } from '@/features/master/store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
@@ -221,7 +222,8 @@ export function ParentTreeDropdown({
 // ─── Main form ───────────────────────────────────────────────────────────────
 
 export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
-  const { t } = useTranslation()
+  const { t, tk } = useTranslation()
+  const kinds = useMasterStore((s) => s.categoryKinds)
   const ledger = useLedgerStore((s) => s.current)
   const { categories, createCategory, updateCategory } = useCategoryStore()
   const parentDefault = initialData?.parent_id ? categories.find((c) => c.id === initialData.parent_id) : undefined
@@ -229,6 +231,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
   const [formData, setFormData] = React.useState({
     name:              initialData?.name ?? '',
     type:              (initialData?.type ?? parentDefault?.type ?? 'expense') as CategoryType,
+    kind_code:         initialData?.kind_code ?? parentDefault?.kind_code ?? 'cost_center',
     parent_id:         initialData?.parent_id ?? '',
     color:             initialData?.color ?? parentDefault?.color ?? PRESET_COLORS[14],
     emoji:             initialData?.emoji ?? parentDefault?.emoji ?? PRESET_ICONS[0],
@@ -280,6 +283,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
       const payload = {
         name: formData.name,
         type: formData.type,
+        kind_code: formData.kind_code,
         parent_id: parentId,
         color: formData.color,
         emoji: formData.emoji,
@@ -358,7 +362,14 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
             <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-1.5">{t.catform.parent}</p>
             <ParentTreeDropdown value={formData.parent_id} onChange={(id) => setFormData({ ...formData, parent_id: id })} options={parentOptions} allCategories={categories} />
           </div>
-          <div className="md:col-span-2">
+          <div>
+            <label htmlFor="cat-kind" className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">{t.catui.kind}</label>
+            <select id="cat-kind" value={formData.kind_code} onChange={(e) => setFormData({ ...formData, kind_code: e.target.value })}
+              className="w-full h-12 px-4 rounded-xl border text-sm font-medium bg-[var(--color-surface-default)] text-[var(--color-text-primary)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none">
+              {kinds.map((k) => <option key={k.code} value={k.code}>{tk(k.name_key)}</option>)}
+            </select>
+          </div>
+          <div>
             <Input label={t.catform.description} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
           </div>
         </div>

@@ -2,9 +2,9 @@
 -- Languages + UI translation keys/values (ja, vi, en).
 
 insert into public.languages (code, locale, name, native_name, short_label, fallback_code, is_active, is_default, sort_order) values
-  ('en', 'en-US', 'English', 'English', 'EN', null, true, false, 3),
-  ('ja', 'ja-JP', 'Japanese', '日本語', 'JA', 'en', true, true, 1),
-  ('vi', 'vi-VN', 'Vietnamese', 'Tiếng Việt', 'VI', 'en', true, false, 2)
+  ('en', 'en-US', 'English', 'English', 'US', null, true, false, 3),
+  ('ja', 'ja-JP', 'Japanese', '日本語', '日本', 'en', true, true, 1),
+  ('vi', 'vi-VN', 'Vietnamese', 'Tiếng Việt', 'VN', 'en', true, false, 2)
 on conflict (code) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
@@ -284,6 +284,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.balance', 'dashboard', null, true),
   ('dashboard.budgets', 'dashboard', null, true),
   ('dashboard.cashFlow', 'dashboard', null, true),
+  ('dashboard.days30Ago', 'dashboard', null, true),
   ('dashboard.deposits', 'dashboard', null, true),
   ('dashboard.financialTip', 'dashboard', null, true),
   ('dashboard.history', 'dashboard', null, true),
@@ -306,6 +307,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.outflow', 'dashboard', null, true),
   ('dashboard.owner', 'dashboard', null, true),
   ('dashboard.payments', 'dashboard', null, true),
+  ('dashboard.periodLastMonth', 'dashboard', null, true),
+  ('dashboard.periodLastQuarter', 'dashboard', null, true),
+  ('dashboard.periodLastYear', 'dashboard', null, true),
+  ('dashboard.periodYesterday', 'dashboard', null, true),
   ('dashboard.prevPeriod', 'dashboard', null, true),
   ('dashboard.quickStats', 'dashboard', null, true),
   ('dashboard.ratio', 'dashboard', null, true),
@@ -325,6 +330,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.totalSuffix', 'dashboard', null, true),
   ('dashboard.users', 'dashboard', null, true),
   ('dashboard.viewAll', 'dashboard', null, true),
+  ('dashboard.viewAllCount', 'dashboard', 'count', true),
   ('dashboard.viewAllNotifs', 'dashboard', null, true),
   ('dashboard.vsPrev', 'dashboard', 'label', true),
   ('datepicker.apply', 'datepicker', null, false),
@@ -401,16 +407,16 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.keywords', 'groups', null, true),
   ('groups.keywordsHint', 'groups', null, true),
   ('groups.keywordsLabel', 'groups', null, true),
-  ('groups.keywordsPlaceholder', 'groups', null, true),
+  ('groups.keywordsPlaceholder', 'groups', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('groups.match', 'groups', null, true),
   ('groups.mismatch', 'groups', null, true),
   ('groups.name', 'groups', null, true),
   ('groups.noGroups', 'groups', null, true),
   ('groups.noGroupsSub', 'groups', null, true),
-  ('groups.none', 'groups', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('groups.none', 'groups', null, true),
   ('groups.over_budget', 'groups', null, true),
   ('groups.parent', 'groups', null, true),
   ('groups.project', 'groups', null, true),
@@ -804,16 +810,16 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.account.densitySub', 'settings', null, false),
   ('settings.account.hiddenBalances', 'settings', null, false),
   ('settings.account.hiddenBalancesSub', 'settings', null, false),
-  ('settings.account.privacyTitle', 'settings', null, false),
+  ('settings.account.privacyTitle', 'settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('settings.account.regionalTitle', 'settings', null, false),
   ('settings.account.startPage', 'settings', null, false),
   ('settings.account.subtitle', 'settings', null, false),
   ('settings.account.title', 'settings', null, false),
   ('settings.common.dataSecurity', 'settings', null, false),
-  ('settings.common.personal', 'settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.common.personal', 'settings', null, false),
   ('settings.common.workspace', 'settings', null, false),
   ('settings.profile.avatar', 'settings', null, false),
   ('settings.profile.avatarRemoved', 'settings', null, false),
@@ -1289,6 +1295,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.balance', 'ja', '収支バランス'),
   ('dashboard.budgets', 'ja', '予算'),
   ('dashboard.cashFlow', 'ja', 'キャッシュフロー'),
+  ('dashboard.days30Ago', 'ja', '30日前'),
   ('dashboard.deposits', 'ja', '件の入金'),
   ('dashboard.financialTip', 'ja', '財務のヒント'),
   ('dashboard.history', 'ja', '履歴'),
@@ -1296,7 +1303,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'ja', '今すぐインポート'),
   ('dashboard.inflow', 'ja', '入金'),
   ('dashboard.invite', 'ja', '招待'),
-  ('dashboard.manageUsers', 'ja', 'マルチユーザー管理 - 近日公開'),
+  ('dashboard.manageUsers', 'ja', 'メンバー管理 →'),
   ('dashboard.markAllRead', 'ja', 'すべて既読にする'),
   ('dashboard.member', 'ja', 'メンバー'),
   ('dashboard.members', 'ja', 'メンバー'),
@@ -1311,6 +1318,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.outflow', 'ja', '出金'),
   ('dashboard.owner', 'ja', 'オーナー'),
   ('dashboard.payments', 'ja', '件の支払い'),
+  ('dashboard.periodLastMonth', 'ja', '先月'),
+  ('dashboard.periodLastQuarter', 'ja', '前四半期'),
+  ('dashboard.periodLastYear', 'ja', '昨年'),
+  ('dashboard.periodYesterday', 'ja', '昨日'),
   ('dashboard.prevPeriod', 'ja', '前期'),
   ('dashboard.quickStats', 'ja', 'クイック統計'),
   ('dashboard.ratio', 'ja', '収支比率'),
@@ -1330,6 +1341,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.totalSuffix', 'ja', '件'),
   ('dashboard.users', 'ja', 'ユーザー'),
   ('dashboard.viewAll', 'ja', 'すべて見る'),
+  ('dashboard.viewAllCount', 'ja', 'すべての {{count}} 件の取引を表示'),
   ('dashboard.viewAllNotifs', 'ja', 'すべての通知を見る'),
   ('dashboard.vsPrev', 'ja', '{{label}}と比較'),
   ('datepicker.apply', 'ja', '適用'),
@@ -1406,16 +1418,16 @@ insert into public.translations (key, language_code, value) values
   ('groups.keywords', 'ja', 'キーワード'),
   ('groups.keywordsHint', 'ja', 'キーワードを入力してEnterを押してください'),
   ('groups.keywordsLabel', 'ja', '自動判定キーワード'),
-  ('groups.keywordsPlaceholder', 'ja', 'キーワードを入力してEnter...'),
+  ('groups.keywordsPlaceholder', 'ja', 'キーワードを入力してEnter...')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.match', 'ja', '一致'),
   ('groups.mismatch', 'ja', '不一致'),
   ('groups.name', 'ja', 'グループ名'),
   ('groups.noGroups', 'ja', 'グループがありません'),
   ('groups.noGroupsSub', 'ja', '新しいグループを作成して取引を分類しましょう'),
-  ('groups.none', 'ja', 'なし')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.none', 'ja', 'なし'),
   ('groups.over_budget', 'ja', '予算超過'),
   ('groups.parent', 'ja', '親グループ'),
   ('groups.project', 'ja', 'プロジェクト'),
@@ -1809,16 +1821,16 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'ja', '画面に表示する情報の量を選択します。'),
   ('settings.account.hiddenBalances', 'ja', '金額を非表示'),
   ('settings.account.hiddenBalancesSub', 'ja', 'ダッシュボードで金額をマスクします'),
-  ('settings.account.privacyTitle', 'ja', 'プライバシーと可視性'),
+  ('settings.account.privacyTitle', 'ja', 'プライバシーと可視性')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.regionalTitle', 'ja', '地域のデフォルト設定'),
   ('settings.account.startPage', 'ja', '開始ページ'),
   ('settings.account.subtitle', 'ja', '好みの表示方法やデフォルト設定を管理します'),
   ('settings.account.title', 'ja', 'アカウント設定'),
   ('settings.common.dataSecurity', 'ja', 'データとセキュリティ'),
-  ('settings.common.personal', 'ja', '個人設定')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.common.personal', 'ja', '個人設定'),
   ('settings.common.workspace', 'ja', 'ワークスペース'),
   ('settings.profile.avatar', 'ja', 'アバター'),
   ('settings.profile.avatarRemoved', 'ja', 'アバターを削除しました'),
@@ -2294,6 +2306,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.balance', 'vi', 'Cân đối'),
   ('dashboard.budgets', 'vi', 'Ngân sách'),
   ('dashboard.cashFlow', 'vi', 'Dòng tiền'),
+  ('dashboard.days30Ago', 'vi', '30 ngày trước'),
   ('dashboard.deposits', 'vi', 'giao dịch thu'),
   ('dashboard.financialTip', 'vi', 'Mẹo tài chính'),
   ('dashboard.history', 'vi', 'Lịch sử'),
@@ -2301,7 +2314,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'vi', 'Nhập ngay'),
   ('dashboard.inflow', 'vi', 'Thu nhập'),
   ('dashboard.invite', 'vi', 'Mời'),
-  ('dashboard.manageUsers', 'vi', 'Quản lý nhiều người dùng — sắp ra mắt'),
+  ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →'),
   ('dashboard.markAllRead', 'vi', 'Đánh dấu tất cả là đã đọc'),
   ('dashboard.member', 'vi', 'Thành viên'),
   ('dashboard.members', 'vi', 'Thành viên'),
@@ -2316,6 +2329,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.outflow', 'vi', 'Chi tiêu'),
   ('dashboard.owner', 'vi', 'Chủ sở hữu'),
   ('dashboard.payments', 'vi', 'giao dịch chi'),
+  ('dashboard.periodLastMonth', 'vi', 'tháng trước'),
+  ('dashboard.periodLastQuarter', 'vi', 'quý trước'),
+  ('dashboard.periodLastYear', 'vi', 'năm trước'),
+  ('dashboard.periodYesterday', 'vi', 'hôm qua'),
   ('dashboard.prevPeriod', 'vi', 'kỳ trước'),
   ('dashboard.quickStats', 'vi', 'Thống kê nhanh'),
   ('dashboard.ratio', 'vi', 'Tỷ lệ thu/chi'),
@@ -2335,6 +2352,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.totalSuffix', 'vi', 'giao dịch'),
   ('dashboard.users', 'vi', 'Người dùng'),
   ('dashboard.viewAll', 'vi', 'Xem tất cả'),
+  ('dashboard.viewAllCount', 'vi', 'Xem tất cả {{count}} giao dịch'),
   ('dashboard.viewAllNotifs', 'vi', 'Xem tất cả thông báo'),
   ('dashboard.vsPrev', 'vi', 'so với {{label}}'),
   ('datepicker.apply', 'vi', 'Áp dụng'),
@@ -2411,16 +2429,16 @@ insert into public.translations (key, language_code, value) values
   ('groups.keywords', 'vi', 'Từ khóa'),
   ('groups.keywordsHint', 'vi', 'Nhập từ khóa và nhấn Enter'),
   ('groups.keywordsLabel', 'vi', 'Từ khóa nhận diện tự động'),
-  ('groups.keywordsPlaceholder', 'vi', 'Nhập từ khóa và nhấn Enter...'),
+  ('groups.keywordsPlaceholder', 'vi', 'Nhập từ khóa và nhấn Enter...')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.match', 'vi', 'Khớp'),
   ('groups.mismatch', 'vi', 'Lệch'),
   ('groups.name', 'vi', 'Tên nhóm'),
   ('groups.noGroups', 'vi', 'Chưa có nhóm nào'),
   ('groups.noGroupsSub', 'vi', 'Tạo nhóm để phân loại giao dịch'),
-  ('groups.none', 'vi', 'Không có')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.none', 'vi', 'Không có'),
   ('groups.over_budget', 'vi', 'vượt ngân sách'),
   ('groups.parent', 'vi', 'Nhóm cha'),
   ('groups.project', 'vi', 'Dự án'),
@@ -2814,16 +2832,16 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'vi', 'Chọn mức độ thông tin bạn muốn thấy trên màn hình.'),
   ('settings.account.hiddenBalances', 'vi', 'Ẩn số dư'),
   ('settings.account.hiddenBalancesSub', 'vi', 'Mặc định ẩn các số dư nhạy cảm trên dashboard'),
-  ('settings.account.privacyTitle', 'vi', 'Quyền riêng tư & Hiển thị'),
+  ('settings.account.privacyTitle', 'vi', 'Quyền riêng tư & Hiển thị')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.regionalTitle', 'vi', 'Mặc định vùng'),
   ('settings.account.startPage', 'vi', 'Trang bắt đầu'),
   ('settings.account.subtitle', 'vi', 'Quản lý tùy chọn hiển thị và thiết lập mặc định'),
   ('settings.account.title', 'vi', 'Tài khoản'),
   ('settings.common.dataSecurity', 'vi', 'Dữ liệu & Bảo mật'),
-  ('settings.common.personal', 'vi', 'Cá nhân')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.common.personal', 'vi', 'Cá nhân'),
   ('settings.common.workspace', 'vi', 'Không gian làm việc'),
   ('settings.profile.avatar', 'vi', 'Ảnh đại diện'),
   ('settings.profile.avatarRemoved', 'vi', 'Đã xóa ảnh đại diện'),
@@ -3299,6 +3317,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.balance', 'en', 'Balance'),
   ('dashboard.budgets', 'en', 'Budgets'),
   ('dashboard.cashFlow', 'en', 'Cash Flow'),
+  ('dashboard.days30Ago', 'en', '30 days ago'),
   ('dashboard.deposits', 'en', 'deposits'),
   ('dashboard.financialTip', 'en', 'Financial Tip'),
   ('dashboard.history', 'en', 'History'),
@@ -3306,7 +3325,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'en', 'Import Now'),
   ('dashboard.inflow', 'en', 'Inflow'),
   ('dashboard.invite', 'en', 'Invite'),
-  ('dashboard.manageUsers', 'en', 'Multi-user management — coming soon'),
+  ('dashboard.manageUsers', 'en', 'Manage members →'),
   ('dashboard.markAllRead', 'en', 'Mark all as read'),
   ('dashboard.member', 'en', 'Member'),
   ('dashboard.members', 'en', 'Members'),
@@ -3321,6 +3340,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.outflow', 'en', 'Outflow'),
   ('dashboard.owner', 'en', 'Owner'),
   ('dashboard.payments', 'en', 'payments'),
+  ('dashboard.periodLastMonth', 'en', 'last month'),
+  ('dashboard.periodLastQuarter', 'en', 'last quarter'),
+  ('dashboard.periodLastYear', 'en', 'last year'),
+  ('dashboard.periodYesterday', 'en', 'yesterday'),
   ('dashboard.prevPeriod', 'en', 'prev period'),
   ('dashboard.quickStats', 'en', 'Quick Stats'),
   ('dashboard.ratio', 'en', 'Income/Expense ratio'),
@@ -3340,6 +3363,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.totalSuffix', 'en', 'transactions'),
   ('dashboard.users', 'en', 'Users'),
   ('dashboard.viewAll', 'en', 'View All'),
+  ('dashboard.viewAllCount', 'en', 'View all {{count}} transactions'),
   ('dashboard.viewAllNotifs', 'en', 'View all notifications'),
   ('dashboard.vsPrev', 'en', 'vs {{label}}'),
   ('datepicker.apply', 'en', 'Apply'),
@@ -3416,16 +3440,16 @@ insert into public.translations (key, language_code, value) values
   ('groups.keywords', 'en', 'Keywords'),
   ('groups.keywordsHint', 'en', 'Type a keyword and press Enter'),
   ('groups.keywordsLabel', 'en', 'Auto-classification Keywords'),
-  ('groups.keywordsPlaceholder', 'en', 'Type keyword and press Enter...'),
+  ('groups.keywordsPlaceholder', 'en', 'Type keyword and press Enter...')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.match', 'en', 'Match'),
   ('groups.mismatch', 'en', 'Mismatch'),
   ('groups.name', 'en', 'Group Name'),
   ('groups.noGroups', 'en', 'No groups yet'),
   ('groups.noGroupsSub', 'en', 'Create groups to classify your transactions'),
-  ('groups.none', 'en', 'None')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.none', 'en', 'None'),
   ('groups.over_budget', 'en', 'over budget'),
   ('groups.parent', 'en', 'Parent Group'),
   ('groups.project', 'en', 'Project'),
@@ -3819,16 +3843,16 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.densitySub', 'en', 'Choose how much information you want to see on your screen at once.'),
   ('settings.account.hiddenBalances', 'en', 'Hide Balances'),
   ('settings.account.hiddenBalancesSub', 'en', 'Mask sensitive amounts on the dashboard'),
-  ('settings.account.privacyTitle', 'en', 'Privacy & Visibility'),
+  ('settings.account.privacyTitle', 'en', 'Privacy & Visibility')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.account.regionalTitle', 'en', 'Regional Defaults'),
   ('settings.account.startPage', 'en', 'Start Page'),
   ('settings.account.subtitle', 'en', 'Manage your preferences and default views'),
   ('settings.account.title', 'en', 'Account Settings'),
   ('settings.common.dataSecurity', 'en', 'Data & Security'),
-  ('settings.common.personal', 'en', 'Personal')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.common.personal', 'en', 'Personal'),
   ('settings.common.workspace', 'en', 'Workspace'),
   ('settings.profile.avatar', 'en', 'Avatar'),
   ('settings.profile.avatarRemoved', 'en', 'Avatar removed'),

@@ -52,6 +52,8 @@ export interface PeriodSummary {
   expense: number
   net: number
   count: number
+  expenseCount: number
+  incomeCount: number
 }
 
 const SELECT = '*, transaction_tags(tag_id)'
@@ -75,6 +77,8 @@ interface TransactionsState {
 
   fetchRange: (ledgerId: string, start: string, end: string, limit?: number) => Promise<Transaction[]>
   fetchRecent: (ledgerId: string, limit?: number) => Promise<Transaction[]>
+  /** Number of live (not deleted, not void) transactions in the ledger. */
+  countAll: (ledgerId: string) => Promise<number>
   /** Income/expense rows with no category (newest first) for the classify screens. */
   fetchUncategorized: (ledgerId: string, limit?: number) => Promise<{ items: Transaction[]; total: number }>
   search: (ledgerId: string, term: string, limit?: number) => Promise<Transaction[]>
@@ -224,6 +228,17 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     return (data ?? []).map(mapTransaction)
   },
 
+  countAll: async (ledgerId) => {
+    const { count, error } = await supabase
+      .from('transactions')
+      .select('id', { count: 'exact', head: true })
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+    fail(error)
+    return count ?? 0
+  },
+
   fetchUncategorized: async (ledgerId, limit = 500) => {
     const { data, count, error } = await supabase
       .from('transactions')
@@ -262,7 +277,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   summarize: async (ledgerId, start, end) => {
     const { data, error } = await supabase
       .from('v_daily_summary')
-      .select('income, expense, tx_count')
+      .select('income, expense, tx_count, expense_count, income_count')
       .eq('ledger_id', ledgerId)
       .gte('date', start)
       .lte('date', end)
@@ -270,7 +285,9 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     const income = (data ?? []).reduce((s, r) => s + Number(r.income ?? 0), 0)
     const expense = (data ?? []).reduce((s, r) => s + Number(r.expense ?? 0), 0)
     const count = (data ?? []).reduce((s, r) => s + Number(r.tx_count ?? 0), 0)
-    return { income, expense, net: income - expense, count }
+    const expenseCount = (data ?? []).reduce((s, r) => s + Number(r.expense_count ?? 0), 0)
+    const incomeCount = (data ?? []).reduce((s, r) => s + Number(r.income_count ?? 0), 0)
+    return { income, expense, net: income - expense, count, expenseCount, incomeCount }
   },
 
   monthly: async (ledgerId, fromMonth, toMonth) => {

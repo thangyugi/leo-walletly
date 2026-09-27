@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-  LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, Landmark, Users, RefreshCw,
+  LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, Users, RefreshCw,
   FileText, ScanLine, Upload, Settings, User,
 } from 'lucide-react'
 
@@ -21,7 +21,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/calendar', labelKey: 'nav.calendar', icon: CalendarDays, group: 'main' },
   { href: '/analytics', labelKey: 'nav.analytics', icon: BarChart3, group: 'main' },
   { href: '/categories', labelKey: 'nav.groups', icon: FolderTree, group: 'manage' },
-  { href: '/accounts', labelKey: 'accounts.title', icon: Landmark, group: 'manage' },
   { href: '/users', labelKey: 'nav.users', icon: Users, group: 'manage' },
   { href: '/recurring', labelKey: 'nav.recurring', icon: RefreshCw, group: 'manage' },
   { href: '/monthly-report', labelKey: 'nav.report', icon: FileText, group: 'manage' },

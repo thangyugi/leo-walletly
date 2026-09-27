@@ -48,7 +48,9 @@ select
   t.transaction_date as date,
   coalesce(sum(t.base_amount) filter (where t.transaction_type = 'income'), 0) as income,
   coalesce(sum(t.base_amount) filter (where t.transaction_type = 'expense'), 0) as expense,
-  count(*) as tx_count
+  count(*) as tx_count,
+  count(*) filter (where t.transaction_type = 'expense') as expense_count,
+  count(*) filter (where t.transaction_type = 'income') as income_count
 from public.transactions t
 where t.deleted_at is null and t.status = 'posted' and not t.exclude_from_reports
 group by t.ledger_id, t.transaction_date;

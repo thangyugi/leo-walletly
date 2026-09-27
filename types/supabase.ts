@@ -361,6 +361,7 @@ export type Database = {
           name_key: string | null
           description: string | null
           category_type: string
+          kind_code: string
           icon: string | null
           color: string | null
           sort_order: number
@@ -385,6 +386,7 @@ export type Database = {
           name_key?: string | null
           description?: string | null
           category_type?: string
+          kind_code?: string
           icon?: string | null
           color?: string | null
           sort_order?: number
@@ -409,6 +411,7 @@ export type Database = {
           name_key?: string | null
           description?: string | null
           category_type?: string
+          kind_code?: string
           icon?: string | null
           color?: string | null
           sort_order?: number
@@ -431,6 +434,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "categories_kind_code_fkey"
+            columns: ["kind_code"]
+            isOneToOne: false
+            referencedRelation: "category_kinds"
+            referencedColumns: ["code"]
           },
           {
             foreignKeyName: "categories_ledger_id_fkey"
@@ -502,6 +512,35 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "categories"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_kinds: {
+        Row: {
+          code: string
+          name_key: string
+          sort_order: number
+          is_active: boolean
+        }
+        Insert: {
+          code: string
+          name_key: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Update: {
+          code?: string
+          name_key?: string
+          sort_order?: number
+          is_active?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_kinds_name_key_fkey"
+            columns: ["name_key"]
+            isOneToOne: false
+            referencedRelation: "translation_keys"
+            referencedColumns: ["key"]
           },
         ]
       }
@@ -3591,6 +3630,8 @@ export type Database = {
           income: number | null
           expense: number | null
           tx_count: number | null
+          expense_count: number | null
+          income_count: number | null
         }
         Relationships: []
       }

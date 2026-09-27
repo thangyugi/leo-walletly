@@ -30,7 +30,7 @@ export function TransactionRow({ txn, category, accountName, onClick, selected, 
   const { t } = useTranslation()
   const isTransfer = txn.transactionType === 'transfer'
   const sign = isTransfer ? 'neutral' : txn.transactionType === 'income' ? 'gain' : 'loss'
-  const accent = category?.color ?? '#94a3b8'
+  const accent = compact ? '#6b7280' : category?.color ?? '#94a3b8'
 
   return (
     <div
@@ -49,7 +49,7 @@ export function TransactionRow({ txn, category, accountName, onClick, selected, 
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-sm select-none"
         style={{ background: `color-mix(in srgb, ${accent} 14%, transparent)`, color: accent }}
       >
-        {isTransfer ? <ArrowLeftRight className="w-4 h-4" /> : category?.emoji ? <CategoryIcon name={category.emoji} className="w-4 h-4" /> : (txn.description || '?').slice(0, 1).toUpperCase()}
+        {compact ? (txn.description || '?').slice(0, 1).toUpperCase() : isTransfer ? <ArrowLeftRight className="w-4 h-4" /> : category?.emoji ? <CategoryIcon name={category.emoji} className="w-4 h-4" /> : (txn.description || '?').slice(0, 1).toUpperCase()}
       </div>
 
       <div className="flex-1 min-w-0">

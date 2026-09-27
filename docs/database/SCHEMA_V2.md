@@ -94,7 +94,7 @@ Giai đoạn: 1 = làm cùng đợt dựng lại DB · 2 = ngay sau khi luồng 
 
 ---
 
-## 3. Tổng quan (53 bảng)
+## 3. Tổng quan (54 bảng)
 
 | Nhóm | Bảng |
 |---|---|
@@ -102,7 +102,7 @@ Giai đoạn: 1 = làm cùng đợt dựng lại DB · 2 = ngay sau khi luồng 
 | B. Đa ngôn ngữ (3) | `translation_keys`, `translations`, `translation_overrides` |
 | C. Người dùng & quyền (6) | `users`, `user_preferences`, `user_sessions`, `roles`, `permissions`, `role_permissions` |
 | D. Sổ (4) | `ledger_types`, `ledgers`, `ledger_members`, `ledger_invitations` |
-| E. Tiền (16) | `financial_accounts`, `categories`, `category_translations`, `category_members`, `category_accounts`, `category_rules`, `category_templates`, `category_template_items`, `budgets`, `tags`, `transactions`, `transaction_tags`, `transaction_shares`, `settlements`, `recurring_rules`, `bank_connections` |
+| E. Tiền (17) | `financial_accounts`, `category_kinds`, `categories`, `category_translations`, `category_members`, `category_accounts`, `category_rules`, `category_templates`, `category_template_items`, `budgets`, `tags`, `transactions`, `transaction_tags`, `transaction_shares`, `settlements`, `recurring_rules`, `bank_connections` |
 | F. Nhập liệu (6) | `import_jobs`, `import_column_mappings`, `import_rows`, `import_row_values`, `documents`, `document_line_items` |
 | G. Thông báo & nhật ký (9) | `notification_categories`, `notification_channels`, `notification_defaults`, `notification_types`, `user_notification_settings`, `notifications`, `notification_params`, `audit_logs`, `audit_log_changes` |
 | H. Quyền riêng tư & nhà phát triển (2) | `data_requests`, `api_tokens` |
@@ -459,6 +459,16 @@ Partial UNIQUE `(ledger_id, email) where status = 'pending'`.
 | `is_archived` | boolean | ❌ | `false` | |
 | `sort_order` | smallint | ❌ | `0` | |
 | *AUDIT* | | | | |
+
+### E1b. `category_kinds` — Loại nhóm hiển thị trên thẻ danh mục (theo thiết kế: "Trung tâm chi phí"…)
+| Cột | Kiểu | Null | Mặc định | Mô tả |
+|---|---|---|---|---|
+| `code` | varchar(30) | ❌ | | PK: `cost_center`, `department`, `project`, `team`, `subsidiary` |
+| `name_key` | varchar(150) | ❌ | | FK `translation_keys` |
+| `sort_order` | smallint | ❌ | 0 | |
+| `is_active` | boolean | ❌ | true | |
+
+`categories.kind_code` (FK, mặc định `cost_center`). Tab "Định kỳ" của màn danh mục = danh mục có `recurring_rules` đang bật (không cần cột riêng). `v_daily_summary` có thêm `expense_count`, `income_count` cho thẻ "件数 · 平均" của màn 明細一覧.
 
 ### E2. `categories`
 | Cột | Kiểu | Null | Mặc định | Mô tả |

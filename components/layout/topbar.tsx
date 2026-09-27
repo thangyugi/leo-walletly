@@ -80,7 +80,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
       <div className="flex items-center gap-0.5 shrink-0">
         <button
           onClick={onSearchOpen}
-          className="flex items-center gap-2 h-8 px-2.5 rounded-lg text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-sunken)] hover:bg-[var(--color-border-default)] transition-colors"
+          className="flex items-center gap-2 h-7 px-2.5 rounded-lg text-xs text-[var(--color-text-tertiary)] bg-[var(--color-bg-sunken)] hover:bg-[var(--color-border-default)] transition-colors"
           aria-label={t.common.search}
         >
           <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -93,7 +93,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         <div className="relative ml-1" ref={notifRef}>
           <button
             onClick={() => { setShowNotif((v) => !v); setShowUserMenu(false) }}
-            className="relative w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
+            className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
             aria-label={t.notifications.title}
           >
             <Bell className="w-4 h-4 text-[var(--color-text-tertiary)]" />
@@ -145,7 +145,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
         <div className="relative" ref={userMenuRef}>
           <button
             onClick={() => { setShowUserMenu((v) => !v); setShowNotif(false) }}
-            className="w-9 h-9 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
+            className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
             aria-label={displayName}
           >
             <div className="w-6 h-6 rounded-full bg-[var(--color-interactive-primary)] flex items-center justify-center text-[10px] font-bold text-white">

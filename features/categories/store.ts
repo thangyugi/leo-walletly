@@ -119,6 +119,7 @@ export interface CategoryStat {
 export interface CategoryInput {
   name?: string
   type?: CategoryType
+  kind_code?: string
   parent_id?: string | null
   color?: string
   emoji?: string
@@ -248,6 +249,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           base_name: c.name,
           name_key: c.name_key,
           type: c.category_type as CategoryType,
+          kind_code: c.kind_code,
           color: c.color ?? '#94a3b8',
           emoji: c.icon ?? 'Folder',
           description: c.description,
@@ -318,6 +320,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       slug: uniqueSlug(input.name, taken),
       name: input.name.trim(),
       category_type: input.type ?? parent?.type ?? 'expense',
+      kind_code: input.kind_code ?? parent?.kind_code ?? 'cost_center',
       icon: input.emoji ?? parent?.emoji ?? 'Folder',
       color: input.color ?? parent?.color ?? '#10b981',
       description: input.description ?? null,
@@ -340,6 +343,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       patch.name_key = null // renamed by the user → stop following the seeded translation
     }
     if (input.type !== undefined) patch.category_type = input.type
+    if (input.kind_code !== undefined) patch.kind_code = input.kind_code
     if (input.parent_id !== undefined) patch.parent_id = input.parent_id
     if (input.color !== undefined) patch.color = input.color
     if (input.emoji !== undefined) patch.icon = input.emoji

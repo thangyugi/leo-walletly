@@ -15,9 +15,9 @@ import type { Lang } from '@/lib/i18n'
 
 // Shown before the DB language list has loaded (and if it cannot be reached).
 const FALLBACK_LANGUAGES = [
-  { code: 'ja', native_name: '日本語', short_label: 'JA' },
-  { code: 'vi', native_name: 'Tiếng Việt', short_label: 'VI' },
-  { code: 'en', native_name: 'English', short_label: 'EN' },
+  { code: 'ja', native_name: '日本語', short_label: '日本' },
+  { code: 'vi', native_name: 'Tiếng Việt', short_label: 'VN' },
+  { code: 'en', native_name: 'English', short_label: 'US' },
 ]
 
 export function LanguagePicker({ className }: { className?: string }) {
@@ -41,8 +41,8 @@ export function LanguagePicker({ className }: { className?: string }) {
           )}
         >
           <span className="text-[11px] font-semibold leading-none">{opt.short_label}</span>
-          <span className={cn('text-[9px] leading-none truncate max-w-full px-1', lang === opt.code ? 'text-white/80' : 'text-[var(--color-text-quaternary)]')}>
-            {opt.native_name}
+          <span className={cn('text-[9px] font-bold uppercase tracking-wide leading-none', lang === opt.code ? 'text-white/80' : 'text-[var(--color-text-quaternary)]')}>
+            {opt.code}
           </span>
         </button>
       ))}
@@ -117,7 +117,7 @@ export function Sidebar() {
           {t.common.language}
         </p>
         <LanguagePicker />
-        <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.4.0 · {APP_NAME}</p>
+        <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · {APP_NAME}</p>
       </div>
     </aside>
   )

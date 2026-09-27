@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
+import type { Tables } from '@/types/supabase'
 import type {
   AccountTypeRow, CategoryTemplateRow, CountryRow, CurrencyRow, LanguageRow, LedgerTypeRow,
   NotificationCategoryRow, NotificationChannelRow, NotificationTypeRow, ProviderRow, RoleRow, TimeZoneRow,
@@ -21,6 +22,7 @@ interface MasterState {
   notificationTypes: NotificationTypeRow[]
   notificationCategories: NotificationCategoryRow[]
   notificationChannels: NotificationChannelRow[]
+  categoryKinds: Tables<'category_kinds'>[]
   loaded: boolean
   loadLanguages: () => Promise<void>
   load: () => Promise<void>
@@ -41,6 +43,7 @@ export const useMasterStore = create<MasterState>((set, get) => ({
   notificationTypes: [],
   notificationCategories: [],
   notificationChannels: [],
+  categoryKinds: [],
   loaded: false,
 
   // Readable without signing in (language picker on the login screen).
@@ -51,7 +54,7 @@ export const useMasterStore = create<MasterState>((set, get) => ({
 
   load: async () => {
     if (get().loaded) return
-    const [languages, currencies, timeZones, countries, providers, accountTypes, ledgerTypes, roles, templates, nTypes, nCats, nChannels] =
+    const [languages, currencies, timeZones, countries, providers, accountTypes, ledgerTypes, roles, templates, nTypes, nCats, nChannels, categoryKinds] =
       await Promise.all([
         supabase.from('languages').select('*').eq('is_active', true).order('sort_order'),
         supabase.from('currencies').select('*').eq('is_active', true).order('sort_order'),
@@ -65,6 +68,7 @@ export const useMasterStore = create<MasterState>((set, get) => ({
         supabase.from('notification_types').select('*').eq('is_active', true),
         supabase.from('notification_categories').select('*').order('sort_order'),
         supabase.from('notification_channels').select('*').order('sort_order'),
+        supabase.from('category_kinds').select('*').eq('is_active', true).order('sort_order'),
       ])
     set({
       languages: languages.data ?? [],
@@ -79,6 +83,7 @@ export const useMasterStore = create<MasterState>((set, get) => ({
       notificationTypes: nTypes.data ?? [],
       notificationCategories: nCats.data ?? [],
       notificationChannels: nChannels.data ?? [],
+      categoryKinds: categoryKinds.data ?? [],
       loaded: true,
     })
   },

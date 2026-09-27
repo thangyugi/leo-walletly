@@ -28,6 +28,14 @@ create index idx_financial_accounts_ledger on public.financial_accounts (ledger_
 create trigger trg_financial_accounts_touch before update on public.financial_accounts
   for each row execute function public.tg_touch_audit();
 
+-- Organisational kind shown on category cards (Trung tâm chi phí, Dự án…). Lookup so new kinds need no schema change.
+create table public.category_kinds (
+  code varchar(30) primary key,
+  name_key varchar(150) not null references public.translation_keys (key),
+  sort_order smallint not null default 0,
+  is_active boolean not null default true
+);
+
 create table public.categories (
   id uuid primary key default gen_random_uuid(),
   ledger_id uuid not null references public.ledgers (id) on delete cascade,
@@ -37,6 +45,7 @@ create table public.categories (
   name_key varchar(150) references public.translation_keys (key),
   description text,
   category_type varchar(20) not null default 'expense' check (category_type in ('expense', 'income', 'transfer')),
+  kind_code varchar(30) not null default 'cost_center' references public.category_kinds (code),
   icon varchar(50),
   color varchar(9),
   sort_order smallint not null default 0,
