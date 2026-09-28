@@ -1,12 +1,12 @@
 'use client'
 
-import { categoryTreeOptions } from '@/features/categories/types'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Trash2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from './button'
 import { Input, Select } from './input'
+import { AccountPicker, CategoryPicker } from './picker'
 import { useTransactionsStore, type TransactionInput } from '@/stores/transactions'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerData } from '@/hooks/useLedgerData'
@@ -70,9 +70,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   const precision = getCurrencyPrecision(currency)
   const amountNum = Number(amount.replace(/,/g, ''))
 
-  const categoryOptions = useMemo(() => {
-    return categoryTreeOptions(categories.filter((c) => c.is_active && c.type === type)).map((c) => ({ id: c.id, label: c.name }))
-  }, [categories, type])
+  const typeCategories = useMemo(() => categories.filter((c) => c.is_active && c.type === type), [categories, type])
 
   async function addTag() {
     if (!ledger || !tagInput.trim()) return
@@ -194,22 +192,15 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
           </div>
 
           <div className={cn('grid gap-3', type === 'transfer' ? 'grid-cols-2' : 'grid-cols-1')}>
-            <Select label={t.txform.account} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-              {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </Select>
+            <AccountPicker label={t.txform.account} accounts={activeAccounts} value={accountId} onChange={setAccountId} />
             {type === 'transfer' && (
-              <Select label={t.txform.toAccount} value={toAccountId} onChange={(e) => setToAccountId(e.target.value)}>
-                <option value="">{t.bulk.choose}</option>
-                {activeAccounts.filter((a) => a.id !== accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
+              <AccountPicker label={t.txform.toAccount} accounts={activeAccounts.filter((a) => a.id !== accountId)} placeholder={t.bulk.choose}
+                value={toAccountId} onChange={setToAccountId} />
             )}
           </div>
 
           {type !== 'transfer' && (
-            <Select label={t.txform.category} value={categoryId} onChange={(e) => setCategoryId(e.target.value)}>
-              <option value="">{t.txform.uncategorized}</option>
-              {categoryOptions.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-            </Select>
+            <CategoryPicker label={t.txform.category} categories={typeCategories} noneLabel={t.txform.uncategorized} value={categoryId} onChange={setCategoryId} />
           )}
 
           <Input label={t.txform.description} value={description} onChange={(e) => setDescription(e.target.value)} />

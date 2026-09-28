@@ -473,13 +473,16 @@ export function CategoriesBentoPage() {
   const ledgerId = ledger?.id
   React.useEffect(() => {
     if (!ledgerId) return
-    void fetchUncategorized(ledgerId, 200).then(setPending)
     void loadRecurring(ledgerId)
-  }, [ledgerId, revision, categories.length, fetchUncategorized, loadRecurring])
+  }, [ledgerId, revision, categories.length, loadRecurring])
 
+  // Stats and the "to classify" list follow the chosen period (so does /categories/classify).
   React.useEffect(() => {
-    if (ledgerId) void fetchStats(ledgerId, { start: picker.start, end: picker.end })
-  }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats])
+    if (!ledgerId) return
+    const range = { start: picker.start, end: picker.end }
+    void fetchStats(ledgerId, range)
+    void fetchUncategorized(ledgerId, 200, range).then(setPending)
+  }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats, fetchUncategorized])
 
   const statBy = React.useMemo(() => new Map(stats.map((s) => [s.id, s])), [stats])
   // A parent's figures include its sub-categories.

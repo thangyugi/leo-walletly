@@ -716,6 +716,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('merge.target', 'merge', null, false),
   ('merge.title', 'merge', null, false),
   ('merge.warning', 'merge', 'name', false),
+  ('nav.accounts', 'nav', null, true),
   ('nav.analytics', 'nav', null, true),
   ('nav.calendar', 'nav', null, true),
   ('nav.dashboard', 'nav', null, true),
@@ -809,11 +810,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.uploadAvatar', 'prefs', null, false),
   ('prefs.weekStart', 'prefs', null, false),
   ('privacyx.deleteBtn', 'privacyx', null, false),
-  ('privacyx.deleteSub', 'privacyx', null, false),
-  ('privacyx.deleteTitle', 'privacyx', null, false)
+  ('privacyx.deleteSub', 'privacyx', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('privacyx.deleteTitle', 'privacyx', null, false),
   ('privacyx.deleteType', 'privacyx', 'word', false),
   ('privacyx.deleteWord', 'privacyx', null, false),
   ('privacyx.download', 'privacyx', null, false),
@@ -1818,6 +1819,7 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'ja', '統合先'),
   ('merge.title', 'ja', 'カテゴリを統合'),
   ('merge.warning', 'ja', '元に戻せません。「{{name}}」の取引・キーワード・サブカテゴリは統合先に移動し、「{{name}}」は削除されます。'),
+  ('nav.accounts', 'ja', '口座管理'),
   ('nav.analytics', 'ja', '分析'),
   ('nav.calendar', 'ja', 'カレンダー'),
   ('nav.dashboard', 'ja', 'ダッシュボード'),
@@ -1911,11 +1913,11 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'ja', '画像をアップロード'),
   ('prefs.weekStart', 'ja', '週の始まり'),
   ('privacyx.deleteBtn', 'ja', 'アカウントを完全に削除'),
-  ('privacyx.deleteSub', 'ja', 'あなたがオーナーの元帳はすべて削除され、他の人の元帳からは退出します。他のメンバーがいる元帳は、先にオーナー権限を移譲してください。元に戻せません。'),
-  ('privacyx.deleteTitle', 'ja', 'アカウントを削除')
+  ('privacyx.deleteSub', 'ja', 'あなたがオーナーの元帳はすべて削除され、他の人の元帳からは退出します。他のメンバーがいる元帳は、先にオーナー権限を移譲してください。元に戻せません。')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteTitle', 'ja', 'アカウントを削除'),
   ('privacyx.deleteType', 'ja', '確認のため「{{word}}」と入力してください'),
   ('privacyx.deleteWord', 'ja', '削除'),
   ('privacyx.download', 'ja', 'ダウンロード'),
@@ -2920,6 +2922,7 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'vi', 'Danh mục đích'),
   ('merge.title', 'vi', 'Gộp danh mục'),
   ('merge.warning', 'vi', 'Không thể hoàn tác. Giao dịch, từ khoá và danh mục con của "{{name}}" sẽ chuyển sang danh mục đích, sau đó "{{name}}" bị xoá.'),
+  ('nav.accounts', 'vi', 'Quản lý tài khoản'),
   ('nav.analytics', 'vi', 'Phân tích'),
   ('nav.calendar', 'vi', 'Lịch'),
   ('nav.dashboard', 'vi', 'Tổng quan'),
@@ -3013,11 +3016,11 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'vi', 'Tải ảnh lên'),
   ('prefs.weekStart', 'vi', 'Tuần bắt đầu từ'),
   ('privacyx.deleteBtn', 'vi', 'Xoá vĩnh viễn tài khoản'),
-  ('privacyx.deleteSub', 'vi', 'Các sổ bạn sở hữu sẽ bị xoá và bạn rời khỏi sổ của người khác. Sổ có thành viên khác cần chuyển quyền chủ sở hữu trước. Không thể hoàn tác.'),
-  ('privacyx.deleteTitle', 'vi', 'Xoá tài khoản')
+  ('privacyx.deleteSub', 'vi', 'Các sổ bạn sở hữu sẽ bị xoá và bạn rời khỏi sổ của người khác. Sổ có thành viên khác cần chuyển quyền chủ sở hữu trước. Không thể hoàn tác.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteTitle', 'vi', 'Xoá tài khoản'),
   ('privacyx.deleteType', 'vi', 'Nhập "{{word}}" để xác nhận'),
   ('privacyx.deleteWord', 'vi', 'XOA'),
   ('privacyx.download', 'vi', 'Tải về'),
@@ -4022,6 +4025,7 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'en', 'Target category'),
   ('merge.title', 'en', 'Merge categories'),
   ('merge.warning', 'en', 'This cannot be undone. Transactions, keywords and sub-categories of "{{name}}" move to the target, then "{{name}}" is deleted.'),
+  ('nav.accounts', 'en', 'Accounts'),
   ('nav.analytics', 'en', 'Analytics'),
   ('nav.calendar', 'en', 'Calendar'),
   ('nav.dashboard', 'en', 'Dashboard'),
@@ -4115,11 +4119,11 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'en', 'Upload image'),
   ('prefs.weekStart', 'en', 'Week starts on'),
   ('privacyx.deleteBtn', 'en', 'Delete my account'),
-  ('privacyx.deleteSub', 'en', 'Ledgers you own are deleted and you leave the others. Transfer ownership of ledgers shared with other members first. This cannot be undone.'),
-  ('privacyx.deleteTitle', 'en', 'Delete account')
+  ('privacyx.deleteSub', 'en', 'Ledgers you own are deleted and you leave the others. Transfer ownership of ledgers shared with other members first. This cannot be undone.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteTitle', 'en', 'Delete account'),
   ('privacyx.deleteType', 'en', 'Type "{{word}}" to confirm'),
   ('privacyx.deleteWord', 'en', 'DELETE'),
   ('privacyx.download', 'en', 'Download'),

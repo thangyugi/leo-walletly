@@ -16,6 +16,7 @@ import { PageHeader } from '@/components/layout/page-header'
 import { DateNavigator, buildLabel, defaultPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
+import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
 import { useTransactionsStore, type PeriodSummary } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -341,6 +342,7 @@ export default function DashboardPage() {
   const [flow, setFlow] = useState<{ label: string; income: number; expense: number }[]>([])
   const [loaded, setLoaded] = useState(false)
   const [editing, setEditing] = useState<Transaction | 'new' | null>(null)
+  const [viewing, setViewing] = useState<Transaction | null>(null)
 
   const ledgerId = ledger?.id
 
@@ -494,7 +496,7 @@ export default function DashboardPage() {
 
               <div className="divide-y divide-[var(--color-border-subtle)]">
                 {recent.map((txn) => (
-                  <RecentTxnRow key={txn.id} txn={txn} onClick={() => setEditing(txn)} />
+                  <RecentTxnRow key={txn.id} txn={txn} onClick={() => setViewing(txn)} />
                 ))}
               </div>
 
@@ -552,6 +554,7 @@ export default function DashboardPage() {
       )}
 
       {editing && <TransactionEditModal txn={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />}
+      <TransactionViewer txn={viewing} onClose={() => setViewing(null)} />
     </div>
   )
 }

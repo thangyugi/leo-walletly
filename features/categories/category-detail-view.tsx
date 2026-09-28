@@ -9,7 +9,8 @@ import {
   Archive, ArchiveRestore,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
-import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
+import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
+import { CategoryPicker } from '@/components/ui/picker'
 import { CategoryIcon } from './category-icon'
 import { CategoryForm } from './category-form'
 import { MergeCategoryModal } from './merge-category-modal'
@@ -564,9 +565,8 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
               onChange={(e) => setRuleForm({ ...ruleForm, value: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && void addRule()}
               className="h-8 px-2 rounded-[7px] border border-[var(--color-border-default)] bg-white text-xs w-40" />
             <span className="text-[var(--color-text-quaternary)]">→</span>
-            <select aria-label={t.catdetail.ruleTarget} value={ruleForm.target} onChange={(e) => setRuleForm({ ...ruleForm, target: e.target.value })} className={selectCls}>
-              {sections.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
+            <CategoryPicker aria-label={t.catdetail.ruleTarget} size="sm" className="w-48" categories={sections}
+              value={ruleForm.target} onChange={(v) => setRuleForm({ ...ruleForm, target: v })} />
             <button onClick={() => void addRule()} className="text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white">{t.catform.add}</button>
             <button onClick={() => setRuleForm(null)} className="text-xs font-medium px-[10px] py-[5px] rounded-[7px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)]">{t.common.cancel}</button>
           </div>
@@ -1034,7 +1034,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           </div>
         </div>
       </Modal>
-      {editingTx && <TransactionEditModal txn={editingTx} onClose={() => setEditingTx(null)} />}
+      <TransactionViewer txn={editingTx} onClose={() => setEditingTx(null)} />
     </div>
   )
 }

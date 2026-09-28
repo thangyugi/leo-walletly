@@ -80,7 +80,7 @@ interface TransactionsState {
   /** Number of live (not deleted, not void) transactions in the ledger. */
   countAll: (ledgerId: string) => Promise<number>
   /** Income/expense rows with no category (newest first) for the classify screens. */
-  fetchUncategorized: (ledgerId: string, limit?: number) => Promise<{ items: Transaction[]; total: number }>
+  fetchUncategorized: (ledgerId: string, limit?: number, range?: { start: string; end: string }) => Promise<{ items: Transaction[]; total: number }>
   search: (ledgerId: string, term: string, limit?: number) => Promise<Transaction[]>
   getById: (id: string) => Promise<Transaction | null>
   summarize: (ledgerId: string, start: string, end: string) => Promise<PeriodSummary>
@@ -256,8 +256,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     return count ?? 0
   },
 
-  fetchUncategorized: async (ledgerId, limit = 500) => {
-    const { data, count, error } = await supabase
+  fetchUncategorized: async (ledgerId, limit = 500, range) => {
+    let q = supabase
       .from('transactions')
       .select(SELECT, { count: 'exact' })
       .eq('ledger_id', ledgerId)
@@ -265,6 +265,8 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .is('category_id', null)
       .neq('status', 'void')
       .neq('transaction_type', 'transfer')
+    if (range) q = q.gte('transaction_date', range.start).lte('transaction_date', range.end)
+    const { data, count, error } = await q
       .order('transaction_date', { ascending: false })
       .limit(limit)
     fail(error)

@@ -8,7 +8,8 @@ import {
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Input, Select } from '@/components/ui/input'
+import { Input } from '@/components/ui/input'
+import { AccountPicker, CategoryPicker } from '@/components/ui/picker'
 import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
@@ -394,7 +395,6 @@ export default function ScanPage() {
   }
   const isFormDisabled = !form.description || amtNum <= 0 || activeAccounts.length === 0 || !accountId
 
-  const catLabels = categoryTreeOptions(categories).map((c) => ({ value: c.id, label: c.name }))
 
   return (
     <div className="animate-fade-in space-y-5 max-w-2xl mx-auto">
@@ -627,11 +627,8 @@ export default function ScanPage() {
                       className="min-w-0 h-8 px-2 text-sm rounded-md border border-transparent hover:border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-transparent" />
                     <input aria-label={L('金額', 'Số tiền', 'Amount')} type="number" value={it.amount} onChange={(e) => setItem(it.key, { amount: e.target.value })}
                       className="h-8 px-2 text-sm text-right font-tabular rounded-md border border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-[var(--color-surface-default)]" />
-                    <select aria-label={L('カテゴリ', 'Danh mục', 'Category')} value={it.categoryId} onChange={(e) => setItem(it.key, { categoryId: e.target.value, source: 'manual' })}
-                      className="h-8 px-1.5 text-xs rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-default)] min-w-0">
-                      <option value="">{t.txform.uncategorized}</option>
-                      {categoryTreeOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                    </select>
+                    <CategoryPicker aria-label={L('カテゴリ', 'Danh mục', 'Category')} size="sm" categories={categories} noneLabel={t.txform.uncategorized}
+                      value={it.categoryId} onChange={(v) => setItem(it.key, { categoryId: v, source: 'manual' })} />
                     <button type="button" aria-label={L('行を削除', 'Xoá dòng', 'Remove line')} onClick={() => setItems((list) => list.filter((x) => x.key !== it.key))}
                       className="w-7 h-7 flex items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)] hover:bg-[var(--color-bg-sunken)]">
                       <Trash2 className="w-3.5 h-3.5" />
@@ -738,25 +735,20 @@ export default function ScanPage() {
                   value={form.date}
                   onChange={(e) => setField('date', e.target.value)}
                 />
-                <Select
+                <CategoryPicker
                   label={items.length > 0 ? L('カテゴリ（未設定の明細）', 'Danh mục (cho món chưa chọn)', 'Category (unset lines)') : L('カテゴリ', 'Danh mục', 'Category')}
+                  categories={categories}
+                  noneLabel={t.txform.uncategorized}
                   value={form.category}
-                  onChange={(e) => {
+                  onChange={(v) => {
                     const prev = form.category
-                    setField('category', e.target.value)
+                    setField('category', v)
                     // Lines still on the old receipt-wide category follow it.
-                    setItems((list) => list.map((it) => (!it.categoryId || (it.categoryId === prev && it.source !== 'manual') ? { ...it, categoryId: e.target.value } : it)))
+                    setItems((list) => list.map((it) => (!it.categoryId || (it.categoryId === prev && it.source !== 'manual') ? { ...it, categoryId: v } : it)))
                   }}
-                >
-                  <option value="">{t.txform.uncategorized}</option>
-                  {catLabels.map((c) => (
-                    <option key={c.value} value={c.value}>{c.label}</option>
-                  ))}
-                </Select>
+                />
                 <div>
-                  <Select label={t.txform.account} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
-                    {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                  </Select>
+                  <AccountPicker label={t.txform.account} accounts={activeAccounts} value={accountId} onChange={setAccountId} />
                   <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1">
                     {scanResult?.paymentMethod && scanResult.paymentMethod !== 'unknown'
                       ? L(`レシートの支払方法: ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`, `Hoá đơn ghi thanh toán: ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`, `Paid by (receipt): ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`)

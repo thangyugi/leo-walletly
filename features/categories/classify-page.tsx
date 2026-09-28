@@ -3,15 +3,16 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { ArrowLeft, Check, CheckCheck, Loader2, Search, Zap, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Check, CheckCheck, Loader2, Search, Zap, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { CategoryIcon } from './category-icon'
+import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { CategoryPicker } from '@/components/ui/picker'
 import { useCategoryStore } from './store'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
-import { cn, formatDate, formatMonthLocale } from '@/lib/utils'
+import { cn, formatDate } from '@/lib/utils'
 import type { Category } from './types'
 import type { Transaction } from '@/types/domain'
 
@@ -30,27 +31,9 @@ function CategorySelect({ value, onChange, categories, type, disabled, label }: 
   value: string; onChange: (id: string) => void; categories: Category[]; type: 'income' | 'expense'; disabled?: boolean; label: string
 }) {
   const { t } = useTranslation()
-  const ofType = categories.filter((c) => c.is_active && c.type === type)
-  const roots = ofType.filter((c) => !c.parent_id || !ofType.some((p) => p.id === c.parent_id))
-  const selected = ofType.find((c) => c.id === value)
   return (
-    <div className="relative flex-1 sm:w-60">
-      <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-5 h-5 rounded-[5px] flex items-center justify-center pointer-events-none"
-        style={{ background: selected ? `${selected.color}22` : 'var(--color-bg-sunken)', color: selected?.color ?? undefined }}>
-        {selected ? <CategoryIcon name={selected.emoji} className="w-3.5 h-3.5" /> : '—'}
-      </span>
-      <select aria-label={label} value={value} disabled={disabled} onChange={(e) => onChange(e.target.value)}
-        className={cn('w-full h-9 pl-9 pr-3 rounded-lg border text-[13px] bg-[var(--color-surface-default)] text-[var(--color-text-primary)] appearance-none disabled:opacity-50',
-          selected ? 'border-[var(--color-interactive-primary)]' : 'border-[var(--color-border-default)]')}>
-        <option value="">{t.classify.choose}</option>
-        {roots.map((r) => (
-          <optgroup key={r.id} label={r.name}>
-            <option value={r.id}>{r.name}</option>
-            {ofType.filter((c) => c.parent_id === r.id).map((c) => <option key={c.id} value={c.id}>— {c.name}</option>)}
-          </optgroup>
-        ))}
-      </select>
-    </div>
+    <CategoryPicker aria-label={label} className="flex-1 sm:w-60" disabled={disabled} placeholder={t.classify.choose}
+      categories={categories.filter((c) => c.is_active && c.type === type)} value={value} onChange={onChange} />
   )
 }
 
@@ -61,9 +44,10 @@ export function ClassifyPage() {
   const { fetchRange, bulkUpdate, revision } = useTransactionsStore()
   const { addKeyword, applyRules } = useCategoryStore()
 
-  const now = new Date()
-  const [year, setYear] = React.useState(now.getFullYear())
-  const [month, setMonth] = React.useState(now.getMonth() + 1)
+  // Same period as Categories (opened from its "view all" on that period).
+  const storedPicker = useCategoryStore((s) => s.picker)
+  const setPicker = useCategoryStore((s) => s.setPicker)
+  const picker = storedPicker ?? defaultPickerValue(lang)
   const [pending, setPending] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
@@ -74,18 +58,16 @@ export function ClassifyPage() {
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set())
   const [confirming, setConfirming] = React.useState(false)
 
-  const mk = `${year}-${String(month).padStart(2, '0')}`
-  const lastDay = new Date(year, month, 0).getDate()
   const ledgerId = ledger?.id
 
   React.useEffect(() => {
     if (!ledgerId) return
     setLoading(true)
-    void fetchRange(ledgerId, `${mk}-01`, `${mk}-${lastDay}`).then((rows) => {
+    void fetchRange(ledgerId, picker.start, picker.end).then((rows) => {
       setPending(rows.filter((x) => !x.categoryId && x.transactionType !== 'transfer'))
       setLoading(false)
     })
-  }, [ledgerId, mk, lastDay, fetchRange, revision])
+  }, [ledgerId, picker.start, picker.end, fetchRange, revision])
 
   const suggest = React.useCallback((label: string, type: string) => {
     const hay = label.toLowerCase()
@@ -165,11 +147,6 @@ export function ClassifyPage() {
   const ready = groups.filter((g) => choice[g.key]).reduce((s, g) => s + g.txns.length, 0)
   const expense = pending.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
   const income = pending.filter((x) => x.transactionType === 'income').reduce((s, x) => s + x.baseAmount, 0)
-  const monthLabel = formatMonthLocale(year, month, lang)
-  const shift = (d: number) => {
-    const dt = new Date(year, month - 1 + d, 1)
-    setYear(dt.getFullYear()); setMonth(dt.getMonth() + 1)
-  }
 
   return (
     <div className="space-y-4 animate-fade-in pb-24">
@@ -180,11 +157,7 @@ export function ClassifyPage() {
           <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.classify.subtitle}</p>
         </div>
         <span className="flex-1" />
-        <div className="flex items-center gap-1 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)]">
-          <button onClick={() => shift(-1)} aria-label="prev" className="w-8 h-9 flex items-center justify-center"><ChevronLeft className="w-4 h-4" /></button>
-          <span className="text-sm font-medium px-1 min-w-[110px] text-center">{monthLabel}</span>
-          <button onClick={() => shift(1)} aria-label="next" className="w-8 h-9 flex items-center justify-center"><ChevronRight className="w-4 h-4" /></button>
-        </div>
+        <DateNavigator value={picker} onChange={setPicker} lang={lang} />
         <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}>{t.classify.runRules}</Button>
       </div>
 

@@ -1,6 +1,5 @@
 'use client'
 
-import { categoryTreeOptions } from '@/features/categories/types'
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -9,6 +8,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { AccountPicker, CategoryPicker } from '@/components/ui/picker'
 import { PageHeader } from '@/components/layout/page-header'
 import { parseFile, detectColumnsFromCSV, autoDetectProvider } from '@/features/import/parsers'
 import type { ColumnMapping } from '@/features/import/parsers'
@@ -417,15 +417,15 @@ export default function ImportPage() {
               )}
             </div>
             <div className="flex items-center gap-2">
-              <label htmlFor="imp-acc" className="text-xs text-[var(--color-text-tertiary)]">{t.import.targetAccount}</label>
-              <select
-                id="imp-acc"
+              <span className="text-xs text-[var(--color-text-tertiary)]">{t.import.targetAccount}</span>
+              <AccountPicker
+                aria-label={t.import.targetAccount}
+                size="sm"
+                className="w-52"
+                accounts={activeAccounts}
                 value={accountId}
-                onChange={(e) => { setAccountId(e.target.value); if (file) void processFile(file, userMapping, e.target.value) }}
-                className="h-8 px-2 text-xs border border-[var(--color-border-default)] rounded-lg bg-[var(--color-surface-default)]"
-              >
-                {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </select>
+                onChange={(v) => { setAccountId(v); if (file) void processFile(file, userMapping, v) }}
+              />
               <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[var(--color-text-quaternary)] hover:text-[var(--color-text-primary)]">
                 <RotateCcw className="w-3.5 h-3.5" />{t.import.resetBtn}
               </button>
@@ -471,15 +471,15 @@ export default function ImportPage() {
                         {r.duplicate && <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>}
                       </td>
                       <td className="py-2.5 px-2 hidden sm:table-cell">
-                        <select
+                        <CategoryPicker
                           aria-label={t.transactions.labelCategory}
+                          size="sm"
+                          className="w-44"
+                          categories={categories.filter((c) => c.is_active && c.type === r.type)}
+                          noneLabel={t.txform.uncategorized}
                           value={r.categoryId}
-                          onChange={(e) => setRow(r.rowNumber, { categoryId: e.target.value })}
-                          className="h-7 max-w-[160px] rounded-md border border-[var(--color-border-subtle)] bg-transparent text-xs text-[var(--color-text-secondary)] px-1"
-                        >
-                          <option value="">{t.txform.uncategorized}</option>
-                          {categoryTreeOptions(categories.filter((c) => c.is_active && c.type === r.type)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-                        </select>
+                          onChange={(v) => setRow(r.rowNumber, { categoryId: v })}
+                        />
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
                         <span className={cn('text-sm font-semibold tabular-nums', isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>

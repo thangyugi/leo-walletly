@@ -6,7 +6,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { TransactionRow } from '@/components/financial/transaction-row'
 import { PageHeader } from '@/components/layout/page-header'
-import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
+import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -181,9 +181,7 @@ export default function CalendarPage() {
         </div>
       </div>
 
-      {editingTxn && (
-        <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />
-      )}
+      <TransactionViewer txn={editingTxn} onClose={() => setEditingTxn(null)} />
     </div>
   )
 }

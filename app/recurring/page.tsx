@@ -1,6 +1,5 @@
 'use client'
 
-import { categoryTreeOptions } from '@/features/categories/types'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2, Pencil, Power, RefreshCw, X, Check, SkipForward } from 'lucide-react'
 import { toast } from 'sonner'
@@ -8,6 +7,7 @@ import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input, Select } from '@/components/ui/input'
+import { AccountPicker, CategoryPicker } from '@/components/ui/picker'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useRecurringStore, type Frequency, type RecurringInput, type RecurringRule } from '@/stores/recurring'
@@ -80,19 +80,13 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
           <Input label={t.recurring.name} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Netflix, 家賃…" />
           <Input label={`${t.recurring.amount} (${form.currencyCode})`} inputMode="decimal" value={form.amount || ''} onChange={(e) => set('amount', Number(e.target.value.replace(/[^0-9.]/g, '')))} />
           <div className="grid grid-cols-2 gap-3">
-            <Select label={t.recurring.account} value={form.accountId} onChange={(e) => set('accountId', e.target.value)}>
-              {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-            </Select>
+            <AccountPicker label={t.recurring.account} accounts={activeAccounts} value={form.accountId} onChange={(v) => set('accountId', v)} />
             {form.transactionType === 'transfer' ? (
-              <Select label={t.txform.toAccount} value={form.transferAccountId ?? ''} onChange={(e) => set('transferAccountId', e.target.value || null)}>
-                <option value="">{t.bulk.choose}</option>
-                {activeAccounts.filter((a) => a.id !== form.accountId).map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-              </Select>
+              <AccountPicker label={t.txform.toAccount} accounts={activeAccounts.filter((a) => a.id !== form.accountId)} placeholder={t.bulk.choose}
+                value={form.transferAccountId ?? ''} onChange={(v) => set('transferAccountId', v || null)} />
             ) : (
-              <Select label={t.recurring.category} value={form.categoryId ?? ''} onChange={(e) => set('categoryId', e.target.value || null)}>
-                <option value="">{t.txform.uncategorized}</option>
-                {categoryTreeOptions(cats).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </Select>
+              <CategoryPicker label={t.recurring.category} categories={cats} noneLabel={t.txform.uncategorized}
+                value={form.categoryId ?? ''} onChange={(v) => set('categoryId', v || null)} />
             )}
           </div>
           <div className="grid grid-cols-3 gap-3">
