@@ -17,42 +17,64 @@ const MODELS = [
   'gemini-2.5-flash',                     // alias fallback
 ]
 
-const PROMPT = `
+const PAYMENT_METHODS = ['cash', 'credit_card', 'paypay', 'rakuten_pay', 'd_barai', 'au_pay', 'merpay', 'ic_card', 'e_money', 'other', 'unknown'] as const
+
+function buildPrompt(categories: { id: string; name: string }[]) {
+  const list = categories.length
+    ? categories.map((c) => `- ${c.id}: ${c.name}`).join('\n')
+    : '(none — always use null)'
+  return `
 You are an expert Japanese receipt (レシート/領収書) parser.
-Analyze the image and extract ALL of the following:
+Analyze the image and extract:
 
 1. storeName: Store name (string)
-2. totalAmount: Final total amount paid as a plain number. Look for 合計, 税込合計, お会計, TOTAL. NOT subtotal/tax alone.
-3. date: Date in YYYY-MM-DD. Use current year if not shown.
-4. category: ONE of: 'food', 'transport', 'utilities', 'entertainment', 'shopping', 'health', 'other'
-5. items: Array of EVERY line item on the receipt. For each item extract:
-   - name: Item name in original Japanese (string)
-   - quantity: Quantity as number (default 1 if not shown)
-   - unitPrice: Unit price as number (no symbols)
-   - subtotal: Line subtotal as number (quantity × unitPrice)
+2. totalAmount: Final total paid as a plain number (合計, 税込合計, お会計, TOTAL) — not a subtotal or the tax alone.
+3. taxAmount: Consumption tax shown on the receipt (内消費税 / 消費税等 / 税), 0 if none.
+4. date: Date in YYYY-MM-DD. Use the current year if not shown.
+5. paymentMethod: How it was paid — ONE of: ${PAYMENT_METHODS.join(', ')}.
+   現金 / お預り / お釣り → cash; クレジット / VISA / Master / JCB / AMEX → credit_card;
+   PayPay → paypay; 楽天ペイ → rakuten_pay; d払い → d_barai; au PAY → au_pay; メルペイ → merpay;
+   交通系 / Suica / PASMO / ICOCA → ic_card; iD / QUICPay / nanaco / WAON / 楽天Edy → e_money;
+   unknown if the receipt does not say.
+6. categoryId: the ONE category below that fits the whole receipt best, or null.
+7. items: EVERY purchased line. For each:
+   - name: item name as printed (Japanese)
+   - quantity: number (1 if not shown)
+   - unitPrice: unit price as number (= subtotal if unknown)
+   - subtotal: the line amount actually charged, with any discount printed for that item
+     (値引 / 割引 / %OFF right under it) already subtracted
+   - categoryId: the category below that fits THIS item (food vs cosmetics vs medicine vs
+     household goods …), or null if none fits
 
-Rules:
-- Extract ALL items visible, not just 3
-- If quantity column is missing, assume 1
-- If unitPrice cannot be determined, set it equal to subtotal
-- Always return valid JSON with no null values for required fields
-- items array can be empty [] if receipt shows no line items
+Do NOT return as items: 小計, 合計, 消費税/税 lines, お預り, お釣り, ポイント, payment lines.
+A discount that applies to the whole receipt may be one item with a negative subtotal.
 
-Return ONLY this JSON (no markdown, no backticks):
+Categories (id: name):
+${list}
+
+Return ONLY this JSON (no markdown):
 {
   "storeName": "string",
   "totalAmount": number,
+  "taxAmount": number,
   "date": "YYYY-MM-DD",
-  "category": "string",
+  "paymentMethod": "string",
+  "categoryId": "string or null",
   "items": [
-    {"name": "string", "quantity": number, "unitPrice": number, "subtotal": number}
+    {"name": "string", "quantity": number, "unitPrice": number, "subtotal": number, "categoryId": "string or null"}
   ]
 }
 `
+}
 
 export async function POST(req: NextRequest) {
   try {
-    const { image, mimeType } = await req.json()
+    const { image, mimeType, categories: rawCats } = await req.json()
+    // The ledger's own categories, so the model picks real ids per item.
+    const categories: { id: string; name: string }[] = Array.isArray(rawCats)
+      ? rawCats.filter((c: { id?: unknown; name?: unknown } | null) => typeof c?.id === 'string' && typeof c?.name === 'string').slice(0, 200)
+      : []
+    const known = new Set(categories.map((c) => c.id))
 
     if (!image || !mimeType) {
       return NextResponse.json({ error: 'Missing image or mimeType' }, { status: 400 })
@@ -69,7 +91,7 @@ export async function POST(req: NextRequest) {
           const response = await ai.models.generateContent({
             model,
             contents: [
-              PROMPT,
+              buildPrompt(categories),
               { inlineData: { data: image, mimeType } },
             ],
             config: {
@@ -86,6 +108,13 @@ export async function POST(req: NextRequest) {
             throw new Error('AI could not extract receipt data. Please try a clearer photo.')
           }
 
+          // Keep only ids that exist in this ledger, and a known payment method.
+          const catOrNull = (v: unknown) => (typeof v === 'string' && known.has(v) ? v : null)
+          data.categoryId = catOrNull(data.categoryId)
+          data.paymentMethod = PAYMENT_METHODS.includes(data.paymentMethod) ? data.paymentMethod : 'unknown'
+          data.items = Array.isArray(data.items)
+            ? data.items.map((it: Record<string, unknown>) => ({ ...it, categoryId: catOrNull(it?.categoryId) }))
+            : []
           return NextResponse.json(data)
         } catch (err: any) {
           lastError = err

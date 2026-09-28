@@ -1012,6 +1012,7 @@ export type Database = {
           amount: number
           tax_rate: number | null
           category_id: string | null
+          transaction_id: string | null
         }
         Insert: {
           id?: string
@@ -1023,6 +1024,7 @@ export type Database = {
           amount: number
           tax_rate?: number | null
           category_id?: string | null
+          transaction_id?: string | null
         }
         Update: {
           id?: string
@@ -1034,6 +1036,7 @@ export type Database = {
           amount?: number
           tax_rate?: number | null
           category_id?: string | null
+          transaction_id?: string | null
         }
         Relationships: [
           {
@@ -1048,6 +1051,13 @@ export type Database = {
             columns: ["document_id"]
             isOneToOne: false
             referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_line_items_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
             referencedColumns: ["id"]
           },
         ]
@@ -1080,6 +1090,7 @@ export type Database = {
           created_by: string | null
           updated_by: string | null
           version: number
+          extracted_payment_method: string | null
         }
         Insert: {
           id?: string
@@ -1108,6 +1119,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          extracted_payment_method?: string | null
         }
         Update: {
           id?: string
@@ -1136,6 +1148,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          extracted_payment_method?: string | null
         }
         Relationships: [
           {
@@ -3971,6 +3984,21 @@ export type Database = {
           p_ledger_id: string
         }
         Returns: number
+      }
+      save_receipt: {
+        Args: {
+          p_ledger_id: string
+          p_account_id: string
+          p_type: string
+          p_date: string
+          p_merchant: string
+          p_total: number
+          p_notes?: string | null
+          p_fallback_category_id?: string | null
+          p_document?: Json | null
+          p_items?: Json | null
+        }
+        Returns: Json
       }
       set_translation_override: {
         Args: {

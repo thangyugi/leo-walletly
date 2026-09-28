@@ -880,6 +880,8 @@ export interface ReceiptItem {
   quantity: number
   unitPrice: number
   subtotal: number
+  /** Ledger category the scan suggested for this line (null: none fits). */
+  categoryId?: string | null
 }
 
 // ----------------------------------------------------------

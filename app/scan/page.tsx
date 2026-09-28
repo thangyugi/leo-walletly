@@ -4,7 +4,7 @@ import { useState, useRef } from 'react'
 import {
   Camera, RotateCcw, Save, ScanLine, Image as ImageIcon,
   CheckCircle2, AlertCircle, Key, ZoomIn, ZoomOut,
-  Upload, ChevronDown, ChevronUp, ArrowRight,
+  Upload, ChevronDown, ChevronUp, ArrowRight, Plus, Trash2,
 } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -13,22 +13,78 @@ import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
-import { resolveCategoryId } from '@/features/categories/store'
+import { categoryTreeOptions } from '@/features/categories/types'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { supabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { cn, toLocalISODate } from '@/lib/utils'
-import { formatMoney } from '@/lib/money'
+import { formatMoney, getCurrencyPrecision } from '@/lib/money'
 import type { ReceiptItem } from '@/types'
+import type { Account } from '@/features/accounts/store'
 
 type ScanState = 'idle' | 'previewing' | 'scanning' | 'confirming' | 'error' | 'saved'
 
 interface ScanResult {
   storeName: string
   totalAmount: number
+  taxAmount?: number
   date: string
-  category: string
+  paymentMethod?: string
+  categoryId?: string | null
   items?: ReceiptItem[]
+}
+
+/** One receipt line on the confirm screen; each carries its own category. */
+type ItemSource = 'rule' | 'ai' | 'manual' | null
+interface EditItem {
+  key: string
+  name: string
+  quantity: number
+  amount: string
+  categoryId: string
+  source: ItemSource
+}
+
+const num = (v: string) => parseFloat(v.replace(/,/g, '')) || 0
+
+/**
+ * The account a receipt was paid from, by what the receipt says: a matching
+ * provider (PayPay, 楽天ペイ), else an account of that kind, else cash —
+ * a receipt that doesn't say is usually a cash purchase.
+ */
+function pickAccount(method: string | undefined, accounts: Account[]): string {
+  const provider: Record<string, string> = { paypay: 'paypay', rakuten_pay: 'rakuten_pay' }
+  const ofType = (type: string) => accounts.find((a) => a.accountTypeCode === type)
+  const hit =
+    (method && provider[method] && accounts.find((a) => a.providerCode === provider[method])) ||
+    (method === 'credit_card' && ofType('credit_card')) ||
+    (method && ['ic_card', 'e_money', 'd_barai', 'au_pay', 'merpay'].includes(method) &&
+      accounts.find((a) => a.accountTypeCode === 'e_wallet' && !['paypay', 'rakuten_pay'].includes(a.providerCode ?? ''))) ||
+    ofType('cash') ||
+    accounts[0]
+  return hit ? hit.id : ''
+}
+
+/**
+ * Same split as save_receipt: one amount per category, the receipt total spread
+ * in proportion (tax, discounts, rounding), the largest taking the remainder;
+ * a category netting ≤ 0 folds into the largest.
+ */
+function splitByCategory(items: EditItem[], total: number, precision: number) {
+  const groups = new Map<string, { amount: number; count: number }>()
+  for (const it of items) {
+    const g = groups.get(it.categoryId) ?? { amount: 0, count: 0 }
+    g.amount += num(it.amount); g.count += 1
+    groups.set(it.categoryId, g)
+  }
+  const positive = [...groups.entries()].filter(([, g]) => g.amount > 0).sort((a, b) => b[1].amount - a[1].amount)
+  const sum = positive.reduce((s, [, g]) => s + g.amount, 0)
+  if (sum <= 0 || total <= 0) return []
+  const f = 10 ** precision
+  const out = positive.map(([categoryId, g]) => ({ categoryId, count: g.count, amount: Math.round((total * g.amount / sum) * f) / f }))
+  out[0].amount = Math.round((total - out.slice(1).reduce((s, x) => s + x.amount, 0)) * f) / f
+  out[0].count += [...groups.values()].filter((g) => g.amount <= 0).reduce((s, g) => s + g.count, 0)
+  return out
 }
 
 interface ScanForm {
@@ -116,12 +172,13 @@ const STEP_MAP: Record<ScanState, 1 | 2 | 3> = {
 }
 
 export default function ScanPage() {
-  const { create }         = useTransactionsStore()
   const { lang }           = useSettingsStore()
   const { t }              = useTranslation()
   const { ledger, accounts, categories: allCategories } = useLedgerData()
   const [accountId, setAccountId] = useState('')
   const [saving, setSaving] = useState(false)
+  const [items, setItems] = useState<EditItem[]>([])
+  const [savedCount, setSavedCount] = useState(0)
 
   const L = (ja: string, vi: string, en: string) =>
     lang === 'ja' ? ja : lang === 'vi' ? vi : en
@@ -142,6 +199,7 @@ export default function ScanPage() {
   })
   const activeAccounts = accounts.filter((a) => !a.isArchived)
   const categories = allCategories.filter((c) => c.is_active && c.type === (form.isExpense ? 'expense' : 'income'))
+  const precision = getCurrencyPrecision(ledger?.currency_code ?? 'JPY')
   const [errorMsg,  setErrorMsg]  = useState('')
   const [errorCode, setErrorCode] = useState('')
 
@@ -191,7 +249,12 @@ export default function ScanPage() {
       const res      = await fetch('/api/scan-receipt', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ image: base64, mimeType }),
+        // The ledger's expense categories, so each line gets a real category id.
+        body:    JSON.stringify({
+          image: base64, mimeType,
+          categories: categoryTreeOptions(allCategories.filter((c) => c.is_active && c.type === 'expense'))
+            .map((c) => ({ id: c.id, name: c.name.replace(/^(— )+/, '') })),
+        }),
       })
       const data = await res.json()
 
@@ -201,12 +264,41 @@ export default function ScanPage() {
       }
 
       const result: ScanResult = data
+      const accId = pickAccount(result.paymentMethod, activeAccounts)
+      let lines: EditItem[] = (result.items ?? []).map((it) => ({
+        key: crypto.randomUUID(),
+        name: it.name ?? '',
+        quantity: it.quantity || 1,
+        amount: String(it.subtotal ?? (it.unitPrice ?? 0) * (it.quantity || 1)),
+        categoryId: it.categoryId ?? '',
+        source: it.categoryId ? 'ai' : null,
+      }))
+      let receiptCategory = result.categoryId ?? ''
+      // The ledger's own keywords / rules win over the AI's guess.
+      if (ledger && accId) {
+        const rows = [
+          { row_number: 0, type: 'expense', amount: result.totalAmount ?? 0, description: result.storeName ?? '' },
+          ...lines.map((it, i) => ({ row_number: i + 1, type: 'expense', amount: num(it.amount), description: it.name })),
+        ]
+        const { data: matched } = await supabase.rpc('preview_category_rules', { p_ledger_id: ledger.id, p_account_id: accId, p_rows: rows })
+        const byRow = new Map((matched ?? []).map((m) => [m.row_number, m.category_id]))
+        lines = lines.map((it, i) => (byRow.has(i + 1) ? { ...it, categoryId: byRow.get(i + 1)!, source: 'rule' as const } : it))
+        if (byRow.has(0)) receiptCategory = byRow.get(0)!
+      }
+      // Lines with no category of their own take the receipt's (the
+      // "category for unset lines" field), so what is shown is what is saved.
+      if (receiptCategory) {
+        const src: ItemSource = receiptCategory === result.categoryId ? 'ai' : 'rule'
+        lines = lines.map((it) => (it.categoryId ? it : { ...it, categoryId: receiptCategory, source: src }))
+      }
       setScanResult(result)
+      setAccountId(accId)
+      setItems(lines)
       setForm({
         description: result.storeName  ?? '',
         amount:      String(Math.abs(result.totalAmount ?? 0)),
         date:        result.date       ?? toLocalISODate(),
-        category:    resolveCategoryId(result.category, categories) ?? '',
+        category:    receiptCategory,
         note:        '',
         isExpense:   true,
       })
@@ -217,51 +309,48 @@ export default function ScanPage() {
     }
   }
 
-  // Receipt image → storage (receipts/{ledger_id}/…) → documents (+ line items) → transaction.
+  // Receipt image → storage (receipts/{ledger_id}/…), then save_receipt: the
+  // document + its lines, and one transaction per category of those lines.
   async function handleSave() {
-    const amt = parseFloat(form.amount.replace(/,/g, ''))
-    const account = accountId || activeAccounts[0]?.id
-    if (!ledger || !account || !form.description || isNaN(amt) || amt <= 0) return
+    const amt = num(form.amount)
+    const account = accountId || pickAccount(scanResult?.paymentMethod, activeAccounts)
+    if (!ledger || !account || !form.description || amt <= 0) return
     setSaving(true)
     try {
-      let documentId: string | null = null
+      let document: Record<string, unknown> | null = null
       if (selectedFile) {
         const ext = (selectedFile.name.split('.').pop() || 'jpg').toLowerCase()
         const path = `${ledger.id}/${crypto.randomUUID()}.${ext}`
         const up = await supabase.storage.from('receipts').upload(path, selectedFile, { contentType: selectedFile.type })
         if (up.error) throw up.error
-        const { data: doc, error } = await supabase.from('documents').insert({
-          ledger_id: ledger.id, document_type: 'receipt', storage_path: path, file_name: selectedFile.name,
-          mime_type: selectedFile.type || 'image/jpeg', file_size: selectedFile.size,
+        document = {
+          storage_path: path, file_name: selectedFile.name, mime_type: selectedFile.type || 'image/jpeg', file_size: selectedFile.size,
           ocr_status: scanResult ? 'done' : 'skipped', ocr_provider: scanResult ? 'gemini' : null,
           extracted_merchant: scanResult?.storeName ?? null, extracted_date: scanResult?.date ?? null,
-          extracted_total: scanResult?.totalAmount ?? null, extracted_currency: ledger.currency_code,
-          suggested_category_id: form.category || null,
-        }).select('id').single()
-        if (error) throw error
-        documentId = doc.id
-        const items = scanResult?.items ?? []
-        if (items.length) {
-          const { error: liErr } = await supabase.from('document_line_items').insert(items.map((it, i) => ({
-            document_id: doc.id, line_number: i + 1, name: it.name, quantity: it.quantity || 1,
-            unit_price: it.unitPrice ?? null, amount: it.subtotal ?? (it.unitPrice ?? 0) * (it.quantity || 1),
-          })))
-          if (liErr) throw liErr
+          extracted_total: scanResult?.totalAmount ?? null, extracted_tax: scanResult?.taxAmount ?? null,
+          extracted_payment_method: scanResult?.paymentMethod ?? null,
         }
       }
-      const tx = await create(ledger.id, {
-        transactionType: form.isExpense ? 'expense' : 'income',
-        amount: amt,
-        currencyCode: ledger.currency_code,
-        transactionDate: form.date,
-        description: form.description,
-        accountId: account,
-        categoryId: form.category || null,
-        notes: form.note || null,
-        documentId,
-        source: 'scan',
+      const lines = items.filter((it) => it.name.trim() || num(it.amount) !== 0)
+      const { data, error } = await supabase.rpc('save_receipt', {
+        p_ledger_id: ledger.id,
+        p_account_id: account,
+        p_type: form.isExpense ? 'expense' : 'income',
+        p_date: form.date,
+        p_merchant: form.description,
+        p_total: amt,
+        p_notes: form.note || undefined,
+        p_fallback_category_id: form.category || undefined,
+        p_document: (document ?? undefined) as never,
+        p_items: lines.map((it) => ({
+          name: it.name, quantity: it.quantity, amount: num(it.amount),
+          unit_price: it.quantity ? num(it.amount) / it.quantity : null,
+          category_id: it.categoryId || null, categorized_by: it.categoryId ? it.source ?? 'manual' : null,
+        })) as never,
       })
-      if (documentId) await supabase.from('documents').update({ transaction_id: tx.id }).eq('id', documentId)
+      if (error) throw error
+      setSavedCount(((data as { transaction_ids?: string[] } | null)?.transaction_ids ?? []).length || 1)
+      useTransactionsStore.setState((st) => ({ revision: st.revision + 1 }))
       setState('saved')
     } catch (e: any) {
       toast.error(e.message)
@@ -277,6 +366,8 @@ export default function ScanPage() {
     setPreviewZoom(false)
     setShowReceipt(false)
     setScanResult(null)
+    setItems([])
+    setAccountId('')
     setErrorMsg('')
     setErrorCode('')
     setForm({
@@ -291,13 +382,19 @@ export default function ScanPage() {
     if (cameraRef.current) cameraRef.current.value = ''
   }
 
-  const amtNum = parseFloat(form.amount.replace(/,/g, '')) || 0
-  const isFormDisabled = !form.description || amtNum <= 0 || activeAccounts.length === 0
+  const amtNum = num(form.amount)
+  const itemsTotal = items.reduce((sum, it) => sum + num(it.amount), 0)
+  const split = splitByCategory(items, amtNum, precision)
+  const catName = (id: string) => allCategories.find((c) => c.id === id)?.name ?? t.txform.uncategorized
+  const setItem = (key: string, patch: Partial<EditItem>) => setItems((list) => list.map((it) => (it.key === key ? { ...it, ...patch } : it)))
+  const paymentLabel: Record<string, string> = {
+    cash: L('現金', 'Tiền mặt', 'Cash'), credit_card: L('クレジットカード', 'Thẻ tín dụng', 'Credit card'),
+    paypay: 'PayPay', rakuten_pay: L('楽天ペイ', 'Rakuten Pay', 'Rakuten Pay'), d_barai: 'd払い', au_pay: 'au PAY', merpay: 'メルペイ',
+    ic_card: L('交通系IC', 'Thẻ IC', 'IC card'), e_money: L('電子マネー', 'Tiền điện tử', 'E-money'), other: L('その他', 'Khác', 'Other'),
+  }
+  const isFormDisabled = !form.description || amtNum <= 0 || activeAccounts.length === 0 || !accountId
 
-  const catLabels = categories.map((c) => ({
-    value: c.id,
-    label: c.parent_id ? `— ${c.name}` : c.name,
-  }))
+  const catLabels = categoryTreeOptions(categories).map((c) => ({ value: c.id, label: c.name }))
 
   return (
     <div className="animate-fade-in space-y-5 max-w-2xl mx-auto">
@@ -312,7 +409,9 @@ export default function ScanPage() {
             <div className="flex items-center gap-3 p-4 rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-status-gain-bg)] text-sm text-[var(--color-text-gain)]">
               <CheckCircle2 className="w-5 h-5 shrink-0" />
               <span className="font-medium">
-                {L('取引を保存しました！', 'Đã lưu giao dịch!', 'Transaction saved!')}
+                {savedCount > 1
+                  ? L(`${savedCount}件の取引を保存しました！`, `Đã lưu ${savedCount} giao dịch (tách theo danh mục)!`, `${savedCount} transactions saved!`)
+                  : L('取引を保存しました！', 'Đã lưu giao dịch!', 'Transaction saved!')}
               </span>
               <Button variant="ghost" size="sm" onClick={handleReset} className="ml-auto">
                 {L('もう一枚', 'Quét thêm', 'Scan another')}
@@ -504,32 +603,72 @@ export default function ScanPage() {
             </div>
           )}
 
-          {scanResult?.items && scanResult.items.length > 0 && (
-            <div className="rounded-xl border border-[var(--color-border-default)] overflow-hidden">
-              <div className="px-4 py-2.5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-subtle)]">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-quaternary)]">
-                  {L('AI が読み取った明細', 'Chi tiết AI đọc được', 'AI-extracted line items')}
-                </p>
-              </div>
+          {/* Receipt lines: each with its own category; saving splits the
+              receipt into one transaction per category. */}
+          <div className="rounded-xl border border-[var(--color-border-default)] overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-2.5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-subtle)]">
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--color-text-quaternary)]">
+                {L('明細（品目ごとにカテゴリ）', 'Chi tiết từng món (danh mục riêng)', 'Line items (category each)')} · {items.length}
+              </p>
+              <button type="button" onClick={() => setItems((list) => [...list, { key: crypto.randomUUID(), name: '', quantity: 1, amount: '', categoryId: form.category, source: form.category ? 'manual' : null }])}
+                className="inline-flex items-center gap-1 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]">
+                <Plus className="w-3.5 h-3.5" />{L('行を追加', 'Thêm dòng', 'Add line')}
+              </button>
+            </div>
+            {items.length === 0 ? (
+              <p className="px-4 py-3 text-xs text-[var(--color-text-tertiary)]">
+                {L('明細が読み取れませんでした。1件の取引として保存されます。', 'Không đọc được từng món — sẽ lưu thành 1 giao dịch.', 'No line items read — saved as one transaction.')}
+              </p>
+            ) : (
               <div className="divide-y divide-[var(--color-border-subtle)]">
-                {scanResult.items.map((item, i) => (
-                  <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {item.quantity !== 1 && (
-                        <span className="text-[10px] font-semibold text-[var(--color-text-quaternary)] bg-[var(--color-bg-sunken)] px-1.5 py-0.5 rounded shrink-0">
-                          ×{item.quantity}
-                        </span>
-                      )}
-                      <span className="text-sm text-[var(--color-text-primary)] truncate">{item.name}</span>
-                    </div>
-                    <span className="text-sm font-semibold font-tabular text-[var(--color-text-loss)] shrink-0 ml-3">
-                      −{formatMoney(item.subtotal)}
-                    </span>
+                {items.map((it) => (
+                  <div key={it.key} className="grid grid-cols-[1fr_96px_minmax(0,170px)_28px] items-center gap-2 px-3 py-2">
+                    <input aria-label={L('品名', 'Tên món', 'Item')} value={it.name} onChange={(e) => setItem(it.key, { name: e.target.value })}
+                      className="min-w-0 h-8 px-2 text-sm rounded-md border border-transparent hover:border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-transparent" />
+                    <input aria-label={L('金額', 'Số tiền', 'Amount')} type="number" value={it.amount} onChange={(e) => setItem(it.key, { amount: e.target.value })}
+                      className="h-8 px-2 text-sm text-right font-tabular rounded-md border border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-[var(--color-surface-default)]" />
+                    <select aria-label={L('カテゴリ', 'Danh mục', 'Category')} value={it.categoryId} onChange={(e) => setItem(it.key, { categoryId: e.target.value, source: 'manual' })}
+                      className="h-8 px-1.5 text-xs rounded-md border border-[var(--color-border-default)] bg-[var(--color-surface-default)] min-w-0">
+                      <option value="">{t.txform.uncategorized}</option>
+                      {categoryTreeOptions(categories).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                    </select>
+                    <button type="button" aria-label={L('行を削除', 'Xoá dòng', 'Remove line')} onClick={() => setItems((list) => list.filter((x) => x.key !== it.key))}
+                      className="w-7 h-7 flex items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)] hover:bg-[var(--color-bg-sunken)]">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+            {items.length > 0 && (
+              <div className="px-4 py-3 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)] space-y-2">
+                <div className="flex items-center justify-between text-xs text-[var(--color-text-tertiary)]">
+                  <span>{L('明細の合計', 'Tổng các món', 'Lines total')}: <b className="font-tabular text-[var(--color-text-secondary)]">{formatMoney(itemsTotal)}</b></span>
+                  {Math.abs(amtNum - itemsTotal) >= 1 && (
+                    <span>{L('差額（税・値引き）', 'Chênh lệch (thuế/giảm giá)', 'Difference (tax/discount)')}: <b className="font-tabular">{amtNum - itemsTotal > 0 ? '+' : ''}{formatMoney(amtNum - itemsTotal)}</b> · {L('比例配分', 'chia theo tỷ lệ', 'spread in proportion')}</span>
+                  )}
+                </div>
+                {split.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1.5">
+                      {split.length > 1
+                        ? L(`${split.length}件の取引に分けて保存`, `Sẽ tách thành ${split.length} giao dịch`, `Saved as ${split.length} transactions`)
+                        : L('1件の取引として保存', 'Lưu thành 1 giao dịch', 'Saved as 1 transaction')}
+                    </p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {split.map((g) => (
+                        <span key={g.categoryId || 'none'} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md bg-[var(--color-surface-default)] border border-[var(--color-border-subtle)] text-xs">
+                          <span className="font-medium text-[var(--color-text-primary)]">{g.categoryId ? catName(g.categoryId) : t.txform.uncategorized}</span>
+                          <span className="text-[var(--color-text-quaternary)]">{g.count}</span>
+                          <span className="font-tabular font-semibold">{formatMoney(g.amount)}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
 
           <Card padding="none">
             <CardHeader>
@@ -600,18 +739,30 @@ export default function ScanPage() {
                   onChange={(e) => setField('date', e.target.value)}
                 />
                 <Select
-                  label={L('カテゴリ', 'Danh mục', 'Category')}
+                  label={items.length > 0 ? L('カテゴリ（未設定の明細）', 'Danh mục (cho món chưa chọn)', 'Category (unset lines)') : L('カテゴリ', 'Danh mục', 'Category')}
                   value={form.category}
-                  onChange={(e) => setField('category', e.target.value )}
+                  onChange={(e) => {
+                    const prev = form.category
+                    setField('category', e.target.value)
+                    // Lines still on the old receipt-wide category follow it.
+                    setItems((list) => list.map((it) => (!it.categoryId || (it.categoryId === prev && it.source !== 'manual') ? { ...it, categoryId: e.target.value } : it)))
+                  }}
                 >
                   <option value="">{t.txform.uncategorized}</option>
                   {catLabels.map((c) => (
                     <option key={c.value} value={c.value}>{c.label}</option>
                   ))}
                 </Select>
-                <Select label={t.txform.account} value={accountId || activeAccounts[0]?.id || ''} onChange={(e) => setAccountId(e.target.value)}>
-                  {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
-                </Select>
+                <div>
+                  <Select label={t.txform.account} value={accountId} onChange={(e) => setAccountId(e.target.value)}>
+                    {activeAccounts.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}
+                  </Select>
+                  <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1">
+                    {scanResult?.paymentMethod && scanResult.paymentMethod !== 'unknown'
+                      ? L(`レシートの支払方法: ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`, `Hoá đơn ghi thanh toán: ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`, `Paid by (receipt): ${paymentLabel[scanResult.paymentMethod] ?? scanResult.paymentMethod}`)
+                      : L('支払方法が不明のため現金を選択', 'Hoá đơn không ghi cách trả — chọn Tiền mặt', 'Payment method not shown — cash selected')}
+                  </p>
+                </div>
               </div>
 
               <Input
@@ -629,7 +780,9 @@ export default function ScanPage() {
                 loading={saving}
                 disabled={isFormDisabled || saving}
               >
-                {L('取引を保存する', 'Lưu vào hệ thống', 'Save Transaction')}
+                {split.length > 1
+                  ? L(`${split.length}件の取引として保存`, `Lưu ${split.length} giao dịch (tách theo danh mục)`, `Save ${split.length} transactions`)
+                  : L('取引を保存する', 'Lưu vào hệ thống', 'Save Transaction')}
               </Button>
             </CardContent>
           </Card>

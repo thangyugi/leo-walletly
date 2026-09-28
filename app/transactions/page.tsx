@@ -253,6 +253,11 @@ function DetailPanel({ txn, onClose, onEdit }: { txn: Transaction; onClose: () =
   const can = useLedgerStore((s) => s.can)
   const [fullscreen, setFullscreen] = useState(false)
   const [raw, setRaw] = useState<{ column_name: string; value: string | null }[]>([])
+  const [receipt, setReceipt] = useState<{
+    items: { line_number: number; name: string; quantity: number; amount: number; transaction_id: string | null }[]
+    siblings: { id: string; amount: number; category_id: string | null }[]
+    path: string | null
+  } | null>(null)
   const cat = categories.find((c) => c.id === txn.categoryId)
   const acc = accounts.find((a) => a.id === txn.accountId)
   const isExpense = txn.transactionType === 'expense'
@@ -264,6 +269,27 @@ function DetailPanel({ txn, onClose, onEdit }: { txn: Transaction; onClose: () =
     void supabase.from('import_row_values').select('column_name, value').eq('import_row_id', txn.importRowId).order('column_index')
       .then(({ data }) => setRaw(data ?? []))
   }, [txn.importRowId])
+
+  // A scanned receipt: its lines, and the other transactions it was split into.
+  useEffect(() => {
+    setReceipt(null)
+    const docId = txn.documentId
+    if (!docId) return
+    void Promise.all([
+      supabase.from('document_line_items').select('line_number, name, quantity, amount, transaction_id').eq('document_id', docId).order('line_number'),
+      supabase.from('transactions').select('id, amount, category_id').eq('document_id', docId).is('deleted_at', null).neq('id', txn.id),
+      supabase.from('documents').select('storage_path').eq('id', docId).maybeSingle(),
+    ]).then(([li, sib, doc]) => setReceipt({ items: li.data ?? [], siblings: sib.data ?? [], path: doc.data?.storage_path ?? null }))
+  }, [txn.documentId, txn.id])
+
+  async function openReceiptImage() {
+    if (!receipt?.path) return
+    const { data, error } = await supabase.storage.from('receipts').createSignedUrl(receipt.path, 300)
+    if (error) toast.error(error.message)
+    else window.open(data.signedUrl, '_blank', 'noopener')
+  }
+  // Lines of this transaction; older scans didn't link lines, so show them all.
+  const myItems = receipt ? (receipt.items.some((i) => i.transaction_id) ? receipt.items.filter((i) => i.transaction_id === txn.id) : receipt.items) : []
 
   const sourceLabel: Record<string, string> = {
     manual: t.txform.sourceManual, import: t.txform.sourceImport, scan: t.txform.sourceScan, recurring: t.txform.sourceRecurring, bank_sync: t.txform.sourceBankSync,
@@ -337,6 +363,45 @@ function DetailPanel({ txn, onClose, onEdit }: { txn: Transaction; onClose: () =
               </div>
             ))}
           </div>
+
+          {receipt && (myItems.length > 0 || receipt.siblings.length > 0 || receipt.path) && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">{t.txform.receiptItems} · {myItems.length}</p>
+                {receipt.path && (
+                  <button type="button" onClick={() => void openReceiptImage()} className="text-[11px] font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] underline-offset-2 hover:underline">
+                    {t.txform.receiptImage}
+                  </button>
+                )}
+              </div>
+              {myItems.length > 0 && (
+                <div className="rounded-lg border border-[var(--color-border-subtle)] divide-y divide-[var(--color-border-subtle)]">
+                  {myItems.map((it) => (
+                    <div key={it.line_number} className="flex items-center justify-between gap-3 px-3 py-2 text-xs">
+                      <span className="min-w-0 truncate text-[var(--color-text-primary)]">
+                        {Number(it.quantity) !== 1 && <span className="text-[var(--color-text-quaternary)] mr-1">×{Number(it.quantity)}</span>}
+                        {it.name}
+                      </span>
+                      <span className="font-tabular text-[var(--color-text-secondary)] shrink-0">{format(Number(it.amount))}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {receipt.siblings.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1.5">{t.txform.receiptSiblings}</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {receipt.siblings.map((sib) => (
+                      <Link key={sib.id} href={`/transactions?tx=${sib.id}`} className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md border border-[var(--color-border-subtle)] text-xs hover:bg-[var(--color-bg-sunken)]">
+                        <span className="text-[var(--color-text-primary)]">{categories.find((c) => c.id === sib.category_id)?.name ?? t.txform.uncategorized}</span>
+                        <span className="font-tabular font-semibold">{format(Number(sib.amount))}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {raw.length > 0 && (
             <div>
