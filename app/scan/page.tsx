@@ -129,7 +129,7 @@ function getErrorMessage(msg: string, L: (ja: string, vi: string, en: string) =>
 function StepBar({ step, L }: { step: 1 | 2 | 3; L: (ja: string, vi: string, en: string) => string }) {
   const steps = [
     L('画像を選択', 'Chọn ảnh', 'Select Image'),
-    L('AI 解析', 'Phân tích AI', 'AI Scan'),
+    L('読み取り', 'Đọc hoá đơn', 'Read receipt'),
     L('確認・保存', 'Xác nhận', 'Confirm & Save'),
   ]
   return (
@@ -476,9 +476,9 @@ export default function ScanPage() {
             <ScanLine className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0 mt-0.5" />
             <p className="text-[11px] text-[var(--color-text-quaternary)] leading-relaxed">
               {L(
-                'Google Gemini AIがレシートを解析します。鮮明な画像ほど精度が向上します。',
-                'Sử dụng Google Gemini AI để đọc hóa đơn. Ảnh rõ nét cho kết quả chính xác hơn.',
-                'Google Gemini AI analyzes your receipt. Clearer images yield better accuracy.',
+                'レシートの内容を自動で読み取ります。明るく鮮明に撮るほど正確になります。',
+                'Tự động đọc nội dung hoá đơn. Ảnh càng rõ nét, kết quả càng chính xác.',
+                'Reads your receipt automatically. Sharper photos give better results.',
               )}
             </p>
           </div>
@@ -512,7 +512,7 @@ export default function ScanPage() {
               )}
             />
             <Button className="w-full mt-4" size="lg" icon={<ScanLine />} onClick={handleScan}>
-              {L('AI で解析する', 'Phân tích bằng AI', 'Analyze with AI')}
+              {L('読み取る', 'Đọc hoá đơn', 'Read receipt')}
             </Button>
           </CardContent>
         </Card>
@@ -530,7 +530,7 @@ export default function ScanPage() {
             <div className="text-center space-y-1">
               <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t.scan.scanning}</p>
               <p className="text-xs text-[var(--color-text-tertiary)]">
-                {L('Gemini AI が内容を読み取っています...', 'Gemini AI đang đọc nội dung...', 'Gemini AI is reading the content...')}
+                {L('レシートを読み取っています…', 'Đang đọc hoá đơn…', 'Reading your receipt…')}
               </p>
             </div>
             {preview && (

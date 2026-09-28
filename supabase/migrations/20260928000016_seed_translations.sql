@@ -234,6 +234,9 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.budget', 'catui', null, false),
   ('catui.budgetPct', 'catui', 'pct', false),
   ('catui.classified', 'catui', null, false),
+  ('catui.classifiedProgress', 'catui', 'done,total', false),
+  ('catui.classifyInbox', 'catui', null, false),
+  ('catui.classifyNow', 'catui', null, false),
   ('catui.create', 'catui', null, false),
   ('catui.deleteConfirm', 'catui', null, false),
   ('catui.inactive', 'catui', null, false),
@@ -404,13 +407,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.payments', 'dashboard', null, true),
   ('dashboard.periodLastMonth', 'dashboard', null, true),
   ('dashboard.periodLastQuarter', 'dashboard', null, true),
-  ('dashboard.periodLastYear', 'dashboard', null, true),
-  ('dashboard.periodYesterday', 'dashboard', null, true),
-  ('dashboard.prevPeriod', 'dashboard', null, true),
-  ('dashboard.quickStats', 'dashboard', null, true)
+  ('dashboard.periodLastYear', 'dashboard', null, true)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.periodYesterday', 'dashboard', null, true),
+  ('dashboard.prevPeriod', 'dashboard', null, true),
+  ('dashboard.quickStats', 'dashboard', null, true),
   ('dashboard.ratio', 'dashboard', null, true),
   ('dashboard.recentCount', 'dashboard', null, true),
   ('dashboard.recentTxn', 'dashboard', null, true),
@@ -807,13 +810,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.lastName', 'prefs', null, false),
   ('prefs.lastUsed', 'prefs', null, false),
   ('prefs.locale', 'prefs', null, false),
-  ('prefs.passwordMismatch', 'prefs', null, false),
-  ('prefs.passwordShort', 'prefs', null, false),
-  ('prefs.preview', 'prefs', null, false),
-  ('prefs.removeAvatar', 'prefs', null, false)
+  ('prefs.passwordMismatch', 'prefs', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('prefs.passwordShort', 'prefs', null, false),
+  ('prefs.preview', 'prefs', null, false),
+  ('prefs.removeAvatar', 'prefs', null, false),
   ('prefs.saved', 'prefs', null, false),
   ('prefs.signOutAll', 'prefs', null, false),
   ('prefs.themeSaved', 'prefs', null, false),
@@ -1349,6 +1352,9 @@ insert into public.translations (key, language_code, value) values
   ('catui.budget', 'ja', '予算'),
   ('catui.budgetPct', 'ja', '予算の {{pct}}%'),
   ('catui.classified', 'ja', '分類済み'),
+  ('catui.classifiedProgress', 'ja', '{{done}} / {{total}} 件 分類済み'),
+  ('catui.classifyInbox', 'ja', '要対応'),
+  ('catui.classifyNow', 'ja', '分類する'),
   ('catui.create', 'ja', '新しいカテゴリ'),
   ('catui.deleteConfirm', 'ja', 'このカテゴリを削除しますか？取引は未分類になります。'),
   ('catui.inactive', 'ja', '停止中'),
@@ -1519,13 +1525,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'ja', '件の支払い'),
   ('dashboard.periodLastMonth', 'ja', '先月'),
   ('dashboard.periodLastQuarter', 'ja', '前四半期'),
-  ('dashboard.periodLastYear', 'ja', '昨年'),
-  ('dashboard.periodYesterday', 'ja', '昨日'),
-  ('dashboard.prevPeriod', 'ja', '前期'),
-  ('dashboard.quickStats', 'ja', 'クイック統計')
+  ('dashboard.periodLastYear', 'ja', '昨年')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.periodYesterday', 'ja', '昨日'),
+  ('dashboard.prevPeriod', 'ja', '前期'),
+  ('dashboard.quickStats', 'ja', 'クイック統計'),
   ('dashboard.ratio', 'ja', '収支比率'),
   ('dashboard.recentCount', 'ja', '件'),
   ('dashboard.recentTxn', 'ja', '最近の取引'),
@@ -1922,13 +1928,13 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'ja', '姓'),
   ('prefs.lastUsed', 'ja', '前回の元帳'),
   ('prefs.locale', 'ja', '数値・日付の形式'),
-  ('prefs.passwordMismatch', 'ja', 'パスワードが一致しません'),
-  ('prefs.passwordShort', 'ja', '8文字以上にしてください'),
-  ('prefs.preview', 'ja', 'プレビュー'),
-  ('prefs.removeAvatar', 'ja', '削除')
+  ('prefs.passwordMismatch', 'ja', 'パスワードが一致しません')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('prefs.passwordShort', 'ja', '8文字以上にしてください'),
+  ('prefs.preview', 'ja', 'プレビュー'),
+  ('prefs.removeAvatar', 'ja', '削除'),
   ('prefs.saved', 'ja', '設定を保存しました'),
   ('prefs.signOutAll', 'ja', '他のすべてのデバイスからログアウト'),
   ('prefs.themeSaved', 'ja', 'テーマを変更しました'),
@@ -2006,7 +2012,7 @@ insert into public.translations (key, language_code, value) values
   ('scan.result', 'ja', '解析結果'),
   ('scan.scanAgain', 'ja', 'もう一度読み取る'),
   ('scan.scanning', 'ja', '解析中...'),
-  ('scan.subtitle', 'ja', 'AI でレシートを自動解析'),
+  ('scan.subtitle', 'ja', 'レシートを撮るだけで自動入力'),
   ('scan.success', 'ja', '取引を正常に保存しました'),
   ('scan.title', 'ja', 'レシート読取'),
   ('scan.uploadPrompt', 'ja', 'レシート画像をアップロード'),
@@ -2464,6 +2470,9 @@ insert into public.translations (key, language_code, value) values
   ('catui.budget', 'vi', 'Ngân sách'),
   ('catui.budgetPct', 'vi', '{{pct}}% ngân sách'),
   ('catui.classified', 'vi', 'Đã phân loại'),
+  ('catui.classifiedProgress', 'vi', 'Đã phân loại {{done}}/{{total}} giao dịch'),
+  ('catui.classifyInbox', 'vi', 'Cần xử lý'),
+  ('catui.classifyNow', 'vi', 'Phân loại ngay'),
   ('catui.create', 'vi', 'Tạo danh mục mới'),
   ('catui.deleteConfirm', 'vi', 'Xoá danh mục? Giao dịch sẽ thành chưa phân loại.'),
   ('catui.inactive', 'vi', 'Không hoạt động'),
@@ -2634,13 +2643,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'vi', 'giao dịch chi'),
   ('dashboard.periodLastMonth', 'vi', 'tháng trước'),
   ('dashboard.periodLastQuarter', 'vi', 'quý trước'),
-  ('dashboard.periodLastYear', 'vi', 'năm trước'),
-  ('dashboard.periodYesterday', 'vi', 'hôm qua'),
-  ('dashboard.prevPeriod', 'vi', 'kỳ trước'),
-  ('dashboard.quickStats', 'vi', 'Thống kê nhanh')
+  ('dashboard.periodLastYear', 'vi', 'năm trước')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.periodYesterday', 'vi', 'hôm qua'),
+  ('dashboard.prevPeriod', 'vi', 'kỳ trước'),
+  ('dashboard.quickStats', 'vi', 'Thống kê nhanh'),
   ('dashboard.ratio', 'vi', 'Tỷ lệ thu/chi'),
   ('dashboard.recentCount', 'vi', 'giao dịch'),
   ('dashboard.recentTxn', 'vi', 'Giao dịch gần đây'),
@@ -3037,13 +3046,13 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'vi', 'Họ'),
   ('prefs.lastUsed', 'vi', 'Sổ dùng gần nhất'),
   ('prefs.locale', 'vi', 'Định dạng số & ngày'),
-  ('prefs.passwordMismatch', 'vi', 'Mật khẩu không khớp'),
-  ('prefs.passwordShort', 'vi', 'Tối thiểu 8 ký tự'),
-  ('prefs.preview', 'vi', 'Xem trước'),
-  ('prefs.removeAvatar', 'vi', 'Xoá')
+  ('prefs.passwordMismatch', 'vi', 'Mật khẩu không khớp')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('prefs.passwordShort', 'vi', 'Tối thiểu 8 ký tự'),
+  ('prefs.preview', 'vi', 'Xem trước'),
+  ('prefs.removeAvatar', 'vi', 'Xoá'),
   ('prefs.saved', 'vi', 'Đã lưu cài đặt'),
   ('prefs.signOutAll', 'vi', 'Đăng xuất khỏi mọi thiết bị khác'),
   ('prefs.themeSaved', 'vi', 'Đã đổi giao diện'),
@@ -3121,7 +3130,7 @@ insert into public.translations (key, language_code, value) values
   ('scan.result', 'vi', 'Kết quả nhận dạng'),
   ('scan.scanAgain', 'vi', 'Quét lại'),
   ('scan.scanning', 'vi', 'Đang phân tích...'),
-  ('scan.subtitle', 'vi', 'Tự động nhận diện hóa đơn bằng AI'),
+  ('scan.subtitle', 'vi', 'Chụp hoá đơn, tự động điền giao dịch'),
   ('scan.success', 'vi', 'Đã lưu giao dịch thành công'),
   ('scan.title', 'vi', 'Quét hóa đơn'),
   ('scan.uploadPrompt', 'vi', 'Tải ảnh hóa đơn lên'),
@@ -3579,6 +3588,9 @@ insert into public.translations (key, language_code, value) values
   ('catui.budget', 'en', 'Budget'),
   ('catui.budgetPct', 'en', '{{pct}}% of budget'),
   ('catui.classified', 'en', 'Categorized'),
+  ('catui.classifiedProgress', 'en', '{{done}} of {{total}} categorized'),
+  ('catui.classifyInbox', 'en', 'Needs attention'),
+  ('catui.classifyNow', 'en', 'Classify now'),
   ('catui.create', 'en', 'New category'),
   ('catui.deleteConfirm', 'en', 'Delete this category? Its transactions become uncategorized.'),
   ('catui.inactive', 'en', 'Inactive'),
@@ -3749,13 +3761,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'en', 'payments'),
   ('dashboard.periodLastMonth', 'en', 'last month'),
   ('dashboard.periodLastQuarter', 'en', 'last quarter'),
-  ('dashboard.periodLastYear', 'en', 'last year'),
-  ('dashboard.periodYesterday', 'en', 'yesterday'),
-  ('dashboard.prevPeriod', 'en', 'prev period'),
-  ('dashboard.quickStats', 'en', 'Quick Stats')
+  ('dashboard.periodLastYear', 'en', 'last year')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.periodYesterday', 'en', 'yesterday'),
+  ('dashboard.prevPeriod', 'en', 'prev period'),
+  ('dashboard.quickStats', 'en', 'Quick Stats'),
   ('dashboard.ratio', 'en', 'Income/Expense ratio'),
   ('dashboard.recentCount', 'en', 'transactions'),
   ('dashboard.recentTxn', 'en', 'Recent Transactions'),
@@ -4152,13 +4164,13 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'en', 'Last name'),
   ('prefs.lastUsed', 'en', 'Last used'),
   ('prefs.locale', 'en', 'Number & date format'),
-  ('prefs.passwordMismatch', 'en', 'Passwords do not match'),
-  ('prefs.passwordShort', 'en', 'At least 8 characters'),
-  ('prefs.preview', 'en', 'Preview'),
-  ('prefs.removeAvatar', 'en', 'Remove')
+  ('prefs.passwordMismatch', 'en', 'Passwords do not match')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('prefs.passwordShort', 'en', 'At least 8 characters'),
+  ('prefs.preview', 'en', 'Preview'),
+  ('prefs.removeAvatar', 'en', 'Remove'),
   ('prefs.saved', 'en', 'Settings saved'),
   ('prefs.signOutAll', 'en', 'Sign out of all other devices'),
   ('prefs.themeSaved', 'en', 'Theme updated'),
@@ -4236,7 +4248,7 @@ insert into public.translations (key, language_code, value) values
   ('scan.result', 'en', 'Scan Results'),
   ('scan.scanAgain', 'en', 'Scan again'),
   ('scan.scanning', 'en', 'Analyzing...'),
-  ('scan.subtitle', 'en', 'Auto-parse receipts with AI'),
+  ('scan.subtitle', 'en', 'Snap a receipt, fill in the transaction'),
   ('scan.success', 'en', 'Transaction saved successfully'),
   ('scan.title', 'en', 'Scan Receipt'),
   ('scan.uploadPrompt', 'en', 'Upload receipt image'),

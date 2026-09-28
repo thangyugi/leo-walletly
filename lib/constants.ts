@@ -106,11 +106,11 @@ export const PROVIDERS: ProviderMeta[] = [
     descEn: 'Manually entered transaction',
   },
   {
-    value: 'ai_scan', label: 'AI Scan', color: '#3b82f6', initials: 'AI',
+    value: 'ai_scan', label: 'Receipt scan', color: '#3b82f6', initials: 'RS',
     region: 'global', fileTypes: [],
-    descJa: 'AI レシートスキャン',
-    descVi: 'Quét hóa đơn bằng AI',
-    descEn: 'AI receipt scan',
+    descJa: 'レシートから自動入力',
+    descVi: 'Tự động nhập từ hoá đơn',
+    descEn: 'Fill in from a receipt',
   },
 ]
 

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search } from 'lucide-react'
+import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
@@ -283,11 +283,14 @@ function CategoryCard({ category, expense, txCount }: { category: Category; expe
 }
 
 /* ─── SmartClassifyCard ────────────────────────────────────────────────────── */
-function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll }: {
+function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, classified, total }: {
   pendingTxns: Transaction[]
   pendingTotal: number
   categories: Category[]
   onApplyAll: () => Promise<void>
+  /** Period's classified / all transactions (progress bar). */
+  classified?: number
+  total?: number
 }) {
   const { t } = useTranslation()
   const { accounts } = useLedgerData()
@@ -301,40 +304,63 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll }
   const totalSuggestions = React.useMemo(() => pendingTxns.filter((x) => suggestFor(x, categories)).length, [pendingTxns, categories])
   const totalPendingAmount = pendingTxns.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
   const displayTxns = pendingTxns.slice(0, 4)
+  const done = pendingTotal === 0
+  const pct = total && total > 0 ? Math.round(((classified ?? 0) / total) * 100) : done ? 100 : 0
+
+  // A to-do box, not a category: amber while work is waiting, green when clear.
+  if (done) {
+    return (
+      <div className="col-span-1 md:col-span-2 xl:col-span-2 rounded-[14px] border border-[var(--color-brand-100)] bg-[var(--color-status-gain-bg)] p-5 flex items-center gap-4">
+        <div className="w-11 h-11 rounded-full bg-[var(--color-surface-default)] flex items-center justify-center shrink-0 shadow-[var(--shadow-card)]">
+          <CheckCheck className="w-5 h-5 text-[var(--color-interactive-primary)]" />
+        </div>
+        <div className="min-w-0">
+          <div className="text-sm font-semibold text-[var(--color-status-gain-text)]">{t.catui.allClassified}</div>
+          {total ? <div className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">{fill(t.catui.classifiedProgress, { done: classified ?? 0, total })}</div> : null}
+        </div>
+      </div>
+    )
+  }
 
   return (
-    <div className="col-span-1 md:col-span-2 xl:col-span-2 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] p-5 flex flex-col gap-4 relative">
-      <Link href="/categories/classify" aria-label={t.catui.viewAll} className="absolute top-4 right-4 w-7 h-7 rounded-full bg-[var(--color-bg-sunken)] flex items-center justify-center">
-        <ArrowUpRight className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
-      </Link>
-
-      <div className="flex items-start gap-3 pr-8">
-        <div className="w-9 h-9 rounded-xl bg-[var(--color-brand-100)] flex items-center justify-center shrink-0">
-          <Sun className="w-4 h-4 text-[var(--color-brand-700)]" />
+    <div className="col-span-1 md:col-span-2 xl:col-span-2 rounded-[14px] overflow-hidden border border-[var(--color-warning-100)] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] flex flex-col">
+      <div className="px-5 pt-4 pb-4 flex items-start gap-4" style={{ background: 'linear-gradient(180deg, var(--color-warning-50) 0%, var(--color-surface-default) 100%)' }}>
+        <div className="w-11 h-11 rounded-xl bg-[var(--color-warning-100)] flex items-center justify-center shrink-0">
+          <Inbox className="w-5 h-5 text-[var(--color-warning-700)]" />
         </div>
-        <div>
-          <h4 className="text-sm font-semibold text-[var(--color-text-primary)] leading-snug">
-            {fill(t.catui.pendingTitle, { groups: pendingGroupCount, count: pendingTotal })}
-          </h4>
-          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5">
-            {t.catui.pendingSub.split('{{amount}}')[0]}<span className="font-semibold">{fmt(totalPendingAmount)} {sym}</span>
-          </p>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md bg-[var(--color-warning-100)] text-[var(--color-warning-700)]">{t.catui.classifyInbox}</span>
+            <span className="text-[11px] text-[var(--color-text-tertiary)] truncate">{fill(t.catui.pendingTitle, { groups: pendingGroupCount, count: pendingTotal })}</span>
+          </div>
+          <div className="mt-1.5 flex items-baseline gap-2">
+            <span className="text-[28px] font-semibold tracking-[-0.03em] font-tabular leading-none text-[var(--color-text-primary)]">{pendingTotal}</span>
+            <span className="text-[12px] text-[var(--color-text-secondary)]">{t.catui.pendingCount.replace('{{count}}', '').trim()}</span>
+            <span className="ml-auto text-[12px] text-[var(--color-text-tertiary)] whitespace-nowrap">
+              {t.catui.pendingSub.split('{{amount}}')[0]}<b className="font-tabular text-[var(--color-text-primary)]">{fmt(totalPendingAmount)} {sym}</b>
+            </span>
+          </div>
+          {total ? (
+            <div className="mt-3">
+              <div className="h-1.5 rounded-full bg-[var(--color-bg-sunken)] overflow-hidden">
+                <div className="h-full rounded-full bg-[var(--color-interactive-primary)] transition-all" style={{ width: `${pct}%` }} />
+              </div>
+              <div className="mt-1 text-[10px] text-[var(--color-text-quaternary)]">{fill(t.catui.classifiedProgress, { done: classified ?? 0, total })} · {pct}%</div>
+            </div>
+          ) : null}
         </div>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        {displayTxns.length === 0 ? (
-          <div className="text-[12px] text-[var(--color-text-quaternary)] py-2 text-center">{t.catui.allClassified}</div>
-        ) : displayTxns.map((txn) => {
+      <div className="px-5 pb-1 flex flex-col gap-1.5">
+        {displayTxns.map((txn) => {
           const suggested = suggestFor(txn, categories)
           const acc = accounts.find((a) => a.id === txn.accountId)
           return (
-            <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] text-[12px]">
+            <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg border border-dashed border-[var(--color-border-default)] text-[12px]">
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning-500)] shrink-0" />
               <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{txn.merchantName || txn.description}</span>
-              {acc && (
-                <span className="shrink-0 text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]">{acc.name}</span>
-              )}
-              <span className={cn('shrink-0 font-semibold font-tabular', txn.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
+              {acc && <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)]">{acc.name}</span>}
+              <span className={cn('shrink-0 font-semibold font-tabular', txn.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')}>
                 {fmt(txn.baseAmount)} {sym}
               </span>
               {suggested ? (
@@ -343,7 +369,7 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll }
                   <span className="text-[10px] font-medium">{suggested.name}</span>
                 </span>
               ) : (
-                <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)] italic">—</span>
+                <span className="shrink-0 text-[10px] px-1.5 py-0.5 rounded-md border border-dashed border-[var(--color-border-default)] text-[var(--color-text-quaternary)]">?</span>
               )}
             </div>
           )
@@ -353,30 +379,21 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll }
         )}
       </div>
 
-      <div className="flex items-center gap-2 pt-3 border-t border-[var(--color-border-subtle)] mt-auto">
-        <span className="text-[11px] text-[var(--color-text-tertiary)]">
-          {pendingTotal > 0
-            ? <><b className="text-[var(--color-brand-700)]">{pendingTotal}</b>{t.catui.pendingCount.replace('{{count}}', '')}</>
-            : t.catui.allClassified}
-        </span>
+      <div className="flex items-center gap-2 px-5 py-3 mt-auto">
         <span className="flex-1" />
-        {pendingTotal > 0 && (
-          <>
-            <Link href="/categories/classify" className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors">
-              {t.catui.viewAll}
-            </Link>
-            {totalSuggestions > 0 && (
-              <button
-                onClick={async () => { setIsApplying(true); try { await onApplyAll() } finally { setIsApplying(false) } }}
-                disabled={isApplying}
-                className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors disabled:opacity-50"
-              >
-                {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
-                {fill(t.catui.applySuggestions, { count: totalSuggestions })}
-              </button>
-            )}
-          </>
+        {totalSuggestions > 0 && (
+          <button
+            onClick={async () => { setIsApplying(true); try { await onApplyAll() } finally { setIsApplying(false) } }}
+            disabled={isApplying}
+            className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[6px] rounded-[7px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:bg-[var(--color-bg-sunken)] transition-colors disabled:opacity-50"
+          >
+            {isApplying ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+            {fill(t.catui.applySuggestions, { count: totalSuggestions })}
+          </button>
         )}
+        <Link href="/categories/classify" className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-[6px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
+          {t.catui.classifyNow}<ArrowUpRight className="w-3.5 h-3.5" />
+        </Link>
       </div>
     </div>
   )
@@ -648,7 +665,7 @@ export function CategoriesBentoPage() {
               <DarkStatCard variant={1} classified={kpi?.classified_count} total={kpi?.total_count} pendingCount={pending.total} autoPct={kpi?.auto_classify_pct} isLoading={statsLoading && !kpi} />
               <DarkStatCard variant={2} topCategories={topCategories} isLoading={statsLoading && !kpi} />
               {cardsA.map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
-              <SmartClassifyCard pendingTxns={pending.items} pendingTotal={pending.total} categories={categories} onApplyAll={applyAll} />
+              <SmartClassifyCard pendingTxns={pending.items} pendingTotal={pending.total} categories={categories} onApplyAll={applyAll} classified={kpi?.classified_count} total={kpi?.total_count} />
               {cardsB.map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
               {can('category.create') && <AddCategoryTile onClick={() => setIsFormOpen(true)} />}
               <ArchiveStrip archivedCategories={archivedCategories} onShowAll={() => setActiveTab('archived')} />

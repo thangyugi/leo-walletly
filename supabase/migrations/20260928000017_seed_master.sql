@@ -104,8 +104,8 @@ insert into public.providers (code, name_key, description_key, account_type_code
   ('manual', public._seed_t('provider.manual.name', '手動入力', 'Nhập tay', 'Manual'),
     public._seed_t('provider.manual.description', '手動で取引を入力', 'Nhập giao dịch thủ công', 'Manually entered transactions'),
     'cash', 'global', null, '#0d9159', 'MT', null, false, false, 9),
-  ('ai_scan', public._seed_t('provider.ai_scan.name', 'AIスキャン', 'Quét AI', 'AI Scan'),
-    public._seed_t('provider.ai_scan.description', 'AI レシートスキャン', 'Quét hóa đơn bằng AI', 'AI receipt scan'),
+  ('ai_scan', public._seed_t('provider.ai_scan.name', 'レシート読取', 'Quét hoá đơn', 'Receipt scan'),
+    public._seed_t('provider.ai_scan.description', 'レシートから自動入力', 'Tự động nhập từ hoá đơn', 'Fill in from a receipt'),
     null, 'global', null, '#3b82f6', 'AI', null, false, false, 10)
 on conflict (code) do nothing;
 
