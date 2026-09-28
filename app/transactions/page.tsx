@@ -17,7 +17,7 @@ import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { TransactionDetailPanel } from '@/components/transactions/transaction-detail-panel'
-import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { DateNavigator, defaultPickerValue, monthPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { useTransactionsStore, type SortOption, type PeriodSummary } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
@@ -460,6 +460,18 @@ function TransactionsContent() {
 
   useEffect(() => { setPage(1) }, [picker.start, picker.end, setPage])
   useEffect(() => { setSelected(new Set()) }, [page, filters, picker.start])
+
+  // From Accounts › View transactions: /transactions?account=<id> — that
+  // account only, on the month of its latest transaction.
+  const accountParam = params.get('account')
+  useEffect(() => {
+    if (!accountParam || !ledgerId) return
+    useTransactionsStore.getState().setFilters({ accountId: accountParam })
+    void useTransactionsStore.getState().latestDateForAccount(ledgerId, accountParam).then((d) => {
+      if (d) setPicker(monthPickerValue(d, lang))
+      router.replace('/transactions')
+    })
+  }, [accountParam, ledgerId, lang, router])
 
   // Deep link from the command palette / notifications: /transactions?tx=<id>
   const txParam = params.get('tx')

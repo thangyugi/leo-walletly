@@ -10,6 +10,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { AccountPicker, CategoryPicker } from '@/components/ui/picker'
+import { AmountInput } from '@/components/ui/amount-input'
 import { PageHeader } from '@/components/layout/page-header'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useSettingsStore } from '@/stores/settings'
@@ -397,7 +398,7 @@ export default function ScanPage() {
 
 
   return (
-    <div className="animate-fade-in space-y-5 max-w-2xl mx-auto">
+    <div className="animate-fade-in space-y-5">
       <div className="flex flex-col gap-3">
         <PageHeader title={t.scan.title} subtitle={t.scan.subtitle} />
         <StepBar step={STEP_MAP[state]} L={L} />
@@ -567,7 +568,9 @@ export default function ScanPage() {
       )}
 
       {state === 'confirming' && (
-        <div className="space-y-4">
+        // Receipt + lines on the left, the form on the right (stacked on small screens).
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_400px] items-start">
+          <div className="space-y-4 min-w-0">
           {preview && (
             <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] overflow-hidden">
               <button
@@ -625,7 +628,7 @@ export default function ScanPage() {
                   <div key={it.key} className="grid grid-cols-[1fr_96px_minmax(0,170px)_28px] items-center gap-2 px-3 py-2">
                     <input aria-label={L('品名', 'Tên món', 'Item')} value={it.name} onChange={(e) => setItem(it.key, { name: e.target.value })}
                       className="min-w-0 h-8 px-2 text-sm rounded-md border border-transparent hover:border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-transparent" />
-                    <input aria-label={L('金額', 'Số tiền', 'Amount')} type="number" value={it.amount} onChange={(e) => setItem(it.key, { amount: e.target.value })}
+                    <AmountInput aria-label={L('金額', 'Số tiền', 'Amount')} currency={ledger?.currency_code ?? 'JPY'} value={it.amount} onChange={(v) => setItem(it.key, { amount: v })}
                       className="h-8 px-2 text-sm text-right font-tabular rounded-md border border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-[var(--color-surface-default)]" />
                     <CategoryPicker aria-label={L('カテゴリ', 'Danh mục', 'Category')} size="sm" categories={categories} noneLabel={t.txform.uncategorized}
                       value={it.categoryId} onChange={(v) => setItem(it.key, { categoryId: v, source: 'manual' })} />
@@ -667,7 +670,9 @@ export default function ScanPage() {
             )}
           </div>
 
-          <Card padding="none">
+          </div>
+
+          <Card padding="none" className="lg:sticky lg:top-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-[var(--color-text-gain)]" />
@@ -679,12 +684,13 @@ export default function ScanPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
-                <Input
-                  label={L('店名・内容', 'Nội dung / Tên cửa hàng', 'Store / Description')}
-                  value={form.description}
-                  onChange={(e) => setField('description', e.target.value)}
-                  className="col-span-2"
-                />
+                <div className="col-span-2">
+                  <Input
+                    label={L('店名・内容', 'Nội dung / Tên cửa hàng', 'Store / Description')}
+                    value={form.description}
+                    onChange={(e) => setField('description', e.target.value)}
+                  />
+                </div>
 
                 <div className="col-span-2">
                   <label className="block text-xs font-semibold text-[var(--color-text-tertiary)] mb-1.5">
@@ -713,10 +719,11 @@ export default function ScanPage() {
                     >
                       {L('収入', 'Thu nhập', 'Income')}
                     </button>
-                    <input
-                      type="number"
+                    <AmountInput
+                      aria-label={L('金額', 'Số tiền', 'Amount')}
+                      currency={ledger?.currency_code ?? 'JPY'}
                       value={form.amount}
-                      onChange={(e) => setField('amount', e.target.value)}
+                      onChange={(v) => setField('amount', v)}
                       className="flex-1 min-w-0 px-3 text-base font-mono border-l border-[var(--color-border-default)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] bg-white"
                       placeholder="0"
                     />

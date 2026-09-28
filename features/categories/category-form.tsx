@@ -424,7 +424,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
 
         {formData.type === 'expense' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <NumberInput label={t.catform.budget} value={formData.budget_limit} onChange={(val) => setFormData({ ...formData, budget_limit: val })} placeholder="0" />
+            <NumberInput label={t.catform.budget} currency={ledger?.currency_code ?? 'JPY'} value={formData.budget_limit} onChange={(val) => setFormData({ ...formData, budget_limit: val })} placeholder="0" />
             <NumberInput label={t.catform.warning} value={formData.warning_threshold} onChange={(val) => setFormData({ ...formData, warning_threshold: Math.min(100, Math.max(1, val)) })} placeholder="80" />
           </div>
         )}

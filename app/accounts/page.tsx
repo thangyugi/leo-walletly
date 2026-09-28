@@ -6,12 +6,12 @@ import { Plus, Pencil, Archive, ArchiveRestore, Trash2, X, ArrowRight, Landmark 
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input, Select } from '@/components/ui/input'
+import { AmountInput } from '@/components/ui/amount-input'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { CategoryIcon } from '@/features/categories/category-icon'
 import { useAccountsStore, type Account, type AccountInput } from '@/features/accounts/store'
 import { useMasterStore } from '@/features/master/store'
-import { useTransactionsStore } from '@/stores/transactions'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -84,12 +84,12 @@ function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => v
             <Select label={t.accounts.currency} value={form.currencyCode} onChange={(e) => set('currencyCode', e.target.value)} disabled={!!initial}>
               {currencies.map((c) => <option key={c.code} value={c.code}>{c.code}</option>)}
             </Select>
-            <Input label={t.accounts.openingBalance} inputMode="decimal" value={String(form.openingBalance ?? 0)} onChange={(e) => set('openingBalance', Number(e.target.value.replace(/[^0-9.-]/g, '')) || 0)} />
+            <AmountInput label={t.accounts.openingBalance} currency={form.currencyCode} value={String(form.openingBalance ?? 0)} onChange={(v) => set('openingBalance', Number(v) || 0)} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <Input label={t.accounts.openingDate} type="date" value={form.openingDate ?? ''} onChange={(e) => set('openingDate', e.target.value)} />
             {type?.is_liability
-              ? <Input label={t.accounts.creditLimit} inputMode="decimal" value={form.creditLimit ?? ''} onChange={(e) => set('creditLimit', e.target.value ? Number(e.target.value) : null)} />
+              ? <AmountInput label={t.accounts.creditLimit} currency={form.currencyCode} value={form.creditLimit != null ? String(form.creditLimit) : ''} onChange={(v) => set('creditLimit', v ? Number(v) : null)} />
               : <Input label={t.accounts.last4} maxLength={4} value={form.last4 ?? ''} onChange={(e) => set('last4', e.target.value.replace(/\D/g, ''))} />}
           </div>
           {form.accountTypeCode === 'bank' && <Input label={t.accounts.institution} value={form.institutionName ?? ''} onChange={(e) => set('institutionName', e.target.value)} />}
@@ -112,7 +112,6 @@ export default function AccountsPage() {
   const { accounts } = useLedgerData()
   const { accountTypes } = useMasterStore()
   const { update, remove } = useAccountsStore()
-  const setFilters = useTransactionsStore((s) => s.setFilters)
   const can = useLedgerStore((s) => s.can)
   const [editing, setEditing] = useState<Account | 'new' | null>(null)
   const [showArchived, setShowArchived] = useState(false)
@@ -151,7 +150,7 @@ export default function AccountsPage() {
           <p className={cn('text-xl font-semibold font-tabular', a.balance < 0 ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]')}>{format(a.balance, { from: a.currencyCode as never, to: a.currencyCode as never })}</p>
           {a.creditLimit ? <p className="text-[11px] text-[var(--color-text-tertiary)]">{t.accounts.creditLimit}: {format(a.creditLimit, { from: a.currencyCode as never, to: a.currencyCode as never })}</p> : null}
         </div>
-        <Link href="/transactions" onClick={() => setFilters({ accountId: a.id })} className="text-xs text-[var(--color-text-link)] flex items-center gap-1 hover:underline">{t.accounts.viewTransactions}<ArrowRight className="w-3 h-3" /></Link>
+        <Link href={`/transactions?account=${a.id}`} className="text-xs text-[var(--color-text-link)] flex items-center gap-1 hover:underline">{t.accounts.viewTransactions}<ArrowRight className="w-3 h-3" /></Link>
       </div>
     </div>
   )

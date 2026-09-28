@@ -11,6 +11,8 @@ import { useI18nStore, interpolate } from '@/features/i18n/store'
 function applyFlat(base: Translations, flat: Record<string, { value: string }>): Translations {
   const out: any = structuredClone(base)
   for (const [key, { value }] of Object.entries(flat)) {
+    // get_ui_texts returns the key itself when a language has no row yet.
+    if (value === key) continue
     const parts = key.split('.')
     let cur = out
     let ok = true
@@ -34,14 +36,20 @@ export function useTranslation() {
 
   const t = useMemo(() => applyFlat(getTranslations(lang), texts), [lang, texts])
 
-  /** Lookup by flat key — used for DB-driven labels (name_key columns). */
+  /**
+   * Lookup by flat key — used for DB-driven labels (name_key columns).
+   * DB text first, then the built-in copy in lib/i18n.ts (e.g. a key added
+   * before the database got its migration), then the fallback / the key.
+   */
   const tk = useCallback(
     (key: string | null | undefined, params?: Record<string, string | number | null | undefined>, fallback?: string) => {
       if (!key) return fallback ?? ''
       const entry = texts[key]
-      return interpolate(entry?.value ?? fallback ?? key, params)
+      if (entry && entry.value !== key) return interpolate(entry.value, params)
+      const builtIn = key.split('.').reduce<unknown>((node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined), t)
+      return interpolate(typeof builtIn === 'string' ? builtIn : fallback ?? key, params)
     },
-    [texts]
+    [texts, t]
   )
 
   return { t, tk, lang }

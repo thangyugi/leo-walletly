@@ -81,6 +81,8 @@ interface TransactionsState {
   countAll: (ledgerId: string) => Promise<number>
   /** Income/expense rows with no category (newest first) for the classify screens. */
   fetchUncategorized: (ledgerId: string, limit?: number, range?: { start: string; end: string }) => Promise<{ items: Transaction[]; total: number }>
+  /** Date of the account's most recent transaction (either side of a transfer), or null. */
+  latestDateForAccount: (ledgerId: string, accountId: string) => Promise<string | null>
   search: (ledgerId: string, term: string, limit?: number) => Promise<Transaction[]>
   getById: (id: string) => Promise<Transaction | null>
   summarize: (ledgerId: string, start: string, end: string) => Promise<PeriodSummary>
@@ -271,6 +273,21 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .limit(limit)
     fail(error)
     return { items: (data ?? []).map(mapTransaction), total: count ?? 0 }
+  },
+
+  latestDateForAccount: async (ledgerId, accountId) => {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('transaction_date')
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+      .or(`account_id.eq.${accountId},transfer_account_id.eq.${accountId}`)
+      .order('transaction_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    fail(error)
+    return data?.transaction_date ?? null
   },
 
   search: async (ledgerId, term, limit = 8) => {

@@ -1,13 +1,15 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { Plus, Trash2, Pencil, Power, RefreshCw, X, Check, SkipForward } from 'lucide-react'
+import { Plus, Trash2, Pencil, RefreshCw, X, Check, SkipForward } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Input, Select } from '@/components/ui/input'
 import { AccountPicker, CategoryPicker } from '@/components/ui/picker'
+import { AmountInput } from '@/components/ui/amount-input'
+import { Tooltip } from '@/components/ui/tooltip'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useRecurringStore, type Frequency, type RecurringInput, type RecurringRule } from '@/stores/recurring'
@@ -78,7 +80,7 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
             ))}
           </div>
           <Input label={t.recurring.name} value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Netflix, 家賃…" />
-          <Input label={`${t.recurring.amount} (${form.currencyCode})`} inputMode="decimal" value={form.amount || ''} onChange={(e) => set('amount', Number(e.target.value.replace(/[^0-9.]/g, '')))} />
+          <AmountInput label={`${t.recurring.amount} (${form.currencyCode})`} currency={form.currencyCode} value={form.amount ? String(form.amount) : ''} onChange={(v) => set('amount', Number(v) || 0)} />
           <div className="grid grid-cols-2 gap-3">
             <AccountPicker label={t.recurring.account} accounts={activeAccounts} value={form.accountId} onChange={(v) => set('accountId', v)} />
             {form.transactionType === 'transfer' ? (
@@ -173,9 +175,13 @@ export default function RecurringPage() {
         ) : (
           <div className="divide-y divide-[var(--color-border-subtle)]">
             {rules.map((r) => (
-              <div key={r.id} className={cn('flex items-center gap-3 px-4 py-3.5', !r.isActive && 'opacity-50')}>
-                <div className="w-9 h-9 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center"><RefreshCw className="w-4 h-4 text-[var(--color-text-tertiary)]" /></div>
-                <div className="flex-1 min-w-0">
+              <div key={r.id} className="flex items-center gap-3 px-4 py-3.5">
+                {/* Green while it runs, grey while paused. */}
+                <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0',
+                  r.isActive ? 'bg-[var(--color-status-gain-bg)] text-[var(--color-interactive-primary)]' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]')}>
+                  <RefreshCw className="w-4 h-4" />
+                </div>
+                <div className={cn('flex-1 min-w-0', !r.isActive && 'opacity-60')}>
                   <p className="text-sm font-medium text-[var(--color-text-primary)] truncate flex items-center gap-2">
                     {r.name}
                     {!r.isActive && <Badge variant="neutral" size="sm">{t.recurring.paused}</Badge>}
@@ -187,16 +193,28 @@ export default function RecurringPage() {
                     {' · '}{accName(r.accountId)}{catName(r.categoryId) ? ` · ${catName(r.categoryId)}` : ''}
                   </p>
                 </div>
-                <div className="text-right">
+                <div className={cn('text-right', !r.isActive && 'opacity-60')}>
                   <p className={cn('text-sm font-semibold font-tabular', r.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')}>{format(r.amount)}</p>
                   <p className="text-[11px] text-[var(--color-text-quaternary)]">{t.recurring.next}: {formatDate(r.nextRunDate)}</p>
                 </div>
                 {can('recurring.update') && (
-                  <div className="flex items-center gap-0.5">
-                    <button aria-label={r.isActive ? t.recurring.paused : t.catui.active} onClick={() => void update(r.id, { isActive: !r.isActive })} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><Power className="w-3.5 h-3.5" /></button>
-                    <button aria-label={t.common.edit} onClick={() => setEditing(r)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><Pencil className="w-3.5 h-3.5" /></button>
+                  <div className="flex items-center gap-1">
+                    {/* On/off switch: green = running, grey = paused. */}
+                    <Tooltip text={r.isActive ? t.recurring.tipPause : t.recurring.tipResume}>
+                      <button type="button" role="switch" aria-checked={r.isActive} aria-label={r.name}
+                        onClick={() => void update(r.id, { isActive: !r.isActive })}
+                        className={cn('relative w-9 h-5 rounded-full transition-colors mx-1 focus:outline-none focus-visible:ring-3 focus-visible:ring-[var(--color-brand-100)]',
+                          r.isActive ? 'bg-[var(--color-interactive-primary)]' : 'bg-[var(--color-border-strong)]')}>
+                        <span className={cn('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform', r.isActive && 'translate-x-4')} />
+                      </button>
+                    </Tooltip>
+                    <Tooltip text={t.recurring.tipEdit}>
+                      <button type="button" aria-label={t.common.edit} onClick={() => setEditing(r)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><Pencil className="w-3.5 h-3.5" /></button>
+                    </Tooltip>
                     {can('recurring.delete') && (
-                      <button aria-label={t.common.delete} onClick={() => { if (confirm(t.recurring.deleteConfirm)) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <Tooltip text={t.recurring.tipDelete}>
+                        <button type="button" aria-label={t.common.delete} onClick={() => { if (confirm(t.recurring.deleteConfirm)) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                      </Tooltip>
                     )}
                   </div>
                 )}

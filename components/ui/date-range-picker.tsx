@@ -52,6 +52,14 @@ export function buildLabel(start: string, end: string, mode: DatePickerMode, lan
   return `${formatDayLocale(start, lang)} – ${formatDayLocale(end, lang)}`
 }
 
+/** The month containing `isoDate` as a PickerValue (month mode). */
+export function monthPickerValue(isoDate: string, lang: Lang): PickerValue {
+  const { y, m } = parseDate(isoDate)
+  const start = firstOfMonth(y, m)
+  const end = lastOfMonth(y, m)
+  return { start, end, mode: 'month', label: buildLabel(start, end, 'month', lang) }
+}
+
 /** Today's date as a PickerValue in month mode */
 export function defaultPickerValue(lang: Lang): PickerValue {
   const now = new Date()

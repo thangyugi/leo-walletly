@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { Button } from './button'
 import { Input, Select } from './input'
 import { AccountPicker, CategoryPicker } from './picker'
+import { AmountInput } from './amount-input'
 import { useTransactionsStore, type TransactionInput } from '@/stores/transactions'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerData } from '@/hooks/useLedgerData'
@@ -180,8 +181,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
 
           <div>
             <label htmlFor="tx-amount" className="text-xs font-medium text-[var(--color-text-secondary)]">{t.txform.amount} ({currency})</label>
-            <input id="tx-amount" inputMode="decimal" autoFocus value={amount}
-              onChange={(e) => setAmount(e.target.value.replace(/[^0-9.,]/g, ''))}
+            <AmountInput id="tx-amount" autoFocus value={amount} onChange={setAmount} currency={currency}
               className={cn('mt-1.5 w-full h-14 px-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-2xl font-semibold font-tabular focus:outline-none focus:border-[var(--color-border-focus)]',
                 type === 'expense' ? 'text-[var(--color-text-loss)]' : type === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')} />
           </div>
