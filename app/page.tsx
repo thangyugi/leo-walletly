@@ -263,6 +263,10 @@ function CashFlowChart({ data }: { data: { label: string; income: number; expens
 // ------------------------------------------------------------------
 // Recent transaction table row
 // ------------------------------------------------------------------
+// One column template for the header and every row, so the columns line up
+// (per-row `auto` columns sized each row to its own content).
+const RECENT_GRID = 'grid-cols-[32px_minmax(0,1fr)_auto] sm:grid-cols-[32px_minmax(0,1fr)_96px_132px_132px_116px]'
+
 function RecentTxnRow({ txn, onClick }: { txn: Transaction; onClick: () => void }) {
   const { format } = useMoney()
   const { categories, accounts } = useLedgerData()
@@ -276,7 +280,7 @@ function RecentTxnRow({ txn, onClick }: { txn: Transaction; onClick: () => void 
     <button
       type="button"
       onClick={onClick}
-      className="w-full text-left grid grid-cols-[auto_1fr_auto] sm:grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors"
+      className={cn('w-full text-left grid items-center gap-3 px-4 py-3 hover:bg-[var(--color-bg-sunken)] transition-colors', RECENT_GRID)}
     >
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold select-none"
@@ -294,18 +298,18 @@ function RecentTxnRow({ txn, onClick }: { txn: Transaction; onClick: () => void 
         <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.transactionDate)}</span>
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden sm:block min-w-0">
         {cat && (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
+          <span className="inline-block max-w-full truncate align-middle text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
             {cat.name}
           </span>
         )}
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden sm:block min-w-0">
         {acc && (
           <span
-            className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
+            className="inline-block max-w-full truncate align-middle text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
             style={{ background: `color-mix(in srgb, ${accColor} 10%, transparent)`, color: accColor }}
           >
             {acc.name}
@@ -314,7 +318,7 @@ function RecentTxnRow({ txn, onClick }: { txn: Transaction; onClick: () => void 
       </div>
 
       <span className={cn(
-        'text-sm font-semibold font-tabular shrink-0 text-right',
+        'text-sm font-semibold font-tabular shrink-0 text-right whitespace-nowrap',
         isExpense ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]',
       )}>
         {isExpense ? '−' : txn.transactionType === 'income' ? '+' : ''}{format(txn.amount, { from: txn.currencyCode as never, to: txn.currencyCode as never })}
@@ -485,8 +489,8 @@ export default function DashboardPage() {
                 </Link>
               </CardHeader>
 
-              <div className="hidden sm:grid grid-cols-[auto_1fr_auto_auto_auto_auto] items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
-                <div className="w-8" />
+              <div className={cn('hidden sm:grid items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]', RECENT_GRID)}>
+                <div />
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
