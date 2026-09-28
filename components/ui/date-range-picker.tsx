@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
-import { cn, toLocalISODate } from '@/lib/utils'
+import { cn, toLocalISODate, formatMonthLocale, formatDayLocale } from '@/lib/utils'
 import type { Lang } from '@/lib/i18n'
 import { useTranslation } from '@/hooks/useTranslation'
 
@@ -40,37 +40,16 @@ function lastOfMonth(y: number, m: number) {
 
 export function buildLabel(start: string, end: string, mode: DatePickerMode, lang: Lang): string {
   const s = parseDate(start)
-  if (lang === 'vi') {
-    if (mode === 'year') return `Năm ${s.y}`
-    if (mode === 'quarter') return `Quý ${Math.floor(s.m / 3) + 1}/${s.y}`
-    if (mode === 'month') return `Tháng ${s.m + 1}/${s.y}`
-    const fmtD = (p: { y: number; m: number; d: number }) =>
-      `${String(p.d).padStart(2, '0')}/${String(p.m + 1).padStart(2, '0')}/${p.y}`
-    if (start === end) return fmtD(s)
-    const e = parseDate(end)
-    return `${fmtD(s)} - ${fmtD(e)}`
-  }
-  if (mode === 'year') return `${s.y}`
+  if (mode === 'year') return lang === 'vi' ? `Năm ${s.y}` : lang === 'ja' ? `${s.y}年` : `${s.y}`
   if (mode === 'quarter') {
     const q = Math.floor(s.m / 3) + 1
-    return `Q${q} ${s.y}`
+    return lang === 'vi' ? `Quý ${q}/${s.y}` : lang === 'ja' ? `${s.y}年 Q${q}` : `Q${q} ${s.y}`
   }
-  if (mode === 'month' || start.slice(0, 7) === end.slice(0, 7)) {
-    const MONTH_SHORT = {
-      ja: ['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月'],
-      en: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'],
-    }
-    return `${MONTH_SHORT[lang][s.m]} ${s.y}`
-  }
-  // day / custom range
-  const e = parseDate(end)
-  if (start === end) {
-    if (lang === 'ja') return `${s.y}年${s.m + 1}月${s.d}日`
-    return new Date(start + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
-  }
-  if (lang === 'ja') return `${s.m + 1}/${s.d} 〜 ${e.m + 1}/${e.d}`
-  const fmt = (str: string) => new Date(str + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-  return `${fmt(start)} – ${fmt(end)}`
+  // Months and days follow the regional format (Settings › Localization), like
+  // everywhere else: 2026/04 · 04/2026, 2026/04/01 · 01/04/2026 · 04/01/2026.
+  if (mode === 'month') return formatMonthLocale(s.y, s.m + 1, lang)
+  if (start === end) return formatDayLocale(start, lang)
+  return `${formatDayLocale(start, lang)} – ${formatDayLocale(end, lang)}`
 }
 
 /** Today's date as a PickerValue in month mode */
