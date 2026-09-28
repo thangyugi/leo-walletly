@@ -141,6 +141,9 @@ async function writeTagsAndShares(txId: string, input: Partial<TransactionInput>
   }
 }
 
+/** Increments per fetchPage call so stale responses can be dropped. */
+let pageFetchSeq = 0
+
 export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   revision: 0,
   items: [],
@@ -159,6 +162,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
   fetchPage: async (ledgerId, range) => {
     const { page, pageSize, sortOption, filters } = get()
+    const seq = ++pageFetchSeq
     set({ loading: true, error: null })
     let q = supabase
       .from('transactions')
@@ -192,6 +196,9 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
 
     const from = (page - 1) * pageSize
     const { data, count, error } = await q.range(from, from + pageSize - 1)
+    // Sort/filter/page changes fire overlapping requests; only the newest may
+    // replace the list, or an older, differently sorted page lands on top.
+    if (seq !== pageFetchSeq) return
     if (error) {
       set({ loading: false, error: error.message })
       return
@@ -200,10 +207,11 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   },
 
   fetchRange: async (ledgerId, start, end, limit = 5000) => {
-    // PostgREST returns at most max_rows (1000) per request, so page through the range.
+    // PostgREST returns at most max_rows per request, so page through the range
+    // until an empty page (works whatever max_rows the project uses).
     const PAGE = 1000
     const rows: Parameters<typeof mapTransaction>[0][] = []
-    for (let from = 0; from < limit; from += PAGE) {
+    for (let from = 0; from < limit; ) {
       const { data, error } = await supabase
         .from('transactions')
         .select(SELECT)
@@ -216,8 +224,9 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
         .order('id')
         .range(from, Math.min(from + PAGE, limit) - 1)
       fail(error)
-      rows.push(...(data ?? []))
-      if (!data || data.length < PAGE) break
+      if (!data || data.length === 0) break
+      rows.push(...data)
+      from += data.length
     }
     return rows.map(mapTransaction)
   },

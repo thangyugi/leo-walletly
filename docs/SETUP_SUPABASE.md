@@ -263,7 +263,8 @@ select language_code, count(*) from translations group by 1;   -- mỗi ngôn ng
 | Hiện tượng | Nguyên nhân / cách xử lý |
 |---|---|
 | Console báo "Missing NEXT_PUBLIC_SUPABASE_URL…" | Chưa có `.env.local`, hoặc sửa xong chưa khởi động lại `npm run dev` |
-| Chữ hiện dạng khoá, ví dụ `ledger_type.personal.name` | Chưa chạy seed bản dịch: reset/push lại DB; kiểm tra bảng `translations` có dữ liệu |
+| Chữ hiện dạng khoá, ví dụ `ledger_type.personal.name` | Chưa chạy seed bản dịch: reset/push lại DB; kiểm tra bảng `translations` có dữ liệu (`select language_code, count(*) from translations group by 1` ≈ 1251 mỗi ngôn ngữ). Nếu DB đủ mà vẫn hiện khoá: đang chạy code cũ (chưa đọc theo trang nên bị cắt ở 1000 dòng) → `git pull` rồi khởi động lại `npm run dev` |
+| Mở link trong mail xác nhận (`http://127.0.0.1:3000/…`) thì trang đứng ở màn hình tải, terminal báo *Blocked cross-origin request … from "127.0.0.1"* | Next.js dev chỉ phục vụ `localhost`; repo đã khai báo `allowedDevOrigins: ['127.0.0.1']` trong `next.config.ts`, khởi động lại `npm run dev` sau khi pull |
 | Đăng ký xong không đăng nhập được (cloud) | Đang bật *Confirm email*: mở email xác nhận, hoặc tắt ở Authentication → Email |
 | `supabase start` báo không kết nối được Docker | Mở Docker Desktop rồi chạy lại |
 | `supabase start` lỗi tải image (403 / Forbidden) | Dùng `SUPABASE_INTERNAL_IMAGE_REGISTRY=docker.io npx supabase start` |

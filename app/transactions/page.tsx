@@ -625,17 +625,22 @@ function TransactionsContent() {
 
   const groupedByDate = useMemo(() => {
     if (!['dateDesc', 'dateAsc'].includes(sortOption)) return null
+    // Group by date (not just consecutive runs) so each date appears once even
+    // while the list on screen is still the previous, differently sorted page.
     const grps: { date: string; txns: Transaction[]; income: number; expense: number }[] = []
+    const byDate = new Map<string, (typeof grps)[number]>()
     for (const tx of items) {
-      let g = grps[grps.length - 1]
-      if (!g || g.date !== tx.transactionDate) {
+      let g = byDate.get(tx.transactionDate)
+      if (!g) {
         g = { date: tx.transactionDate, txns: [], income: 0, expense: 0 }
+        byDate.set(tx.transactionDate, g)
         grps.push(g)
       }
       g.txns.push(tx)
       if (tx.transactionType === 'income') g.income += tx.baseAmount
       else if (tx.transactionType === 'expense') g.expense += tx.baseAmount
     }
+    grps.sort((a, b) => (sortOption === 'dateAsc' ? a.date.localeCompare(b.date) : b.date.localeCompare(a.date)))
     return grps
   }, [items, sortOption])
 
