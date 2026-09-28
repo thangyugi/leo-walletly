@@ -16,6 +16,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { formatMoney, getCurrencyPrecision } from '@/lib/money'
 import { cn } from '@/lib/utils'
+import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
 import type { Category } from './types'
 import type { Transaction } from '@/types/domain'
 
@@ -25,8 +26,8 @@ const fill = (s: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{{${k}}}`, String(v)), s)
 
 /* ─── Money: number + currency symbol after it, as in the design ("58,420 ¥") ── */
-const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string; currency: string }>({
-  fmt: (n) => Math.round(n).toLocaleString(), sym: '¥', currency: 'JPY',
+const FmtCtx = React.createContext<{ fmt: (n: number) => string; sym: string; currency: string; budgetFactor: number }>({
+  fmt: (n) => Math.round(n).toLocaleString(), sym: '¥', currency: 'JPY', budgetFactor: 1,
 })
 
 function categoryGlyph(name: string) {
@@ -81,8 +82,8 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
 function FeaturedCard({ category, subCategories, expense }: { category: Category; subCategories: Category[]; expense: number }) {
   const { t } = useTranslation()
   const kindLabel = useKindLabel()
-  const { fmt, sym, currency } = React.useContext(FmtCtx)
-  const budget = category.budget_limit || 0
+  const { fmt, sym, currency, budgetFactor } = React.useContext(FmtCtx)
+  const budget = (category.budget_limit || 0) * budgetFactor
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const remaining = budget - expense
   const displaySubs = subCategories.slice(0, 3)
@@ -231,8 +232,8 @@ function DarkStatCard({ variant, classified, total, pendingCount, autoPct, topCa
 function CategoryCard({ category, expense, txCount }: { category: Category; expense: number; txCount: number }) {
   const { t } = useTranslation()
   const kindLabel = useKindLabel()
-  const { fmt, sym } = React.useContext(FmtCtx)
-  const budget = category.budget_limit || 0
+  const { fmt, sym, budgetFactor } = React.useContext(FmtCtx)
+  const budget = (category.budget_limit || 0) * budgetFactor
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const barClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
   const kind = kindLabel(category.kind_code)
@@ -449,9 +450,12 @@ function ArchiveStrip({ archivedCategories, onShowAll }: { archivedCategories: C
 type Tab = 'all' | 'active' | 'shared' | 'recurring' | 'archived'
 
 export function CategoriesBentoPage() {
-  const { t } = useTranslation()
+  const { t, lang } = useTranslation()
   const { ledger, categories } = useLedgerData()
-  const { stats, kpi, statsLoading, isLoading, fetchStats, applyRules } = useCategoryStore()
+  const { stats, kpi, statsLoading, isLoading, fetchStats, applyRules, budgetFactor } = useCategoryStore()
+  const storedPicker = useCategoryStore((s) => s.picker)
+  const setPicker = useCategoryStore((s) => s.setPicker)
+  const picker = storedPicker ?? defaultPickerValue(lang)
   const { fetchUncategorized, revision } = useTransactionsStore()
   const { rules, load: loadRecurring } = useRecurringStore()
   const can = useLedgerStore((s) => s.can)
@@ -469,10 +473,13 @@ export function CategoriesBentoPage() {
   const ledgerId = ledger?.id
   React.useEffect(() => {
     if (!ledgerId) return
-    void fetchStats(ledgerId)
     void fetchUncategorized(ledgerId, 200).then(setPending)
     void loadRecurring(ledgerId)
-  }, [ledgerId, revision, categories.length, fetchStats, fetchUncategorized, loadRecurring])
+  }, [ledgerId, revision, categories.length, fetchUncategorized, loadRecurring])
+
+  React.useEffect(() => {
+    if (ledgerId) void fetchStats(ledgerId, { start: picker.start, end: picker.end })
+  }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats])
 
   const statBy = React.useMemo(() => new Map(stats.map((s) => [s.id, s])), [stats])
   // A parent's figures include its sub-categories.
@@ -511,7 +518,7 @@ export function CategoriesBentoPage() {
 
   const archivedCategories = React.useMemo(() => categories.filter((c) => !c.is_active && !c.parent_id), [categories])
 
-  // Root categories sorted by this month's spending.
+  // Root categories sorted by the chosen period's spending.
   const rootCategories = React.useMemo(() => {
     const roots = tabFiltered.filter((c) => !c.parent_id || !tabFiltered.some((p) => p.id === c.parent_id))
     return [...roots].sort((a, b) => rolled(b).expense - rolled(a).expense)
@@ -562,7 +569,7 @@ export function CategoriesBentoPage() {
   const cardsB = searchedCategories.slice(2)
 
   return (
-    <FmtCtx.Provider value={{ fmt, sym, currency }}>
+    <FmtCtx.Provider value={{ fmt, sym, currency, budgetFactor }}>
       <div className="space-y-4 animate-fade-in">
 
         <div className="flex items-center gap-3 flex-wrap">
@@ -571,6 +578,7 @@ export function CategoriesBentoPage() {
             <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">{ledger?.name ?? '—'} · {currency}</p>
           </div>
           <span className="flex-1" />
+          <DateNavigator value={picker} onChange={setPicker} lang={lang} />
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
             <label htmlFor="cat-search" className="sr-only">{t.catui.search}</label>

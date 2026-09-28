@@ -1010,6 +1010,7 @@ Bộ migration nằm ở `supabase/migrations/` (bộ cũ đã được xoá kh�
 20260928000016_seed_translations.sql        sinh từ lib/i18n.ts: node scripts/generate-translation-seed.mjs
 20260928000017_seed_master.sql              ngôn ngữ, tiền tệ, quốc gia, múi giờ, loại tài khoản, nhà cung cấp, loại sổ, vai trò, quyền, thông báo, mẫu danh mục
 20260928000018_account_opening_date.sql     opening_date của tài khoản (khi chưa có số dư đầu kỳ) lùi theo giao dịch sớm nhất
+20260928000019_category_period_stats.sql    category_period_stats / classification_period_stats: số liệu trang Danh mục theo kỳ bất kỳ (ngày/tháng/quý/năm)
 ```
 
 Sau khi đổi schema: `DATABASE_URL=... npm run db:types` để sinh lại `types/supabase.ts`; sau khi sửa `lib/i18n.ts`: `npm run db:i18n-seed`.

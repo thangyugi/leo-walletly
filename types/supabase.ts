@@ -3719,6 +3719,19 @@ export type Database = {
         }
         Returns: number
       }
+      category_period_stats: {
+        Args: {
+          p_ledger_id: string
+          p_from: string
+          p_to: string
+        }
+        Returns: {
+            category_id: string
+            expense: number
+            income: number
+            tx_count: number
+          }[]
+      }
       check_import_duplicates: {
         Args: {
           p_account_id: string
@@ -3727,6 +3740,21 @@ export type Database = {
         Returns: {
             row_number: number
             duplicate_of_id: string
+          }[]
+      }
+      classification_period_stats: {
+        Args: {
+          p_ledger_id: string
+          p_from: string
+          p_to: string
+        }
+        Returns: {
+            total: number
+            classified: number
+            auto_classified: number
+            needs_review: number
+            unreconciled: number
+            auto_pct: number
           }[]
       }
       create_api_token: {

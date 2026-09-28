@@ -1,6 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
+import type { PickerValue } from '@/components/ui/date-range-picker'
 import { supabase } from '@/lib/supabase'
 import { useI18nStore } from '@/features/i18n/store'
 import { useSettingsStore } from '@/stores/settings'
@@ -139,14 +140,20 @@ interface CategoryState {
   balances: CategoryBalance[]
   stats: CategoryStat[]
   kpi: CategoryKpi | null
-  month: string
+  /** Period shown on the categories overview (YYYY-MM-DD, inclusive). */
+  range: { start: string; end: string }
+  /** Monthly budgets scaled to `range` (1 = one full month). */
+  budgetFactor: number
+  /** Period picked on the overview; the detail page opens on the same one. */
+  picker: PickerValue | null
+  setPicker: (v: PickerValue) => void
   isLoading: boolean
   statsLoading: boolean
   error: string | null
   selectedCategoryId: string | null
 
   fetchCategories: (ledgerId: string) => Promise<void>
-  fetchStats: (ledgerId: string, month?: string) => Promise<void>
+  fetchStats: (ledgerId: string, range?: { start: string; end: string }) => Promise<void>
   setSelectedCategoryId: (id: string | null) => void
   createCategory: (input: CategoryInput) => Promise<Category | undefined>
   updateCategory: (id: string, input: CategoryInput) => Promise<void>
@@ -162,9 +169,28 @@ interface CategoryState {
   byId: (id: string | null | undefined) => Category | undefined
 }
 
-function currentMonth() {
+function currentMonthRange() {
   const d = new Date()
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`
+  const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+  const last = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate()
+  return { start: `${ym}-01`, end: `${ym}-${String(last).padStart(2, '0')}` }
+}
+
+/**
+ * How many months' worth of a monthly budget a period covers: whole months
+ * count 1, partial months by their share of days (a quarter = 3, one day ≈ 1/30).
+ */
+export function budgetFactor(start: string, end: string): number {
+  const [ys, ms, ds] = start.split('-').map(Number)
+  const [ye, me, de] = end.split('-').map(Number)
+  let factor = 0
+  for (let y = ys, m = ms; y < ye || (y === ye && m <= me); m === 12 ? (y++, m = 1) : m++) {
+    const days = new Date(y, m, 0).getDate()
+    const from = y === ys && m === ms ? ds : 1
+    const to = y === ye && m === me ? de : days
+    factor += (to - from + 1) / days
+  }
+  return factor
 }
 
 async function syncKeywords(ledgerId: string, categoryId: string, keywords: string[]) {
@@ -211,7 +237,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   balances: [],
   stats: [],
   kpi: null,
-  month: currentMonth(),
+  range: currentMonthRange(),
+  budgetFactor: 1,
+  picker: null,
+  setPicker: (picker) => set({ picker }),
   isLoading: false,
   statsLoading: false,
   error: null,
@@ -272,29 +301,32 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     }
   },
 
-  fetchStats: async (ledgerId, month) => {
-    const m = month ?? get().month
-    set({ statsLoading: true, month: m })
-    const [monthly, cls] = await Promise.all([
-      supabase.from('v_category_monthly').select('*').eq('ledger_id', ledgerId).eq('month', m),
-      supabase.from('v_classification_stats').select('*').eq('ledger_id', ledgerId).eq('month', m).maybeSingle(),
+  fetchStats: async (ledgerId, range) => {
+    const r = range ?? get().range
+    const factor = budgetFactor(r.start, r.end)
+    set({ statsLoading: true, range: r, budgetFactor: factor })
+    const [period, cls] = await Promise.all([
+      supabase.rpc('category_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }),
+      supabase.rpc('classification_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }).maybeSingle(),
     ])
+    // A newer period was picked while this one was loading.
+    if (get().range !== r) return
     const byId = new Map(get().categories.map((c) => [c.id, c]))
-    const stats: CategoryStat[] = (monthly.data ?? []).map((r) => ({
-      id: r.category_id ?? '',
-      name: byId.get(r.category_id ?? '')?.name ?? '—',
-      expense: Number(r.expense ?? 0),
-      income: Number(r.income ?? 0),
-      tx_count: Number(r.tx_count ?? 0),
-      budget_limit: Number(r.budget_amount ?? byId.get(r.category_id ?? '')?.budget_limit ?? 0),
+    const stats: CategoryStat[] = (period.data ?? []).map((row) => ({
+      id: row.category_id,
+      name: byId.get(row.category_id)?.name ?? '—',
+      expense: Number(row.expense ?? 0),
+      income: Number(row.income ?? 0),
+      tx_count: Number(row.tx_count ?? 0),
+      budget_limit: (byId.get(row.category_id)?.budget_limit ?? 0) * factor,
     }))
-    const totalBudget = get().categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0)
+    const totalBudget = get().categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0) * factor
     const c = cls.data
     set({
       statsLoading: false,
       stats,
       balances: stats.map((s) => ({
-        group_id: s.id, name: s.name, ledger_id: ledgerId, month: m,
+        group_id: s.id, name: s.name, ledger_id: ledgerId, month: r.start,
         total_income: s.income, total_expense: s.expense, net_balance: s.income - s.expense, transaction_count: s.tx_count,
       })),
       kpi: {

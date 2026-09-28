@@ -14,7 +14,7 @@ import { CategoryIcon } from './category-icon'
 import { CategoryForm } from './category-form'
 import { MergeCategoryModal } from './merge-category-modal'
 import { categoryHref } from './categories-bento-page'
-import { useCategoryStore } from './store'
+import { useCategoryStore, budgetFactor } from './store'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -24,6 +24,8 @@ import { useMoney } from '@/features/currency/hooks/useMoney'
 import { PROVIDERS } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import type { PickerValue } from '@/components/ui/date-range-picker'
 import type { Category, CategoryMember, MemberBalance } from './types'
 import type { Transaction } from '@/types/domain'
 import type { Account } from '@/features/accounts/store'
@@ -49,7 +51,6 @@ const initials = (name?: string | null) =>
   (name || '?').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 2)
 const fill = (s: string, vars: Record<string, string | number>) =>
   Object.entries(vars).reduce((acc, [k, v]) => acc.replaceAll(`{{${k}}}`, String(v)), s)
-const iso = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 
 function descendantIds(id: string, all: Category[]): Set<string> {
   const ids = new Set([id])
@@ -154,14 +155,14 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
 }
 
 // ── Tab bar ──────────────────────────────────────────────────
-function TabBar({ tabs, active, onChange, month, onMonthChange }: {
+function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
   tabs: { value: DetailTab; label: string; count?: number }[]
   active: DetailTab
   onChange: (t: DetailTab) => void
-  month: Date
-  onMonthChange: (d: Date) => void
+  picker: PickerValue
+  onPickerChange: (v: PickerValue) => void
 }) {
-  const { t } = useTranslation()
+  const { lang } = useTranslation()
   return (
     <div className="flex items-center border-b border-[var(--color-border-subtle)]" role="tablist">
       <div className="flex items-center flex-1 overflow-x-auto">
@@ -181,15 +182,8 @@ function TabBar({ tabs, active, onChange, month, onMonthChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[7px] px-4 ml-auto">
-        <label className="relative overflow-hidden inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 6h18M6 12h12M10 18h4" /></svg>
-          {fill(t.catdetail.monthLabel, { m: month.getMonth() + 1, y: month.getFullYear() })}
-          <input type="month" aria-label={t.catdetail.monthLabel.replace(/\{\{.\}\}/g, '').trim()}
-            value={`${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`}
-            onChange={(e) => { if (e.target.value) { const [y, m] = e.target.value.split('-'); onMonthChange(new Date(Number(y), Number(m) - 1, 1)) } }}
-            className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-        </label>
+      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 ml-auto">
+        <DateNavigator value={picker} onChange={onPickerChange} lang={lang} />
       </div>
     </div>
   )
@@ -207,7 +201,9 @@ function StatsStrip({ category, txns, memberCount, balances, userId }: {
   const { format } = useMoney()
   const isIncome = category.type === 'income'
   const total = txns.filter((x) => x.transactionType === (isIncome ? 'income' : 'expense')).reduce((s, x) => s + x.baseAmount, 0)
-  const pct = category.budget_limit > 0 ? Math.round((total / category.budget_limit) * 100) : 0
+  // Monthly budget scaled to the chosen period (a quarter = 3 months, a day ≈ 1/30).
+  const budget = category.budget_limit * useCategoryStore((s) => (s.picker ? budgetFactor(s.picker.start, s.picker.end) : 1))
+  const pct = budget > 0 ? Math.round((total / budget) * 100) : 0
   const mine = balances.find((b) => b.user_id === userId)
   const youPaid = mine ? mine.paid : txns.filter((x) => x.transactionType === 'expense' && (!x.paidByUserId || x.paidByUserId === userId)).reduce((s, x) => s + x.baseAmount, 0)
   const auto = txns.filter((x) => x.categorizedBy && AUTO.has(x.categorizedBy)).length
@@ -218,9 +214,9 @@ function StatsStrip({ category, txns, memberCount, balances, userId }: {
     { label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total), sub: fill(t.catdetail.statTxSub, { count: txns.length }), tone: '' },
     {
       label: t.catui.budget,
-      value: category.budget_limit > 0 ? format(category.budget_limit) : '—',
-      sub: category.budget_limit > 0 ? fill(t.catdetail.statBudgetSub, { pct, amount: format(category.budget_limit - total) }) : t.catui.kpiNoBudget,
-      tone: category.budget_limit > 0 ? (pct > 100 ? 'loss' : 'brand') : '',
+      value: budget > 0 ? format(budget) : '—',
+      sub: budget > 0 ? fill(t.catdetail.statBudgetSub, { pct, amount: format(budget - total) }) : t.catui.kpiNoBudget,
+      tone: budget > 0 ? (pct > 100 ? 'loss' : 'brand') : '',
     },
     { label: t.catdetail.statAvg, value: format(Math.round(total / Math.max(memberCount, 1))), sub: fill(t.catdetail.statAvgSub, { count: Math.max(memberCount, 1) }), tone: '' },
     { label: t.catdetail.statYouPaid, value: format(youPaid), sub: mine ? fill(t.catdetail.statYouPaidSub, { amount: format(mine.owed) }) : t.catui.totalSpent, tone: '' },
@@ -255,14 +251,16 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
   const { t } = useTranslation()
   const { format } = useMoney()
   const [sort, setSort] = React.useState<'spend' | 'name'>('spend')
+  const factor = useCategoryStore((s) => (s.picker ? budgetFactor(s.picker.start, s.picker.end) : 1))
   const total = txns.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
 
   const cards = subs.map((sg) => {
     const ids = descendantIds(sg.id, all)
     const list = txns.filter((x) => x.categoryId && ids.has(x.categoryId))
     const expense = list.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
-    const barPct = sg.budget_limit > 0 ? Math.min(Math.round((expense / sg.budget_limit) * 100), 100) : 0
-    return { sg, expense, count: list.length, pct: total > 0 ? Math.round((expense / total) * 100) : 0, barPct }
+    const budget = sg.budget_limit * factor
+    const barPct = budget > 0 ? Math.min(Math.round((expense / budget) * 100), 100) : 0
+    return { sg, budget, expense, count: list.length, pct: total > 0 ? Math.round((expense / total) * 100) : 0, barPct }
   })
   const sorted = sort === 'spend' ? [...cards].sort((a, b) => b.expense - a.expense) : [...cards].sort((a, b) => a.sg.name.localeCompare(b.sg.name))
   const canAdd = canEdit && depth < MAX_DEPTH
@@ -289,7 +287,7 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
       </div>
       <div className="p-[14px_18px] grid grid-cols-2 sm:grid-cols-3 gap-3">
         {sorted.length === 0 && !canAdd && <p className="col-span-full text-xs text-[var(--color-text-quaternary)]">{t.catui.noSubcategories}</p>}
-        {sorted.map(({ sg, expense, count, pct, barPct }) => (
+        {sorted.map(({ sg, budget, expense, count, pct, barPct }) => (
           <div key={sg.id} role="link" tabIndex={0} onClick={() => onOpen(sg)} onKeyDown={(e) => e.key === 'Enter' && onOpen(sg)}
             className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group relative">
             {canEdit && (
@@ -318,7 +316,7 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
               <div className={cn('h-full rounded-full', barPct >= 90 ? 'bg-[var(--color-warning-500)]' : 'bg-[var(--color-gain-500)]')} style={{ width: `${barPct}%` }} />
             </div>
             <div className="flex items-center justify-between mt-1 text-[10px] text-[var(--color-text-tertiary)] font-tabular">
-              <span>{fill(t.catdetail.budgetShort, { amount: sg.budget_limit > 0 ? format(sg.budget_limit) : '—' })}</span>
+              <span>{fill(t.catdetail.budgetShort, { amount: budget > 0 ? format(budget) : '—' })}</span>
               <span>{barPct}%</span>
             </div>
           </div>
@@ -850,7 +848,11 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const can = useLedgerStore((s) => s.can)
   const userId = useLedgerStore((s) => s.userId)
   const [tab, setTab] = React.useState<DetailTab>('overview')
-  const [month, setMonth] = React.useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
+  const { lang } = useTranslation()
+  // Same period as the categories overview (and kept when going back to it).
+  const storedPicker = useCategoryStore((s) => s.picker)
+  const setPicker = useCategoryStore((s) => s.setPicker)
+  const picker = storedPicker ?? defaultPickerValue(lang)
   const [form, setForm] = React.useState<null | { initial: Partial<Category> }>(null)
   const [mergeOpen, setMergeOpen] = React.useState(false)
   const [deleting, setDeleting] = React.useState<Category | null>(null)
@@ -870,9 +872,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     return list
   }, [category, categories])
 
-  const from = iso(month)
-  const to = iso(new Date(month.getFullYear(), month.getMonth() + 1, 0))
-  const monthTx = useRangeTransactions(from, to)
+  const monthTx = useRangeTransactions(picker.start, picker.end)
   const txns = React.useMemo(() => monthTx.filter((x) => x.categoryId && ids.has(x.categoryId)).sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)), [monthTx, ids])
   const uncategorized = React.useMemo(() => monthTx.filter((x) => !x.categoryId && x.transactionType !== 'transfer'), [monthTx])
   const settlement = useSettlement(category ?? ({ id: categoryId } as Category))
@@ -959,7 +959,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           <HeroCover category={category} memberNames={memberNames} canEdit={canEdit}
             onEdit={() => setForm({ initial: category })} onMerge={() => setMergeOpen(true)}
             onDelete={canDelete && !category.is_system ? () => setDeleting(category) : undefined} />
-          <TabBar tabs={tabs} active={tab} onChange={setTab} month={month} onMonthChange={setMonth} />
+          <TabBar tabs={tabs} active={tab} onChange={setTab} picker={picker} onPickerChange={setPicker} />
           <StatsStrip category={category} txns={txns} memberCount={category.is_shared ? settlement.catMembers.length : members.length} balances={settlement.balances} userId={userId} />
         </div>
       </div>
