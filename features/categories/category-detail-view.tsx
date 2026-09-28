@@ -47,7 +47,40 @@ const MEMBER_COLORS = [
   { bg: '#fee2e2', color: '#b91c1c' },
   { bg: '#ecfdf5', color: '#059669' },
 ]
-const memberColor = (i: number) => MEMBER_COLORS[i % MEMBER_COLORS.length]
+const memberColor = (i: number) => MEMBER_COLORS[((i % MEMBER_COLORS.length) + MEMBER_COLORS.length) % MEMBER_COLORS.length]
+/** One colour per person across every section: their place in the ledger's member list. */
+const colorFor = (uid: string, members: { user_id: string }[]) => {
+  const i = members.findIndex((m) => m.user_id === uid)
+  return memberColor(i >= 0 ? i : [...uid].reduce((h, c) => h + c.charCodeAt(0), 0))
+}
+
+interface SplitRow { userId: string; paid: number; count: number; share: number | null }
+/**
+ * Who spent what in the chosen period. In a shared category the period's
+ * spending is split among the ticked members plus anyone who paid (same rule
+ * as v_member_balances), by share ratio (none = equal).
+ */
+function periodSplit(txns: Transaction[], category: Category, catMembers: CategoryMember[], me: string | null) {
+  const spent = txns.filter((x) => x.transactionType === 'expense')
+  const total = spent.reduce((s, x) => s + x.baseAmount, 0)
+  const byPayer = new Map<string, { paid: number; count: number }>()
+  for (const x of spent) {
+    const uid = x.payerId ?? me ?? '—'
+    const g = byPayer.get(uid) ?? { paid: 0, count: 0 }
+    g.paid += x.baseAmount; g.count += 1
+    byPayer.set(uid, g)
+  }
+  const ratio = new Map(catMembers.map((m) => [m.user_id, m.share_ratio ?? 1]))
+  const ids = category.is_shared ? [...new Set([...catMembers.map((m) => m.user_id), ...byPayer.keys()])] : [...byPayer.keys()]
+  const ratioSum = ids.reduce((s, u) => s + (ratio.get(u) ?? 1), 0)
+  const rows: SplitRow[] = ids.map((u) => ({
+    userId: u,
+    paid: byPayer.get(u)?.paid ?? 0,
+    count: byPayer.get(u)?.count ?? 0,
+    share: category.is_shared && ratioSum > 0 ? (total * (ratio.get(u) ?? 1)) / ratioSum : null,
+  })).sort((a, b) => b.paid - a.paid)
+  return { total, rows, participants: ids.length }
+}
 const initials = (name?: string | null) =>
   (name || '?').trim().split(/\s+/).map((w) => w[0] || '').join('').toUpperCase().slice(0, 2)
 const fill = (s: string, vars: Record<string, string | number>) =>
@@ -88,7 +121,7 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
   const { t } = useTranslation()
   const { ledger } = useLedgerData()
   const parts = [
-    memberNames.length > 0 ? fill(t.catdetail.membersCount, { count: memberNames.length }) : null,
+    memberNames.length > 0 ? fill(category.is_shared ? t.catdetail.sharedWith : t.catdetail.membersCount, { count: memberNames.length }) : null,
     ledger?.currency_code ?? 'JPY',
     category.is_active ? t.catui.active : t.catui.inactive,
   ].filter(Boolean) as string[]
@@ -191,11 +224,10 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
 }
 
 // ── Stats strip ──────────────────────────────────────────────
-function StatsStrip({ category, txns, memberCount, balances, userId }: {
+function StatsStrip({ category, txns, split, userId }: {
   category: Category
   txns: Transaction[]
-  memberCount: number
-  balances: MemberBalance[]
+  split: ReturnType<typeof periodSplit>
   userId: string | null
 }) {
   const { t } = useTranslation()
@@ -205,8 +237,10 @@ function StatsStrip({ category, txns, memberCount, balances, userId }: {
   // Monthly budget scaled to the chosen period (a quarter = 3 months, a day ≈ 1/30).
   const budget = category.budget_limit * useCategoryStore((s) => (s.picker ? budgetFactor(s.picker.start, s.picker.end) : 1))
   const pct = budget > 0 ? Math.round((total / budget) * 100) : 0
-  const mine = balances.find((b) => b.user_id === userId)
-  const youPaid = mine ? mine.paid : txns.filter((x) => x.transactionType === 'expense' && (!x.paidByUserId || x.paidByUserId === userId)).reduce((s, x) => s + x.baseAmount, 0)
+  // All figures here are for the chosen period.
+  const mine = split.rows.find((r) => r.userId === userId)
+  const youPaid = mine?.paid ?? 0
+  const people = Math.max(split.participants, 1)
   const auto = txns.filter((x) => x.categorizedBy && AUTO.has(x.categorizedBy)).length
   const review = txns.filter((x) => x.needsReview).length
   const autoPct = txns.length ? Math.round((auto / txns.length) * 100) : 0
@@ -219,8 +253,8 @@ function StatsStrip({ category, txns, memberCount, balances, userId }: {
       sub: budget > 0 ? fill(t.catdetail.statBudgetSub, { pct, amount: format(budget - total) }) : t.catui.kpiNoBudget,
       tone: budget > 0 ? (pct > 100 ? 'loss' : 'brand') : '',
     },
-    { label: t.catdetail.statAvg, value: format(Math.round(total / Math.max(memberCount, 1))), sub: fill(t.catdetail.statAvgSub, { count: Math.max(memberCount, 1) }), tone: '' },
-    { label: t.catdetail.statYouPaid, value: format(youPaid), sub: mine ? fill(t.catdetail.statYouPaidSub, { amount: format(mine.owed) }) : t.catui.totalSpent, tone: '' },
+    { label: t.catdetail.statAvg, value: format(Math.round(total / people)), sub: fill(t.catdetail.statAvgSub, { count: people }), tone: '' },
+    { label: t.catdetail.statYouPaid, value: format(youPaid), sub: category.is_shared && mine?.share != null ? fill(t.catdetail.statYouPaidSub, { amount: format(Math.round(mine.share)) }) : t.catui.totalSpent, tone: '' },
     { label: t.catdetail.statAuto, value: `${auto} / ${txns.length}`, sub: fill(t.catdetail.statAutoSub, { pct: autoPct, count: review }), tone: 'brand' },
   ]
 
@@ -717,10 +751,10 @@ function SettleUpSection({ category, txns, settlement, nameOf, canEdit }: {
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
-  const { ledger } = useLedgerData()
+  const { ledger, members } = useLedgerData()
   const settle = useCategoryStore((s) => s.settle)
   const total = txns.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
-  const { transfers, catMembers, reload } = settlement
+  const { transfers, balances, reload } = settlement
 
   async function pay(list: typeof transfers) {
     try {
@@ -744,13 +778,13 @@ function SettleUpSection({ category, txns, settlement, nameOf, canEdit }: {
         )}
       </div>
       <div className="p-[14px_18px] flex flex-col gap-2">
-        {!category.is_shared || catMembers.length === 0 ? (
+        {!category.is_shared || balances.length === 0 ? (
           <div className="text-[12px] text-[var(--color-text-tertiary)] py-2 text-center">{category.is_shared ? t.catdetail.settleNone : t.catdetail.sharedOff}</div>
         ) : transfers.length === 0 ? (
           <div className="text-[12px] text-[var(--color-text-gain)] py-2 text-center">{t.catdetail.settleEven}</div>
         ) : transfers.map((tr, i) => {
-          const a = memberColor(catMembers.findIndex((m) => m.user_id === tr.from))
-          const b = memberColor(catMembers.findIndex((m) => m.user_id === tr.to))
+          const a = colorFor(tr.from, members)
+          const b = colorFor(tr.to, members)
           return (
             <div key={`${tr.from}-${tr.to}-${i}`} className="grid items-center gap-2 p-2 border border-dashed border-[var(--color-border-default)] rounded-[9px] bg-[var(--color-bg-canvas)] text-[11px]" style={{ gridTemplateColumns: '1fr auto 1fr auto' }}>
               <div className="flex items-center gap-1.5 min-w-0">
@@ -774,29 +808,78 @@ function SettleUpSection({ category, txns, settlement, nameOf, canEdit }: {
 function BalancesSection({ settlement, nameOf }: { settlement: ReturnType<typeof useSettlement>; nameOf: (uid: string) => string }) {
   const { t } = useTranslation()
   const { format } = useMoney()
+  const { members } = useLedgerData()
   const { catMembers, balances } = settlement
+  // Ticked members and anyone else who paid into the category.
+  const people = [...new Set([...catMembers.map((m) => m.user_id), ...balances.map((b) => b.user_id)])]
   return (
     <section className={card}>
       <div className={sectionHead}>
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catui.memberBalances}</h3>
+        <span className="text-[11px] text-[var(--color-text-tertiary)]">· {t.catdetail.balancesAllTime}</span>
         <span className="flex-1" />
-        <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{fill(t.catdetail.membersCount, { count: catMembers.length })}</span>
+        <span className="text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{fill(t.catdetail.membersCount, { count: people.length })}</span>
       </div>
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {catMembers.length === 0 ? <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">{t.catdetail.noMembers}</div> : catMembers.map((m, i) => {
-          const { bg, color } = memberColor(i)
-          const b = balances.find((x) => x.user_id === m.user_id) ?? { paid: 0, owed: 0, balance: 0 }
+        {people.length === 0 ? <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">{t.catdetail.noMembers}</div> : people.map((uid) => {
+          const { bg, color } = colorFor(uid, members)
+          const b = balances.find((x) => x.user_id === uid) ?? { paid: 0, owed: 0, balance: 0 }
+          const role = catMembers.find((m) => m.user_id === uid)?.role
           return (
-            <div key={m.id} className="flex items-center gap-3 px-[18px] py-[10px] hover:bg-[var(--color-bg-sunken)] transition-colors">
-              <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(nameOf(m.user_id))}</div>
+            <div key={uid} className="flex items-center gap-3 px-[18px] py-[10px] hover:bg-[var(--color-bg-sunken)] transition-colors">
+              <div className="w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(nameOf(uid))}</div>
               <div className="flex-1 min-w-0">
                 <div className="text-[13px] font-medium text-[var(--color-text-primary)]">
-                  {nameOf(m.user_id)}
-                  {m.role === 'owner' && <span className="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)]">{t.catdetail.ownerBadge}</span>}
+                  {nameOf(uid)}
+                  {role === 'owner' && <span className="ml-1.5 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)]">{t.catdetail.ownerBadge}</span>}
                 </div>
                 <div className="text-[11px] font-mono mt-0.5 text-[var(--color-text-tertiary)]">{fill(t.catdetail.paidOwed, { paid: format(b.paid), owed: format(b.owed) })}</div>
               </div>
               <div className={cn('text-[13px] font-semibold font-tabular shrink-0', b.balance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>{format(b.balance, { sign: true })}</div>
+            </div>
+          )
+        })}
+      </div>
+    </section>
+  )
+}
+
+/** Chosen period: what each person paid, and (shared) their split share. */
+function MemberSpendSection({ category, split, nameOf }: { category: Category; split: ReturnType<typeof periodSplit>; nameOf: (uid: string) => string }) {
+  const { t } = useTranslation()
+  const { format } = useMoney()
+  const { members } = useLedgerData()
+  return (
+    <section className={card}>
+      <div className={sectionHead}>
+        <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catdetail.memberSpendTitle}</h3>
+        <span className="text-[11px] text-[var(--color-text-tertiary)] truncate">· {category.is_shared ? fill(t.catdetail.memberSpendShared, { count: split.participants }) : t.catdetail.memberSpendPlain}</span>
+      </div>
+      <div className="divide-y divide-[var(--color-border-subtle)]">
+        {split.total === 0 ? <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">{t.catdetail.memberSpendEmpty}</div> : split.rows.map((r) => {
+          const { bg, color } = colorFor(r.userId, members)
+          const pct = split.total > 0 ? Math.round((r.paid / split.total) * 100) : 0
+          const diff = r.share != null ? r.paid - r.share : null
+          return (
+            <div key={r.userId} className="px-[18px] py-[10px]">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(nameOf(r.userId))}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{nameOf(r.userId)}</div>
+                  <div className="text-[11px] text-[var(--color-text-tertiary)]">
+                    {r.share != null ? fill(t.catdetail.memberSpendLine, { count: r.count, share: format(Math.round(r.share)) }) : fill(t.catdetail.memberSpendCount, { count: r.count })}
+                  </div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">{format(r.paid)}</div>
+                  {diff != null && Math.abs(diff) >= 1 && (
+                    <div className={cn('text-[11px] font-tabular', diff > 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>{format(Math.round(diff), { sign: true })}</div>
+                  )}
+                </div>
+              </div>
+              <div className="mt-2 ml-11 h-1.5 rounded-full bg-[var(--color-bg-sunken)] overflow-hidden">
+                <div className="h-full rounded-full" style={{ width: `${pct}%`, background: color }} />
+              </div>
             </div>
           )
         })}
@@ -818,8 +901,8 @@ function MembersPicker({ category, settlement }: { category: Category; settlemen
         <span className="text-[12px] text-[var(--color-text-tertiary)]">· {t.catui.membersHint}</span>
       </div>
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {members.map((m, i) => {
-          const { bg, color } = memberColor(i)
+        {members.map((m) => {
+          const { bg, color } = colorFor(m.user_id, members)
           const name = m.user?.display_name || m.user?.email || '—'
           return (
             <label key={m.user_id} className="flex items-center gap-3 px-[18px] py-[10px] text-sm cursor-pointer hover:bg-[var(--color-bg-sunken)]">
@@ -892,9 +975,11 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const canEdit = can('category.update')
   const canCreate = can('category.create')
   const canDelete = can('category.delete')
+  // Shared: ticked members plus anyone who has paid into it.
   const memberNames = category.is_shared
-    ? settlement.catMembers.map((m) => nameOf(m.user_id))
+    ? [...new Set([...settlement.catMembers.map((m) => m.user_id), ...settlement.balances.map((b) => b.user_id)])].map(nameOf)
     : members.map((m) => m.user?.display_name || m.user?.email || '—')
+  const split = periodSplit(txns, category, settlement.catMembers, userId)
   const totalKeywords = category.keywords.length + subs.reduce((s, c) => s + c.keywords.length, 0)
   const tabs: { value: DetailTab; label: string; count?: number }[] = [
     { value: 'overview', label: t.catui.tabOverview },
@@ -930,6 +1015,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   )
   const settleSection = <SettleUpSection category={category} txns={txns} settlement={settlement} nameOf={nameOf} canEdit={canEdit} />
   const balancesSection = <BalancesSection settlement={settlement} nameOf={nameOf} />
+  const memberSpendSection = <MemberSpendSection category={category} split={split} nameOf={nameOf} />
 
   return (
     <div className={cn('animate-fade-in flex flex-col w-full', isNested ? 'max-h-[85vh] h-[80vh] overflow-hidden' : 'pb-10')}>
@@ -961,7 +1047,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
             onEdit={() => setForm({ initial: category })} onMerge={() => setMergeOpen(true)}
             onDelete={canDelete && !category.is_system ? () => setDeleting(category) : undefined} />
           <TabBar tabs={tabs} active={tab} onChange={setTab} picker={picker} onPickerChange={setPicker} />
-          <StatsStrip category={category} txns={txns} memberCount={category.is_shared ? settlement.catMembers.length : members.length} balances={settlement.balances} userId={userId} />
+          <StatsStrip category={category} txns={txns} split={split} userId={userId} />
         </div>
       </div>
 
@@ -975,7 +1061,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
             {keywordSection}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">{recent(true)}</div>
-              <div className="flex flex-col gap-4">{settleSection}{balancesSection}</div>
+              <div className="flex flex-col gap-4">{memberSpendSection}{category.is_shared && <>{settleSection}{balancesSection}</>}</div>
             </div>
           </>
         )}
@@ -984,13 +1070,13 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         {tab === 'transactions' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><div className="lg:col-span-2">{recent(false)}</div></div>}
         {tab === 'balances' && (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2">{settleSection}</div>
+            <div className="lg:col-span-2 flex flex-col gap-4">{settleSection}{memberSpendSection}</div>
             {balancesSection}
           </div>
         )}
         {tab === 'members' && (
           category.is_shared
-            ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} />{balancesSection}</div>
+            ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} /><div className="flex flex-col gap-4">{memberSpendSection}{balancesSection}</div></div>
             : <div className={cn(card, 'p-6 text-sm text-[var(--color-text-tertiary)]')}>{t.catdetail.sharedOff}</div>
         )}
         {tab === 'settings' && canEdit && (

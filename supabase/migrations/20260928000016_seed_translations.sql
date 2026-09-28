@@ -106,6 +106,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.archived', 'catdetail', null, false),
   ('catdetail.badgeAuto', 'catdetail', null, false),
   ('catdetail.badgeManual', 'catdetail', null, false),
+  ('catdetail.balancesAllTime', 'catdetail', null, false),
   ('catdetail.breadcrumb', 'catdetail', null, false),
   ('catdetail.budgetShort', 'catdetail', 'amount', false),
   ('catdetail.confirmApply', 'catdetail', null, false),
@@ -133,6 +134,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.learnHistory', 'catdetail', null, false),
   ('catdetail.matched', 'catdetail', 'kw', false),
   ('catdetail.maxDepth', 'catdetail', 'n', false),
+  ('catdetail.memberSpendCount', 'catdetail', 'count', false),
+  ('catdetail.memberSpendEmpty', 'catdetail', null, false),
+  ('catdetail.memberSpendLine', 'catdetail', 'count,share', false),
+  ('catdetail.memberSpendPlain', 'catdetail', null, false),
+  ('catdetail.memberSpendShared', 'catdetail', 'count', false),
+  ('catdetail.memberSpendTitle', 'catdetail', null, false),
   ('catdetail.membersCount', 'catdetail', 'count', false),
   ('catdetail.mergeTitle', 'catdetail', null, false),
   ('catdetail.monthLabel', 'catdetail', 'y,m', false),
@@ -160,6 +167,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.settleSub', 'catdetail', 'count,amount', false),
   ('catdetail.settleTitle', 'catdetail', null, false),
   ('catdetail.sharedOff', 'catdetail', null, false),
+  ('catdetail.sharedWith', 'catdetail', 'count', false),
   ('catdetail.showing', 'catdetail', 'shown,filtered,total', false),
   ('catdetail.sortName', 'catdetail', null, false),
   ('catdetail.sortSpend', 'catdetail', null, false),
@@ -399,7 +407,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.periodLastYear', 'dashboard', null, true),
   ('dashboard.periodYesterday', 'dashboard', null, true),
   ('dashboard.prevPeriod', 'dashboard', null, true),
-  ('dashboard.quickStats', 'dashboard', null, true),
+  ('dashboard.quickStats', 'dashboard', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('dashboard.ratio', 'dashboard', null, true),
   ('dashboard.recentCount', 'dashboard', null, true),
   ('dashboard.recentTxn', 'dashboard', null, true),
@@ -407,10 +418,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.startJourney', 'dashboard', null, true),
   ('dashboard.startSub', 'dashboard', null, true),
   ('dashboard.subtitle', 'dashboard', null, true),
-  ('dashboard.summary', 'dashboard', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.summary', 'dashboard', null, true),
   ('dashboard.tipContent', 'dashboard', null, true),
   ('dashboard.title', 'dashboard', null, true),
   ('dashboard.total', 'dashboard', null, true),
@@ -802,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.passwordMismatch', 'prefs', null, false),
   ('prefs.passwordShort', 'prefs', null, false),
   ('prefs.preview', 'prefs', null, false),
-  ('prefs.removeAvatar', 'prefs', null, false),
+  ('prefs.removeAvatar', 'prefs', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('prefs.saved', 'prefs', null, false),
   ('prefs.signOutAll', 'prefs', null, false),
   ('prefs.themeSaved', 'prefs', null, false),
@@ -810,10 +821,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.uploadAvatar', 'prefs', null, false),
   ('prefs.weekStart', 'prefs', null, false),
   ('privacyx.deleteBtn', 'privacyx', null, false),
-  ('privacyx.deleteSub', 'privacyx', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('privacyx.deleteSub', 'privacyx', null, false),
   ('privacyx.deleteTitle', 'privacyx', null, false),
   ('privacyx.deleteType', 'privacyx', 'word', false),
   ('privacyx.deleteWord', 'privacyx', null, false),
@@ -1213,6 +1221,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.archived', 'ja', 'アーカイブしました'),
   ('catdetail.badgeAuto', 'ja', '自動分類'),
   ('catdetail.badgeManual', 'ja', '手動'),
+  ('catdetail.balancesAllTime', 'ja', '累計（全期間）'),
   ('catdetail.breadcrumb', 'ja', 'カテゴリ'),
   ('catdetail.budgetShort', 'ja', '予算 {{amount}}'),
   ('catdetail.confirmApply', 'ja', '確認して適用'),
@@ -1240,6 +1249,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.learnHistory', 'ja', '履歴から学習'),
   ('catdetail.matched', 'ja', '"{{kw}}" に一致'),
   ('catdetail.maxDepth', 'ja', '最大階層（{{n}}）に到達'),
+  ('catdetail.memberSpendCount', 'ja', '{{count}} 件'),
+  ('catdetail.memberSpendEmpty', 'ja', 'この期間の支出はありません'),
+  ('catdetail.memberSpendLine', 'ja', '{{count}} 件 · 負担 {{share}}'),
+  ('catdetail.memberSpendPlain', 'ja', '選択期間に誰がいくら支払ったか'),
+  ('catdetail.memberSpendShared', 'ja', '選択期間 · {{count}} 人で均等割り'),
+  ('catdetail.memberSpendTitle', 'ja', 'メンバー別の支出'),
   ('catdetail.membersCount', 'ja', '{{count}} 人のメンバー'),
   ('catdetail.mergeTitle', 'ja', 'カテゴリを統合'),
   ('catdetail.monthLabel', 'ja', '{{y}}年{{m}}月'),
@@ -1252,7 +1267,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opRegex', 'ja', '正規表現'),
   ('catdetail.opStartsWith', 'ja', 'で始まる'),
   ('catdetail.ownerBadge', 'ja', 'オーナー'),
-  ('catdetail.paidOwed', 'ja', '支払 {{paid}} · 負担 {{owed}}'),
+  ('catdetail.paidOwed', 'ja', '支払 {{paid}} · 負担すべき額 {{owed}}'),
   ('catdetail.recentTitle', 'ja', '最近のアクティビティ'),
   ('catdetail.restored', 'ja', '再開しました'),
   ('catdetail.ruleAdded', 'ja', 'ルールを追加しました'),
@@ -1263,10 +1278,11 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.rulesTitle', 'ja', '有効なルール'),
   ('catdetail.settleAll', 'ja', '精算'),
   ('catdetail.settleEven', 'ja', '全員精算済みです'),
-  ('catdetail.settleNone', 'ja', '計算できるメンバーデータがありません'),
+  ('catdetail.settleNone', 'ja', '精算する共有支出はまだありません'),
   ('catdetail.settleSub', 'ja', '{{count}} 件 · 合計 {{amount}}'),
   ('catdetail.settleTitle', 'ja', 'グループ支出の精算'),
   ('catdetail.sharedOff', 'ja', 'このカテゴリは共有されていません。編集から「共有カテゴリ」をオンにすると、メンバー間で費用を分けられます。'),
+  ('catdetail.sharedWith', 'ja', '{{count}} 人で共有'),
   ('catdetail.showing', 'ja', '{{shown}} / {{filtered}} 件表示 · 合計 {{total}} 件'),
   ('catdetail.sortName', 'ja', '名前順'),
   ('catdetail.sortSpend', 'ja', '支出順'),
@@ -1274,13 +1290,13 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.statAuto', 'ja', '自動一致'),
   ('catdetail.statAutoSub', 'ja', '{{pct}}% · 要確認 {{count}}'),
   ('catdetail.statAvg', 'ja', '1人あたり平均'),
-  ('catdetail.statAvgSub', 'ja', '{{count}} 人 · 均等割り'),
+  ('catdetail.statAvgSub', 'ja', '{{count}} 人で均等割り'),
   ('catdetail.statBudgetSub', 'ja', '{{pct}}% · 残り {{amount}}'),
   ('catdetail.statIncome', 'ja', '収入合計'),
   ('catdetail.statTotal', 'ja', '支出合計'),
   ('catdetail.statTxSub', 'ja', '{{count}} 件'),
   ('catdetail.statYouPaid', 'ja', 'あなたの支払い'),
-  ('catdetail.statYouPaidSub', 'ja', 'あなたの負担: {{amount}}'),
+  ('catdetail.statYouPaidSub', 'ja', 'あなたの均等負担: {{amount}}'),
   ('catdetail.suggest', 'ja', '候補: "{{kw}}"'),
   ('catdetail.tabSub', 'ja', 'サブグループ'),
   ('catdetail.testRules', 'ja', '未一致の取引で実行 ({{count}})'),
@@ -1506,7 +1522,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.periodLastYear', 'ja', '昨年'),
   ('dashboard.periodYesterday', 'ja', '昨日'),
   ('dashboard.prevPeriod', 'ja', '前期'),
-  ('dashboard.quickStats', 'ja', 'クイック統計'),
+  ('dashboard.quickStats', 'ja', 'クイック統計')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.ratio', 'ja', '収支比率'),
   ('dashboard.recentCount', 'ja', '件'),
   ('dashboard.recentTxn', 'ja', '最近の取引'),
@@ -1514,10 +1533,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.startJourney', 'ja', '財務管理を始めましょう'),
   ('dashboard.startSub', 'ja', 'CSVファイルをインポートするか、レシートをスキャンして分析を開始しましょう。'),
   ('dashboard.subtitle', 'ja', '収支の概要を確認しましょう'),
-  ('dashboard.summary', 'ja', '概要')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.summary', 'ja', '概要'),
   ('dashboard.tipContent', 'ja', 'グループにキーワードを設定すると、今後の取引の95%が自動的に分類されます。'),
   ('dashboard.title', 'ja', 'ダッシュボード'),
   ('dashboard.total', 'ja', '全'),
@@ -1909,7 +1925,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.passwordMismatch', 'ja', 'パスワードが一致しません'),
   ('prefs.passwordShort', 'ja', '8文字以上にしてください'),
   ('prefs.preview', 'ja', 'プレビュー'),
-  ('prefs.removeAvatar', 'ja', '削除'),
+  ('prefs.removeAvatar', 'ja', '削除')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.saved', 'ja', '設定を保存しました'),
   ('prefs.signOutAll', 'ja', '他のすべてのデバイスからログアウト'),
   ('prefs.themeSaved', 'ja', 'テーマを変更しました'),
@@ -1917,10 +1936,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'ja', '画像をアップロード'),
   ('prefs.weekStart', 'ja', '週の始まり'),
   ('privacyx.deleteBtn', 'ja', 'アカウントを完全に削除'),
-  ('privacyx.deleteSub', 'ja', 'あなたがオーナーの元帳はすべて削除され、他の人の元帳からは退出します。他のメンバーがいる元帳は、先にオーナー権限を移譲してください。元に戻せません。')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteSub', 'ja', 'あなたがオーナーの元帳はすべて削除され、他の人の元帳からは退出します。他のメンバーがいる元帳は、先にオーナー権限を移譲してください。元に戻せません。'),
   ('privacyx.deleteTitle', 'ja', 'アカウントを削除'),
   ('privacyx.deleteType', 'ja', '確認のため「{{word}}」と入力してください'),
   ('privacyx.deleteWord', 'ja', '削除'),
@@ -2320,6 +2336,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.archived', 'vi', 'Đã lưu trữ danh mục'),
   ('catdetail.badgeAuto', 'vi', 'Tự động phân loại'),
   ('catdetail.badgeManual', 'vi', 'Thủ công'),
+  ('catdetail.balancesAllTime', 'vi', 'Tính đến nay (mọi kỳ)'),
   ('catdetail.breadcrumb', 'vi', 'Danh mục'),
   ('catdetail.budgetShort', 'vi', 'NS {{amount}}'),
   ('catdetail.confirmApply', 'vi', 'Xác nhận Áp dụng'),
@@ -2347,6 +2364,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.learnHistory', 'vi', 'Học từ lịch sử'),
   ('catdetail.matched', 'vi', 'khớp "{{kw}}"'),
   ('catdetail.maxDepth', 'vi', 'Đạt cấp tối đa (Cấp {{n}})'),
+  ('catdetail.memberSpendCount', 'vi', '{{count}} giao dịch'),
+  ('catdetail.memberSpendEmpty', 'vi', 'Kỳ này chưa có chi tiêu'),
+  ('catdetail.memberSpendLine', 'vi', '{{count}} giao dịch · phần chia {{share}}'),
+  ('catdetail.memberSpendPlain', 'vi', 'Ai đã trả bao nhiêu trong kỳ đã chọn'),
+  ('catdetail.memberSpendShared', 'vi', 'Trong kỳ đã chọn · chia đều cho {{count}} người'),
+  ('catdetail.memberSpendTitle', 'vi', 'Chi tiêu theo thành viên'),
   ('catdetail.membersCount', 'vi', '{{count}} thành viên'),
   ('catdetail.mergeTitle', 'vi', 'Gộp danh mục'),
   ('catdetail.monthLabel', 'vi', 'Tháng {{m}}/{{y}}'),
@@ -2359,7 +2382,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opRegex', 'vi', 'khớp regex'),
   ('catdetail.opStartsWith', 'vi', 'bắt đầu bằng'),
   ('catdetail.ownerBadge', 'vi', 'chủ nhóm'),
-  ('catdetail.paidOwed', 'vi', 'đã trả {{paid}} · phần {{owed}}'),
+  ('catdetail.paidOwed', 'vi', 'đã trả {{paid}} · phải chịu {{owed}}'),
   ('catdetail.recentTitle', 'vi', 'Hoạt động gần đây'),
   ('catdetail.restored', 'vi', 'Đã bật lại danh mục'),
   ('catdetail.ruleAdded', 'vi', 'Đã thêm quy tắc'),
@@ -2370,10 +2393,11 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.rulesTitle', 'vi', 'Quy tắc đang hoạt động'),
   ('catdetail.settleAll', 'vi', 'Đối soát'),
   ('catdetail.settleEven', 'vi', 'Mọi người đã cân bằng'),
-  ('catdetail.settleNone', 'vi', 'Chưa có dữ liệu thành viên để tính toán'),
+  ('catdetail.settleNone', 'vi', 'Chưa có khoản chi chia sẻ nào để tính'),
   ('catdetail.settleSub', 'vi', '{{count}} giao dịch · tổng {{amount}}'),
   ('catdetail.settleTitle', 'vi', 'Đối soát chi tiêu nhóm'),
   ('catdetail.sharedOff', 'vi', 'Danh mục này chưa chia sẻ. Bật "Danh mục chia sẻ" trong Chỉnh sửa để chia chi phí giữa các thành viên.'),
+  ('catdetail.sharedWith', 'vi', 'Chia sẻ giữa {{count}} người'),
   ('catdetail.showing', 'vi', 'Hiển thị {{shown}} / {{filtered}} · Tổng {{total}} giao dịch'),
   ('catdetail.sortName', 'vi', 'Theo tên'),
   ('catdetail.sortSpend', 'vi', 'Theo chi tiêu'),
@@ -2381,13 +2405,13 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.statAuto', 'vi', 'Tự động khớp'),
   ('catdetail.statAutoSub', 'vi', '{{pct}}% · {{count}} cần xem lại'),
   ('catdetail.statAvg', 'vi', 'Trung bình / người'),
-  ('catdetail.statAvgSub', 'vi', '{{count}} thành viên · chia đều'),
+  ('catdetail.statAvgSub', 'vi', 'Chia đều cho {{count}} người'),
   ('catdetail.statBudgetSub', 'vi', '{{pct}}% · còn {{amount}}'),
   ('catdetail.statIncome', 'vi', 'Tổng thu nhập'),
   ('catdetail.statTotal', 'vi', 'Tổng chi tiêu'),
   ('catdetail.statTxSub', 'vi', '{{count}} giao dịch'),
   ('catdetail.statYouPaid', 'vi', 'Bạn đã trả'),
-  ('catdetail.statYouPaidSub', 'vi', 'Phần của bạn: {{amount}}'),
+  ('catdetail.statYouPaidSub', 'vi', 'Phần chia đều của bạn: {{amount}}'),
   ('catdetail.suggest', 'vi', 'Gợi ý: "{{kw}}"'),
   ('catdetail.tabSub', 'vi', 'Nhóm con'),
   ('catdetail.testRules', 'vi', 'Chạy thử trên giao dịch chưa khớp ({{count}})'),
@@ -2613,7 +2637,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.periodLastYear', 'vi', 'năm trước'),
   ('dashboard.periodYesterday', 'vi', 'hôm qua'),
   ('dashboard.prevPeriod', 'vi', 'kỳ trước'),
-  ('dashboard.quickStats', 'vi', 'Thống kê nhanh'),
+  ('dashboard.quickStats', 'vi', 'Thống kê nhanh')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.ratio', 'vi', 'Tỷ lệ thu/chi'),
   ('dashboard.recentCount', 'vi', 'giao dịch'),
   ('dashboard.recentTxn', 'vi', 'Giao dịch gần đây'),
@@ -2621,10 +2648,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.startJourney', 'vi', 'Bắt đầu hành trình tài chính'),
   ('dashboard.startSub', 'vi', 'Nhập các giao dịch đầu tiên để bắt đầu theo dõi chi tiêu của bạn.'),
   ('dashboard.subtitle', 'vi', 'Theo dõi dòng tiền & quản lý chi tiêu'),
-  ('dashboard.summary', 'vi', 'Tóm tắt')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.summary', 'vi', 'Tóm tắt'),
   ('dashboard.tipContent', 'vi', 'Đặt từ khóa cho danh mục để 95% giao dịch sau này được tự động phân loại.'),
   ('dashboard.title', 'vi', 'Tổng quan'),
   ('dashboard.total', 'vi', 'Tổng'),
@@ -3016,7 +3040,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.passwordMismatch', 'vi', 'Mật khẩu không khớp'),
   ('prefs.passwordShort', 'vi', 'Tối thiểu 8 ký tự'),
   ('prefs.preview', 'vi', 'Xem trước'),
-  ('prefs.removeAvatar', 'vi', 'Xoá'),
+  ('prefs.removeAvatar', 'vi', 'Xoá')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.saved', 'vi', 'Đã lưu cài đặt'),
   ('prefs.signOutAll', 'vi', 'Đăng xuất khỏi mọi thiết bị khác'),
   ('prefs.themeSaved', 'vi', 'Đã đổi giao diện'),
@@ -3024,10 +3051,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'vi', 'Tải ảnh lên'),
   ('prefs.weekStart', 'vi', 'Tuần bắt đầu từ'),
   ('privacyx.deleteBtn', 'vi', 'Xoá vĩnh viễn tài khoản'),
-  ('privacyx.deleteSub', 'vi', 'Các sổ bạn sở hữu sẽ bị xoá và bạn rời khỏi sổ của người khác. Sổ có thành viên khác cần chuyển quyền chủ sở hữu trước. Không thể hoàn tác.')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteSub', 'vi', 'Các sổ bạn sở hữu sẽ bị xoá và bạn rời khỏi sổ của người khác. Sổ có thành viên khác cần chuyển quyền chủ sở hữu trước. Không thể hoàn tác.'),
   ('privacyx.deleteTitle', 'vi', 'Xoá tài khoản'),
   ('privacyx.deleteType', 'vi', 'Nhập "{{word}}" để xác nhận'),
   ('privacyx.deleteWord', 'vi', 'XOA'),
@@ -3427,6 +3451,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.archived', 'en', 'Category archived'),
   ('catdetail.badgeAuto', 'en', 'Auto-classify'),
   ('catdetail.badgeManual', 'en', 'Manual'),
+  ('catdetail.balancesAllTime', 'en', 'All time to date'),
   ('catdetail.breadcrumb', 'en', 'Categories'),
   ('catdetail.budgetShort', 'en', 'Budget {{amount}}'),
   ('catdetail.confirmApply', 'en', 'Confirm'),
@@ -3454,6 +3479,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.learnHistory', 'en', 'Learned from history'),
   ('catdetail.matched', 'en', 'matched "{{kw}}"'),
   ('catdetail.maxDepth', 'en', 'Maximum depth reached (level {{n}})'),
+  ('catdetail.memberSpendCount', 'en', '{{count}} transactions'),
+  ('catdetail.memberSpendEmpty', 'en', 'No spending in this period'),
+  ('catdetail.memberSpendLine', 'en', '{{count}} transactions · share {{share}}'),
+  ('catdetail.memberSpendPlain', 'en', 'Who paid how much in the selected period'),
+  ('catdetail.memberSpendShared', 'en', 'Selected period · split equally by {{count}}'),
+  ('catdetail.memberSpendTitle', 'en', 'Spending by member'),
   ('catdetail.membersCount', 'en', '{{count}} members'),
   ('catdetail.mergeTitle', 'en', 'Merge category'),
   ('catdetail.monthLabel', 'en', '{{m}}/{{y}}'),
@@ -3466,7 +3497,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opRegex', 'en', 'matches regex'),
   ('catdetail.opStartsWith', 'en', 'starts with'),
   ('catdetail.ownerBadge', 'en', 'owner'),
-  ('catdetail.paidOwed', 'en', 'paid {{paid}} · share {{owed}}'),
+  ('catdetail.paidOwed', 'en', 'paid {{paid}} · should pay {{owed}}'),
   ('catdetail.recentTitle', 'en', 'Recent activity'),
   ('catdetail.restored', 'en', 'Category restored'),
   ('catdetail.ruleAdded', 'en', 'Rule added'),
@@ -3477,10 +3508,11 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.rulesTitle', 'en', 'Active rules'),
   ('catdetail.settleAll', 'en', 'Settle'),
   ('catdetail.settleEven', 'en', 'Everyone is settled up'),
-  ('catdetail.settleNone', 'en', 'No member data to calculate yet'),
+  ('catdetail.settleNone', 'en', 'No shared spending to settle yet'),
   ('catdetail.settleSub', 'en', '{{count}} transactions · {{amount}} total'),
   ('catdetail.settleTitle', 'en', 'Settle group spending'),
   ('catdetail.sharedOff', 'en', 'This category is not shared. Turn on "Shared category" in Edit to split costs between members.'),
+  ('catdetail.sharedWith', 'en', 'Shared by {{count}}'),
   ('catdetail.showing', 'en', 'Showing {{shown}} / {{filtered}} · {{total}} total'),
   ('catdetail.sortName', 'en', 'By name'),
   ('catdetail.sortSpend', 'en', 'By spend'),
@@ -3488,13 +3520,13 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.statAuto', 'en', 'Auto-matched'),
   ('catdetail.statAutoSub', 'en', '{{pct}}% · {{count}} to review'),
   ('catdetail.statAvg', 'en', 'Average / person'),
-  ('catdetail.statAvgSub', 'en', '{{count}} members · split equally'),
+  ('catdetail.statAvgSub', 'en', 'Split equally by {{count}}'),
   ('catdetail.statBudgetSub', 'en', '{{pct}}% · {{amount}} left'),
   ('catdetail.statIncome', 'en', 'Total income'),
   ('catdetail.statTotal', 'en', 'Total spent'),
   ('catdetail.statTxSub', 'en', '{{count}} transactions'),
   ('catdetail.statYouPaid', 'en', 'You paid'),
-  ('catdetail.statYouPaidSub', 'en', 'Your share: {{amount}}'),
+  ('catdetail.statYouPaidSub', 'en', 'Your equal share: {{amount}}'),
   ('catdetail.suggest', 'en', 'Suggestion: "{{kw}}"'),
   ('catdetail.tabSub', 'en', 'Subgroups'),
   ('catdetail.testRules', 'en', 'Run on unmatched transactions ({{count}})'),
@@ -3720,7 +3752,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.periodLastYear', 'en', 'last year'),
   ('dashboard.periodYesterday', 'en', 'yesterday'),
   ('dashboard.prevPeriod', 'en', 'prev period'),
-  ('dashboard.quickStats', 'en', 'Quick Stats'),
+  ('dashboard.quickStats', 'en', 'Quick Stats')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.ratio', 'en', 'Income/Expense ratio'),
   ('dashboard.recentCount', 'en', 'transactions'),
   ('dashboard.recentTxn', 'en', 'Recent Transactions'),
@@ -3728,10 +3763,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.startJourney', 'en', 'Start your financial journey'),
   ('dashboard.startSub', 'en', 'Import your first transactions to start tracking your spending.'),
   ('dashboard.subtitle', 'en', 'Track your cash flow & manage spending'),
-  ('dashboard.summary', 'en', 'Summary')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.summary', 'en', 'Summary'),
   ('dashboard.tipContent', 'en', 'Add keywords to your categories and 95% of future transactions are categorised automatically.'),
   ('dashboard.title', 'en', 'Dashboard'),
   ('dashboard.total', 'en', 'Total'),
@@ -4123,7 +4155,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.passwordMismatch', 'en', 'Passwords do not match'),
   ('prefs.passwordShort', 'en', 'At least 8 characters'),
   ('prefs.preview', 'en', 'Preview'),
-  ('prefs.removeAvatar', 'en', 'Remove'),
+  ('prefs.removeAvatar', 'en', 'Remove')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.saved', 'en', 'Settings saved'),
   ('prefs.signOutAll', 'en', 'Sign out of all other devices'),
   ('prefs.themeSaved', 'en', 'Theme updated'),
@@ -4131,10 +4166,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.uploadAvatar', 'en', 'Upload image'),
   ('prefs.weekStart', 'en', 'Week starts on'),
   ('privacyx.deleteBtn', 'en', 'Delete my account'),
-  ('privacyx.deleteSub', 'en', 'Ledgers you own are deleted and you leave the others. Transfer ownership of ledgers shared with other members first. This cannot be undone.')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('privacyx.deleteSub', 'en', 'Ledgers you own are deleted and you leave the others. Transfer ownership of ledgers shared with other members first. This cannot be undone.'),
   ('privacyx.deleteTitle', 'en', 'Delete account'),
   ('privacyx.deleteType', 'en', 'Type "{{word}}" to confirm'),
   ('privacyx.deleteWord', 'en', 'DELETE'),

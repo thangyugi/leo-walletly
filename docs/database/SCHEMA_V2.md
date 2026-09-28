@@ -1016,6 +1016,7 @@ Bộ migration nằm ở `supabase/migrations/` (bộ cũ đã được xoá kh�
 20260928000022_save_receipt.sql              save_receipt: hoá đơn quét → tách thành giao dịch theo danh mục của từng món (document_line_items.transaction_id)
 20260928000023_ui_texts_accounts_nav.sql     chuỗi dịch nav.accounts (mục Quản lý tài khoản ở sidebar)
 20260928000024_ui_texts_recurring_tips.sql   chuỗi tooltip cho công tắc / sửa / xoá ở trang Định kỳ
+20260928000025_member_balances_payers.sql  v_member_balances: người đã trả trong danh mục chia sẻ cũng được chia đều; câu chữ phần chia
 ```
 
 Sau khi đổi schema: `DATABASE_URL=... npm run db:types` để sinh lại `types/supabase.ts`; sau khi sửa `lib/i18n.ts`: `npm run db:i18n-seed`.

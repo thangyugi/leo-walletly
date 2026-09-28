@@ -57,6 +57,8 @@ export interface Transaction {
   needsReview: boolean
   notes: string | null
   paidByUserId: string | null
+  /** Who paid: paid_by_user_id, else who entered it (same rule as v_member_balances). */
+  payerId: string | null
   source: TransactionSource
   importRowId: string | null
   documentId: string | null
@@ -87,6 +89,7 @@ export function mapTransaction(row: TransactionRow & { transaction_tags?: { tag_
     needsReview: row.needs_review,
     notes: row.notes,
     paidByUserId: row.paid_by_user_id,
+    payerId: row.paid_by_user_id ?? row.created_by ?? null,
     source: row.source as TransactionSource,
     importRowId: row.import_row_id,
     documentId: row.document_id,
