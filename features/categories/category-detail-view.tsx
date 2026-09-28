@@ -98,7 +98,7 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
   ]
 
   return (
-    <div className="relative flex items-end px-[22px] pb-[18px] pt-[52px] text-white overflow-hidden"
+    <div className="relative flex items-end px-[22px] pb-[18px] pt-[52px] text-white overflow-hidden rounded-t-[14px]"
       style={{ background: `linear-gradient(135deg,${category.color}ee 0%,${category.color}88 100%)`, minHeight: 130 }}>
       <span className="absolute right-[-20px] top-[-20px] font-black font-mono opacity-[0.14] leading-none select-none pointer-events-none" style={{ fontSize: 170 }}>
         {initials(category.name)}
@@ -183,7 +183,7 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
         ))}
       </div>
       <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 ml-auto">
-        <DateNavigator value={picker} onChange={onPickerChange} lang={lang} />
+        <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
       </div>
     </div>
   )
@@ -955,7 +955,8 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           )}
         </div>
 
-        <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
+        {/* Not overflow-hidden: the period picker's popup has to reach past the card. */}
+        <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)]">
           <HeroCover category={category} memberNames={memberNames} canEdit={canEdit}
             onEdit={() => setForm({ initial: category })} onMerge={() => setMergeOpen(true)}
             onDelete={canDelete && !category.is_system ? () => setDeleting(category) : undefined} />

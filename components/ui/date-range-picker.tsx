@@ -413,11 +413,13 @@ export function DateRangePicker({
 // DateNavigator — ◀ | label | ▶ trigger
 // ------------------------------------------------------------------
 export function DateNavigator({
-  value, onChange, lang = 'en',
+  value, onChange, lang = 'en', align = 'center',
 }: {
   value: PickerValue
   onChange: (v: PickerValue) => void
   lang?: Lang
+  /** 'end' opens the popup leftwards from the right edge (for pickers near the page's right side). */
+  align?: 'center' | 'end'
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -491,7 +493,7 @@ export function DateNavigator({
       </div>
 
       {open && (
-        <div className="absolute left-1/2 -translate-x-1/2 top-full mt-2 z-[300] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl overflow-hidden animate-slide-in-up">
+        <div className={cn('absolute top-full mt-2 z-[300]', align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2', 'bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl overflow-hidden animate-slide-in-up')}>
           <DateRangePicker
             value={value}
             onChange={(v) => { onChange(v); setOpen(false) }}
