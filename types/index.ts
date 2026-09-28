@@ -158,6 +158,7 @@ export type PaymentInstrumentType =
 /** Known payment providers in Japan & Vietnam */
 export type PaymentProvider =
   | 'rakuten_pay'
+  | 'rakuten_card'
   | 'paypay'
   | 'paypay_card'
   | 'apple_pay'
@@ -212,6 +213,7 @@ export type JournalEntryType =
 /** Import providers */
 export type ImportProvider =
   | 'rakuten_pay'
+  | 'rakuten_card'
   | 'paypay'
   | 'paypay_card'
   | 'smbc'

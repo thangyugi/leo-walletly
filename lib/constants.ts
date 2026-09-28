@@ -37,10 +37,10 @@ export interface ProviderMeta {
 export const PROVIDERS: ProviderMeta[] = [
   {
     value: 'rakuten_pay', label: 'Rakuten Pay', color: '#BF0000', initials: 'RP',
-    region: 'jp', fileTypes: ['csv', 'pdf'],
-    descJa: '極楽ペイ 取引明細 CSV / PDF',
-    descVi: 'Lịch sử giao dịch Rakuten Pay CSV / PDF',
-    descEn: 'Rakuten Pay transaction history CSV / PDF',
+    region: 'jp', fileTypes: ['csv'],
+    descJa: '楽天ペイ 取引明細 CSV',
+    descVi: 'Lịch sử giao dịch Rakuten Pay CSV',
+    descEn: 'Rakuten Pay transaction history CSV',
   },
   {
     value: 'paypay', label: 'PayPay', color: '#FF0033', initials: 'PP',
@@ -55,6 +55,13 @@ export const PROVIDERS: ProviderMeta[] = [
     descJa: 'PayPayクレジットカード明細 CSV',
     descVi: 'Sao kê thẻ PayPay CSV',
     descEn: 'PayPay Credit Card statement CSV',
+  },
+  {
+    value: 'rakuten_card', label: '楽天カード', color: '#BF0000', initials: 'RC',
+    region: 'jp', fileTypes: ['csv', 'pdf'],
+    descJa: '楽天カード ご利用明細 CSV / PDF',
+    descVi: 'Sao kê thẻ Rakuten CSV / PDF',
+    descEn: 'Rakuten Card statement CSV / PDF',
   },
   {
     value: 'smbc', label: '三井住友銀行', color: '#00A040', initials: 'SM',
@@ -401,10 +408,10 @@ export interface ImportProviderMeta {
 export const IMPORT_PROVIDERS_V3: ImportProviderMeta[] = [
   {
     value: 'rakuten_pay', label: 'Rakuten Pay', color: '#BF0000', initials: 'RP',
-    region: 'jp', fileTypes: ['csv', 'pdf'],
-    descJa: '極楽ペイ 取引明細 CSV / PDF',
-    descVi: 'Lịch sử giao dịch Rakuten Pay CSV / PDF',
-    descEn: 'Rakuten Pay transaction history CSV / PDF',
+    region: 'jp', fileTypes: ['csv'],
+    descJa: '楽天ペイ 取引明細 CSV',
+    descVi: 'Lịch sử giao dịch Rakuten Pay CSV',
+    descEn: 'Rakuten Pay transaction history CSV',
     paymentRail: 'rakuten_pay',
   },
   {

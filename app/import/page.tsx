@@ -193,8 +193,12 @@ export default function ImportPage() {
     try {
       let code: string = 'generic_csv'
       let head = ''
+      // A PDF says which statement it is only once read (楽天カード / PayPay),
+      // so parse it first and take the account from what was recognised.
+      let pdfRes: ImportResult | null = null
       if (f.name.toLowerCase().endsWith('.pdf')) {
-        code = providerCode !== 'generic_csv' ? providerCode : 'paypay'
+        pdfRes = await parseFile(f, 'paypay')
+        code = pdfRes.rows.length > 0 && providers.some((p) => p.code === pdfRes!.provider) ? pdfRes.provider : 'paypay'
       } else {
         head = await readHead(f)
         const guessed = autoDetectProvider(head.split('\n')[0].split(',').map((h) => h.trim()))
@@ -220,7 +224,7 @@ export default function ImportPage() {
       const { data: prev } = await supabase.from('import_jobs').select('created_at').eq('account_id', accId).eq('checksum', checksum).eq('status', 'completed').limit(1).maybeSingle()
       if (prev) setPreviousJob(prev.created_at)
 
-      const res = await parseFile(f, code as PaymentProvider, mapOverride)
+      const res = pdfRes ?? await parseFile(f, code as PaymentProvider, mapOverride)
       setResult(res)
       if (res.rows.length === 0) setError(res.errors.join('\n') || t.import.errorNoTxns)
       else await buildRows(res, accId)

@@ -2,7 +2,8 @@ import type { ImportResult, LegacyTransaction, ParsedImportRow, PaymentProvider 
 import { parseRakutenPayCSV, decodeShiftJIS } from './rakuten_pay'
 import { parsePayPayCSV } from './paypay'
 import { parsePayPayCardCSV } from './paypay_card'
-import { parseRakutenPayPDF } from './rakuten_pay_pdf'
+import { parseRakutenCardCSV } from './rakuten_card'
+import { parseRakutenCardPDF } from './rakuten_card_pdf'
 import { parsePayPayPDF } from './paypay_pdf'
 import { parseSMBCCSV } from './smbc'
 import { parseMUFGCSV } from './mufg'
@@ -24,7 +25,7 @@ export function detectFormat(file: File): FileFormat {
 
 // Auto-detect provider from CSV headers
 export function autoDetectProvider(headers: string[]): PaymentProvider | null {
-  const hs = headers.map((h) => h.toLowerCase())
+  const hs = headers.map((h) => h.trim().replace(/^\uFEFF/, '').replace(/^"|"$/g, '').trim().toLowerCase())
   const has = (...kws: string[]) => kws.every((k) => hs.some((h) => h.includes(k)))
 
   if (has('利用日時') && hs.some((h) => h.includes('利用金額'))) return 'rakuten_pay'
@@ -32,6 +33,8 @@ export function autoDetectProvider(headers: string[]): PaymentProvider | null {
   // PayPay's English-language export (Date & Time, Amount Outgoing (Yen), ...)
   if (has('date & time') && has('amount outgoing (yen)')) return 'paypay'
   if (hs.some((h) => h.includes('利用日/キャンセル日')) || (has('利用店名') && has('支払区分'))) return 'paypay_card'
+  // 楽天カード (e-NAVI): 利用日 + 利用店名・商品名 + 支払方法
+  if (has('利用店名・商品名') && has('支払方法') && hs.some((h) => h === '利用日')) return 'rakuten_card'
   if (hs.some((h) => h.includes('お取り扱い内容') || h.includes('お支払い金額'))) return 'smbc'
   if (has('摘要内容') && has('支払い金額')) return 'mufg'
   if (hs.some((h) => h.includes('ngày gd') || h.includes('phát sinh'))) return 'vcb'
@@ -83,9 +86,9 @@ export async function parseFile(
   try {
     if (format === 'pdf') {
       try {
-        const rakutenRes = await parseRakutenPayPDF(file)
+        const rakutenRes = await parseRakutenCardPDF(file)
         if (rakutenRes.transactions.length > 0) {
-          return { success: true, rows: toRows(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_pay' }
+          return { success: true, rows: toRows(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_card' }
         }
       } catch (e) {
         // ignore and try next
@@ -102,7 +105,7 @@ export async function parseFile(
 
       return {
         success: false, rows: [], fileName: file.name, provider: 'generic_csv',
-        errors: ['PDFの解析に失敗しました。対応しているのは楽天PayとPayPayの利用明細のみです。'],
+        errors: ['PDFの解析に失敗しました。対応しているのは楽天カードとPayPayの利用明細のみです。'],
       }
     }
 
@@ -112,6 +115,7 @@ export async function parseFile(
       'rakuten_pay': parseRakutenPayCSV,
       'paypay':      parsePayPayCSV,
       'paypay_card': parsePayPayCardCSV,
+      'rakuten_card': parseRakutenCardCSV,
       'smbc':        parseSMBCCSV,
       'mufg':        parseMUFGCSV,
       'vcb':         parseVCBCSV,
