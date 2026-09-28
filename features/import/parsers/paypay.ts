@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 /**
@@ -34,23 +34,6 @@ function parseYen(raw: string): number | null {
   if (!cleaned) return null
   const n = parseFloat(cleaned)
   return isNaN(n) ? null : n
-}
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/コンビニ|スーパー|マート|食|レストラン|カフェ|ファミマ|ローソン|セブン|吉野家|すき家|マクドナルド|ケンタ|pizza|すし|cafe|restaurant|food|grocery/.test(d))
-    return 'food'
-  if (/電車|バス|鉄道|jr|タクシー|ガソリン|駐車|エキ|metro|subway|交通|新幹線|taxi|train|transit/.test(d))
-    return 'transport'
-  if (/amazon|楽天|ヤフー|zara|ユニクロ|ネット|通販|ショッピング|shopping|store|shop/.test(d))
-    return 'shopping'
-  if (/映画|ゲーム|娯楽|カラオケ|ネットフリックス|netflix|spotify|アミューズ|game|cinema|entertainment/.test(d))
-    return 'entertainment'
-  if (/薬|ドラッグ|病院|クリニック|医|健康|fitness|gym|ジム|pharmacy|hospital|clinic/.test(d))
-    return 'health'
-  if (/電気|ガス|水道|光熱|通信|ネット|電話|ntt|softbank|docomo|au|mobile|internet|utility/.test(d))
-    return 'utilities'
-  return 'other'
 }
 
 function resolveType(typeStr: string, amount: number): TransactionType {
@@ -158,7 +141,6 @@ export function parsePayPayCSV(text: string): {
       description: parsed.description,
       amount: parsed.amount,
       type: resolveType(parsed.typeStr, parsed.amount),
-      category: guessCategory(parsed.description),
       provider: 'paypay',
       rawData: row,
     })

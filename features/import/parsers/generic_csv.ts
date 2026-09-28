@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
+import type { LegacyTransaction as Transaction } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 // Generic CSV parser with intelligent column auto-detection
@@ -89,19 +89,6 @@ function parseNumber(s: string): number | null {
   return isNaN(n) ? null : n
 }
 
-// --- Category heuristics (multilingual) --------------------------------------
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/食|ăn|uống|food|restaurant|cafe|コンビニ|スーパー|supermarket|grocery/.test(d)) return 'food'
-  if (/交通|transport|grab|taxi|train|電車|バス|xe|xăng|bay|flight/.test(d)) return 'transport'
-  if (/shop|shopping|amazon|lazada|shopee|楽天|mua|store|mall/.test(d)) return 'shopping'
-  if (/entertainment|game|ゲーム|movie|phim|netflix|spotify|karaoke|娯楽/.test(d)) return 'entertainment'
-  if (/health|gym|医|病院|thuốc|pharmacy|clinic|khám/.test(d)) return 'health'
-  if (/electric|water|gas|internet|phone|điện|nước|通信|電気/.test(d)) return 'utilities'
-  return 'other'
-}
-
 // --- Main export -------------------------------------------------------------
 
 export function parseGenericCSV(
@@ -166,7 +153,6 @@ export function parseGenericCSV(
       description: desc || 'Unknown',
       amount,
       type: amount >= 0 ? 'income' : 'expense',
-      category: guessCategory(desc),
       provider: 'generic_csv',
       rawData: Object.fromEntries(Object.entries(row).map(([k, v]) => [k, String(v)])),
     })

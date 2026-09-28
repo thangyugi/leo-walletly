@@ -258,7 +258,6 @@ export interface LegacyTransaction {
   date: string
   description: string
   amount: number
-  category: LegacyCategory
   provider: string
   rawData?: any
   type: TransactionType
@@ -861,8 +860,6 @@ export interface ParsedImportRow {
   type: 'expense' | 'income'
   description: string
   externalId?: string
-  /** Legacy parser guess (food, transport, …) — mapped to a category slug. */
-  categoryHint?: string
   rawLine?: string
   values: { name: string; value: string }[]
 }

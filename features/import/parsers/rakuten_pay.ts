@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
+import type { LegacyTransaction as Transaction } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 /**
@@ -17,22 +17,6 @@ function findValue(row: Record<string, string>, keys: string[]): string {
     if (row[key] !== undefined && row[key] !== '') return row[key].trim()
   }
   return ''
-}
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/コンビニ|スーパー|マート|食|レストラン|カフェ|ファミマ|ローソン|セブン|吉野家|すき家|マクドナルド|ケンタ|pizza|すし/.test(d))
-    return 'food'
-  if (/電車|バス|鉄道|jr|タクシー|ガソリン|駐車|エキ|metro|subway|交通|新幹線/.test(d))
-    return 'transport'
-  if (/amazon|楽天|ヤフー|zara|ユニクロ|ネット|通販|ショッピング|shopping/.test(d))
-    return 'shopping'
-  if (/映画|ゲーム|娯楽|カラオケ|ネットフリックス|netflix|spotify|アミューズ/.test(d))
-    return 'entertainment'
-  if (/薬|ドラッグ|病院|クリニック|医|健康|fitness|gym|ジム/.test(d)) return 'health'
-  if (/電気|ガス|水道|光熱|通信|ネット|電話|ntt|softbank|docomo|au/.test(d))
-    return 'utilities'
-  return 'other'
 }
 
 function parseAmount(raw: string): number {
@@ -81,7 +65,6 @@ export function parseRakutenPayCSV(text: string): {
       description: descRaw || '不明',
       amount,
       type: amount >= 0 ? 'refund' : 'expense',
-      category: guessCategory(descRaw),
       provider: 'rakuten_pay',
       note: noteRaw || undefined,
       rawData: row,

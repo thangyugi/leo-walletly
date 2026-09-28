@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, TransactionType } from '@/types'
 import { generateId, normalizeDate } from '@/lib/utils'
 
 // 三井住友銀行 (SMBC) CSV — two common column layouts
@@ -19,17 +19,6 @@ function pick(row: Record<string, string>, keys: string[]): string {
 function parseYen(s: string): number | null {
   const n = parseFloat(s.replace(/[¥,，￥\s円]/g, ''))
   return isNaN(n) ? null : n
-}
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/食|レストラン|コンビニ|スーパー|カフェ|ランチ|弁当|grocery/.test(d)) return 'food'
-  if (/電車|バス|jr|タクシー|交通|ＪＲ|鉄道|駐車/.test(d)) return 'transport'
-  if (/amazon|楽天|ショッピング|通販|購入/.test(d)) return 'shopping'
-  if (/映画|ゲーム|娯楽|netflix|spotify/.test(d)) return 'entertainment'
-  if (/薬|病院|クリニック|ジム|医療/.test(d)) return 'health'
-  if (/電気|ガス|水道|通信|携帯|ntt|softbank|docomo|au/.test(d)) return 'utilities'
-  return 'other'
 }
 
 function resolveType(debit: number | null, credit: number | null): TransactionType {
@@ -83,7 +72,6 @@ export function parseSMBCCSV(text: string): { transactions: Transaction[]; error
       description: desc || '三井住友銀行',
       amount,
       type: resolveType(debit, credit),
-      category: guessCategory(desc),
       provider: 'smbc',
       rawData: { date: dateRaw, desc, debit: debitRaw, credit: creditRaw },
     })

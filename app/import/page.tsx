@@ -12,7 +12,6 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { parseFile, detectColumnsFromCSV, autoDetectProvider } from '@/features/import/parsers'
 import type { ColumnMapping } from '@/features/import/parsers'
-import { resolveCategoryId } from '@/features/categories/store'
 import { useAccountsStore } from '@/features/accounts/store'
 import { useMasterStore } from '@/features/master/store'
 import { useTransactionsStore } from '@/stores/transactions'
@@ -25,7 +24,8 @@ import type { ImportResult, PaymentProvider, ParsedImportRow } from '@/types'
 import type { Tables } from '@/types/supabase'
 
 type PageStep = 'setup' | 'review'
-type Row = ParsedImportRow & { selected: boolean; categoryId: string; duplicate: boolean }
+/** ruleCategoryId: what the ledger's own rules give the row (the preview's default). */
+type Row = ParsedImportRow & { selected: boolean; categoryId: string; ruleCategoryId: string; duplicate: boolean }
 
 function fmtDate(d: string): string {
   const [y, m, dd] = d.split('-')
@@ -171,16 +171,18 @@ export default function ImportPage() {
   }
 
   async function buildRows(res: ImportResult, accId: string) {
-    const base: Row[] = res.rows.map((r) => ({
-      ...r,
-      selected: true,
-      duplicate: false,
-      categoryId: resolveCategoryId(r.categoryHint, categories)
-        ?? categories.find((c) => c.is_active && c.type === r.type && c.keywords.some((k) => r.description.toLowerCase().includes(k.toLowerCase())))?.id
-        ?? '',
-    }))
     const payload = res.rows.map((r) => ({ row_number: r.rowNumber, date: r.date, amount: r.amount, type: r.type, description: r.description, external_id: r.externalId ?? null }))
-    const { data: dups } = await supabase.rpc('check_import_duplicates', { p_account_id: accId, p_rows: payload })
+    // Categories come only from the ledger's rules (keywords / active rules),
+    // exactly as the import will apply them; anything else stays uncategorized.
+    const [{ data: dups }, { data: matched }] = await Promise.all([
+      supabase.rpc('check_import_duplicates', { p_account_id: accId, p_rows: payload }),
+      ledger ? supabase.rpc('preview_category_rules', { p_ledger_id: ledger.id, p_account_id: accId, p_rows: payload }) : Promise.resolve({ data: [] }),
+    ])
+    const ruleBy = new Map((matched ?? []).map((m) => [m.row_number, m.category_id]))
+    const base: Row[] = res.rows.map((r) => {
+      const ruleCategoryId = ruleBy.get(r.rowNumber) ?? ''
+      return { ...r, selected: true, duplicate: false, categoryId: ruleCategoryId, ruleCategoryId }
+    })
     const dupSet = new Set((dups ?? []).map((d) => d.row_number))
     setRows(base.map((r) => (dupSet.has(r.rowNumber) ? { ...r, duplicate: true, selected: false } : r)))
   }
@@ -252,7 +254,10 @@ export default function ImportPage() {
         p_file_size: file.size,
         p_rows: rows.map((r) => ({
           row_number: r.rowNumber, date: r.date, amount: r.amount, type: r.type, description: r.description,
-          external_id: r.externalId ?? null, category_id: r.categoryId || null, selected: r.selected,
+          external_id: r.externalId ?? null,
+          // Left to the import's own rule pass (recorded as a rule match) unless picked by hand.
+          category_id: r.categoryId && r.categoryId !== r.ruleCategoryId ? r.categoryId : null,
+          selected: r.selected,
           raw_line: r.rawLine ?? null, values: r.values,
         })),
       })

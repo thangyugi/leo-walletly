@@ -1,4 +1,4 @@
-import type { LegacyTransaction as Transaction, LegacyCategory as Category, TransactionType } from '@/types'
+import type { LegacyTransaction as Transaction, TransactionType } from '@/types'
 import { generateId } from '@/lib/utils'
 import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-utils'
 
@@ -10,17 +10,6 @@ import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-u
  */
 
 const DATE_ROW_RE = /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/コンビニ|スーパー|マート|食|レストラン|カフェ|ファミマ|ローソン|セブン|吉野家|マクドナルド/.test(d)) return 'food'
-  if (/電車|バス|鉄道|jr|タクシー|ガソリン|駐車|交通|新幹線/.test(d)) return 'transport'
-  if (/amazon|楽天|ヤフー|ユニクロ|通販|ショッピング/.test(d)) return 'shopping'
-  if (/映画|ゲーム|娯楽|カラオケ|netflix|spotify/.test(d)) return 'entertainment'
-  if (/薬|ドラッグ|病院|クリニック|医|健康|ジム/.test(d)) return 'health'
-  if (/電気|ガス|水道|通信|ネット|電話|ntt|softbank|docomo|au/.test(d)) return 'utilities'
-  return 'other'
-}
 
 function resolveType(typeStr: string, amount: number): TransactionType {
   if (/チャージ|入金|受取|ポイント付与/.test(typeStr)) return 'income'
@@ -87,7 +76,6 @@ export async function parsePayPayPDF(file: File): Promise<{
       description,
       amount,
       type: resolveType(typeKw, amount),
-      category: guessCategory(description),
       provider: 'paypay',
       rawData: { line: text.slice(0, 120) },
     })

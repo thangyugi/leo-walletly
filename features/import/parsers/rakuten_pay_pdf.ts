@@ -1,4 +1,4 @@
-import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
+import type { LegacyTransaction as Transaction } from '@/types'
 import { generateId } from '@/lib/utils'
 import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-utils'
 
@@ -20,17 +20,6 @@ import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-u
 
 // Detect transaction rows by leading date
 const TXN_DATE_RE = /^(\d{4}\/\d{2}\/\d{2})\b/
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/モバイル|通信|ネット|電話|ntt|softbank|docomo|au|jcom|ｊ.ｃｏｍ/.test(d)) return 'utilities'
-  if (/コンビニ|スーパー|マート|食|レストラン|カフェ|ファミマ|ローソン|セブン|吉野家|バーミヤン|ヤマザキ|デイリー|弁当|定食/.test(d)) return 'food'
-  if (/電車|バス|鉄道|jr|タクシー|ガソリン|駐車|交通|新幹線|ﾃｨｿﾞﾆｰ|suica|pasmo/.test(d)) return 'transport'
-  if (/amazon|楽天|ヤフー|ユニクロ|通販|ショッピング|ポケモン|ｾﾝﾀ|センター|オンライン/.test(d)) return 'shopping'
-  if (/映画|ゲーム|娯楽|カラオケ|netflix|spotify|アミューズ|テーマパーク/.test(d)) return 'entertainment'
-  if (/薬|ドラッグ|病院|クリニック|医|健康|ジム|フィットネス/.test(d)) return 'health'
-  return 'other'
-}
 
 /** Extract all integers from a string */
 function extractIntegers(text: string): number[] {
@@ -127,7 +116,6 @@ export async function parseRakutenPayPDF(file: File): Promise<{
       description: parsed.storeName || '不明',
       amount: -parsed.billing,
       type: 'expense',
-      category: guessCategory(parsed.storeName),
       provider: 'rakuten_pay',
       rawData: {
         line: line.text.slice(0, 120),

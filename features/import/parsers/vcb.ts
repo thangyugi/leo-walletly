@@ -1,5 +1,5 @@
 import Papa from 'papaparse'
-import type { LegacyTransaction as Transaction, LegacyCategory as Category } from '@/types'
+import type { LegacyTransaction as Transaction } from '@/types'
 import { generateId } from '@/lib/utils'
 
 // Vietcombank CSV export
@@ -30,17 +30,6 @@ function parseVND(s: string): number | null {
   if (!cleaned) return null
   const n = parseFloat(cleaned)
   return isNaN(n) ? null : n
-}
-
-function guessCategory(desc: string): Category {
-  const d = desc.toLowerCase()
-  if (/ăn|uống|food|grab food|baemin|shopee food|nhà hàng|quán/.test(d)) return 'food'
-  if (/grab|taxi|xe|bus|metro|xăng|vé tàu|tàu|bay|máy bay/.test(d)) return 'transport'
-  if (/shopee|lazada|tiki|sendo|mua|shop|siêu thị/.test(d)) return 'shopping'
-  if (/netflix|spotify|game|phim|giải trí|karaoke/.test(d)) return 'entertainment'
-  if (/thuốc|bệnh viện|khám|phòng khám|sức khỏe|gym/.test(d)) return 'health'
-  if (/điện|nước|gas|internet|wifi|điện thoại|viettel|vnpt|mobifone/.test(d)) return 'utilities'
-  return 'other'
 }
 
 export function parseVCBCSV(text: string): { transactions: Transaction[]; errors: string[] } {
@@ -93,7 +82,6 @@ export function parseVCBCSV(text: string): { transactions: Transaction[]; errors
       description: desc || 'Vietcombank',
       amount,
       type: amount >= 0 ? 'income' : 'expense',
-      category: guessCategory(desc),
       provider: 'vcb',
       rawData: { date: dateRaw, desc, amount: amountRaw || debitRaw || creditRaw },
     })

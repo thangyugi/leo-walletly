@@ -3902,6 +3902,18 @@ export type Database = {
         }
         Returns: string
       }
+      preview_category_rules: {
+        Args: {
+          p_ledger_id: string
+          p_account_id: string
+          p_rows: Json
+        }
+        Returns: {
+            row_number: number
+            category_id: string
+            rule_id: string
+          }[]
+      }
       record_session: {
         Args: {
           p_device_name: string

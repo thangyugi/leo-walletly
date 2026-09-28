@@ -54,11 +54,6 @@ async function readFileText(file: File): Promise<string> {
   return text.replace(/^﻿/, '') // strip BOM
 }
 
-const LEGACY_CATEGORY_SLUG: Record<string, string> = {
-  food: 'food', transport: 'transport', shopping: 'shopping', entertainment: 'entertainment',
-  health: 'health', utilities: 'utilities', other: 'other-expense',
-}
-
 /** Legacy parser output → ParsedImportRow (positive amount + type, raw cells kept). */
 function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
   return legacy
@@ -72,7 +67,6 @@ function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
         amount: Math.abs(tx.amount),
         type: tx.amount >= 0 ? 'income' : 'expense',
         description: tx.description || '—',
-        categoryHint: tx.amount < 0 ? LEGACY_CATEGORY_SLUG[tx.category] : undefined,
         rawLine: values.map((v) => v.value).join(','),
         values,
       }
