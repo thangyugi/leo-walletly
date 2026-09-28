@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryTreeOptions } from '@/features/categories/types'
 import { useEffect, useMemo, useState } from 'react'
 import { Plus, Trash2, Pencil, Power, RefreshCw, X, Check, SkipForward } from 'lucide-react'
 import { toast } from 'sonner'
@@ -90,7 +91,7 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
             ) : (
               <Select label={t.recurring.category} value={form.categoryId ?? ''} onChange={(e) => set('categoryId', e.target.value || null)}>
                 <option value="">{t.txform.uncategorized}</option>
-                {cats.map((c) => <option key={c.id} value={c.id}>{c.parent_id ? '— ' : ''}{c.name}</option>)}
+                {categoryTreeOptions(cats).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
               </Select>
             )}
           </div>

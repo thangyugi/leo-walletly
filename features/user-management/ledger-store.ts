@@ -90,6 +90,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
       if (prefs?.language_code) {
         useSettingsStore.getState().setLang(prefs.language_code as Lang, { persistRemote: false })
       }
+      useSettingsStore.getState().setLocale(prefs?.locale ?? '')
 
       set({
         userId: user.id,
@@ -106,6 +107,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
         // Catch up recurring transactions for this ledger (pg_cron does it nightly
         // in production; this makes them appear immediately in dev too).
         void supabase.rpc('run_due_recurring', { p_ledger_id: current.id })
+          .then(({ error }) => { if (error) console.warn('run_due_recurring failed:', error.message) })
       }
     } catch (err: any) {
       set({ error: err.message, initialized: true, loading: false })
@@ -124,6 +126,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
       await supabase.from('user_preferences').update({ default_ledger_id: ledgerId }).eq('user_id', userId)
     }
     void supabase.rpc('run_due_recurring', { p_ledger_id: ledgerId })
+      .then(({ error }) => { if (error) console.warn('run_due_recurring failed:', error.message) })
   },
 
   can: (permission) => get().permissions.has(permission),
@@ -182,6 +185,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     if (error) throw new Error(error.message)
     set({ preferences: data })
     if (patch.language_code) useSettingsStore.getState().setLang(patch.language_code as Lang, { persistRemote: false })
+    if (patch.locale !== undefined) useSettingsStore.getState().setLocale(patch.locale ?? '')
   },
 }))
 

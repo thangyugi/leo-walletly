@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import type { Database } from '@/types/supabase'
 
-// Typed against schema v2.1 (supabase/migrations_v2). Regenerate the types with
+// Typed against schema v2.1 (supabase/migrations). Regenerate the types with
 // `DATABASE_URL=... node scripts/gen-db-types.mjs` after any migration change.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321'
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'missing-anon-key'

@@ -1,5 +1,6 @@
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
+import { useSettingsStore } from '@/stores/settings'
 import type { LegacyCategory, TransactionType } from '@/types'
 
 export function cn(...inputs: ClassValue[]) {
@@ -9,14 +10,9 @@ export function cn(...inputs: ClassValue[]) {
 // Re-export money formatters for convenience
 export { formatCurrency, formatMoney, getAmountSign } from '@/lib/money'
 
+/** Date in the user's regional order (see localeOf). */
 export function formatDate(dateStr: string): string {
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return dateStr
-  return new Intl.DateTimeFormat('ja-JP', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d)
+  return formatDayLocale(dateStr, useSettingsStore.getState().lang)
 }
 
 export function formatDateLocale(dateStr: string, locale = 'ja-JP'): string {
@@ -27,6 +23,35 @@ export function formatDateLocale(dateStr: string, locale = 'ja-JP'): string {
     month: '2-digit',
     day: '2-digit',
   }).format(d)
+}
+
+/**
+ * Intl locale for date/month labels: the user's regional format
+ * (Settings → Localization, e.g. vi-VN, en-US, en-GB, ja-JP) when set,
+ * otherwise the default region of the UI language.
+ */
+export function localeOf(lang: string): string {
+  const regional = useSettingsStore.getState().locale
+  if (regional) return regional
+  return lang === 'ja' ? 'ja-JP' : lang === 'vi' ? 'vi-VN' : 'en-US'
+}
+
+/** Month label in the regional order: ja-JP 2026/04, vi-VN 04/2026, en-US/en-GB 04/2026. */
+export function formatMonthLocale(year: number, month1: number, lang: string): string {
+  // Take the language's numeric day format (25/09/2026, 2026/09/25, 09/25/2026) and drop
+  // the day, so the month keeps the same order and separator as dates do. (Intl's own
+  // year+month format is not numeric everywhere, e.g. vi gives "tháng 04, 2026".)
+  const parts = new Intl.DateTimeFormat(localeOf(lang), { year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date(year, month1 - 1, 1))
+  const kept = parts.filter((p) => p.type === 'year' || p.type === 'month')
+  const sep = parts.find((p) => p.type === 'literal')?.value ?? '/'
+  return kept.map((p) => p.value).join(sep)
+}
+
+/** Day label (YYYY-MM-DD in) in the regional order: ja-JP 2026/09/25, vi-VN and en-GB 25/09/2026, en-US 09/25/2026. */
+export function formatDayLocale(isoDate: string, lang: string): string {
+  const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
+  if (!y || !m || !d) return isoDate
+  return new Intl.DateTimeFormat(localeOf(lang), { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(y, m - 1, d))
 }
 
 export function formatDateRelative(dateStr: string): string {

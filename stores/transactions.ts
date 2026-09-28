@@ -200,18 +200,26 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
   },
 
   fetchRange: async (ledgerId, start, end, limit = 5000) => {
-    const { data, error } = await supabase
-      .from('transactions')
-      .select(SELECT)
-      .eq('ledger_id', ledgerId)
-      .is('deleted_at', null)
-      .neq('status', 'void')
-      .gte('transaction_date', start)
-      .lte('transaction_date', end)
-      .order('transaction_date', { ascending: false })
-      .limit(limit)
-    fail(error)
-    return (data ?? []).map(mapTransaction)
+    // PostgREST returns at most max_rows (1000) per request, so page through the range.
+    const PAGE = 1000
+    const rows: Parameters<typeof mapTransaction>[0][] = []
+    for (let from = 0; from < limit; from += PAGE) {
+      const { data, error } = await supabase
+        .from('transactions')
+        .select(SELECT)
+        .eq('ledger_id', ledgerId)
+        .is('deleted_at', null)
+        .neq('status', 'void')
+        .gte('transaction_date', start)
+        .lte('transaction_date', end)
+        .order('transaction_date', { ascending: false })
+        .order('id')
+        .range(from, Math.min(from + PAGE, limit) - 1)
+      fail(error)
+      rows.push(...(data ?? []))
+      if (!data || data.length < PAGE) break
+    }
+    return rows.map(mapTransaction)
   },
 
   fetchRecent: async (ledgerId, limit = 8) => {
@@ -324,9 +332,18 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .select(SELECT)
       .single()
     fail(error)
-    await writeTagsAndShares(data!.id, input)
+    let row = data!
+    // Keyword rules also classify transactions entered by hand (not only imports).
+    if (!input.categoryId && input.transactionType !== 'transfer') {
+      const { data: n } = await supabase.rpc('apply_category_rules', { p_ledger_id: ledgerId, p_transaction_ids: [row.id], p_import_only: false })
+      if (n) {
+        const { data: again } = await supabase.from('transactions').select(SELECT).eq('id', row.id).single()
+        if (again) row = again
+      }
+    }
+    await writeTagsAndShares(row.id, { ...input, categoryId: row.category_id })
     set((s) => ({ revision: s.revision + 1 }))
-    return mapTransaction(data!)
+    return mapTransaction(row)
   },
 
   update: async (id, input) => {

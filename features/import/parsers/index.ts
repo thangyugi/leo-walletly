@@ -29,6 +29,8 @@ export function autoDetectProvider(headers: string[]): PaymentProvider | null {
 
   if (has('利用日時') && hs.some((h) => h.includes('利用金額'))) return 'rakuten_pay'
   if (has('取引日時') && has('残高') && hs.some((h) => h.includes('支払い金額'))) return 'paypay'
+  // PayPay's English-language export (Date & Time, Amount Outgoing (Yen), ...)
+  if (has('date & time') && has('amount outgoing (yen)')) return 'paypay'
   if (hs.some((h) => h.includes('利用日/キャンセル日')) || (has('利用店名') && has('支払区分'))) return 'paypay_card'
   if (hs.some((h) => h.includes('お取り扱い内容') || h.includes('お支払い金額'))) return 'smbc'
   if (has('摘要内容') && has('支払い金額')) return 'mufg'

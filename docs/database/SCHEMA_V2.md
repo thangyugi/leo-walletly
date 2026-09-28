@@ -988,7 +988,7 @@ Chỉ INSERT qua trigger/RPC.
 
 ## K. Thứ tự file migration
 
-Bộ migration mới nằm ở `supabase/migrations_v2/` (bộ cũ trong `supabase/migrations/` giữ nguyên). Khi dựng lại DB: xoá DB cũ, thay nội dung `supabase/migrations/` bằng các file trong `migrations_v2/`, rồi `supabase db reset` / `supabase db push`.
+Bộ migration nằm ở `supabase/migrations/` (bộ cũ đã được xoá khỏi repo). Dựng lại DB: `supabase db reset` (cục bộ) hoặc `supabase db push` (project trên cloud, sau khi xoá DB cũ).
 
 ```
 20260928000001_extensions_and_helpers.sql   citext, pgcrypto, pg_trgm; is_client_request, sha256_hex, tg_touch_audit
@@ -1009,6 +1009,9 @@ Bộ migration mới nằm ở `supabase/migrations_v2/` (bộ cũ trong `supaba
 20260928000015_storage_cron.sql             bucket avatars / receipts / imports / exports + pg_cron (bỏ qua nếu không có)
 20260928000016_seed_translations.sql        sinh từ lib/i18n.ts: node scripts/generate-translation-seed.mjs
 20260928000017_seed_master.sql              ngôn ngữ, tiền tệ, quốc gia, múi giờ, loại tài khoản, nhà cung cấp, loại sổ, vai trò, quyền, thông báo, mẫu danh mục
+20260928000018_account_opening_date.sql     opening_date của tài khoản (khi chưa có số dư đầu kỳ) lùi theo giao dịch sớm nhất
 ```
 
-Sau khi đổi schema: `DATABASE_URL=... node scripts/gen-db-types.mjs` để sinh lại `types/supabase.ts`.
+Sau khi đổi schema: `DATABASE_URL=... npm run db:types` để sinh lại `types/supabase.ts`; sau khi sửa `lib/i18n.ts`: `npm run db:i18n-seed`.
+
+Lưu ý PostgREST: mỗi request trả tối đa `max_rows` (1000, cả trên cloud). Truy vấn có thể vượt mức này phải đọc theo trang (`.range()`), như `get_ui_texts` và `fetchRange`.

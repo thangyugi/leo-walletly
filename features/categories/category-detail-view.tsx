@@ -853,7 +853,6 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const [month, setMonth] = React.useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1))
   const [form, setForm] = React.useState<null | { initial: Partial<Category> }>(null)
   const [mergeOpen, setMergeOpen] = React.useState(false)
-  const [nested, setNested] = React.useState<string | null>(null)
   const [deleting, setDeleting] = React.useState<Category | null>(null)
   const [editingTx, setEditingTx] = React.useState<Transaction | null>(null)
 
@@ -906,7 +905,8 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     { value: 'members', label: t.catui.tabMembers, count: category.is_shared ? settlement.catMembers.length : undefined },
     ...(canEdit ? [{ value: 'settings' as DetailTab, label: t.catui.tabSettings }] : []),
   ]
-  const openSub = (c: Category) => (isNested ? router.push(categoryHref(c)) : setNested(c.id))
+  // A subgroup opens as its own page (/categories/[slug]) with its own breadcrumb.
+  const openSub = (c: Category) => router.push(categoryHref(c))
   const back = () => (onClose ? onClose() : router.push(ancestors.length ? categoryHref(ancestors[ancestors.length - 1]) : '/categories'))
 
   async function executeDelete() {
@@ -1016,13 +1016,6 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
 
       <Modal isOpen={!!form} onClose={() => setForm(null)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding isNested={isNested}>
         {form && <CategoryForm onClose={() => setForm(null)} initialData={form.initial} />}
-      </Modal>
-      <Modal isOpen={!!nested} onClose={() => setNested(null)} className="!bg-transparent !border-0 !shadow-none max-w-5xl" noPadding isNested={isNested}>
-        {nested && (
-          <div className="bg-[var(--color-bg-canvas)] rounded-[24px] shadow-2xl overflow-hidden w-full border border-[var(--color-border-subtle)]">
-            <CategoryDetailView categoryId={nested} isNested onClose={() => setNested(null)} />
-          </div>
-        )}
       </Modal>
       <MergeCategoryModal isOpen={mergeOpen} onClose={() => setMergeOpen(false)} sourceCategory={category} categories={categories}
         onSuccess={(targetId: string) => {

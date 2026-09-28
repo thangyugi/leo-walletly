@@ -5,17 +5,17 @@ import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { Target, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 import Link from 'next/link'
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { SegmentedControl } from '@/components/ui/tabs'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
+import { formatMonthLocale } from '@/lib/utils'
 import { CHART_COLORS, CHART_AXIS, CHART_TOOLTIP, CHART_MARGINS } from '@/components/charts/chart-theme'
 
 function ChartTooltip({ active, payload, label }: any) {
@@ -56,20 +56,21 @@ export default function AnalyticsPage() {
 
   const hasData = transactions.length > 0
 
+  // Always six months (empty months show as zero), labelled in the language's local month format.
   const monthlyData = useMemo(() => {
-    const map: Record<string, { label: string; expense: number; income: number }> = {}
-    transactions.forEach((tx) => {
-      const [y, m] = tx.transactionDate.split('-')
-      const key    = `${y}-${m}`
-      const label = lang === 'ja' ? `${y}/${m}` : (lang === 'vi' ? `${m}/${y}` : `${m}/${y}`)
-      if (!map[key]) map[key] = { label, expense: 0, income: 0 }
-      if (tx.transactionType === 'expense') map[key].expense += tx.baseAmount
-      else if (tx.transactionType === 'income') map[key].income  += tx.baseAmount
+    const now = new Date()
+    const rows = Array.from({ length: 6 }, (_, i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() - 5 + i, 1)
+      return { key: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`, label: formatMonthLocale(d.getFullYear(), d.getMonth() + 1, lang), expense: 0, income: 0 }
     })
-    return Object.entries(map)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(-6)
-      .map(([, v]) => v)
+    const byKey = new Map(rows.map((r) => [r.key, r]))
+    transactions.forEach((tx) => {
+      const row = byKey.get(tx.transactionDate.slice(0, 7))
+      if (!row) return
+      if (tx.transactionType === 'expense') row.expense += tx.baseAmount
+      else if (tx.transactionType === 'income') row.income += tx.baseAmount
+    })
+    return rows.map(({ label, expense, income }) => ({ label, expense, income }))
   }, [transactions, lang])
 
   // Expense by top-level category (children roll up into their parent).

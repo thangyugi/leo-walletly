@@ -82,3 +82,24 @@ export interface MemberBalance {
 export type Group = Category
 export type GroupTreeNode = CategoryTreeNode
 export type GroupBalance = CategoryBalance
+
+/**
+ * Options for a category <select>: each parent followed by its children (any depth),
+ * children indented with "— " per level. Categories whose parent is filtered out
+ * are shown as roots.
+ */
+export function categoryTreeOptions(categories: Category[]): { id: string; name: string }[] {
+  const ids = new Set(categories.map((c) => c.id))
+  const bySort = [...categories].sort((a, b) => a.sort_order - b.sort_order || a.name.localeCompare(b.name))
+  const out: { id: string; name: string }[] = []
+  const walk = (parentId: string | null, depth: number) => {
+    for (const c of bySort) {
+      const isRoot = !c.parent_id || !ids.has(c.parent_id)
+      if (parentId === null ? !isRoot : c.parent_id !== parentId) continue
+      out.push({ id: c.id, name: '— '.repeat(depth) + c.name })
+      walk(c.id, depth + 1)
+    }
+  }
+  walk(null, 0)
+  return out
+}

@@ -11,7 +11,7 @@ import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
-import { cn } from '@/lib/utils'
+import { cn, formatDayLocale, formatMonthLocale } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 
 function monthKey(year: number, month: number) {
@@ -66,7 +66,7 @@ export default function CalendarPage() {
     income:  monthTxns.reduce((s, t) => t.transactionType === 'income' ? s + t.baseAmount : s, 0),
   }), [monthTxns])
 
-  const monthLabel = lang === 'ja' ? `${year}年 ${month + 1}月` : (lang === 'vi' ? `Tháng ${month + 1}/${year}` : `Month ${month + 1}/${year}`)
+  const monthLabel = formatMonthLocale(year, month + 1, lang)
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -158,7 +158,7 @@ export default function CalendarPage() {
             <Card padding="none">
               <CardHeader>
                 <CardTitle>
-                  {selected.replace(/-/g, '/')} · {selectedTxns.length} {lang === 'vi' ? 'giao dịch' : (lang === 'ja' ? '件' : 'items')}
+                  {formatDayLocale(selected, lang)} · {selectedTxns.length} {lang === 'vi' ? 'giao dịch' : (lang === 'ja' ? '件' : 'items')}
                 </CardTitle>
               </CardHeader>
               <div className="px-2 py-1">

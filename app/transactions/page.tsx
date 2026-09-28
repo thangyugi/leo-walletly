@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryTreeOptions } from '@/features/categories/types'
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
@@ -24,7 +25,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { supabase } from '@/lib/supabase'
-import { cn, toLocalISODate } from '@/lib/utils'
+import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 
@@ -64,10 +65,7 @@ function getInitials(text: string): string {
   return text.slice(0, 2).toUpperCase()
 }
 
-function fmtDateDMY(d: string): string {
-  const [y, m, day] = d.split('T')[0].split('-')
-  return day ? `${day}/${m}/${y}` : d
-}
+const fmtDateDMY = (d: string) => formatDate(d)
 
 const EMPTY: PeriodSummary = { income: 0, expense: 0, net: 0, count: 0, expenseCount: 0, incomeCount: 0 }
 const AVATAR_COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6']
@@ -205,7 +203,7 @@ function FilterBar() {
           <Select label={t.transactions.labelCategory} value={filters.categoryId} onChange={(e) => setFilters({ categoryId: e.target.value })}>
             <option value="all">{t.common.all}</option>
             <option value="none">{t.txform.uncategorized}</option>
-            {categories.filter((c) => c.is_active).map((c) => <option key={c.id} value={c.id}>{c.parent_id ? '— ' : ''}{c.name}</option>)}
+            {categoryTreeOptions(categories.filter((c) => c.is_active)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
           </Select>
           <Select label={t.dashboard.users} value={filters.paidByUserId} onChange={(e) => setFilters({ paidByUserId: e.target.value })}>
             <option value="all">{t.common.all}</option>
@@ -391,7 +389,7 @@ function BulkBar({ ids, total, onDone }: { ids: string[]; total: number; onDone:
 
   const options = action === 'account'
     ? accounts.filter((a) => !a.isArchived).map((a) => ({ id: a.id, name: a.name }))
-    : categories.filter((c) => c.is_active).map((c) => ({ id: c.id, name: (c.parent_id ? '— ' : '') + c.name }))
+    : categoryTreeOptions(categories.filter((c) => c.is_active))
 
   return (
     <div className="flex items-center gap-3 px-4 py-3 bg-[var(--color-interactive-primary)] rounded-xl text-white animate-slide-in-up" role="toolbar">

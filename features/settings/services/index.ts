@@ -78,7 +78,7 @@ export const SettingsService = {
   },
 
   async getDataRequests(userId: string): Promise<DataRequest[]> {
-    const { data, error } = await supabase.from('data_requests').select('*').eq('user_id', userId).order('created_at', { ascending: false })
+    const { data, error } = await supabase.from('data_requests').select('*').eq('user_id', userId).order('requested_at', { ascending: false })
     fail(error)
     return data ?? []
   },

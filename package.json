@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:types": "node scripts/gen-db-types.mjs",
+    "db:i18n-seed": "node scripts/generate-translation-seed.mjs"
   },
   "dependencies": {
     "@google/genai": "^1.52.0",

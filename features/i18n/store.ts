@@ -34,7 +34,17 @@ export const useI18nStore = create<I18nState>((set, get) => ({
     const cacheKey = `${lang}:${ledgerId ?? '-'}`
     if (!force && (get().loadedKey === cacheKey || get().loading)) return
     set({ loading: true })
-    const { data, error } = await supabase.rpc('get_ui_texts', { p_language: lang, p_ledger_id: ledgerId })
+    // PostgREST caps every response at max_rows (1000 by default, also on hosted
+    // Supabase), and a language has more texts than that, so read it in pages.
+    const PAGE = 1000
+    let data: { key: string; value: string; is_user_editable: boolean; source: string }[] | null = []
+    let error: unknown = null
+    for (let from = 0; ; from += PAGE) {
+      const res = await supabase.rpc('get_ui_texts', { p_language: lang, p_ledger_id: ledgerId }).order('key').range(from, from + PAGE - 1)
+      if (res.error || !res.data) { error = res.error; data = null; break }
+      data.push(...res.data)
+      if (res.data.length < PAGE) break
+    }
     if (error || !data) {
       // Offline / DB not reachable: the static lib/i18n.ts copy stays in use.
       set({ loading: false, loadedKey: cacheKey })

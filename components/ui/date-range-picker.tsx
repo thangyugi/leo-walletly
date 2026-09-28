@@ -454,7 +454,8 @@ export function DateNavigator({
     onChange({ start: ns, end: ne, mode, label: buildLabel(ns, ne, mode, lang) })
   }
 
-  const label = value.label || buildLabel(value.start, value.end, value.mode, lang)
+  // Always rebuild so the label follows a language change (value.label was built for the old language).
+  const label = buildLabel(value.start, value.end, value.mode, lang)
 
   return (
     <div className="relative" ref={ref}>

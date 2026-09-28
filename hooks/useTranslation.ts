@@ -28,6 +28,8 @@ function applyFlat(base: Translations, flat: Record<string, { value: string }>):
 
 export function useTranslation() {
   const lang = useSettingsStore((s) => s.lang)
+  // Re-render translated screens when the regional date format changes too.
+  useSettingsStore((s) => s.locale)
   const texts = useI18nStore((s) => s.texts)
 
   const t = useMemo(() => applyFlat(getTranslations(lang), texts), [lang, texts])

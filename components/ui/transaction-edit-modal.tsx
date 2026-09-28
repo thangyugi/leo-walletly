@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryTreeOptions } from '@/features/categories/types'
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { X, Trash2, Save } from 'lucide-react'
@@ -70,12 +71,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   const amountNum = Number(amount.replace(/,/g, ''))
 
   const categoryOptions = useMemo(() => {
-    const ofType = categories.filter((c) => c.is_active && c.type === type)
-    const roots = ofType.filter((c) => !c.parent_id || !ofType.some((p) => p.id === c.parent_id))
-    return roots.flatMap((r) => [
-      { id: r.id, label: r.name },
-      ...ofType.filter((c) => c.parent_id === r.id).map((c) => ({ id: c.id, label: `— ${c.name}` })),
-    ])
+    return categoryTreeOptions(categories.filter((c) => c.is_active && c.type === type)).map((c) => ({ id: c.id, label: c.name }))
   }, [categories, type])
 
   async function addTag() {

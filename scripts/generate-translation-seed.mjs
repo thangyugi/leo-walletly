@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Generates supabase/migrations_v2/20260928000016_seed_translations.sql from lib/i18n.ts.
+// Generates supabase/migrations/20260928000016_seed_translations.sql from lib/i18n.ts.
 //
 //   node scripts/generate-translation-seed.mjs
 //
@@ -81,6 +81,6 @@ for (const l of langs) {
   }
 }
 
-const out = path.join(root, 'supabase/migrations_v2/20260928000016_seed_translations.sql')
+const out = path.join(root, 'supabase/migrations/20260928000016_seed_translations.sql')
 writeFileSync(out, lines.join('\n'))
 console.log(`Wrote ${keys.length} keys × ${langs.length} languages → ${path.relative(root, out)}`)

@@ -13,7 +13,7 @@ import {
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
-import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { DateNavigator, buildLabel, defaultPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore, type PeriodSummary } from '@/stores/transactions'
@@ -22,7 +22,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { CHART_COLORS, CHART_AXIS, CHART_MARGINS } from '@/components/charts/chart-theme'
-import { cn, toLocalISODate } from '@/lib/utils'
+import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 
@@ -59,10 +59,7 @@ function getInitials(text: string): string {
   return text.slice(0, 2).toUpperCase()
 }
 
-function fmtDateDMY(d: string): string {
-  const [y, m, day] = d.split('T')[0].split('-')
-  return day ? `${day}/${m}/${y}` : d
-}
+const fmtDateDMY = (d: string) => formatDate(d)
 
 const EMPTY: PeriodSummary = { income: 0, expense: 0, net: 0, count: 0, expenseCount: 0, incomeCount: 0 }
 
@@ -522,7 +519,7 @@ export default function DashboardPage() {
               <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1 truncate">
                 {t.dashboard.summary}
               </p>
-              <p className="text-[11px] text-[var(--color-text-quaternary)] mb-3 truncate">{picker.label}</p>
+              <p className="text-[11px] text-[var(--color-text-quaternary)] mb-3 truncate">{buildLabel(picker.start, picker.end, picker.mode, lang)}</p>
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.inflow}</span>

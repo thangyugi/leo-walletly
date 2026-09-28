@@ -1,5 +1,6 @@
 'use client'
 
+import { categoryTreeOptions } from '@/features/categories/types'
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
@@ -468,7 +469,7 @@ export default function ImportPage() {
                           className="h-7 max-w-[160px] rounded-md border border-[var(--color-border-subtle)] bg-transparent text-xs text-[var(--color-text-secondary)] px-1"
                         >
                           <option value="">{t.txform.uncategorized}</option>
-                          {categories.filter((c) => c.is_active && c.type === r.type).map((c) => <option key={c.id} value={c.id}>{c.parent_id ? '— ' : ''}{c.name}</option>)}
+                          {categoryTreeOptions(categories.filter((c) => c.is_active && c.type === r.type)).map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">

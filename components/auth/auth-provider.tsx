@@ -59,6 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.setItem('lw-session-recorded', '1')
       const d = describeDevice()
       void supabase.rpc('record_session', { p_device_name: d.name, p_device_type: d.type, p_browser: d.browser, p_os: d.os })
+        .then(({ error }) => { if (error) console.warn('record_session failed:', error.message) })
     }
   }, [user, ledgerReady, loadMaster, loadNotifications])
 

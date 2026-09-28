@@ -11,7 +11,7 @@ import { useTransactionsStore } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
-import { cn, formatDate } from '@/lib/utils'
+import { cn, formatDate, formatMonthLocale } from '@/lib/utils'
 import type { Category } from './types'
 import type { Transaction } from '@/types/domain'
 
@@ -165,7 +165,7 @@ export function ClassifyPage() {
   const ready = groups.filter((g) => choice[g.key]).reduce((s, g) => s + g.txns.length, 0)
   const expense = pending.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
   const income = pending.filter((x) => x.transactionType === 'income').reduce((s, x) => s + x.baseAmount, 0)
-  const monthLabel = new Date(year, month - 1, 1).toLocaleDateString(lang, { year: 'numeric', month: 'long' })
+  const monthLabel = formatMonthLocale(year, month, lang)
   const shift = (d: number) => {
     const dt = new Date(year, month - 1 + d, 1)
     setYear(dt.getFullYear()); setMonth(dt.getMonth() + 1)
