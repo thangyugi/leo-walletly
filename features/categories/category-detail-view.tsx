@@ -369,25 +369,41 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
 }
 
 // ── Linked accounts ──────────────────────────────────────────
-function LinkedAccountsSection({ txns, accounts }: { txns: Transaction[]; accounts: Account[] }) {
+function LinkedAccountsSection({ txns, accounts, selected, onSelect }: {
+  txns: Transaction[]
+  accounts: Account[]
+  /** Account whose transactions the activity list is narrowed to. */
+  selected: string | null
+  onSelect: (id: string | null) => void
+}) {
   const { t } = useTranslation()
   const { format } = useMoney()
   const { members } = useLedgerData()
-  const nameOf = (uid: string | null | undefined) => { const m = members.find((x) => x.user_id === uid); return m?.user?.display_name || m?.user?.email || '—' }
+  const me = useLedgerStore((s) => s.userId)
+  const nameOf = (uid: string | null | undefined) => uid === me ? t.catdetail.you : (() => { const m = members.find((x) => x.user_id === uid); return m?.user?.display_name || m?.user?.email || '—' })()
   const byAccount = new Map<string, { amount: number; count: number; payer: string | null }>()
   for (const x of txns) {
     const cur = byAccount.get(x.accountId) ?? { amount: 0, count: 0, payer: x.payerId }
     cur.amount += x.baseAmount; cur.count += 1
     byAccount.set(x.accountId, cur)
   }
-  const rows = [...byAccount.entries()].map(([id, v]) => {
+  const base = [...byAccount.entries()].map(([id, v]) => {
     const a = accounts.find((x) => x.id === id)
     const meta = accountMeta(a)
-    // Someone else's account: same names are common ("Cash"), so say whose it is.
-    const owner = a ? (a.isMine === false ? a.ownerId : null) : v.payer
-    return { id, ...v, ...meta, owner: owner ? nameOf(owner) : null, label: a ? meta.label : t.catdetail.otherAccount }
+    const ownerId = a ? (a.isMine === false ? a.ownerId ?? null : me) : v.payer
+    return { id, ...v, ...meta, ownerId, mine: !!a && a.isMine !== false, label: a ? meta.label : t.catdetail.otherAccount }
   }).sort((a, b) => b.amount - a.amount)
+  // Several people's money here: every row says whose account it is.
+  const multi = new Set(base.map((r) => r.ownerId)).size > 1
+  // Same provider (two "Cash") → same colour; tell them apart by the person's colour instead.
+  const seen = new Map<string, number>()
+  for (const r of base) seen.set(r.color, (seen.get(r.color) ?? 0) + 1)
+  const rows = base.map((r) => {
+    const person = colorFor(r.ownerId ?? '', members)
+    return { ...r, person, bar: (seen.get(r.color) ?? 0) > 1 ? person.color : r.color }
+  })
   const grand = rows.reduce((s, r) => s + r.amount, 0)
+  const pct = (n: number) => (grand > 0 ? Math.round((n / grand) * 100) : 0)
 
   return (
     <section className={card}>
@@ -395,52 +411,52 @@ function LinkedAccountsSection({ txns, accounts }: { txns: Transaction[]; accoun
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catdetail.accountsTitle}</h3>
         <span className="text-[12px] text-[var(--color-text-tertiary)]">· {rows.length}</span>
         <span className="flex-1" />
-        <Link href="/accounts" aria-label={t.catui.linkAccount} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-tertiary)]">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z" /></svg>
-        </Link>
-      </div>
-      <div className="divide-y divide-[var(--color-border-subtle)]">
-        {rows.length === 0 ? <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">{t.catui.noData}</div> : rows.map((r) => (
-          <div key={r.id} className="flex items-center gap-3 px-[18px] py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
-            <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white text-[11px] font-bold shrink-0" style={{ background: r.color }}>{r.logo === '?' ? <Lock className="w-3.5 h-3.5" /> : r.logo}</div>
-            <div className="flex-1 min-w-0">
-              <div className="text-[13px] font-medium text-[var(--color-text-primary)] leading-snug truncate">{r.label}</div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] flex items-center gap-1.5 min-w-0">
-                <span className="font-mono shrink-0">{fill(t.catdetail.statTxSub, { count: r.count })}</span>
-                {r.owner && (
-                  <span className="inline-flex items-center gap-1 min-w-0 px-1.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)]" title={t.catdetail.otherAccountTip}>
-                    <Lock className="w-2.5 h-2.5 shrink-0" /><span className="truncate">{r.owner}</span>
-                  </span>
-                )}
-              </div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="text-[10px] text-[var(--color-text-quaternary)]">{t.catdetail.spent}</div>
-              <div className="text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">{format(r.amount)}</div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="px-[18px] py-3 border-t border-[var(--color-border-subtle)]">
-        <Link href="/accounts" className="w-full flex items-center justify-center gap-1.5 text-xs font-medium px-3 py-2 rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-primary)]">
-          <Plus className="w-3 h-3" /> {t.catui.linkAccount}
+        <Link href="/accounts" aria-label={t.catui.linkAccount} title={t.catui.linkAccount} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors text-[var(--color-text-tertiary)]">
+          <Plus className="w-3.5 h-3.5" />
         </Link>
       </div>
       {rows.length > 0 && (
-        <div className="px-[18px] py-[10px] pb-[14px] border-t border-[var(--color-border-subtle)]">
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-1.5">{t.catdetail.distribution}</div>
-          <div className="flex h-2 rounded-full overflow-hidden bg-[var(--color-bg-sunken)]">
-            {rows.map((r) => <div key={r.id} style={{ width: `${grand > 0 ? Math.round((r.amount / grand) * 100) : 0}%`, background: r.color }} />)}
-          </div>
-          <div className="flex items-center gap-2.5 flex-wrap mt-2">
-            {rows.map((r) => (
-              <span key={r.id} className="flex items-center gap-1 text-[10px] text-[var(--color-text-tertiary)] font-mono">
-                <span className="w-2 h-2 rounded-full inline-block" style={{ background: r.color }} />{r.logo === '?' ? '' : r.logo}{r.owner ? `${r.logo === '?' ? '' : ' · '}${r.owner}` : ''} {grand > 0 ? Math.round((r.amount / grand) * 100) : 0}%
-              </span>
-            ))}
+        <div className="px-[18px] pt-3">
+          <div className="flex h-2 rounded-full overflow-hidden bg-[var(--color-bg-sunken)] gap-px">
+            {rows.map((r) => <div key={r.id} title={`${r.label}${multi ? ` · ${nameOf(r.ownerId)}` : ''} ${pct(r.amount)}%`} style={{ width: `${pct(r.amount)}%`, background: r.bar, opacity: selected && selected !== r.id ? 0.35 : 1 }} />)}
           </div>
         </div>
       )}
+      <div className="py-1.5">
+        {rows.length === 0 ? <div className="px-[18px] py-3 text-[12px] text-[var(--color-text-tertiary)]">{t.catui.noData}</div> : rows.map((r) => {
+          const on = selected === r.id
+          return (
+            <button key={r.id} type="button" aria-pressed={on} onClick={() => onSelect(on ? null : r.id)} title={t.catdetail.accountFilterTip}
+              className={cn('w-full flex items-center gap-3 px-[18px] py-2 text-left transition-colors border-l-2',
+                on ? 'bg-[var(--color-bg-sunken)] border-[var(--color-interactive-primary)]' : 'border-transparent hover:bg-[var(--color-bg-sunken)]')}>
+              <span className="relative shrink-0">
+                <span className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white text-[11px] font-bold" style={{ background: r.color }}>
+                  {r.logo === '?' ? <Lock className="w-3.5 h-3.5" /> : r.logo}
+                </span>
+                {multi && (
+                  <span className="absolute -right-1.5 -bottom-1.5 w-[18px] h-[18px] rounded-full ring-2 ring-white flex items-center justify-center text-[8px] font-bold"
+                    style={{ background: r.person.bg, color: r.person.color }}>{initials(nameOf(r.ownerId))}</span>
+                )}
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="flex items-center gap-1.5 text-[13px] font-medium text-[var(--color-text-primary)] leading-snug min-w-0">
+                  <span className="truncate">{r.label}</span>
+                  {!r.mine && <Lock className="w-3 h-3 shrink-0 text-[var(--color-text-quaternary)]" aria-label={t.catdetail.otherAccountTip} />}
+                </span>
+                <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-text-tertiary)] min-w-0">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: r.bar }} />
+                  {multi && <span className="truncate font-medium" style={{ color: r.person.color }}>{nameOf(r.ownerId)}</span>}
+                  <span className="font-mono shrink-0">{multi && '· '}{fill(t.catdetail.statTxSub, { count: r.count })}</span>
+                </span>
+              </span>
+              <span className="text-right shrink-0">
+                <span className="block text-[13px] font-semibold font-tabular text-[var(--color-text-primary)]">{format(r.amount)}</span>
+                <span className="block text-[10px] text-[var(--color-text-quaternary)] font-mono">{pct(r.amount)}%</span>
+              </span>
+            </button>
+          )
+        })}
+      </div>
     </section>
   )
 }
@@ -638,7 +654,10 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
 }
 
 // ── Recent transactions ──────────────────────────────────────
-function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onViewAll }: {
+function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onViewAll, filterLabel, onClearFilter }: {
+  /** Narrowed to one account (picked in "Linked accounts"). */
+  filterLabel?: string | null
+  onClearFilter?: () => void
   category: Category
   subs: Category[]
   all: Category[]
@@ -666,7 +685,7 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
   })
   const reviewCount = rows.filter((r) => r.kind === 'review').length
   const filtered = tab === 'all' ? rows : rows.filter((r) => r.kind === tab)
-  const shown = filtered.slice(0, 20)
+  const shown = filtered.slice(0, onViewAll ? 8 : 20)
   const badge = {
     auto: { label: t.catdetail.txAuto, tip: t.catdetail.txAutoTip, cls: 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' },
     review: { label: t.catui.needsReview, tip: t.catdetail.txReviewTip, cls: 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]' },
@@ -678,6 +697,11 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
       <div className={sectionHead}>
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catdetail.recentTitle}</h3>
         <span className="text-[12px] text-[var(--color-text-tertiary)]">· {fill(t.catdetail.statTxSub, { count: txns.length })}</span>
+        {filterLabel && (
+          <button onClick={onClearFilter} className="inline-flex items-center gap-1 text-[11px] font-medium pl-2 pr-1.5 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]" aria-label={`${t.common.close} ${filterLabel}`}>
+            {filterLabel}<X className="w-3 h-3" />
+          </button>
+        )}
         <span className="flex-1" />
         <div className="inline-flex bg-[var(--color-bg-sunken)] rounded-[7px] p-0.5" role="radiogroup">
           {([['all', t.catui.tabAll], ['auto', t.catdetail.txAuto], ['review', t.catui.needsReview]] as const).map(([v, l]) => (
@@ -969,6 +993,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const [mergeOpen, setMergeOpen] = React.useState(false)
   const [deleting, setDeleting] = React.useState<Category | null>(null)
   const [editingTx, setEditingTx] = React.useState<Transaction | null>(null)
+  const [accountFilter, setAccountFilter] = React.useState<string | null>(null)
 
   const category = categories.find((c) => c.id === categoryId)
   const subs = React.useMemo(() => categories.filter((c) => c.parent_id === categoryId), [categories, categoryId])
@@ -1040,8 +1065,17 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
       onOpen={openSub} onEdit={(c) => setForm({ initial: c })} onDelete={(c) => setDeleting(c)} />
   )
   const keywordSection = <KeywordManagerSection category={category} subs={subs} txns={txns} uncategorized={uncategorized} canEdit={canEdit} />
+  // Keep the two columns about the same height: with few recent rows the shared
+  // side (spend / settle / balances) is the taller one, so accounts go left.
+  const accountsLeft = category.is_shared && Math.min(txns.length, 8) < 6
+  const accountsSection = (
+    <LinkedAccountsSection txns={txns} accounts={[...accounts, ...otherAccounts]} selected={accountFilter} onSelect={setAccountFilter} />
+  )
+  const filterLabel = accountFilter ? ([...accounts, ...otherAccounts].find((a) => a.id === accountFilter)?.name ?? t.catdetail.otherAccount) : null
   const recent = (withViewAll: boolean) => (
-    <RecentTransactions category={category} subs={subs} all={categories} txns={txns} canEdit={canEdit} onOpen={setEditingTx}
+    <RecentTransactions category={category} subs={subs} all={categories} canEdit={canEdit} onOpen={setEditingTx}
+      txns={accountFilter ? txns.filter((x) => x.accountId === accountFilter) : txns}
+      filterLabel={filterLabel} onClearFilter={() => setAccountFilter(null)}
       onViewAll={withViewAll ? () => setTab('transactions') : undefined} />
   )
   const settleSection = <SettleUpSection category={category} txns={txns} settlement={settlement} nameOf={nameOf} canEdit={can('transaction.create')} />
@@ -1085,13 +1119,18 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
       <div className={cn('space-y-4', isNested && 'overflow-y-auto flex-1 px-3 pb-3 sm:px-5 sm:pb-5 md:px-6 md:pb-6')}>
         {tab === 'overview' && (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">{subSection}</div>
-              <LinkedAccountsSection txns={txns} accounts={[...accounts, ...otherAccounts]} />
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <div className="lg:col-span-2">{recent(true)}</div>
-              <div className="flex flex-col gap-4">{memberSpendSection}{category.is_shared && <>{settleSection}{balancesSection}</>}</div>
+            {/* Two independent columns (no row pairing), so a short card never leaves a hole
+                beside a tall one. Main: what happened. Side: who / with what money. */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-start">
+              <div className="lg:col-span-2 flex flex-col gap-4 min-w-0">
+                {recent(true)}
+                {subSection}
+                {accountsLeft && accountsSection}
+              </div>
+              <div className="flex flex-col gap-4 min-w-0">
+                {category.is_shared ? <>{memberSpendSection}{settleSection}{balancesSection}</> : memberSpendSection}
+                {!accountsLeft && accountsSection}
+              </div>
             </div>
             {keywordSection}
           </>

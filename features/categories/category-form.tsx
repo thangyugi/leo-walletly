@@ -236,7 +236,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     name:              initialData?.name ?? '',
     type:              (initialData?.type ?? parentDefault?.type ?? 'expense') as CategoryType,
     kind_code:         initialData?.kind_code ?? parentDefault?.kind_code ?? 'cost_center',
-    parent_id:         initialData?.parent_id ?? '',
+    parent_id:         parentDefault?.is_mine === false ? '' : initialData?.parent_id ?? '',
     color:             initialData?.color ?? parentDefault?.color ?? PRESET_COLORS[14],
     emoji:             initialData?.emoji ?? parentDefault?.emoji ?? PRESET_ICONS[0],
     description:       initialData?.description ?? '',
@@ -266,6 +266,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     const pending = keywordInput.trim().toLowerCase()
     const keywords = pending && !formData.keywords.includes(pending) ? [...formData.keywords, pending] : formData.keywords
     const parentId = formData.parent_id || null
+    if (parentId && categories.find((c) => c.id === parentId)?.is_mine === false) return setErrorMsg(t.catform.errorNotOwner)
     const budget = Number(formData.budget_limit) || 0
 
     // Children's budgets should fit inside the parent's budget.
@@ -321,7 +322,8 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     const currentCat = currentId ? categories.find((c) => c.id === currentId) : null
     const height = currentCat ? getSubtreeHeight(currentCat, categories) : 1
     return categories.filter((c) => {
-      if (c.id === currentId || c.type !== formData.type || !c.is_active) return false
+      // Sub-categories go only under your own categories (a shared one belongs to its owner).
+      if (c.id === currentId || c.type !== formData.type || !c.is_active || !c.is_mine) return false
       // A category can't move under its own descendant.
       let curr = c
       while (curr.parent_id) {

@@ -99,6 +99,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('calendar.noTxn', 'calendar', null, true),
   ('calendar.title', 'calendar', null, true),
   ('calendar.txnOfDay', 'calendar', null, true),
+  ('catdetail.accountFilterTip', 'catdetail', null, false),
   ('catdetail.accountsTitle', 'catdetail', null, false),
   ('catdetail.addRule', 'catdetail', null, false),
   ('catdetail.addSub', 'catdetail', null, false),
@@ -198,6 +199,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.txAutoTip', 'catdetail', null, false),
   ('catdetail.txReviewTip', 'catdetail', null, false),
   ('catdetail.viewAll', 'catdetail', null, false),
+  ('catdetail.you', 'catdetail', null, false),
   ('categories.entertainment', 'categories', null, true),
   ('categories.food', 'categories', null, true),
   ('categories.health', 'categories', null, true),
@@ -215,6 +217,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catform.description', 'catform', null, false),
   ('catform.editTitle', 'catform', null, false),
   ('catform.errorName', 'catform', null, false),
+  ('catform.errorNotOwner', 'catform', null, false),
   ('catform.icon', 'catform', null, false),
   ('catform.keywordPlaceholder', 'catform', null, false),
   ('catform.keywords', 'catform', null, false),
@@ -404,13 +407,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.addTransaction', 'dashboard', null, true),
   ('dashboard.avgDaily', 'dashboard', null, true),
   ('dashboard.balance', 'dashboard', null, true),
-  ('dashboard.budgets', 'dashboard', null, true),
-  ('dashboard.cashFlow', 'dashboard', null, true),
-  ('dashboard.days30Ago', 'dashboard', null, true),
-  ('dashboard.deposits', 'dashboard', null, true)
+  ('dashboard.budgets', 'dashboard', null, true)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.cashFlow', 'dashboard', null, true),
+  ('dashboard.days30Ago', 'dashboard', null, true),
+  ('dashboard.deposits', 'dashboard', null, true),
   ('dashboard.financialTip', 'dashboard', null, true),
   ('dashboard.history', 'dashboard', null, true),
   ('dashboard.importData', 'dashboard', null, true),
@@ -807,13 +810,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('onboarding.timezone', 'onboarding', null, false),
   ('onboarding.title', 'onboarding', null, false),
   ('organization_settings.address', 'organization_settings', null, false),
-  ('organization_settings.businessType', 'organization_settings', null, false),
-  ('organization_settings.infoTitle', 'organization_settings', null, false),
-  ('organization_settings.nameLabel', 'organization_settings', null, false),
-  ('organization_settings.slugLabel', 'organization_settings', null, false)
+  ('organization_settings.businessType', 'organization_settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('organization_settings.infoTitle', 'organization_settings', null, false),
+  ('organization_settings.nameLabel', 'organization_settings', null, false),
+  ('organization_settings.slugLabel', 'organization_settings', null, false),
   ('organization_settings.subtitle', 'organization_settings', null, false),
   ('organization_settings.taxId', 'organization_settings', null, false),
   ('organization_settings.title', 'organization_settings', null, false),
@@ -1243,6 +1246,7 @@ insert into public.translations (key, language_code, value) values
   ('calendar.noTxn', 'ja', '取引なし'),
   ('calendar.title', 'ja', '月別カレンダー'),
   ('calendar.txnOfDay', 'ja', 'の取引'),
+  ('catdetail.accountFilterTip', 'ja', 'クリックでこの口座の取引だけを表示'),
   ('catdetail.accountsTitle', 'ja', '連携口座'),
   ('catdetail.addRule', 'ja', 'ルールを追加'),
   ('catdetail.addSub', 'ja', 'サブグループを追加'),
@@ -1342,6 +1346,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.txAutoTip', 'ja', 'キーワード / ルールで自動的にこのカテゴリに入りました'),
   ('catdetail.txReviewTip', 'ja', '自動で分類されました。正しければ「適用」で確定してください'),
   ('catdetail.viewAll', 'ja', 'すべて表示 →'),
+  ('catdetail.you', 'ja', 'あなた'),
   ('categories.entertainment', 'ja', '娯楽'),
   ('categories.food', 'ja', '食費'),
   ('categories.health', 'ja', '医療・健康'),
@@ -1359,6 +1364,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.description', 'ja', '説明（任意）'),
   ('catform.editTitle', 'ja', 'カテゴリを編集'),
   ('catform.errorName', 'ja', 'カテゴリ名を入力してください'),
+  ('catform.errorNotOwner', 'ja', 'サブカテゴリは自分のカテゴリの中にだけ作れます。共有されたカテゴリは持ち主だけが変更できます。'),
   ('catform.icon', 'ja', 'アイコン'),
   ('catform.keywordPlaceholder', 'ja', 'キーワードを入力してEnter'),
   ('catform.keywords', 'ja', '自動分類キーワード'),
@@ -1548,13 +1554,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.addTransaction', 'ja', '取引を追加'),
   ('dashboard.avgDaily', 'ja', '1日あたりの平均支出'),
   ('dashboard.balance', 'ja', '収支バランス'),
-  ('dashboard.budgets', 'ja', '予算'),
-  ('dashboard.cashFlow', 'ja', 'キャッシュフロー'),
-  ('dashboard.days30Ago', 'ja', '30日前'),
-  ('dashboard.deposits', 'ja', '件の入金')
+  ('dashboard.budgets', 'ja', '予算')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.cashFlow', 'ja', 'キャッシュフロー'),
+  ('dashboard.days30Ago', 'ja', '30日前'),
+  ('dashboard.deposits', 'ja', '件の入金'),
   ('dashboard.financialTip', 'ja', '財務のヒント'),
   ('dashboard.history', 'ja', '履歴'),
   ('dashboard.importData', 'ja', 'データをインポート'),
@@ -1951,13 +1957,13 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'ja', 'タイムゾーン'),
   ('onboarding.title', 'ja', 'Walletlyへようこそ'),
   ('organization_settings.address', 'ja', '本店所在地'),
-  ('organization_settings.businessType', 'ja', '事業形態'),
-  ('organization_settings.infoTitle', 'ja', '組織情報'),
-  ('organization_settings.nameLabel', 'ja', '組織名 (法人名)'),
-  ('organization_settings.slugLabel', 'ja', '組織ID (Slug)')
+  ('organization_settings.businessType', 'ja', '事業形態')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.infoTitle', 'ja', '組織情報'),
+  ('organization_settings.nameLabel', 'ja', '組織名 (法人名)'),
+  ('organization_settings.slugLabel', 'ja', '組織ID (Slug)'),
   ('organization_settings.subtitle', 'ja', '法人の基本情報と最上位エンティティを管理します'),
   ('organization_settings.taxId', 'ja', '登録番号 / 税務ID'),
   ('organization_settings.title', 'ja', '組織設定'),
@@ -2387,6 +2393,7 @@ insert into public.translations (key, language_code, value) values
   ('calendar.noTxn', 'vi', 'Không có giao dịch'),
   ('calendar.title', 'vi', 'Lịch theo tháng'),
   ('calendar.txnOfDay', 'vi', 'Giao dịch ngày'),
+  ('catdetail.accountFilterTip', 'vi', 'Bấm để chỉ xem giao dịch của tài khoản này'),
   ('catdetail.accountsTitle', 'vi', 'Tài khoản liên kết'),
   ('catdetail.addRule', 'vi', 'Thêm quy tắc'),
   ('catdetail.addSub', 'vi', 'Thêm nhóm con'),
@@ -2486,6 +2493,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.txAutoTip', 'vi', 'Tự vào danh mục này nhờ từ khoá / quy tắc'),
   ('catdetail.txReviewTip', 'vi', 'Được xếp tự động — kiểm tra rồi bấm Xác nhận'),
   ('catdetail.viewAll', 'vi', 'Xem tất cả →'),
+  ('catdetail.you', 'vi', 'Bạn'),
   ('categories.entertainment', 'vi', 'Giải trí'),
   ('categories.food', 'vi', 'Ăn uống'),
   ('categories.health', 'vi', 'Y tế'),
@@ -2503,6 +2511,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.description', 'vi', 'Mô tả (tuỳ chọn)'),
   ('catform.editTitle', 'vi', 'Sửa danh mục'),
   ('catform.errorName', 'vi', 'Hãy nhập tên danh mục'),
+  ('catform.errorNotOwner', 'vi', 'Chỉ tạo được danh mục con trong danh mục của bạn. Danh mục được chia sẻ chỉ chủ sở hữu mới thay đổi được.'),
   ('catform.icon', 'vi', 'Biểu tượng'),
   ('catform.keywordPlaceholder', 'vi', 'Nhập từ khoá rồi Enter'),
   ('catform.keywords', 'vi', 'Từ khoá tự động phân loại'),
@@ -2692,13 +2701,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.addTransaction', 'vi', 'Thêm giao dịch'),
   ('dashboard.avgDaily', 'vi', 'Chi tiêu trung bình ngày'),
   ('dashboard.balance', 'vi', 'Cân đối'),
-  ('dashboard.budgets', 'vi', 'Ngân sách'),
-  ('dashboard.cashFlow', 'vi', 'Dòng tiền'),
-  ('dashboard.days30Ago', 'vi', '30 ngày trước'),
-  ('dashboard.deposits', 'vi', 'giao dịch thu')
+  ('dashboard.budgets', 'vi', 'Ngân sách')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.cashFlow', 'vi', 'Dòng tiền'),
+  ('dashboard.days30Ago', 'vi', '30 ngày trước'),
+  ('dashboard.deposits', 'vi', 'giao dịch thu'),
   ('dashboard.financialTip', 'vi', 'Mẹo tài chính'),
   ('dashboard.history', 'vi', 'Lịch sử'),
   ('dashboard.importData', 'vi', 'Nhập dữ liệu'),
@@ -3095,13 +3104,13 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'vi', 'Múi giờ'),
   ('onboarding.title', 'vi', 'Chào mừng đến với Walletly'),
   ('organization_settings.address', 'vi', 'Địa chỉ trụ sở'),
-  ('organization_settings.businessType', 'vi', 'Loại hình kinh doanh'),
-  ('organization_settings.infoTitle', 'vi', 'Thông tin tổ chức'),
-  ('organization_settings.nameLabel', 'vi', 'Tên tổ chức (Tên công ty)'),
-  ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)')
+  ('organization_settings.businessType', 'vi', 'Loại hình kinh doanh')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.infoTitle', 'vi', 'Thông tin tổ chức'),
+  ('organization_settings.nameLabel', 'vi', 'Tên tổ chức (Tên công ty)'),
+  ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)'),
   ('organization_settings.subtitle', 'vi', 'Quản lý cấu hình tài chính và phân cấp tổ chức'),
   ('organization_settings.taxId', 'vi', 'Mã số thuế'),
   ('organization_settings.title', 'vi', 'Thiết lập Sổ cái'),
@@ -3531,6 +3540,7 @@ insert into public.translations (key, language_code, value) values
   ('calendar.noTxn', 'en', 'No transactions'),
   ('calendar.title', 'en', 'Monthly Calendar'),
   ('calendar.txnOfDay', 'en', 'Transactions on'),
+  ('catdetail.accountFilterTip', 'en', 'Click to show only this account''s transactions'),
   ('catdetail.accountsTitle', 'en', 'Linked accounts'),
   ('catdetail.addRule', 'en', 'Add rule'),
   ('catdetail.addSub', 'en', 'Add subgroup'),
@@ -3630,6 +3640,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.txAutoTip', 'en', 'Filed here automatically by a keyword or rule'),
   ('catdetail.txReviewTip', 'en', 'Filed automatically — check it and confirm'),
   ('catdetail.viewAll', 'en', 'View all →'),
+  ('catdetail.you', 'en', 'You'),
   ('categories.entertainment', 'en', 'Entertainment'),
   ('categories.food', 'en', 'Food'),
   ('categories.health', 'en', 'Health'),
@@ -3647,6 +3658,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.description', 'en', 'Description (optional)'),
   ('catform.editTitle', 'en', 'Edit category'),
   ('catform.errorName', 'en', 'Enter a name'),
+  ('catform.errorNotOwner', 'en', 'You can only add sub-categories to your own categories. Only the owner can change a shared category.'),
   ('catform.icon', 'en', 'Icon'),
   ('catform.keywordPlaceholder', 'en', 'Type a keyword and press Enter'),
   ('catform.keywords', 'en', 'Auto-categorise keywords'),
@@ -3836,13 +3848,13 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.addTransaction', 'en', 'Add Transaction'),
   ('dashboard.avgDaily', 'en', 'Avg. daily expense'),
   ('dashboard.balance', 'en', 'Balance'),
-  ('dashboard.budgets', 'en', 'Budgets'),
-  ('dashboard.cashFlow', 'en', 'Cash Flow'),
-  ('dashboard.days30Ago', 'en', '30 days ago'),
-  ('dashboard.deposits', 'en', 'deposits')
+  ('dashboard.budgets', 'en', 'Budgets')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.cashFlow', 'en', 'Cash Flow'),
+  ('dashboard.days30Ago', 'en', '30 days ago'),
+  ('dashboard.deposits', 'en', 'deposits'),
   ('dashboard.financialTip', 'en', 'Financial Tip'),
   ('dashboard.history', 'en', 'History'),
   ('dashboard.importData', 'en', 'Import Data'),
@@ -4239,13 +4251,13 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'en', 'Timezone'),
   ('onboarding.title', 'en', 'Welcome to Walletly'),
   ('organization_settings.address', 'en', 'Legal Address'),
-  ('organization_settings.businessType', 'en', 'Business Type'),
-  ('organization_settings.infoTitle', 'en', 'Organization Info'),
-  ('organization_settings.nameLabel', 'en', 'Organization Name (Legal)'),
-  ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)')
+  ('organization_settings.businessType', 'en', 'Business Type')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.infoTitle', 'en', 'Organization Info'),
+  ('organization_settings.nameLabel', 'en', 'Organization Name (Legal)'),
+  ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)'),
   ('organization_settings.subtitle', 'en', 'Manage legal entity information and top-level entities'),
   ('organization_settings.taxId', 'en', 'Tax ID / Registration'),
   ('organization_settings.title', 'en', 'Organization Settings'),

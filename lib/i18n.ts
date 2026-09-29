@@ -993,6 +993,7 @@ const ja = {
     saveAsKeyword: 'キーワードとして保存',
   },
   catform: {
+    errorNotOwner: 'サブカテゴリは自分のカテゴリの中にだけ作れます。共有されたカテゴリは持ち主だけが変更できます。',
     unshareNote: '外した人の取引は削除されません。その人の側では一時的に「未分類」になり、再び共有すると自動でこのカテゴリに戻ります。',
     shareNone: '1人以上選んでください',
     shareWith: '共有する相手',
@@ -1150,6 +1151,8 @@ const ja = {
     noOtherMembers: '移譲できるメンバーがいません',
   },
   catdetail: {
+    accountFilterTip: 'クリックでこの口座の取引だけを表示',
+    you: 'あなた',
     otherAccountTip: 'この人の口座です。名前だけ表示され、開いたり選んだりはできません',
     otherAccount: 'ほかのメンバーの口座',
     addedBy: '{{name}} さんが追加',
@@ -2239,6 +2242,7 @@ const vi: typeof ja = {
     saveAsKeyword: 'Lưu làm từ khoá',
   },
   catform: {
+    errorNotOwner: 'Chỉ tạo được danh mục con trong danh mục của bạn. Danh mục được chia sẻ chỉ chủ sở hữu mới thay đổi được.',
     unshareNote: 'Giao dịch người đó đã ghi không bị xoá: bên họ tạm chuyển về "Chưa phân loại" và sẽ tự quay lại danh mục này khi bạn chia sẻ lại.',
     shareNone: 'Chọn ít nhất 1 người',
     shareWith: 'Chia sẻ với',
@@ -2396,6 +2400,8 @@ const vi: typeof ja = {
     noOtherMembers: 'Chưa có thành viên để chuyển quyền',
   },
   catdetail: {
+    accountFilterTip: 'Bấm để chỉ xem giao dịch của tài khoản này',
+    you: 'Bạn',
     otherAccountTip: 'Tài khoản của người này — chỉ hiện tên, bạn không mở hay chọn được',
     otherAccount: 'Tài khoản của người khác',
     addedBy: '{{name}} đã thêm',
@@ -3485,6 +3491,7 @@ const en: typeof ja = {
     saveAsKeyword: 'Save as keyword',
   },
   catform: {
+    errorNotOwner: 'You can only add sub-categories to your own categories. Only the owner can change a shared category.',
     unshareNote: 'Nothing they entered is deleted: it shows as "Uncategorized" for them for now and comes back here by itself when you share again.',
     shareNone: 'Pick at least one person',
     shareWith: 'Share with',
@@ -3642,6 +3649,8 @@ const en: typeof ja = {
     noOtherMembers: 'No other member to transfer to',
   },
   catdetail: {
+    accountFilterTip: 'Click to show only this account\'s transactions',
+    you: 'You',
     otherAccountTip: 'This person\'s account — shown by name only; you can\'t open or pick it',
     otherAccount: 'Someone else\'s account',
     addedBy: 'Added by {{name}}',
