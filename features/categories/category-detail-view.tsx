@@ -1074,11 +1074,11 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
               <div className="lg:col-span-2">{subSection}</div>
               <LinkedAccountsSection txns={txns} accounts={[...accounts, ...otherAccounts]} />
             </div>
-            {keywordSection}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">{recent(true)}</div>
               <div className="flex flex-col gap-4">{memberSpendSection}{category.is_shared && <>{settleSection}{balancesSection}</>}</div>
             </div>
+            {keywordSection}
           </>
         )}
         {tab === 'subgroups' && <div className="grid grid-cols-1 lg:grid-cols-3 gap-4"><div className="lg:col-span-2">{subSection}</div></div>}
