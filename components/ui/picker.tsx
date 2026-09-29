@@ -20,6 +20,8 @@ export interface PickerOption {
   icon?: React.ReactNode
   /** Small secondary text on the right (e.g. account type). */
   hint?: string
+  /** Section heading shown above the first option of each group. */
+  group?: string
 }
 
 interface PickerProps {
@@ -57,7 +59,7 @@ export function Picker({
   const selected = options.find((o) => o.value === value)
   const withSearch = searchable ?? options.length > 8
   const q = query.trim().toLowerCase()
-  const shown = q ? options.filter((o) => o.label.toLowerCase().includes(q)) : options
+  const shown = q ? options.filter((o) => o.label.toLowerCase().includes(q) || o.hint?.toLowerCase().includes(q)) : options
 
   const place = React.useCallback(() => {
     const r = buttonRef.current?.getBoundingClientRect()
@@ -172,9 +174,15 @@ export function Picker({
             {shown.length === 0 && <p className="px-3.5 py-2 text-xs text-[var(--color-text-quaternary)]">{t.common.empty}</p>}
             {shown.map((o, i) => {
               const on = o.value === value
+              const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
               return (
+                <React.Fragment key={o.value || '__none'}>
+                {heading && (
+                  <div role="presentation" className={cn('px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
+                    {heading}
+                  </div>
+                )}
                 <button
-                  key={o.value || '__none'}
                   type="button"
                   role="option"
                   aria-selected={on}
@@ -193,6 +201,7 @@ export function Picker({
                   {o.hint && <span className="shrink-0 text-[11px] text-[var(--color-text-quaternary)]">{o.hint}</span>}
                   {on && <Check className="w-3.5 h-3.5 shrink-0" />}
                 </button>
+                </React.Fragment>
               )
             })}
           </div>
@@ -212,7 +221,7 @@ function CategoryBadge({ category }: { category: Category }) {
   )
 }
 
-/** Category dropdown: the ledger's tree (sub-categories indented) with their icons. */
+/** Category dropdown: your tree, then categories others shared with you (owner on the right). */
 export function CategoryPicker({
   categories, value, onChange, noneLabel, extra = [], ...rest
 }: Omit<PickerProps, 'options'> & {
@@ -222,15 +231,19 @@ export function CategoryPicker({
   /** Extra choices before the tree (e.g. "All"). */
   extra?: PickerOption[]
 }) {
+  const { t } = useTranslation()
   const byId = new Map(categories.map((c) => [c.id, c]))
+  const mine = categories.filter((c) => c.is_mine !== false)
+  const shared = categories.filter((c) => c.is_mine === false)
+  const tree = (list: Category[], group?: string): PickerOption[] => categoryTreeOptions(list).map((o) => {
+    const depth = (o.name.match(/^(— )+/)?.[0].length ?? 0) / 2
+    const c = byId.get(o.id)!
+    return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} />, group, hint: c.is_mine === false ? c.owner_name : undefined }
+  })
   const options: PickerOption[] = [
     ...extra,
     ...(noneLabel !== undefined ? [{ value: '', label: noneLabel }] : []),
-    ...categoryTreeOptions(categories).map((o) => {
-      const depth = (o.name.match(/^(— )+/)?.[0].length ?? 0) / 2
-      const c = byId.get(o.id)!
-      return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} /> }
-    }),
+    ...(shared.length ? [...tree(mine, t.catui.groupMine), ...tree(shared, t.catui.sharedWithMe)] : tree(mine)),
   ]
   return <Picker value={value} onChange={onChange} options={options} {...rest} />
 }

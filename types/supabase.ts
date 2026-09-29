@@ -376,6 +376,7 @@ export type Database = {
           created_by: string | null
           updated_by: string | null
           version: number
+          owner_id: string
         }
         Insert: {
           id?: string
@@ -401,6 +402,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          owner_id?: string
         }
         Update: {
           id?: string
@@ -426,6 +428,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          owner_id?: string
         }
         Relationships: [
           {
@@ -455,6 +458,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "translation_keys"
             referencedColumns: ["key"]
+          },
+          {
+            foreignKeyName: "categories_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "categories_parent_id_fkey"
@@ -1264,6 +1274,7 @@ export type Database = {
           created_by: string | null
           updated_by: string | null
           version: number
+          owner_id: string
         }
         Insert: {
           id?: string
@@ -1288,6 +1299,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          owner_id?: string
         }
         Update: {
           id?: string
@@ -1312,6 +1324,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          owner_id?: string
         }
         Relationships: [
           {
@@ -1340,6 +1353,13 @@ export type Database = {
             columns: ["ledger_id"]
             isOneToOne: false
             referencedRelation: "ledgers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_accounts_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
           {
@@ -3701,6 +3721,19 @@ export type Database = {
         }
         Returns: string
       }
+      account_labels: {
+        Args: {
+          p_ledger_id: string
+        }
+        Returns: {
+            id: string
+            name: string
+            provider_code: string
+            account_type_code: string
+            color: string
+            owner_id: string
+          }[]
+      }
       apply_category_rules: {
         Args: {
           p_ledger_id: string
@@ -3731,6 +3764,27 @@ export type Database = {
           p_add_tag_id?: string | null
         }
         Returns: number
+      }
+      can_access_category: {
+        Args: {
+          p_category: string
+          p_user?: string | null
+        }
+        Returns: boolean
+      }
+      can_see_transaction: {
+        Args: {
+          p_created_by: string
+          p_paid_by: string
+          p_category: string
+        }
+        Returns: boolean
+      }
+      category_audience: {
+        Args: {
+          p_category: string
+        }
+        Returns: string
       }
       category_period_stats: {
         Args: {
@@ -3890,6 +3944,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      leave_category: {
+        Args: {
+          p_category_id: string
+        }
+        Returns: undefined
+      }
       leave_ledger: {
         Args: {
           p_ledger_id: string
@@ -3914,6 +3974,18 @@ export type Database = {
           p_input: string
         }
         Returns: string
+      }
+      owns_account: {
+        Args: {
+          p_account: string
+        }
+        Returns: boolean
+      }
+      owns_category: {
+        Args: {
+          p_category: string
+        }
+        Returns: boolean
       }
       preview_category_rules: {
         Args: {

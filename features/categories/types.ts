@@ -7,8 +7,14 @@ export type CategoryType = 'expense' | 'income' | 'transfer'
 export interface Category {
   id: string
   ledger_id: string
+  /** Parent in the tree; null also when the parent is someone else's and not shared with you. */
   parent_id: string | null
-  /** URL-safe, unique per ledger: /categories/[slug] */
+  /** Whose category it is. Only the owner edits it, its sub-categories and who it is shared with. */
+  owner_id: string
+  owner_name: string
+  /** Owned by the signed-in user (false = shared with them by someone else). */
+  is_mine: boolean
+  /** URL-safe, unique per owner within the ledger. */
   slug: string
   /** Display name in the current language. */
   name: string

@@ -269,9 +269,9 @@ const RECENT_GRID = 'grid-cols-[32px_minmax(0,1fr)_auto] sm:grid-cols-[32px_minm
 
 function RecentTxnRow({ txn, onClick }: { txn: Transaction; onClick: () => void }) {
   const { format } = useMoney()
-  const { categories, accounts } = useLedgerData()
+  const { categories, accountOf } = useLedgerData()
   const cat = categories.find((c) => c.id === txn.categoryId)
-  const acc = accounts.find((a) => a.id === txn.accountId)
+  const acc = accountOf(txn.accountId)
   const isExpense = txn.transactionType === 'expense'
   const accentHex = '#6b7280'
   const accColor = acc?.color ?? '#6b7280'

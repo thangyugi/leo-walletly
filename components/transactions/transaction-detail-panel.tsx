@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { X, Maximize2, Minimize2, Edit2, CheckCircle2 } from 'lucide-react'
+import { X, Maximize2, Minimize2, Edit2, CheckCircle2, Lock } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore } from '@/stores/transactions'
@@ -36,7 +36,8 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
-  const { accounts, categories, members, tags } = useLedgerData()
+  const { accountOf, categories, members, tags } = useLedgerData()
+  const me = useLedgerStore((s) => s.userId)
   const update = useTransactionsStore((s) => s.update)
   const can = useLedgerStore((s) => s.can)
   const [fullscreen, setFullscreen] = useState(false)
@@ -47,7 +48,12 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
     path: string | null
   } | null>(null)
   const cat = categories.find((c) => c.id === txn.categoryId)
-  const acc = accounts.find((a) => a.id === txn.accountId)
+  const acc = accountOf(txn.accountId)
+  // Only whoever entered or paid a transaction changes it; others in a shared category just see it.
+  const own = !!me && (txn.createdBy === me || txn.paidByUserId === me)
+  const canUpdate = own && can('transaction.update')
+  const ownerName = (uid: string | null | undefined) => members.find((m) => m.user_id === uid)?.user?.display_name ?? '—'
+  const accountLabel = (a: typeof acc) => !a ? '—' : a.isMine === false ? `${a.name} · ${t.catui.ownerBadge.replaceAll('{{name}}', ownerName(a.ownerId))}` : a.name
   const isExpense = txn.transactionType === 'expense'
   const accentHex = '#6b7280'
 
@@ -84,8 +90,8 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
   const fields = [
     { label: t.transactions.date, value: fmtDateDMY(txn.transactionDate) },
     { label: t.transactions.labelCategory, value: cat?.name ?? t.txform.uncategorized },
-    { label: t.transactions.labelProvider, value: acc?.name ?? '—' },
-    ...(txn.transferAccountId ? [{ label: t.txform.toAccount, value: accounts.find((a) => a.id === txn.transferAccountId)?.name ?? '—' }] : []),
+    { label: t.transactions.labelProvider, value: accountLabel(acc) },
+    ...(txn.transferAccountId ? [{ label: t.txform.toAccount, value: accountLabel(accountOf(txn.transferAccountId)) }] : []),
     { label: t.transactions.labelType, value: isExpense ? t.transactions.typeExpense : txn.transactionType === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },
     ...(members.length > 1 && txn.paidByUserId ? [{ label: t.dashboard.users, value: members.find((m) => m.user_id === txn.paidByUserId)?.user?.display_name ?? '—' }] : []),
     ...(txn.tagIds.length ? [{ label: t.txform.tags, value: txn.tagIds.map((id) => `#${tags.find((x) => x.id === id)?.name ?? ''}`).join(' ') }] : []),
@@ -105,7 +111,7 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)] shrink-0">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t.transactions.detailTitle}</span>
           <div className="flex items-center gap-1">
-            {can('transaction.update') && (
+            {canUpdate && (
               <button onClick={onEdit} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.edit}>
                 <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
               </button>
@@ -134,7 +140,7 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
             <div className="mt-2 flex justify-center">
               {txn.isReconciled
                 ? <span className="inline-flex items-center gap-1 text-xs text-[var(--color-text-gain)]"><CheckCircle2 className="w-3.5 h-3.5" />{t.txform.reconciled}</span>
-                : can('transaction.reconcile') && (
+                : own && can('transaction.reconcile') && (
                   <button onClick={() => void update(txn.id, { isReconciled: true }).then(() => toast.success(t.txform.saved))} className="text-xs text-[var(--color-text-link)] hover:underline">
                     {t.txform.markReconciled}
                   </button>
@@ -206,12 +212,17 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
           )}
         </div>
 
-        {can('transaction.update') && (
+        {canUpdate ? (
           <div className="px-5 py-4 border-t border-[var(--color-border-default)] shrink-0">
             <Button variant="primary" size="sm" className="w-full" onClick={onEdit}>
               <Edit2 className="w-3.5 h-3.5" />
               {t.transactions.editTitle}
             </Button>
+          </div>
+        ) : !own && (
+          <div className="px-5 py-3 border-t border-[var(--color-border-default)] shrink-0 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">
+            <Lock className="w-3.5 h-3.5 shrink-0" />
+            {t.transactions.othersTx.replaceAll('{{name}}', ownerName(txn.payerId))}
           </div>
         )}
       </div>

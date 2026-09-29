@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck } from 'lucide-react'
+import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
@@ -274,12 +274,26 @@ function CategoryCard({ category, expense, txCount }: { category: Category; expe
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: category.color || '#94a3b8' }} />
           {kind}
         </span>
-        {category.is_shared && (
-          <span className="ml-auto shrink-0 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">{t.catui.shared}</span>
-        )}
+        <CategoryAccessBadge category={category} />
       </div>
     </Link>
   )
+}
+
+/** Who can see a category: owner's name (shared with you), "Shared", or "Only you". */
+export function CategoryAccessBadge({ category }: { category: Category }) {
+  const { t } = useTranslation()
+  if (!category.is_mine) {
+    return (
+      <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)] border border-[var(--color-info-100)] max-w-[60%] truncate">
+        <Users className="w-2.5 h-2.5 shrink-0" />{fill(t.catui.ownerBadge, { name: category.owner_name })}
+      </span>
+    )
+  }
+  if (category.is_shared) {
+    return <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]"><Users className="w-2.5 h-2.5" />{t.catui.shared}</span>
+  }
+  return <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] text-[var(--color-text-quaternary)]"><Lock className="w-2.5 h-2.5" />{t.catui.private}</span>
 }
 
 /* ─── SmartClassifyCard ────────────────────────────────────────────────────── */
@@ -293,7 +307,7 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
   total?: number
 }) {
   const { t } = useTranslation()
-  const { accounts } = useLedgerData()
+  const { accountOf } = useLedgerData()
   const { fmt, sym } = React.useContext(FmtCtx)
   const [isApplying, setIsApplying] = React.useState(false)
 
@@ -354,7 +368,7 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
       <div className="px-5 pb-1 flex flex-col gap-1.5">
         {displayTxns.map((txn) => {
           const suggested = suggestFor(txn, categories)
-          const acc = accounts.find((a) => a.id === txn.accountId)
+          const acc = accountOf(txn.accountId)
           return (
             <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg border border-dashed border-[var(--color-border-default)] text-[12px]">
               <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning-500)] shrink-0" />
@@ -511,12 +525,16 @@ export function CategoriesBentoPage() {
   // "Định kỳ" = categories used by an active recurring rule.
   const recurringIds = React.useMemo(() => new Set(rules.filter((r) => r.isActive && r.categoryId).map((r) => r.categoryId!)), [rules])
 
+  // The bento shows your own categories; ones others shared with you get their own section.
+  const mine = React.useMemo(() => categories.filter((c) => c.is_mine), [categories])
+  const sharedWithMe = React.useMemo(() => categories.filter((c) => !c.is_mine && c.is_active && !c.parent_id), [categories])
+
   const tabCounts: Record<Tab, number> = {
-    all: categories.length,
-    active: categories.filter((c) => c.is_active).length,
+    all: mine.length,
+    active: mine.filter((c) => c.is_active).length,
     shared: categories.filter((c) => c.is_shared).length,
     recurring: categories.filter((c) => recurringIds.has(c.id)).length,
-    archived: categories.filter((c) => !c.is_active).length,
+    archived: mine.filter((c) => !c.is_active).length,
   }
   const filterTabs: { value: Tab; label: string }[] = [
     { value: 'all', label: t.catui.tabAll },
@@ -530,13 +548,13 @@ export function CategoriesBentoPage() {
     switch (activeTab) {
       case 'shared': return categories.filter((c) => c.is_shared)
       case 'recurring': return categories.filter((c) => recurringIds.has(c.id))
-      case 'archived': return categories.filter((c) => !c.is_active)
-      case 'active': return categories.filter((c) => c.is_active)
-      default: return categories.filter((c) => c.is_active)
+      case 'archived': return mine.filter((c) => !c.is_active)
+      case 'active': return mine.filter((c) => c.is_active)
+      default: return mine.filter((c) => c.is_active)
     }
-  }, [categories, activeTab, recurringIds])
+  }, [categories, mine, activeTab, recurringIds])
 
-  const archivedCategories = React.useMemo(() => categories.filter((c) => !c.is_active && !c.parent_id), [categories])
+  const archivedCategories = React.useMemo(() => mine.filter((c) => !c.is_active && !c.parent_id), [mine])
 
   // Root categories sorted by the chosen period's spending.
   const rootCategories = React.useMemo(() => {
@@ -676,6 +694,23 @@ export function CategoriesBentoPage() {
               .map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)
           )}
         </div>
+
+        {showBento && sharedWithMe.length > 0 && (
+          <section aria-labelledby="shared-with-me" className="space-y-2.5">
+            <div className="flex items-end gap-2 flex-wrap">
+              <h2 id="shared-with-me" className="text-[14px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)] inline-flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-[var(--color-text-tertiary)]" />{t.catui.sharedWithMe}
+                <span className="font-mono text-[10px] rounded px-[5px] py-px bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{sharedWithMe.length}</span>
+              </h2>
+              <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.catui.sharedWithMeSub}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {sharedWithMe
+                .filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.owner_name.toLowerCase().includes(search.trim().toLowerCase()))
+                .map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
+            </div>
+          </section>
+        )}
 
         <div
           className="flex items-center gap-3.5 p-[14px_18px] rounded-[14px] border border-[var(--color-brand-100)] shadow-[var(--shadow-card)] flex-wrap"

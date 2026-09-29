@@ -8,6 +8,7 @@ import { useTagsStore } from '@/features/tags/store'
 import { useUserManagementStore } from '@/features/user-management/store'
 import { useSettingsStore } from '@/stores/settings'
 import { useI18nStore } from '@/features/i18n/store'
+import { useTransactionsStore } from '@/stores/transactions'
 
 /**
  * Loads the open ledger's lookup data (accounts, categories, tags, members)
@@ -21,6 +22,9 @@ export function useLedgerData() {
   const accounts = useAccountsStore((s) => s.accounts)
   const accountsLedger = useAccountsStore((s) => s.ledgerId)
   const loadAccounts = useAccountsStore((s) => s.load)
+  const otherAccounts = useAccountsStore((s) => s.others)
+  const loadOthers = useAccountsStore((s) => s.loadOthers)
+  const revision = useTransactionsStore((s) => s.revision)
   const categories = useCategoryStore((s) => s.categories)
   const fetchCategories = useCategoryStore((s) => s.fetchCategories)
   const tags = useTagsStore((s) => s.tags)
@@ -38,9 +42,18 @@ export function useLedgerData() {
     void loadTags(ledgerId)
   }, [ledgerId, accountsLedger, membersLedger, loadAccounts, loadMembers, loadTags])
 
+  // Shared categories can bring in others' transactions (and their accounts' labels).
+  useEffect(() => {
+    if (ledgerId && revision > 0) void loadOthers(ledgerId)
+  }, [ledgerId, revision, loadOthers])
+
   useEffect(() => {
     if (ledgerId) void fetchCategories(ledgerId)
   }, [ledgerId, lang, textsLoaded, fetchCategories])
 
-  return { ledger, accounts, categories, tags, members }
+  /** Any account a visible transaction points at: yours, or another person's label. */
+  const accountOf = (id: string | null | undefined) =>
+    id ? accounts.find((a) => a.id === id) ?? otherAccounts.find((a) => a.id === id) : undefined
+
+  return { ledger, accounts, otherAccounts, accountOf, categories, tags, members }
 }

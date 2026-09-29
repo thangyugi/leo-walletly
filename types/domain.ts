@@ -59,6 +59,8 @@ export interface Transaction {
   paidByUserId: string | null
   /** Who paid: paid_by_user_id, else who entered it (same rule as v_member_balances). */
   payerId: string | null
+  /** Who entered it; with the payer, the only people who may change it. */
+  createdBy: string | null
   source: TransactionSource
   importRowId: string | null
   documentId: string | null
@@ -90,6 +92,7 @@ export function mapTransaction(row: TransactionRow & { transaction_tags?: { tag_
     notes: row.notes,
     paidByUserId: row.paid_by_user_id,
     payerId: row.paid_by_user_id ?? row.created_by ?? null,
+    createdBy: row.created_by,
     source: row.source as TransactionSource,
     importRowId: row.import_row_id,
     documentId: row.document_id,

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Sun, Trash2, Users, X,
-  Archive, ArchiveRestore,
+  Archive, ArchiveRestore, Lock, LogOut,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
@@ -121,6 +121,7 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
   const { t } = useTranslation()
   const { ledger } = useLedgerData()
   const parts = [
+    !category.is_mine ? fill(t.catui.ownerBadge, { name: category.owner_name }) : null,
     memberNames.length > 0 ? fill(category.is_shared ? t.catdetail.sharedWith : t.catdetail.membersCount, { count: memberNames.length }) : null,
     ledger?.currency_code ?? 'JPY',
     category.is_active ? t.catui.active : t.catui.inactive,
@@ -128,7 +129,7 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
   const badges = [
     { icon: <Sun className="w-2.5 h-2.5" />, label: category.is_active ? t.catui.active : t.catui.inactive },
     ...(category.keywords.length ? [{ icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M3 8h18M3 16h12" /></svg>, label: t.catdetail.badgeAuto }] : []),
-    ...(category.is_shared ? [{ icon: <Users className="w-2.5 h-2.5" />, label: t.catui.shared }] : []),
+    category.is_shared ? { icon: <Users className="w-2.5 h-2.5" />, label: t.catui.shared } : { icon: <Lock className="w-2.5 h-2.5" />, label: t.catui.private },
   ]
 
   return (
@@ -508,10 +509,12 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
         <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
           <Sun className="w-3 h-3" /> {t.catdetail.learnHistory}
         </span>
-        <Link href="/categories/classify" className={btnOutline + ' text-[var(--color-text-primary)]'}>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z" /></svg>
-          {t.catdetail.advancedRules}
-        </Link>
+        {canEdit && (
+          <Link href="/categories/classify" className={btnOutline + ' text-[var(--color-text-primary)]'}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z" /></svg>
+            {t.catdetail.advancedRules}
+          </Link>
+        )}
       </div>
 
       <div className="divide-y divide-[var(--color-border-subtle)]">
@@ -888,32 +891,33 @@ function MemberSpendSection({ category, split, nameOf }: { category: Category; s
   )
 }
 
-function MembersPicker({ category, settlement }: { category: Category; settlement: ReturnType<typeof useSettlement> }) {
+function MembersPicker({ category, settlement, readOnly }: { category: Category; settlement: ReturnType<typeof useSettlement>; readOnly: boolean }) {
   const { t } = useTranslation()
   const { members } = useLedgerData()
-  const userId = useLedgerStore((s) => s.userId)
   const setMembers = useCategoryStore((s) => s.setMembers)
   const inCat = new Set(settlement.catMembers.map((m) => m.user_id))
   return (
     <section className={card}>
       <div className={sectionHead}>
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catui.tabMembers}</h3>
-        <span className="text-[12px] text-[var(--color-text-tertiary)]">· {t.catui.membersHint}</span>
+        <span className="text-[12px] text-[var(--color-text-tertiary)]">· {readOnly ? fill(t.catdetail.ownedBy, { name: category.owner_name }) : t.catui.membersHint}</span>
       </div>
       <div className="divide-y divide-[var(--color-border-subtle)]">
-        {members.map((m) => {
+        {members.filter((m) => !readOnly || inCat.has(m.user_id)).map((m) => {
           const { bg, color } = colorFor(m.user_id, members)
           const name = m.user?.display_name || m.user?.email || '—'
+          const isOwner = m.user_id === category.owner_id
           return (
-            <label key={m.user_id} className="flex items-center gap-3 px-[18px] py-[10px] text-sm cursor-pointer hover:bg-[var(--color-bg-sunken)]">
-              <input type="checkbox" checked={inCat.has(m.user_id)} className="accent-[var(--color-interactive-primary)]"
+            <label key={m.user_id} className={cn('flex items-center gap-3 px-[18px] py-[10px] text-sm', !readOnly && !isOwner && 'cursor-pointer hover:bg-[var(--color-bg-sunken)]')}>
+              <input type="checkbox" checked={isOwner || inCat.has(m.user_id)} disabled={readOnly || isOwner} className="accent-[var(--color-interactive-primary)] disabled:opacity-60"
                 onChange={async (e) => {
                   const next = e.target.checked ? [...inCat, m.user_id] : [...inCat].filter((u) => u !== m.user_id)
-                  try { await setMembers(category.id, next, userId ?? undefined); settlement.reload() } catch (err) { toast.error((err as Error).message) }
+                  if (!next.includes(category.owner_id)) next.push(category.owner_id)
+                  try { await setMembers(category.id, next, category.owner_id); settlement.reload() } catch (err) { toast.error((err as Error).message) }
                 }} />
               <span className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(name)}</span>
               <span className="flex-1 text-[var(--color-text-primary)]">{name}</span>
-              {settlement.catMembers.find((c) => c.user_id === m.user_id)?.role === 'owner' && <span className="text-[10px] text-[var(--color-text-quaternary)]">{t.catui.owner}</span>}
+              {isOwner && <span className="text-[10px] text-[var(--color-text-quaternary)]">{t.catui.owner}</span>}
             </label>
           )
         })}
@@ -926,8 +930,9 @@ function MembersPicker({ category, settlement }: { category: Category; settlemen
 export function CategoryDetailView({ categoryId, isNested, onClose }: { categoryId: string; isNested?: boolean; onClose?: () => void }) {
   const router = useRouter()
   const { t } = useTranslation()
-  const { categories, accounts, members } = useLedgerData()
-  const { updateCategory, deleteCategory } = useCategoryStore()
+  const { categories, accounts, otherAccounts, members } = useLedgerData()
+  const { updateCategory, deleteCategory, leaveCategory } = useCategoryStore()
+  const [leaving, setLeaving] = React.useState(false)
   const can = useLedgerStore((s) => s.can)
   const userId = useLedgerStore((s) => s.userId)
   const [tab, setTab] = React.useState<DetailTab>('overview')
@@ -972,13 +977,15 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     )
   }
 
-  const canEdit = can('category.update')
-  const canCreate = can('category.create')
-  const canDelete = can('category.delete')
-  // Shared: ticked members plus anyone who has paid into it.
+  // Only the owner edits a category, its sub-categories, keywords and who it is shared with.
+  const mine = category.is_mine
+  const canEdit = mine && can('category.update')
+  const canCreate = mine && can('category.create')
+  const canDelete = mine && can('category.delete')
+  // Shared: ticked members plus anyone who has paid into it. Private: just the owner.
   const memberNames = category.is_shared
     ? [...new Set([...settlement.catMembers.map((m) => m.user_id), ...settlement.balances.map((b) => b.user_id)])].map(nameOf)
-    : members.map((m) => m.user?.display_name || m.user?.email || '—')
+    : [category.owner_name]
   const split = periodSplit(txns, category, settlement.catMembers, userId)
   const totalKeywords = category.keywords.length + subs.reduce((s, c) => s + c.keywords.length, 0)
   const tabs: { value: DetailTab; label: string; count?: number }[] = [
@@ -988,7 +995,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     { value: 'transactions', label: t.catui.tabTransactions, count: txns.length },
     { value: 'balances', label: t.catui.tabBalances },
     { value: 'members', label: t.catui.tabMembers, count: category.is_shared ? settlement.catMembers.length : undefined },
-    ...(canEdit ? [{ value: 'settings' as DetailTab, label: t.catui.tabSettings }] : []),
+    ...(canEdit || !mine ? [{ value: 'settings' as DetailTab, label: t.catui.tabSettings }] : []),
   ]
   // A subgroup opens as its own page (/categories/[slug]) with its own breadcrumb.
   const openSub = (c: Category) => router.push(categoryHref(c))
@@ -1013,7 +1020,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     <RecentTransactions category={category} subs={subs} all={categories} txns={txns} canEdit={canEdit} onOpen={setEditingTx}
       onViewAll={withViewAll ? () => setTab('transactions') : undefined} />
   )
-  const settleSection = <SettleUpSection category={category} txns={txns} settlement={settlement} nameOf={nameOf} canEdit={canEdit} />
+  const settleSection = <SettleUpSection category={category} txns={txns} settlement={settlement} nameOf={nameOf} canEdit={can('transaction.create')} />
   const balancesSection = <BalancesSection settlement={settlement} nameOf={nameOf} />
   const memberSpendSection = <MemberSpendSection category={category} split={split} nameOf={nameOf} />
 
@@ -1056,7 +1063,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           <>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div className="lg:col-span-2">{subSection}</div>
-              <LinkedAccountsSection txns={txns} accounts={accounts} />
+              <LinkedAccountsSection txns={txns} accounts={[...accounts, ...otherAccounts]} />
             </div>
             {keywordSection}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1076,8 +1083,19 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         )}
         {tab === 'members' && (
           category.is_shared
-            ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} /><div className="flex flex-col gap-4">{memberSpendSection}{balancesSection}</div></div>
+            ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} readOnly={!canEdit} /><div className="flex flex-col gap-4">{memberSpendSection}{balancesSection}</div></div>
             : <div className={cn(card, 'p-6 text-sm text-[var(--color-text-tertiary)]')}>{t.catdetail.sharedOff}</div>
+        )}
+        {tab === 'settings' && !mine && (
+          <div className={cn(card, 'divide-y divide-[var(--color-border-subtle)]')}>
+            <div className="flex items-start gap-3 px-4 py-3 text-sm text-[var(--color-text-secondary)]">
+              <Lock className="w-4 h-4 mt-0.5 shrink-0 text-[var(--color-text-quaternary)]" />
+              <span>{fill(t.catdetail.ownedBy, { name: category.owner_name })}</span>
+            </div>
+            <button onClick={() => setLeaving(true)} className="w-full flex items-center gap-3 px-4 py-3 text-sm hover:bg-[var(--color-bg-sunken)] text-left text-[var(--color-text-loss)]">
+              <LogOut className="w-4 h-4" />{t.catdetail.leave}
+            </button>
+          </div>
         )}
         {tab === 'settings' && canEdit && (
           <div className={cn(card, 'divide-y divide-[var(--color-border-subtle)]')}>
@@ -1117,6 +1135,23 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           <div className="flex justify-end gap-3">
             <button onClick={() => setDeleting(null)} className="px-5 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-sunken)] rounded-lg transition-colors">{t.catdetail.deleteCancel}</button>
             <button onClick={() => void executeDelete()} className="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">{t.catdetail.deleteOk}</button>
+          </div>
+        </div>
+      </Modal>
+      <Modal isOpen={leaving} onClose={() => setLeaving(false)} isNested={isNested}>
+        <div className="p-6">
+          <h2 className="text-xl font-bold text-[var(--color-text-primary)] mb-2">{fill(t.catdetail.leaveTitle, { name: category.name })}</h2>
+          <p className="text-[var(--color-text-secondary)] mb-6 text-sm">{t.catdetail.leaveBody}</p>
+          <div className="flex justify-end gap-3">
+            <button onClick={() => setLeaving(false)} className="px-5 py-2 text-sm font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-[var(--color-bg-sunken)] rounded-lg transition-colors">{t.catdetail.deleteCancel}</button>
+            <button onClick={async () => {
+              try {
+                await leaveCategory(category.id)
+                useTransactionsStore.setState((st) => ({ revision: st.revision + 1 }))
+                toast.success(t.catdetail.left)
+                router.push('/categories')
+              } catch (e) { toast.error((e as Error).message) } finally { setLeaving(false) }
+            }} className="px-5 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-lg transition-colors">{t.catdetail.leave}</button>
           </div>
         </div>
       </Modal>

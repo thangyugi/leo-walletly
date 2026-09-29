@@ -22,6 +22,9 @@ export interface Account {
   institutionName: string | null
   last4: string | null
   creditLimit: number | null
+  /** Someone else's account seen on a shared-category transaction: label only. */
+  ownerId?: string
+  isMine?: boolean
 }
 
 export interface AccountInput {
@@ -41,8 +44,11 @@ export interface AccountInput {
 interface AccountsState {
   ledgerId: string | null
   accounts: Account[]
+  /** Other people's accounts behind transactions you can see (name / mark only). */
+  others: Account[]
   loading: boolean
   load: (ledgerId: string) => Promise<void>
+  loadOthers: (ledgerId: string) => Promise<void>
   create: (ledgerId: string, input: AccountInput) => Promise<Account>
   update: (id: string, input: Partial<AccountInput> & { isArchived?: boolean }) => Promise<void>
   remove: (id: string) => Promise<void>
@@ -73,6 +79,7 @@ function toRow(input: Partial<AccountInput> & { isArchived?: boolean }): TablesU
 export const useAccountsStore = create<AccountsState>((set, get) => ({
   ledgerId: null,
   accounts: [],
+  others: [],
   loading: false,
 
   load: async (ledgerId) => {
@@ -109,6 +116,19 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
       })
       .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
     set({ accounts, loading: false })
+    await get().loadOthers(ledgerId)
+  },
+
+  loadOthers: async (ledgerId) => {
+    const { data } = await supabase.rpc('account_labels', { p_ledger_id: ledgerId })
+    set({
+      others: (data ?? []).map((a) => ({
+        id: a.id, ledgerId, name: a.name, accountTypeCode: a.account_type_code, providerCode: a.provider_code,
+        currencyCode: '', color: a.color, includeInNetWorth: false, isArchived: false, sortOrder: 0, balance: 0,
+        txCountThisMonth: 0, openingBalance: 0, openingDate: '', institutionName: null, last4: null, creditLimit: null,
+        ownerId: a.owner_id, isMine: false,
+      })),
+    })
   },
 
   create: async (ledgerId, input) => {
@@ -134,5 +154,5 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     if (ledgerId) await get().load(ledgerId)
   },
 
-  byId: (id) => (id ? get().accounts.find((a) => a.id === id) : undefined),
+  byId: (id) => (id ? get().accounts.find((a) => a.id === id) ?? get().others.find((a) => a.id === id) : undefined),
 }))

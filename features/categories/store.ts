@@ -5,6 +5,7 @@ import type { PickerValue } from '@/components/ui/date-range-picker'
 import { supabase } from '@/lib/supabase'
 import { useI18nStore } from '@/features/i18n/store'
 import { useSettingsStore } from '@/stores/settings'
+import { useAuthStore } from '@/stores/auth'
 import type { Category, CategoryBalance, CategoryMember, CategoryTreeNode, CategoryType, MemberBalance } from './types'
 import type { TablesUpdate } from '@/types/supabase'
 
@@ -164,6 +165,8 @@ interface CategoryState {
   addKeyword: (categoryId: string, keyword: string) => Promise<void>
   fetchMembers: (categoryId: string) => Promise<CategoryMember[]>
   setMembers: (categoryId: string, userIds: string[], ownerId?: string) => Promise<void>
+  /** Stop being part of a category someone shared with you. */
+  leaveCategory: (categoryId: string) => Promise<void>
   fetchMemberBalances: (categoryId: string) => Promise<MemberBalance[]>
   settle: (params: { categoryId: string; fromUserId: string; toUserId: string; amount: number; currencyCode: string; note?: string }) => Promise<void>
   byId: (id: string | null | undefined) => Category | undefined
@@ -252,7 +255,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     set({ isLoading: true, error: null, ledgerId })
     try {
       const [cats, rules, budgets, translations] = await Promise.all([
-        supabase.from('categories').select('*').eq('ledger_id', ledgerId).is('deleted_at', null),
+        supabase.from('categories').select('*, owner:users!categories_owner_id_fkey(display_name)').eq('ledger_id', ledgerId).is('deleted_at', null),
         supabase.from('category_rules').select('category_id, pattern').eq('ledger_id', ledgerId)
           .eq('match_type', 'contains').eq('is_active', true).is('deleted_at', null),
         supabase.from('budgets').select('category_id, amount, warning_threshold_pct').eq('ledger_id', ledgerId)
@@ -266,13 +269,19 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       const trBy = new Map<string, Record<string, string>>()
       for (const t of translations.data ?? []) trBy.set(t.category_id, { ...(trBy.get(t.category_id) ?? {}), [t.language_code]: t.name })
 
+      const me = useAuthStore.getState().user?.id
+      const visible = new Set((cats.data ?? []).map((c) => c.id))
       const categories: Category[] = (cats.data ?? []).map((c) => {
         const tr = trBy.get(c.id) ?? {}
         const budget = budgetBy.get(c.id)
         return {
           id: c.id,
           ledger_id: c.ledger_id,
-          parent_id: c.parent_id,
+          // A shared sub-category whose parent you cannot see sits at the top level.
+          parent_id: c.parent_id && visible.has(c.parent_id) ? c.parent_id : null,
+          owner_id: c.owner_id,
+          owner_name: c.owner?.display_name ?? '—',
+          is_mine: c.owner_id === me,
           slug: c.slug,
           name: displayName(c, tr),
           base_name: c.name,
@@ -344,7 +353,8 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   createCategory: async (input) => {
     const ledgerId = input.ledger_id ?? get().ledgerId
     if (!ledgerId || !input.name) throw new Error('Name is required')
-    const taken = new Set(get().categories.map((c) => c.slug))
+    // Names / slugs only need to be unique among your own categories.
+    const taken = new Set(get().categories.filter((c) => c.is_mine).map((c) => c.slug))
     const parent = input.parent_id ? get().byId(input.parent_id) : undefined
     const { data, error } = await supabase.from('categories').insert({
       ledger_id: ledgerId,
@@ -396,8 +406,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     const existing = get().byId(id)
     if (!existing) return
     if (existing.is_system) throw new Error('SYSTEM_CATEGORY')
-    // Transactions keep their history but become uncategorized.
-    fail((await supabase.from('transactions').update({ category_id: null, categorized_by: null }).eq('category_id', id)).error)
+    // Transactions keep their history but become uncategorized (everyone's: done by the database).
     fail((await supabase.from('categories').update({ deleted_at: new Date().toISOString(), is_archived: true }).eq('id', id)).error)
     await get().fetchCategories(existing.ledger_id)
   },
@@ -466,6 +475,12 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         add.map((user_id) => ({ category_id: categoryId, user_id, role: user_id === ownerId ? 'owner' : 'member' }))
       )).error)
     }
+  },
+
+  leaveCategory: async (categoryId) => {
+    fail((await supabase.rpc('leave_category', { p_category_id: categoryId })).error)
+    const ledgerId = get().ledgerId
+    if (ledgerId) await get().fetchCategories(ledgerId)
   },
 
   fetchMemberBalances: async (categoryId) => {

@@ -20,7 +20,7 @@ function monthKey(year: number, month: number) {
 
 export default function CalendarPage() {
   const { t, lang } = useTranslation()
-  const { categories, accounts } = useLedgerData()
+  const { categories, accountOf } = useLedgerData()
   const { format } = useMoney()
   const today  = new Date()
   const [year, setYear]      = useState(today.getFullYear())
@@ -167,7 +167,7 @@ export default function CalendarPage() {
                     key={txn.id}
                     txn={txn}
                     category={categories.find((c) => c.id === txn.categoryId)}
-                    accountName={accounts.find((a) => a.id === txn.accountId)?.name}
+                    accountName={accountOf(txn.accountId)?.name}
                     onClick={() => setEditingTxn(txn)}
                   />
                 ))}

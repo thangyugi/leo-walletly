@@ -132,6 +132,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.kwHint', 'catdetail', null, false),
   ('catdetail.kwTitle', 'catdetail', null, false),
   ('catdetail.learnHistory', 'catdetail', null, false),
+  ('catdetail.leave', 'catdetail', null, false),
+  ('catdetail.leaveBody', 'catdetail', null, false),
+  ('catdetail.leaveTitle', 'catdetail', 'name', false),
+  ('catdetail.left', 'catdetail', null, false),
   ('catdetail.matched', 'catdetail', 'kw', false),
   ('catdetail.maxDepth', 'catdetail', 'n', false),
   ('catdetail.memberSpendCount', 'catdetail', 'count', false),
@@ -151,6 +155,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.opEquals', 'catdetail', null, false),
   ('catdetail.opRegex', 'catdetail', null, false),
   ('catdetail.opStartsWith', 'catdetail', null, false),
+  ('catdetail.ownedBy', 'catdetail', 'name', false),
   ('catdetail.ownerBadge', 'catdetail', null, false),
   ('catdetail.paidOwed', 'catdetail', 'paid,owed', false),
   ('catdetail.recentTitle', 'catdetail', null, false),
@@ -239,6 +244,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.classifyNow', 'catui', null, false),
   ('catui.create', 'catui', null, false),
   ('catui.deleteConfirm', 'catui', null, false),
+  ('catui.groupMine', 'catui', null, false),
   ('catui.inactive', 'catui', null, false),
   ('catui.keywordAdded', 'catui', null, false),
   ('catui.kind', 'catui', null, false),
@@ -266,16 +272,20 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.orTemplate', 'catui', null, false),
   ('catui.owes', 'catui', 'from,to', false),
   ('catui.owner', 'catui', null, false),
+  ('catui.ownerBadge', 'catui', 'name', false),
   ('catui.pendingCount', 'catui', 'count', false),
   ('catui.pendingSub', 'catui', 'amount', false),
   ('catui.pendingTitle', 'catui', 'groups,count', false),
   ('catui.perPerson', 'catui', null, false),
+  ('catui.private', 'catui', null, false),
   ('catui.remaining', 'catui', 'amount', false),
   ('catui.saveAsKeyword', 'catui', null, false),
   ('catui.search', 'catui', null, false),
   ('catui.settle', 'catui', null, false),
   ('catui.settled', 'catui', null, false),
   ('catui.shared', 'catui', null, false),
+  ('catui.sharedWithMe', 'catui', null, false),
+  ('catui.sharedWithMeSub', 'catui', null, false),
   ('catui.subcategories', 'catui', 'count', false),
   ('catui.system', 'catui', null, false),
   ('catui.tabActive', 'catui', null, false),
@@ -397,7 +407,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.mtd', 'dashboard', null, true),
   ('dashboard.netBalance', 'dashboard', null, true),
   ('dashboard.netPeriod', 'dashboard', null, true),
-  ('dashboard.noAccountData', 'dashboard', null, true),
+  ('dashboard.noAccountData', 'dashboard', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('dashboard.noAccounts', 'dashboard', null, true),
   ('dashboard.noBudgets', 'dashboard', null, true),
   ('dashboard.noData', 'dashboard', null, true),
@@ -407,10 +420,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.payments', 'dashboard', null, true),
   ('dashboard.periodLastMonth', 'dashboard', null, true),
   ('dashboard.periodLastQuarter', 'dashboard', null, true),
-  ('dashboard.periodLastYear', 'dashboard', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.periodLastYear', 'dashboard', null, true),
   ('dashboard.periodYesterday', 'dashboard', null, true),
   ('dashboard.prevPeriod', 'dashboard', null, true),
   ('dashboard.quickStats', 'dashboard', null, true),
@@ -800,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.defaultLedger', 'prefs', null, false),
   ('prefs.displayName', 'prefs', null, false),
   ('prefs.emailHint', 'prefs', null, false),
-  ('prefs.firstName', 'prefs', null, false),
+  ('prefs.firstName', 'prefs', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('prefs.gender', 'prefs', null, false),
   ('prefs.genderFemale', 'prefs', null, false),
   ('prefs.genderMale', 'prefs', null, false),
@@ -810,10 +823,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('prefs.lastName', 'prefs', null, false),
   ('prefs.lastUsed', 'prefs', null, false),
   ('prefs.locale', 'prefs', null, false),
-  ('prefs.passwordMismatch', 'prefs', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('prefs.passwordMismatch', 'prefs', null, false),
   ('prefs.passwordShort', 'prefs', null, false),
   ('prefs.preview', 'prefs', null, false),
   ('prefs.removeAvatar', 'prefs', null, false),
@@ -1042,6 +1052,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.noData', 'transactions', null, true),
   ('transactions.noDataSub', 'transactions', null, true),
   ('transactions.noResult', 'transactions', null, true),
+  ('transactions.othersTx', 'transactions', 'name', true),
   ('transactions.pageInfo', 'transactions', 'total,current,count', true),
   ('transactions.removeGroup', 'transactions', null, true),
   ('transactions.search', 'transactions', null, true),
@@ -1250,6 +1261,10 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwHint', 'ja', '· 銀行/CSV から取り込んだ取引の照合に使用'),
   ('catdetail.kwTitle', 'ja', '自動分類キーワード'),
   ('catdetail.learnHistory', 'ja', '履歴から学習'),
+  ('catdetail.leave', 'ja', 'このカテゴリから抜ける'),
+  ('catdetail.leaveBody', 'ja', 'このカテゴリは表示されなくなります。あなたの取引は残り、「未分類」に戻ります。'),
+  ('catdetail.leaveTitle', 'ja', '「{{name}}」から抜けますか？'),
+  ('catdetail.left', 'ja', 'カテゴリから抜けました'),
   ('catdetail.matched', 'ja', '"{{kw}}" に一致'),
   ('catdetail.maxDepth', 'ja', '最大階層（{{n}}）に到達'),
   ('catdetail.memberSpendCount', 'ja', '{{count}} 件'),
@@ -1269,6 +1284,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'ja', 'と一致'),
   ('catdetail.opRegex', 'ja', '正規表現'),
   ('catdetail.opStartsWith', 'ja', 'で始まる'),
+  ('catdetail.ownedBy', 'ja', '{{name}} さんのカテゴリです。編集・共有の変更は持ち主だけができます'),
   ('catdetail.ownerBadge', 'ja', 'オーナー'),
   ('catdetail.paidOwed', 'ja', '支払 {{paid}} · 負担すべき額 {{owed}}'),
   ('catdetail.recentTitle', 'ja', '最近のアクティビティ'),
@@ -1357,6 +1373,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.classifyNow', 'ja', '分類する'),
   ('catui.create', 'ja', '新しいカテゴリ'),
   ('catui.deleteConfirm', 'ja', 'このカテゴリを削除しますか？取引は未分類になります。'),
+  ('catui.groupMine', 'ja', '自分のカテゴリ'),
   ('catui.inactive', 'ja', '停止中'),
   ('catui.keywordAdded', 'ja', 'キーワードを追加しました'),
   ('catui.kind', 'ja', '区分'),
@@ -1384,16 +1401,20 @@ insert into public.translations (key, language_code, value) values
   ('catui.orTemplate', 'ja', 'またはテンプレートから:'),
   ('catui.owes', 'ja', '{{from}} → {{to}}'),
   ('catui.owner', 'ja', '代表'),
+  ('catui.ownerBadge', 'ja', '持ち主: {{name}}'),
   ('catui.pendingCount', 'ja', '{{count}} 件が処理待ち'),
   ('catui.pendingSub', 'ja', '未分類の支出合計: {{amount}}'),
   ('catui.pendingTitle', 'ja', '{{groups}} グループ・{{count}} 件が未分類'),
   ('catui.perPerson', 'ja', '1人あたり'),
+  ('catui.private', 'ja', '自分だけ'),
   ('catui.remaining', 'ja', '残り {{amount}}'),
   ('catui.saveAsKeyword', 'ja', 'キーワードとして保存'),
   ('catui.search', 'ja', 'カテゴリを検索…'),
   ('catui.settle', 'ja', '精算する'),
   ('catui.settled', 'ja', '精算しました'),
   ('catui.shared', 'ja', '共有'),
+  ('catui.sharedWithMe', 'ja', '共有されたカテゴリ'),
+  ('catui.sharedWithMeSub', 'ja', 'ほかのメンバーが共有したカテゴリ。中の取引を見たり記録したりできます'),
   ('catui.subcategories', 'ja', '{{count}} 件のサブカテゴリ'),
   ('catui.system', 'ja', 'システム'),
   ('catui.tabActive', 'ja', '有効'),
@@ -1515,7 +1536,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.mtd', 'ja', 'MTD'),
   ('dashboard.netBalance', 'ja', '純資産'),
   ('dashboard.netPeriod', 'ja', '収支'),
-  ('dashboard.noAccountData', 'ja', 'データなし'),
+  ('dashboard.noAccountData', 'ja', 'データなし')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.noAccounts', 'ja', '口座がありません'),
   ('dashboard.noBudgets', 'ja', '予算が設定されていません'),
   ('dashboard.noData', 'ja', 'データがありません'),
@@ -1525,10 +1549,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'ja', '件の支払い'),
   ('dashboard.periodLastMonth', 'ja', '先月'),
   ('dashboard.periodLastQuarter', 'ja', '前四半期'),
-  ('dashboard.periodLastYear', 'ja', '昨年')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.periodLastYear', 'ja', '昨年'),
   ('dashboard.periodYesterday', 'ja', '昨日'),
   ('dashboard.prevPeriod', 'ja', '前期'),
   ('dashboard.quickStats', 'ja', 'クイック統計'),
@@ -1918,7 +1939,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.defaultLedger', 'ja', '起動時に開く元帳'),
   ('prefs.displayName', 'ja', '表示名'),
   ('prefs.emailHint', 'ja', 'メールアドレスの変更はサポートまでご連絡ください'),
-  ('prefs.firstName', 'ja', '名'),
+  ('prefs.firstName', 'ja', '名')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.gender', 'ja', '性別'),
   ('prefs.genderFemale', 'ja', '女性'),
   ('prefs.genderMale', 'ja', '男性'),
@@ -1928,10 +1952,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'ja', '姓'),
   ('prefs.lastUsed', 'ja', '前回の元帳'),
   ('prefs.locale', 'ja', '数値・日付の形式'),
-  ('prefs.passwordMismatch', 'ja', 'パスワードが一致しません')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.passwordMismatch', 'ja', 'パスワードが一致しません'),
   ('prefs.passwordShort', 'ja', '8文字以上にしてください'),
   ('prefs.preview', 'ja', 'プレビュー'),
   ('prefs.removeAvatar', 'ja', '削除'),
@@ -2160,6 +2181,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.noData', 'ja', '取引がありません'),
   ('transactions.noDataSub', 'ja', '最初の取引をインポートして開始します。'),
   ('transactions.noResult', 'ja', '結果が見つかりません'),
+  ('transactions.othersTx', 'ja', '{{name}} さんの取引です。変更できるのは本人だけです'),
   ('transactions.pageInfo', 'ja', '{{total}}ページ中 {{current}}ページ目 (全{{count}}件)'),
   ('transactions.removeGroup', 'ja', 'グループを解除'),
   ('transactions.search', 'ja', '取引を検索...'),
@@ -2368,6 +2390,10 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwHint', 'vi', '· dùng để khớp giao dịch nhập từ ngân hàng/CSV'),
   ('catdetail.kwTitle', 'vi', 'Từ khóa tự động phân loại'),
   ('catdetail.learnHistory', 'vi', 'Học từ lịch sử'),
+  ('catdetail.leave', 'vi', 'Rời khỏi danh mục'),
+  ('catdetail.leaveBody', 'vi', 'Bạn sẽ không còn thấy danh mục này. Giao dịch của bạn vẫn giữ nguyên và chuyển về "Chưa phân loại".'),
+  ('catdetail.leaveTitle', 'vi', 'Rời khỏi "{{name}}"?'),
+  ('catdetail.left', 'vi', 'Đã rời khỏi danh mục'),
   ('catdetail.matched', 'vi', 'khớp "{{kw}}"'),
   ('catdetail.maxDepth', 'vi', 'Đạt cấp tối đa (Cấp {{n}})'),
   ('catdetail.memberSpendCount', 'vi', '{{count}} giao dịch'),
@@ -2387,6 +2413,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'vi', 'bằng'),
   ('catdetail.opRegex', 'vi', 'khớp regex'),
   ('catdetail.opStartsWith', 'vi', 'bắt đầu bằng'),
+  ('catdetail.ownedBy', 'vi', 'Danh mục của {{name}} — chỉ chủ sở hữu được sửa và đổi người chia sẻ'),
   ('catdetail.ownerBadge', 'vi', 'chủ nhóm'),
   ('catdetail.paidOwed', 'vi', 'đã trả {{paid}} · phải chịu {{owed}}'),
   ('catdetail.recentTitle', 'vi', 'Hoạt động gần đây'),
@@ -2475,6 +2502,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.classifyNow', 'vi', 'Phân loại ngay'),
   ('catui.create', 'vi', 'Tạo danh mục mới'),
   ('catui.deleteConfirm', 'vi', 'Xoá danh mục? Giao dịch sẽ thành chưa phân loại.'),
+  ('catui.groupMine', 'vi', 'Của tôi'),
   ('catui.inactive', 'vi', 'Không hoạt động'),
   ('catui.keywordAdded', 'vi', 'Đã thêm từ khoá'),
   ('catui.kind', 'vi', 'Loại nhóm'),
@@ -2502,16 +2530,20 @@ insert into public.translations (key, language_code, value) values
   ('catui.orTemplate', 'vi', 'Hoặc bắt đầu từ template:'),
   ('catui.owes', 'vi', '{{from}} → {{to}}'),
   ('catui.owner', 'vi', 'Chủ nhóm'),
+  ('catui.ownerBadge', 'vi', 'của {{name}}'),
   ('catui.pendingCount', 'vi', '{{count}} giao dịch chờ xử lý'),
   ('catui.pendingSub', 'vi', 'Tổng chi tiêu chưa phân loại: {{amount}}'),
   ('catui.pendingTitle', 'vi', '{{groups}} nhóm · {{count}} giao dịch chờ phân loại'),
   ('catui.perPerson', 'vi', 'Trung bình / người'),
+  ('catui.private', 'vi', 'Chỉ mình bạn'),
   ('catui.remaining', 'vi', 'còn {{amount}}'),
   ('catui.saveAsKeyword', 'vi', 'Lưu làm từ khoá'),
   ('catui.search', 'vi', 'Tìm kiếm danh mục…'),
   ('catui.settle', 'vi', 'Thanh toán lại'),
   ('catui.settled', 'vi', 'Đã ghi nhận thanh toán'),
   ('catui.shared', 'vi', 'Chia sẻ'),
+  ('catui.sharedWithMe', 'vi', 'Được chia sẻ với tôi'),
+  ('catui.sharedWithMeSub', 'vi', 'Danh mục người khác chia sẻ với bạn — bạn thấy và ghi giao dịch vào đó'),
   ('catui.subcategories', 'vi', '{{count}} danh mục con'),
   ('catui.system', 'vi', 'Hệ thống'),
   ('catui.tabActive', 'vi', 'Đang hoạt động'),
@@ -2633,7 +2665,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.mtd', 'vi', 'Lũy kế tháng'),
   ('dashboard.netBalance', 'vi', 'Số dư ròng'),
   ('dashboard.netPeriod', 'vi', 'Thu − chi'),
-  ('dashboard.noAccountData', 'vi', 'Chưa có dữ liệu'),
+  ('dashboard.noAccountData', 'vi', 'Chưa có dữ liệu')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.noAccounts', 'vi', 'Chưa có tài khoản'),
   ('dashboard.noBudgets', 'vi', 'Chưa đặt ngân sách'),
   ('dashboard.noData', 'vi', 'Chưa có dữ liệu'),
@@ -2643,10 +2678,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'vi', 'giao dịch chi'),
   ('dashboard.periodLastMonth', 'vi', 'tháng trước'),
   ('dashboard.periodLastQuarter', 'vi', 'quý trước'),
-  ('dashboard.periodLastYear', 'vi', 'năm trước')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.periodLastYear', 'vi', 'năm trước'),
   ('dashboard.periodYesterday', 'vi', 'hôm qua'),
   ('dashboard.prevPeriod', 'vi', 'kỳ trước'),
   ('dashboard.quickStats', 'vi', 'Thống kê nhanh'),
@@ -3036,7 +3068,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.defaultLedger', 'vi', 'Sổ mở khi khởi động'),
   ('prefs.displayName', 'vi', 'Tên hiển thị'),
   ('prefs.emailHint', 'vi', 'Liên hệ hỗ trợ để đổi email'),
-  ('prefs.firstName', 'vi', 'Tên'),
+  ('prefs.firstName', 'vi', 'Tên')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.gender', 'vi', 'Giới tính'),
   ('prefs.genderFemale', 'vi', 'Nữ'),
   ('prefs.genderMale', 'vi', 'Nam'),
@@ -3046,10 +3081,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'vi', 'Họ'),
   ('prefs.lastUsed', 'vi', 'Sổ dùng gần nhất'),
   ('prefs.locale', 'vi', 'Định dạng số & ngày'),
-  ('prefs.passwordMismatch', 'vi', 'Mật khẩu không khớp')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.passwordMismatch', 'vi', 'Mật khẩu không khớp'),
   ('prefs.passwordShort', 'vi', 'Tối thiểu 8 ký tự'),
   ('prefs.preview', 'vi', 'Xem trước'),
   ('prefs.removeAvatar', 'vi', 'Xoá'),
@@ -3278,6 +3310,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.noData', 'vi', 'Chưa có giao dịch'),
   ('transactions.noDataSub', 'vi', 'Nhập các giao dịch đầu tiên để bắt đầu.'),
   ('transactions.noResult', 'vi', 'Không tìm thấy kết quả'),
+  ('transactions.othersTx', 'vi', 'Giao dịch của {{name}} — chỉ người đó được sửa'),
   ('transactions.pageInfo', 'vi', 'Trang {{current}}/{{total}} (Tổng {{count}} giao dịch)'),
   ('transactions.removeGroup', 'vi', 'Bỏ nhóm'),
   ('transactions.search', 'vi', 'Tìm kiếm giao dịch...'),
@@ -3486,6 +3519,10 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwHint', 'en', '· used to match transactions imported from banks/CSV'),
   ('catdetail.kwTitle', 'en', 'Auto-classify keywords'),
   ('catdetail.learnHistory', 'en', 'Learned from history'),
+  ('catdetail.leave', 'en', 'Leave category'),
+  ('catdetail.leaveBody', 'en', 'You will no longer see this category. Your transactions stay and go back to "Uncategorized".'),
+  ('catdetail.leaveTitle', 'en', 'Leave "{{name}}"?'),
+  ('catdetail.left', 'en', 'You left the category'),
   ('catdetail.matched', 'en', 'matched "{{kw}}"'),
   ('catdetail.maxDepth', 'en', 'Maximum depth reached (level {{n}})'),
   ('catdetail.memberSpendCount', 'en', '{{count}} transactions'),
@@ -3505,6 +3542,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'en', 'equals'),
   ('catdetail.opRegex', 'en', 'matches regex'),
   ('catdetail.opStartsWith', 'en', 'starts with'),
+  ('catdetail.ownedBy', 'en', '{{name}}''s category — only the owner can edit it or change who it''s shared with'),
   ('catdetail.ownerBadge', 'en', 'owner'),
   ('catdetail.paidOwed', 'en', 'paid {{paid}} · should pay {{owed}}'),
   ('catdetail.recentTitle', 'en', 'Recent activity'),
@@ -3593,6 +3631,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.classifyNow', 'en', 'Classify now'),
   ('catui.create', 'en', 'New category'),
   ('catui.deleteConfirm', 'en', 'Delete this category? Its transactions become uncategorized.'),
+  ('catui.groupMine', 'en', 'Mine'),
   ('catui.inactive', 'en', 'Inactive'),
   ('catui.keywordAdded', 'en', 'Keyword added'),
   ('catui.kind', 'en', 'Kind'),
@@ -3620,16 +3659,20 @@ insert into public.translations (key, language_code, value) values
   ('catui.orTemplate', 'en', 'Or start from a template:'),
   ('catui.owes', 'en', '{{from}} → {{to}}'),
   ('catui.owner', 'en', 'Owner'),
+  ('catui.ownerBadge', 'en', '{{name}}''s'),
   ('catui.pendingCount', 'en', '{{count}} waiting'),
   ('catui.pendingSub', 'en', 'Uncategorized spending: {{amount}}'),
   ('catui.pendingTitle', 'en', '{{groups}} groups · {{count}} uncategorized'),
   ('catui.perPerson', 'en', 'Per person'),
+  ('catui.private', 'en', 'Only you'),
   ('catui.remaining', 'en', '{{amount}} left'),
   ('catui.saveAsKeyword', 'en', 'Save as keyword'),
   ('catui.search', 'en', 'Search categories…'),
   ('catui.settle', 'en', 'Settle up'),
   ('catui.settled', 'en', 'Settlement recorded'),
   ('catui.shared', 'en', 'Shared'),
+  ('catui.sharedWithMe', 'en', 'Shared with me'),
+  ('catui.sharedWithMeSub', 'en', 'Categories others shared with you — you can see and add transactions'),
   ('catui.subcategories', 'en', '{{count}} subcategories'),
   ('catui.system', 'en', 'System'),
   ('catui.tabActive', 'en', 'Active'),
@@ -3751,7 +3794,10 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.mtd', 'en', 'MTD'),
   ('dashboard.netBalance', 'en', 'Net Balance'),
   ('dashboard.netPeriod', 'en', 'Net'),
-  ('dashboard.noAccountData', 'en', 'No data'),
+  ('dashboard.noAccountData', 'en', 'No data')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.noAccounts', 'en', 'No accounts yet'),
   ('dashboard.noBudgets', 'en', 'No budgets yet'),
   ('dashboard.noData', 'en', 'No data yet'),
@@ -3761,10 +3807,7 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.payments', 'en', 'payments'),
   ('dashboard.periodLastMonth', 'en', 'last month'),
   ('dashboard.periodLastQuarter', 'en', 'last quarter'),
-  ('dashboard.periodLastYear', 'en', 'last year')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.periodLastYear', 'en', 'last year'),
   ('dashboard.periodYesterday', 'en', 'yesterday'),
   ('dashboard.prevPeriod', 'en', 'prev period'),
   ('dashboard.quickStats', 'en', 'Quick Stats'),
@@ -4154,7 +4197,10 @@ insert into public.translations (key, language_code, value) values
   ('prefs.defaultLedger', 'en', 'Ledger to open on start'),
   ('prefs.displayName', 'en', 'Display name'),
   ('prefs.emailHint', 'en', 'Contact support to change your email'),
-  ('prefs.firstName', 'en', 'First name'),
+  ('prefs.firstName', 'en', 'First name')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.gender', 'en', 'Gender'),
   ('prefs.genderFemale', 'en', 'Female'),
   ('prefs.genderMale', 'en', 'Male'),
@@ -4164,10 +4210,7 @@ insert into public.translations (key, language_code, value) values
   ('prefs.lastName', 'en', 'Last name'),
   ('prefs.lastUsed', 'en', 'Last used'),
   ('prefs.locale', 'en', 'Number & date format'),
-  ('prefs.passwordMismatch', 'en', 'Passwords do not match')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.passwordMismatch', 'en', 'Passwords do not match'),
   ('prefs.passwordShort', 'en', 'At least 8 characters'),
   ('prefs.preview', 'en', 'Preview'),
   ('prefs.removeAvatar', 'en', 'Remove'),
@@ -4396,6 +4439,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.noData', 'en', 'No transactions'),
   ('transactions.noDataSub', 'en', 'Import a file to get started'),
   ('transactions.noResult', 'en', 'No results found'),
+  ('transactions.othersTx', 'en', '{{name}}''s transaction — only they can change it'),
   ('transactions.pageInfo', 'en', 'Page {{current}} of {{total}} ({{count}} total)'),
   ('transactions.removeGroup', 'en', 'Remove group'),
   ('transactions.search', 'en', 'Search transactions...'),

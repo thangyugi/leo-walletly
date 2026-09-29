@@ -304,9 +304,9 @@ function TxnTableRow({ txn, checked, onCheck, onView }: {
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
-  const { accounts, categories, members } = useLedgerData()
+  const { accountOf, categories, members } = useLedgerData()
   const cat = categories.find((c) => c.id === txn.categoryId)
-  const acc = accounts.find((a) => a.id === txn.accountId)
+  const acc = accountOf(txn.accountId)
   const memberIdx = members.findIndex((m) => m.user_id === txn.paidByUserId)
   const member = memberIdx >= 0 ? members[memberIdx] : null
   const memberName = member?.user?.display_name ?? member?.user?.email ?? ''
