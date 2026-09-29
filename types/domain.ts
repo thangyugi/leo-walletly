@@ -54,6 +54,8 @@ export interface Transaction {
   merchantName: string | null
   categoryId: string | null
   categorizedBy: string | null
+  /** Shared category it was in before its payer lost access; comes back when sharing resumes. */
+  suspendedCategoryId: string | null
   needsReview: boolean
   notes: string | null
   paidByUserId: string | null
@@ -88,6 +90,7 @@ export function mapTransaction(row: TransactionRow & { transaction_tags?: { tag_
     merchantName: row.merchant_name,
     categoryId: row.category_id,
     categorizedBy: row.categorized_by,
+    suspendedCategoryId: row.suspended_category_id ?? null,
     needsReview: row.needs_review,
     notes: row.notes,
     paidByUserId: row.paid_by_user_id,

@@ -89,7 +89,7 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
   }
   const fields = [
     { label: t.transactions.date, value: fmtDateDMY(txn.transactionDate) },
-    { label: t.transactions.labelCategory, value: cat?.name ?? t.txform.uncategorized },
+    { label: t.transactions.labelCategory, value: cat?.name ?? (txn.suspendedCategoryId ? `${t.txform.uncategorized} · ${t.transactions.sharePaused}` : t.txform.uncategorized) },
     { label: t.transactions.labelProvider, value: accountLabel(acc) },
     ...(txn.transferAccountId ? [{ label: t.txform.toAccount, value: accountLabel(accountOf(txn.transferAccountId)) }] : []),
     { label: t.transactions.labelType, value: isExpense ? t.transactions.typeExpense : txn.transactionType === 'income' ? t.transactions.typeIncome : t.transactions.typeTransfer },

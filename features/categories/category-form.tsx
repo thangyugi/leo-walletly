@@ -424,6 +424,10 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
             {formData.share_ids.length === 0 && <span className="text-[11px] text-[var(--color-text-loss)] self-center">{t.catform.shareNone}</span>}
           </div>
         )}
+        {/* Taking people out: say what happens to what they entered (nothing is lost). */}
+        {isEdit && (initialData?.member_ids ?? []).some((u) => !formData.is_shared || !formData.share_ids.includes(u)) && (
+          <p className="ml-12 text-[11px] leading-relaxed px-3 py-2 rounded-lg bg-[var(--color-warning-50)] text-[var(--color-warning-700)]">{t.catform.unshareNote}</p>
+        )}
         </div>
         )}
 

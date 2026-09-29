@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Sun, Trash2, X,
+  ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Trash2, X,
   Archive, ArchiveRestore, Lock, LogOut,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
@@ -506,9 +506,6 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catdetail.kwTitle}</h3>
         <span className="text-[12px] text-[var(--color-text-tertiary)]">{t.catdetail.kwHint}</span>
         <span className="flex-1" />
-        <span className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-1 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
-          <Sun className="w-3 h-3" /> {t.catdetail.learnHistory}
-        </span>
         {canEdit && (
           <Link href="/categories/classify" className={btnOutline + ' text-[var(--color-text-primary)]'}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z" /></svg>
@@ -637,8 +634,13 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
+  const { members } = useLedgerData()
   const bulkUpdate = useTransactionsStore((s) => s.bulkUpdate)
   const [tab, setTab] = React.useState<'all' | 'auto' | 'review'>('all')
+  const person = (uid: string | null) => {
+    const m = members.find((x) => x.user_id === uid)
+    return { name: m?.user?.display_name || m?.user?.email || '—', ...colorFor(uid ?? '', members) }
+  }
   const keywords = [category, ...subs].flatMap((c) => c.keywords)
 
   const rows = txns.map((x) => {
@@ -651,9 +653,9 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
   const filtered = tab === 'all' ? rows : rows.filter((r) => r.kind === tab)
   const shown = filtered.slice(0, 20)
   const badge = {
-    auto: { label: t.catdetail.txAuto, cls: 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' },
-    review: { label: t.catui.needsReview, cls: 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]' },
-    manual: { label: t.catdetail.badgeManual, cls: 'bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]' },
+    auto: { label: t.catdetail.txAuto, tip: t.catdetail.txAutoTip, cls: 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' },
+    review: { label: t.catui.needsReview, tip: t.catdetail.txReviewTip, cls: 'bg-[var(--color-warning-50)] text-[var(--color-warning-700)]' },
+    manual: { label: t.catdetail.badgeManual, tip: t.catdetail.badgeManualTip, cls: 'bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-[var(--color-text-secondary)]' },
   }
 
   return (
@@ -676,20 +678,25 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
         {shown.length === 0 ? <div className="px-[18px] py-6 text-[12px] text-[var(--color-text-tertiary)] text-center">{t.catdetail.noTx}</div> : shown.map(({ x, kind, kw }) => {
           const c = all.find((cc) => cc.id === x.categoryId) ?? category
           const isIncome = x.transactionType === 'income'
+          const who = person(x.createdBy ?? x.payerId)
           return (
             <div key={x.id} role="button" tabIndex={0} onClick={() => onOpen(x)} onKeyDown={(e) => e.key === 'Enter' && onOpen(x)}
-              className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer" style={{ gridTemplateColumns: '32px 1fr auto auto' }}>
+              className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer" style={{ gridTemplateColumns: '32px minmax(0,1fr) minmax(0,120px) auto auto' }}>
               <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: c.color + '22', color: c.color }}><CategoryIcon name={c.emoji} className="w-4 h-4" /></div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{x.merchantName || x.description || '—'}</div>
-                  <span className={cn('text-[10px] font-medium px-[7px] py-[2px] rounded-full shrink-0', badge[kind].cls)}>{badge[kind].label}</span>
+                  <span title={badge[kind].tip} className={cn('text-[10px] font-medium px-[7px] py-[2px] rounded-full shrink-0 cursor-help', badge[kind].cls)}>{badge[kind].label}</span>
                 </div>
                 <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 flex items-center gap-2 truncate">
                   {x.transactionDate.split('-').reverse().join('/')} · {c.name}
                   {kw && kind !== 'manual' && <span className="text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-1 rounded">{fill(t.catdetail.matched, { kw })}</span>}
                 </div>
               </div>
+              <span className="flex items-center gap-1.5 min-w-0" title={fill(t.catdetail.addedBy, { name: who.name })}>
+                <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: who.bg, color: who.color }}>{initials(who.name)}</span>
+                <span className="text-[11px] text-[var(--color-text-secondary)] truncate">{who.name}</span>
+              </span>
               {kind === 'review' && canEdit ? (
                 <button onClick={async (e) => { e.stopPropagation(); await bulkUpdate([x.id], { categoryId: x.categoryId ?? category.id }); toast.success(t.txform.saved) }}
                   className="text-[11px] font-medium px-2.5 py-1 rounded-md bg-[var(--color-brand-500)] text-white hover:bg-[var(--color-brand-600)] transition-colors shrink-0">
@@ -912,7 +919,10 @@ function MembersPicker({ category, settlement, readOnly }: { category: Category;
               <input type="checkbox" checked={isOwner || inCat.has(m.user_id)} disabled={readOnly || isOwner} className="accent-[var(--color-interactive-primary)] disabled:opacity-60"
                 onChange={async (e) => {
                   const next = e.target.checked ? [...inCat, m.user_id] : [...inCat].filter((u) => u !== m.user_id)
-                  try { await shareWith(category.id, next.filter((u) => u !== category.owner_id)); settlement.reload() } catch (err) { toast.error((err as Error).message) }
+                  try {
+                    await shareWith(category.id, next.filter((u) => u !== category.owner_id)); settlement.reload()
+                    if (!e.target.checked) toast.info(t.catform.unshareNote)
+                  } catch (err) { toast.error((err as Error).message) }
                 }} />
               <span className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(name)}</span>
               <span className="flex-1 text-[var(--color-text-primary)]">{name}</span>

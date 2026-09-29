@@ -2958,6 +2958,7 @@ export type Database = {
           created_by: string | null
           updated_by: string | null
           version: number
+          suspended_category_id: string | null
         }
         Insert: {
           id?: string
@@ -2999,6 +3000,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          suspended_category_id?: string | null
         }
         Update: {
           id?: string
@@ -3040,6 +3042,7 @@ export type Database = {
           created_by?: string | null
           updated_by?: string | null
           version?: number
+          suspended_category_id?: string | null
         }
         Relationships: [
           {
@@ -3131,6 +3134,13 @@ export type Database = {
             columns: ["recurring_rule_id"]
             isOneToOne: false
             referencedRelation: "recurring_rules"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_suspended_category_id_fkey"
+            columns: ["suspended_category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
           {

@@ -102,10 +102,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.accountsTitle', 'catdetail', null, false),
   ('catdetail.addRule', 'catdetail', null, false),
   ('catdetail.addSub', 'catdetail', null, false),
+  ('catdetail.addedBy', 'catdetail', 'name', false),
   ('catdetail.advancedRules', 'catdetail', null, false),
   ('catdetail.archived', 'catdetail', null, false),
   ('catdetail.badgeAuto', 'catdetail', null, false),
   ('catdetail.badgeManual', 'catdetail', null, false),
+  ('catdetail.badgeManualTip', 'catdetail', null, false),
   ('catdetail.balancesAllTime', 'catdetail', null, false),
   ('catdetail.breadcrumb', 'catdetail', null, false),
   ('catdetail.budgetShort', 'catdetail', 'amount', false),
@@ -191,6 +193,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.tabSub', 'catdetail', null, false),
   ('catdetail.testRules', 'catdetail', 'count', false),
   ('catdetail.txAuto', 'catdetail', null, false),
+  ('catdetail.txAutoTip', 'catdetail', null, false),
+  ('catdetail.txReviewTip', 'catdetail', null, false),
   ('catdetail.viewAll', 'catdetail', null, false),
   ('categories.entertainment', 'categories', null, true),
   ('categories.food', 'categories', null, true),
@@ -228,6 +232,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catform.sharedHint', 'catform', null, false),
   ('catform.subtitle', 'catform', null, false),
   ('catform.type', 'catform', null, false),
+  ('catform.unshareNote', 'catform', null, false),
   ('catform.warning', 'catform', null, false),
   ('catui.accuracy', 'catui', 'pct', false),
   ('catui.active', 'catui', null, false),
@@ -402,15 +407,15 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.days30Ago', 'dashboard', null, true),
   ('dashboard.deposits', 'dashboard', null, true),
   ('dashboard.financialTip', 'dashboard', null, true),
-  ('dashboard.history', 'dashboard', null, true),
+  ('dashboard.history', 'dashboard', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('dashboard.importData', 'dashboard', null, true),
   ('dashboard.importNow', 'dashboard', null, true),
   ('dashboard.inflow', 'dashboard', null, true),
   ('dashboard.invite', 'dashboard', null, true),
-  ('dashboard.manageUsers', 'dashboard', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.manageUsers', 'dashboard', null, true),
   ('dashboard.markAllRead', 'dashboard', null, true),
   ('dashboard.member', 'dashboard', null, true),
   ('dashboard.members', 'dashboard', null, true),
@@ -805,15 +810,15 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('organization_settings.nameLabel', 'organization_settings', null, false),
   ('organization_settings.slugLabel', 'organization_settings', null, false),
   ('organization_settings.subtitle', 'organization_settings', null, false),
-  ('organization_settings.taxId', 'organization_settings', null, false),
+  ('organization_settings.taxId', 'organization_settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('organization_settings.title', 'organization_settings', null, false),
   ('placeholders.devSub', 'placeholders', null, false),
   ('placeholders.devTitle', 'placeholders', null, false),
   ('prefs.birthDate', 'prefs', null, false),
-  ('prefs.confirmPassword', 'prefs', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('prefs.confirmPassword', 'prefs', null, false),
   ('prefs.country', 'prefs', null, false),
   ('prefs.currency', 'prefs', null, false),
   ('prefs.dateFormat', 'prefs', null, false),
@@ -1065,6 +1070,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.search', 'transactions', null, true),
   ('transactions.selected', 'transactions', null, true),
   ('transactions.selectedCount', 'transactions', null, true),
+  ('transactions.sharePaused', 'transactions', null, true),
   ('transactions.shown', 'transactions', null, true),
   ('transactions.sort', 'transactions', null, true),
   ('transactions.sortAmountAsc', 'transactions', null, true),
@@ -1238,10 +1244,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.accountsTitle', 'ja', '連携口座'),
   ('catdetail.addRule', 'ja', 'ルールを追加'),
   ('catdetail.addSub', 'ja', 'サブグループを追加'),
+  ('catdetail.addedBy', 'ja', '{{name}} さんが追加'),
   ('catdetail.advancedRules', 'ja', '詳細ルール'),
   ('catdetail.archived', 'ja', 'アーカイブしました'),
   ('catdetail.badgeAuto', 'ja', '自動分類'),
-  ('catdetail.badgeManual', 'ja', '手動'),
+  ('catdetail.badgeManual', 'ja', '手動で選択'),
+  ('catdetail.badgeManualTip', 'ja', '入力した人がこのカテゴリを選びました'),
   ('catdetail.balancesAllTime', 'ja', '累計（全期間）'),
   ('catdetail.breadcrumb', 'ja', 'カテゴリ'),
   ('catdetail.budgetShort', 'ja', '予算 {{amount}}'),
@@ -1265,7 +1273,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwForGroupHint', 'ja', '· 店名 / 内容に一致'),
   ('catdetail.kwForSub', 'ja', 'サブグループ · {{name}}'),
   ('catdetail.kwForSubHint', 'ja', '· 親グループに一致した後にサブへ振り分け'),
-  ('catdetail.kwHint', 'ja', '· 銀行/CSV から取り込んだ取引の照合に使用'),
+  ('catdetail.kwHint', 'ja', '· 取引の内容・店名にこの言葉があれば、取り込みや「分類」のときに自動でこのカテゴリに入ります'),
   ('catdetail.kwTitle', 'ja', '自動分類キーワード'),
   ('catdetail.learnHistory', 'ja', '履歴から学習'),
   ('catdetail.leave', 'ja', 'このカテゴリから抜ける'),
@@ -1326,7 +1334,9 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.suggest', 'ja', '候補: "{{kw}}"'),
   ('catdetail.tabSub', 'ja', 'サブグループ'),
   ('catdetail.testRules', 'ja', '未一致の取引で実行 ({{count}})'),
-  ('catdetail.txAuto', 'ja', '自動'),
+  ('catdetail.txAuto', 'ja', 'キーワード'),
+  ('catdetail.txAutoTip', 'ja', 'キーワード / ルールで自動的にこのカテゴリに入りました'),
+  ('catdetail.txReviewTip', 'ja', '自動で分類されました。正しければ「適用」で確定してください'),
   ('catdetail.viewAll', 'ja', 'すべて表示 →'),
   ('categories.entertainment', 'ja', '娯楽'),
   ('categories.food', 'ja', '食費'),
@@ -1364,6 +1374,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.sharedHint', 'ja', 'メンバーで費用を分担します'),
   ('catform.subtitle', 'ja', '取引を分類するためのカテゴリを設定します'),
   ('catform.type', 'ja', '種類'),
+  ('catform.unshareNote', 'ja', '外した人の取引は削除されません。その人の側では一時的に「未分類」になり、再び共有すると自動でこのカテゴリに戻ります。'),
   ('catform.warning', 'ja', '警告のしきい値 (%)'),
   ('catui.accuracy', 'ja', '{{pct}}% 自動'),
   ('catui.active', 'ja', '有効'),
@@ -1538,15 +1549,15 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.days30Ago', 'ja', '30日前'),
   ('dashboard.deposits', 'ja', '件の入金'),
   ('dashboard.financialTip', 'ja', '財務のヒント'),
-  ('dashboard.history', 'ja', '履歴'),
+  ('dashboard.history', 'ja', '履歴')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.importData', 'ja', 'データをインポート'),
   ('dashboard.importNow', 'ja', '今すぐインポート'),
   ('dashboard.inflow', 'ja', '入金'),
   ('dashboard.invite', 'ja', '招待'),
-  ('dashboard.manageUsers', 'ja', 'メンバー管理 →')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.manageUsers', 'ja', 'メンバー管理 →'),
   ('dashboard.markAllRead', 'ja', 'すべて既読にする'),
   ('dashboard.member', 'ja', 'メンバー'),
   ('dashboard.members', 'ja', 'メンバー'),
@@ -1941,15 +1952,15 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.nameLabel', 'ja', '組織名 (法人名)'),
   ('organization_settings.slugLabel', 'ja', '組織ID (Slug)'),
   ('organization_settings.subtitle', 'ja', '法人の基本情報と最上位エンティティを管理します'),
-  ('organization_settings.taxId', 'ja', '登録番号 / 税務ID'),
+  ('organization_settings.taxId', 'ja', '登録番号 / 税務ID')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('organization_settings.title', 'ja', '組織設定'),
   ('placeholders.devSub', 'ja', 'この機能は現在開発中であり、将来のアップデートで利用可能になります。'),
   ('placeholders.devTitle', 'ja', '開発中'),
   ('prefs.birthDate', 'ja', '生年月日'),
-  ('prefs.confirmPassword', 'ja', '新しいパスワード（確認）')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.confirmPassword', 'ja', '新しいパスワード（確認）'),
   ('prefs.country', 'ja', '国'),
   ('prefs.currency', 'ja', '既定の通貨（新しい元帳）'),
   ('prefs.dateFormat', 'ja', '日付の表示'),
@@ -2201,6 +2212,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.search', 'ja', '取引を検索...'),
   ('transactions.selected', 'ja', '件選択済み'),
   ('transactions.selectedCount', 'ja', '件選択済み'),
+  ('transactions.sharePaused', 'ja', '共有停止中 · 再共有で元に戻ります'),
   ('transactions.shown', 'ja', '件表示中'),
   ('transactions.sort', 'ja', '並べ替え'),
   ('transactions.sortAmountAsc', 'ja', '金額 (低い順)'),
@@ -2374,10 +2386,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.accountsTitle', 'vi', 'Tài khoản liên kết'),
   ('catdetail.addRule', 'vi', 'Thêm quy tắc'),
   ('catdetail.addSub', 'vi', 'Thêm nhóm con'),
+  ('catdetail.addedBy', 'vi', '{{name}} đã thêm'),
   ('catdetail.advancedRules', 'vi', 'Quy tắc nâng cao'),
   ('catdetail.archived', 'vi', 'Đã lưu trữ danh mục'),
   ('catdetail.badgeAuto', 'vi', 'Tự động phân loại'),
-  ('catdetail.badgeManual', 'vi', 'Thủ công'),
+  ('catdetail.badgeManual', 'vi', 'Chọn tay'),
+  ('catdetail.badgeManualTip', 'vi', 'Người nhập tự chọn danh mục này'),
   ('catdetail.balancesAllTime', 'vi', 'Tính đến nay (mọi kỳ)'),
   ('catdetail.breadcrumb', 'vi', 'Danh mục'),
   ('catdetail.budgetShort', 'vi', 'NS {{amount}}'),
@@ -2401,7 +2415,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwForGroupHint', 'vi', '· khớp tên cửa hàng / mô tả'),
   ('catdetail.kwForSub', 'vi', 'Cho nhóm con · {{name}}'),
   ('catdetail.kwForSubHint', 'vi', '· phân nhóm con sau khi đã khớp nhóm cha'),
-  ('catdetail.kwHint', 'vi', '· dùng để khớp giao dịch nhập từ ngân hàng/CSV'),
+  ('catdetail.kwHint', 'vi', '· giao dịch có tên / cửa hàng chứa từ khoá sẽ tự vào danh mục này khi nhập file hoặc bấm phân loại'),
   ('catdetail.kwTitle', 'vi', 'Từ khóa tự động phân loại'),
   ('catdetail.learnHistory', 'vi', 'Học từ lịch sử'),
   ('catdetail.leave', 'vi', 'Rời khỏi danh mục'),
@@ -2462,7 +2476,9 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.suggest', 'vi', 'Gợi ý: "{{kw}}"'),
   ('catdetail.tabSub', 'vi', 'Nhóm con'),
   ('catdetail.testRules', 'vi', 'Chạy thử trên giao dịch chưa khớp ({{count}})'),
-  ('catdetail.txAuto', 'vi', 'Tự động'),
+  ('catdetail.txAuto', 'vi', 'Theo từ khoá'),
+  ('catdetail.txAutoTip', 'vi', 'Tự vào danh mục này nhờ từ khoá / quy tắc'),
+  ('catdetail.txReviewTip', 'vi', 'Được xếp tự động — kiểm tra rồi bấm Xác nhận'),
   ('catdetail.viewAll', 'vi', 'Xem tất cả →'),
   ('categories.entertainment', 'vi', 'Giải trí'),
   ('categories.food', 'vi', 'Ăn uống'),
@@ -2500,6 +2516,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.sharedHint', 'vi', 'Chia chi phí giữa các thành viên'),
   ('catform.subtitle', 'vi', 'Thiết lập danh mục để phân loại giao dịch'),
   ('catform.type', 'vi', 'Loại'),
+  ('catform.unshareNote', 'vi', 'Giao dịch người đó đã ghi không bị xoá: bên họ tạm chuyển về "Chưa phân loại" và sẽ tự quay lại danh mục này khi bạn chia sẻ lại.'),
   ('catform.warning', 'vi', 'Ngưỡng cảnh báo (%)'),
   ('catui.accuracy', 'vi', '{{pct}}% chính xác'),
   ('catui.active', 'vi', 'Đang hoạt động'),
@@ -2674,15 +2691,15 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.days30Ago', 'vi', '30 ngày trước'),
   ('dashboard.deposits', 'vi', 'giao dịch thu'),
   ('dashboard.financialTip', 'vi', 'Mẹo tài chính'),
-  ('dashboard.history', 'vi', 'Lịch sử'),
+  ('dashboard.history', 'vi', 'Lịch sử')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.importData', 'vi', 'Nhập dữ liệu'),
   ('dashboard.importNow', 'vi', 'Nhập ngay'),
   ('dashboard.inflow', 'vi', 'Thu nhập'),
   ('dashboard.invite', 'vi', 'Mời'),
-  ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →'),
   ('dashboard.markAllRead', 'vi', 'Đánh dấu tất cả là đã đọc'),
   ('dashboard.member', 'vi', 'Thành viên'),
   ('dashboard.members', 'vi', 'Thành viên'),
@@ -3077,15 +3094,15 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.nameLabel', 'vi', 'Tên tổ chức (Tên công ty)'),
   ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)'),
   ('organization_settings.subtitle', 'vi', 'Quản lý cấu hình tài chính và phân cấp tổ chức'),
-  ('organization_settings.taxId', 'vi', 'Mã số thuế'),
+  ('organization_settings.taxId', 'vi', 'Mã số thuế')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('organization_settings.title', 'vi', 'Thiết lập Sổ cái'),
   ('placeholders.devSub', 'vi', 'Tính năng này hiện đang được phát triển và sẽ có trong bản cập nhật tương lai.'),
   ('placeholders.devTitle', 'vi', 'Đang phát triển'),
   ('prefs.birthDate', 'vi', 'Ngày sinh'),
-  ('prefs.confirmPassword', 'vi', 'Nhập lại mật khẩu mới')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.confirmPassword', 'vi', 'Nhập lại mật khẩu mới'),
   ('prefs.country', 'vi', 'Quốc gia'),
   ('prefs.currency', 'vi', 'Tiền tệ mặc định (sổ mới)'),
   ('prefs.dateFormat', 'vi', 'Kiểu ngày'),
@@ -3337,6 +3354,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.search', 'vi', 'Tìm kiếm giao dịch...'),
   ('transactions.selected', 'vi', 'đã chọn'),
   ('transactions.selectedCount', 'vi', 'đã chọn'),
+  ('transactions.sharePaused', 'vi', 'danh mục chung đang dừng chia sẻ · sẽ tự quay lại'),
   ('transactions.shown', 'vi', 'giao dịch hiển thị'),
   ('transactions.sort', 'vi', 'Sắp xếp'),
   ('transactions.sortAmountAsc', 'vi', 'Số tiền (thấp nhất)'),
@@ -3510,10 +3528,12 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.accountsTitle', 'en', 'Linked accounts'),
   ('catdetail.addRule', 'en', 'Add rule'),
   ('catdetail.addSub', 'en', 'Add subgroup'),
+  ('catdetail.addedBy', 'en', 'Added by {{name}}'),
   ('catdetail.advancedRules', 'en', 'Advanced rules'),
   ('catdetail.archived', 'en', 'Category archived'),
   ('catdetail.badgeAuto', 'en', 'Auto-classify'),
-  ('catdetail.badgeManual', 'en', 'Manual'),
+  ('catdetail.badgeManual', 'en', 'Picked by hand'),
+  ('catdetail.badgeManualTip', 'en', 'The person who entered it picked this category'),
   ('catdetail.balancesAllTime', 'en', 'All time to date'),
   ('catdetail.breadcrumb', 'en', 'Categories'),
   ('catdetail.budgetShort', 'en', 'Budget {{amount}}'),
@@ -3537,7 +3557,7 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.kwForGroupHint', 'en', '· matches merchant / description'),
   ('catdetail.kwForSub', 'en', 'Subgroup · {{name}}'),
   ('catdetail.kwForSubHint', 'en', '· assigned after the parent group matches'),
-  ('catdetail.kwHint', 'en', '· used to match transactions imported from banks/CSV'),
+  ('catdetail.kwHint', 'en', '· transactions whose description or merchant contains a keyword are filed here automatically on import or when you run classification'),
   ('catdetail.kwTitle', 'en', 'Auto-classify keywords'),
   ('catdetail.learnHistory', 'en', 'Learned from history'),
   ('catdetail.leave', 'en', 'Leave category'),
@@ -3598,7 +3618,9 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.suggest', 'en', 'Suggestion: "{{kw}}"'),
   ('catdetail.tabSub', 'en', 'Subgroups'),
   ('catdetail.testRules', 'en', 'Run on unmatched transactions ({{count}})'),
-  ('catdetail.txAuto', 'en', 'Auto'),
+  ('catdetail.txAuto', 'en', 'By keyword'),
+  ('catdetail.txAutoTip', 'en', 'Filed here automatically by a keyword or rule'),
+  ('catdetail.txReviewTip', 'en', 'Filed automatically — check it and confirm'),
   ('catdetail.viewAll', 'en', 'View all →'),
   ('categories.entertainment', 'en', 'Entertainment'),
   ('categories.food', 'en', 'Food'),
@@ -3636,6 +3658,7 @@ insert into public.translations (key, language_code, value) values
   ('catform.sharedHint', 'en', 'Split costs between members'),
   ('catform.subtitle', 'en', 'Set up a category to organise transactions'),
   ('catform.type', 'en', 'Type'),
+  ('catform.unshareNote', 'en', 'Nothing they entered is deleted: it shows as "Uncategorized" for them for now and comes back here by itself when you share again.'),
   ('catform.warning', 'en', 'Alert threshold (%)'),
   ('catui.accuracy', 'en', '{{pct}}% automatic'),
   ('catui.active', 'en', 'Active'),
@@ -3810,15 +3833,15 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.days30Ago', 'en', '30 days ago'),
   ('dashboard.deposits', 'en', 'deposits'),
   ('dashboard.financialTip', 'en', 'Financial Tip'),
-  ('dashboard.history', 'en', 'History'),
+  ('dashboard.history', 'en', 'History')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.importData', 'en', 'Import Data'),
   ('dashboard.importNow', 'en', 'Import Now'),
   ('dashboard.inflow', 'en', 'Inflow'),
   ('dashboard.invite', 'en', 'Invite'),
-  ('dashboard.manageUsers', 'en', 'Manage members →')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.manageUsers', 'en', 'Manage members →'),
   ('dashboard.markAllRead', 'en', 'Mark all as read'),
   ('dashboard.member', 'en', 'Member'),
   ('dashboard.members', 'en', 'Members'),
@@ -4213,15 +4236,15 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.nameLabel', 'en', 'Organization Name (Legal)'),
   ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)'),
   ('organization_settings.subtitle', 'en', 'Manage legal entity information and top-level entities'),
-  ('organization_settings.taxId', 'en', 'Tax ID / Registration'),
+  ('organization_settings.taxId', 'en', 'Tax ID / Registration')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('organization_settings.title', 'en', 'Organization Settings'),
   ('placeholders.devSub', 'en', 'This feature is currently under development and will be available in a future update.'),
   ('placeholders.devTitle', 'en', 'Development in progress'),
   ('prefs.birthDate', 'en', 'Date of birth'),
-  ('prefs.confirmPassword', 'en', 'Confirm new password')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.confirmPassword', 'en', 'Confirm new password'),
   ('prefs.country', 'en', 'Country'),
   ('prefs.currency', 'en', 'Default currency (new ledgers)'),
   ('prefs.dateFormat', 'en', 'Date format'),
@@ -4473,6 +4496,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.search', 'en', 'Search transactions...'),
   ('transactions.selected', 'en', 'selected'),
   ('transactions.selectedCount', 'en', 'selected'),
+  ('transactions.sharePaused', 'en', 'shared category paused · returns when shared again'),
   ('transactions.shown', 'en', 'shown'),
   ('transactions.sort', 'en', 'Sort'),
   ('transactions.sortAmountAsc', 'en', 'Amount (lowest)'),
