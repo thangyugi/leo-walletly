@@ -254,7 +254,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   fetchCategories: async (ledgerId) => {
     set({ isLoading: true, error: null, ledgerId })
     try {
-      const [cats, rules, budgets, translations] = await Promise.all([
+      const [withOwner, rules, budgets, translations] = await Promise.all([
         supabase.from('categories').select('*, owner:users!categories_owner_id_fkey(display_name)').eq('ledger_id', ledgerId).is('deleted_at', null),
         supabase.from('category_rules').select('category_id, pattern').eq('ledger_id', ledgerId)
           .eq('match_type', 'contains').eq('is_active', true).is('deleted_at', null),
@@ -262,6 +262,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           .eq('period_type', 'monthly').is('period_start', null).is('deleted_at', null),
         supabase.from('category_translations').select('category_id, language_code, name'),
       ])
+      // A database without the privacy migration (0027) has no owner_id: load
+      // the plain rows and treat every category as the user's own, as before.
+      type Row = NonNullable<typeof withOwner.data>[number]
+      let cats: { data: Row[] | null; error: { message: string } | null } = withOwner
+      if (withOwner.error) {
+        console.warn('categories: owner lookup failed, run migration 0027 —', withOwner.error.message)
+        cats = await supabase.from('categories').select('*').eq('ledger_id', ledgerId).is('deleted_at', null) as typeof cats
+      }
       fail(cats.error)
       const keywordsBy = new Map<string, string[]>()
       for (const r of rules.data ?? []) keywordsBy.set(r.category_id, [...(keywordsBy.get(r.category_id) ?? []), r.pattern])
@@ -279,9 +287,9 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           ledger_id: c.ledger_id,
           // A shared sub-category whose parent you cannot see sits at the top level.
           parent_id: c.parent_id && visible.has(c.parent_id) ? c.parent_id : null,
-          owner_id: c.owner_id,
+          owner_id: c.owner_id ?? me ?? '',
           owner_name: c.owner?.display_name ?? '—',
-          is_mine: c.owner_id === me,
+          is_mine: !c.owner_id || c.owner_id === me,
           slug: c.slug,
           name: displayName(c, tr),
           base_name: c.name,
