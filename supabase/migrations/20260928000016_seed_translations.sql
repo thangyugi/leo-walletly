@@ -219,7 +219,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catform.noKeywords', 'catform', null, false),
   ('catform.noParent', 'catform', null, false),
   ('catform.parent', 'catform', null, false),
+  ('catform.privateHint', 'catform', null, false),
   ('catform.save', 'catform', null, false),
+  ('catform.shareBranchHint', 'catform', null, false),
+  ('catform.shareNone', 'catform', null, false),
+  ('catform.shareWith', 'catform', null, false),
   ('catform.shared', 'catform', null, false),
   ('catform.sharedHint', 'catform', null, false),
   ('catform.subtitle', 'catform', null, false),
@@ -284,6 +288,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.settle', 'catui', null, false),
   ('catui.settled', 'catui', null, false),
   ('catui.shared', 'catui', null, false),
+  ('catui.sharedCount', 'catui', 'count', false),
+  ('catui.sharedVia', 'catui', 'name', false),
   ('catui.sharedWithMe', 'catui', null, false),
   ('catui.sharedWithMeSub', 'catui', null, false),
   ('catui.subcategories', 'catui', 'count', false),
@@ -305,6 +311,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.tipBody', 'catui', null, false),
   ('catui.tipTitle', 'catui', null, false),
   ('catui.title', 'catui', null, false),
+  ('catui.topSpend', 'catui', null, false),
   ('catui.topTitle', 'catui', null, false),
   ('catui.totalSpent', 'catui', null, false),
   ('catui.totalTx', 'catui', null, false),
@@ -400,17 +407,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.importNow', 'dashboard', null, true),
   ('dashboard.inflow', 'dashboard', null, true),
   ('dashboard.invite', 'dashboard', null, true),
-  ('dashboard.manageUsers', 'dashboard', null, true),
+  ('dashboard.manageUsers', 'dashboard', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('dashboard.markAllRead', 'dashboard', null, true),
   ('dashboard.member', 'dashboard', null, true),
   ('dashboard.members', 'dashboard', null, true),
   ('dashboard.mtd', 'dashboard', null, true),
   ('dashboard.netBalance', 'dashboard', null, true),
   ('dashboard.netPeriod', 'dashboard', null, true),
-  ('dashboard.noAccountData', 'dashboard', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.noAccountData', 'dashboard', null, true),
   ('dashboard.noAccounts', 'dashboard', null, true),
   ('dashboard.noBudgets', 'dashboard', null, true),
   ('dashboard.noData', 'dashboard', null, true),
@@ -803,17 +810,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('placeholders.devSub', 'placeholders', null, false),
   ('placeholders.devTitle', 'placeholders', null, false),
   ('prefs.birthDate', 'prefs', null, false),
-  ('prefs.confirmPassword', 'prefs', null, false),
+  ('prefs.confirmPassword', 'prefs', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('prefs.country', 'prefs', null, false),
   ('prefs.currency', 'prefs', null, false),
   ('prefs.dateFormat', 'prefs', null, false),
   ('prefs.defaultLedger', 'prefs', null, false),
   ('prefs.displayName', 'prefs', null, false),
   ('prefs.emailHint', 'prefs', null, false),
-  ('prefs.firstName', 'prefs', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('prefs.firstName', 'prefs', null, false),
   ('prefs.gender', 'prefs', null, false),
   ('prefs.genderFemale', 'prefs', null, false),
   ('prefs.genderMale', 'prefs', null, false),
@@ -1348,7 +1355,11 @@ insert into public.translations (key, language_code, value) values
   ('catform.noKeywords', 'ja', 'キーワードはまだありません'),
   ('catform.noParent', 'ja', '— 親カテゴリなし —'),
   ('catform.parent', 'ja', '親カテゴリ'),
+  ('catform.privateHint', 'ja', 'オフ: 自分だけが見られます'),
   ('catform.save', 'ja', '変更を保存'),
+  ('catform.shareBranchHint', 'ja', '選んだ人はこのカテゴリとサブカテゴリの取引を見て記録できます'),
+  ('catform.shareNone', 'ja', '1人以上選んでください'),
+  ('catform.shareWith', 'ja', '共有する相手'),
   ('catform.shared', 'ja', '共有カテゴリ'),
   ('catform.sharedHint', 'ja', 'メンバーで費用を分担します'),
   ('catform.subtitle', 'ja', '取引を分類するためのカテゴリを設定します'),
@@ -1413,6 +1424,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.settle', 'ja', '精算する'),
   ('catui.settled', 'ja', '精算しました'),
   ('catui.shared', 'ja', '共有'),
+  ('catui.sharedCount', 'ja', '共有 · {{count}}人'),
+  ('catui.sharedVia', 'ja', '親カテゴリ「{{name}}」ごと共有中'),
   ('catui.sharedWithMe', 'ja', '共有されたカテゴリ'),
   ('catui.sharedWithMeSub', 'ja', 'ほかのメンバーが共有したカテゴリ。中の取引を見たり記録したりできます'),
   ('catui.subcategories', 'ja', '{{count}} 件のサブカテゴリ'),
@@ -1434,6 +1447,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.tipBody', 'ja', '例: 「starbucks」をカフェに追加 → その文字を含む取引はすべてカフェに分類'),
   ('catui.tipTitle', 'ja', 'キーワードを設定すると、今後の取引が自動で分類されます'),
   ('catui.title', 'ja', 'カテゴリ管理'),
+  ('catui.topSpend', 'ja', '支出トップ'),
   ('catui.topTitle', 'ja', '支出の多いカテゴリ（期間）'),
   ('catui.totalSpent', 'ja', '合計支出'),
   ('catui.totalTx', 'ja', '取引数'),
@@ -1529,17 +1543,17 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'ja', '今すぐインポート'),
   ('dashboard.inflow', 'ja', '入金'),
   ('dashboard.invite', 'ja', '招待'),
-  ('dashboard.manageUsers', 'ja', 'メンバー管理 →'),
+  ('dashboard.manageUsers', 'ja', 'メンバー管理 →')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.markAllRead', 'ja', 'すべて既読にする'),
   ('dashboard.member', 'ja', 'メンバー'),
   ('dashboard.members', 'ja', 'メンバー'),
   ('dashboard.mtd', 'ja', 'MTD'),
   ('dashboard.netBalance', 'ja', '純資産'),
   ('dashboard.netPeriod', 'ja', '収支'),
-  ('dashboard.noAccountData', 'ja', 'データなし')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.noAccountData', 'ja', 'データなし'),
   ('dashboard.noAccounts', 'ja', '口座がありません'),
   ('dashboard.noBudgets', 'ja', '予算が設定されていません'),
   ('dashboard.noData', 'ja', 'データがありません'),
@@ -1932,17 +1946,17 @@ insert into public.translations (key, language_code, value) values
   ('placeholders.devSub', 'ja', 'この機能は現在開発中であり、将来のアップデートで利用可能になります。'),
   ('placeholders.devTitle', 'ja', '開発中'),
   ('prefs.birthDate', 'ja', '生年月日'),
-  ('prefs.confirmPassword', 'ja', '新しいパスワード（確認）'),
+  ('prefs.confirmPassword', 'ja', '新しいパスワード（確認）')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.country', 'ja', '国'),
   ('prefs.currency', 'ja', '既定の通貨（新しい元帳）'),
   ('prefs.dateFormat', 'ja', '日付の表示'),
   ('prefs.defaultLedger', 'ja', '起動時に開く元帳'),
   ('prefs.displayName', 'ja', '表示名'),
   ('prefs.emailHint', 'ja', 'メールアドレスの変更はサポートまでご連絡ください'),
-  ('prefs.firstName', 'ja', '名')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.firstName', 'ja', '名'),
   ('prefs.gender', 'ja', '性別'),
   ('prefs.genderFemale', 'ja', '女性'),
   ('prefs.genderMale', 'ja', '男性'),
@@ -2477,7 +2491,11 @@ insert into public.translations (key, language_code, value) values
   ('catform.noKeywords', 'vi', 'Chưa có từ khoá'),
   ('catform.noParent', 'vi', '— Không có danh mục cha —'),
   ('catform.parent', 'vi', 'Danh mục cha'),
+  ('catform.privateHint', 'vi', 'Đang tắt: chỉ mình bạn thấy'),
   ('catform.save', 'vi', 'Lưu thay đổi'),
+  ('catform.shareBranchHint', 'vi', 'Người được chọn thấy và ghi giao dịch vào danh mục này và các danh mục con'),
+  ('catform.shareNone', 'vi', 'Chọn ít nhất 1 người'),
+  ('catform.shareWith', 'vi', 'Chia sẻ với'),
   ('catform.shared', 'vi', 'Danh mục chia sẻ'),
   ('catform.sharedHint', 'vi', 'Chia chi phí giữa các thành viên'),
   ('catform.subtitle', 'vi', 'Thiết lập danh mục để phân loại giao dịch'),
@@ -2535,13 +2553,15 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'vi', 'Tổng chi tiêu chưa phân loại: {{amount}}'),
   ('catui.pendingTitle', 'vi', '{{groups}} nhóm · {{count}} giao dịch chờ phân loại'),
   ('catui.perPerson', 'vi', 'Trung bình / người'),
-  ('catui.private', 'vi', 'Chỉ mình bạn'),
+  ('catui.private', 'vi', 'Chỉ mình tôi'),
   ('catui.remaining', 'vi', 'còn {{amount}}'),
   ('catui.saveAsKeyword', 'vi', 'Lưu làm từ khoá'),
   ('catui.search', 'vi', 'Tìm kiếm danh mục…'),
   ('catui.settle', 'vi', 'Thanh toán lại'),
   ('catui.settled', 'vi', 'Đã ghi nhận thanh toán'),
   ('catui.shared', 'vi', 'Chia sẻ'),
+  ('catui.sharedCount', 'vi', 'Chia sẻ · {{count}} người'),
+  ('catui.sharedVia', 'vi', 'Được chia sẻ theo danh mục cha "{{name}}"'),
   ('catui.sharedWithMe', 'vi', 'Được chia sẻ với tôi'),
   ('catui.sharedWithMeSub', 'vi', 'Danh mục người khác chia sẻ với bạn — bạn thấy và ghi giao dịch vào đó'),
   ('catui.subcategories', 'vi', '{{count}} danh mục con'),
@@ -2563,6 +2583,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.tipBody', 'vi', 'Ví dụ: thêm "starbucks", "highlands" vào danh mục Cà phê → tự động phân loại mọi giao dịch chứa từ này'),
   ('catui.tipTitle', 'vi', 'Đặt từ khóa cho danh mục giúp tự động phân loại 95% giao dịch trong tương lai'),
   ('catui.title', 'vi', 'Quản lý danh mục'),
+  ('catui.topSpend', 'vi', 'Chi nhiều nhất'),
   ('catui.topTitle', 'vi', 'Danh mục chi nhiều nhất (trong kỳ)'),
   ('catui.totalSpent', 'vi', 'Tổng chi tiêu'),
   ('catui.totalTx', 'vi', 'Tổng giao dịch'),
@@ -2658,17 +2679,17 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'vi', 'Nhập ngay'),
   ('dashboard.inflow', 'vi', 'Thu nhập'),
   ('dashboard.invite', 'vi', 'Mời'),
-  ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →'),
+  ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.markAllRead', 'vi', 'Đánh dấu tất cả là đã đọc'),
   ('dashboard.member', 'vi', 'Thành viên'),
   ('dashboard.members', 'vi', 'Thành viên'),
   ('dashboard.mtd', 'vi', 'Lũy kế tháng'),
   ('dashboard.netBalance', 'vi', 'Số dư ròng'),
   ('dashboard.netPeriod', 'vi', 'Thu − chi'),
-  ('dashboard.noAccountData', 'vi', 'Chưa có dữ liệu')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.noAccountData', 'vi', 'Chưa có dữ liệu'),
   ('dashboard.noAccounts', 'vi', 'Chưa có tài khoản'),
   ('dashboard.noBudgets', 'vi', 'Chưa đặt ngân sách'),
   ('dashboard.noData', 'vi', 'Chưa có dữ liệu'),
@@ -3061,17 +3082,17 @@ insert into public.translations (key, language_code, value) values
   ('placeholders.devSub', 'vi', 'Tính năng này hiện đang được phát triển và sẽ có trong bản cập nhật tương lai.'),
   ('placeholders.devTitle', 'vi', 'Đang phát triển'),
   ('prefs.birthDate', 'vi', 'Ngày sinh'),
-  ('prefs.confirmPassword', 'vi', 'Nhập lại mật khẩu mới'),
+  ('prefs.confirmPassword', 'vi', 'Nhập lại mật khẩu mới')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.country', 'vi', 'Quốc gia'),
   ('prefs.currency', 'vi', 'Tiền tệ mặc định (sổ mới)'),
   ('prefs.dateFormat', 'vi', 'Kiểu ngày'),
   ('prefs.defaultLedger', 'vi', 'Sổ mở khi khởi động'),
   ('prefs.displayName', 'vi', 'Tên hiển thị'),
   ('prefs.emailHint', 'vi', 'Liên hệ hỗ trợ để đổi email'),
-  ('prefs.firstName', 'vi', 'Tên')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.firstName', 'vi', 'Tên'),
   ('prefs.gender', 'vi', 'Giới tính'),
   ('prefs.genderFemale', 'vi', 'Nữ'),
   ('prefs.genderMale', 'vi', 'Nam'),
@@ -3606,7 +3627,11 @@ insert into public.translations (key, language_code, value) values
   ('catform.noKeywords', 'en', 'No keywords yet'),
   ('catform.noParent', 'en', '— No parent —'),
   ('catform.parent', 'en', 'Parent category'),
+  ('catform.privateHint', 'en', 'Off: only you can see it'),
   ('catform.save', 'en', 'Save changes'),
+  ('catform.shareBranchHint', 'en', 'People you pick can see and add transactions here and in its sub-categories'),
+  ('catform.shareNone', 'en', 'Pick at least one person'),
+  ('catform.shareWith', 'en', 'Share with'),
   ('catform.shared', 'en', 'Shared category'),
   ('catform.sharedHint', 'en', 'Split costs between members'),
   ('catform.subtitle', 'en', 'Set up a category to organise transactions'),
@@ -3664,13 +3689,15 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'en', 'Uncategorized spending: {{amount}}'),
   ('catui.pendingTitle', 'en', '{{groups}} groups · {{count}} uncategorized'),
   ('catui.perPerson', 'en', 'Per person'),
-  ('catui.private', 'en', 'Only you'),
+  ('catui.private', 'en', 'Only me'),
   ('catui.remaining', 'en', '{{amount}} left'),
   ('catui.saveAsKeyword', 'en', 'Save as keyword'),
   ('catui.search', 'en', 'Search categories…'),
   ('catui.settle', 'en', 'Settle up'),
   ('catui.settled', 'en', 'Settlement recorded'),
   ('catui.shared', 'en', 'Shared'),
+  ('catui.sharedCount', 'en', 'Shared · {{count}}'),
+  ('catui.sharedVia', 'en', 'Shared through parent "{{name}}"'),
   ('catui.sharedWithMe', 'en', 'Shared with me'),
   ('catui.sharedWithMeSub', 'en', 'Categories others shared with you — you can see and add transactions'),
   ('catui.subcategories', 'en', '{{count}} subcategories'),
@@ -3692,6 +3719,7 @@ insert into public.translations (key, language_code, value) values
   ('catui.tipBody', 'en', 'Example: add "starbucks" to Cafe → every matching transaction lands in Cafe'),
   ('catui.tipTitle', 'en', 'Add keywords and future transactions get categorized automatically'),
   ('catui.title', 'en', 'Categories'),
+  ('catui.topSpend', 'en', 'Top spending'),
   ('catui.topTitle', 'en', 'Top spending (period)'),
   ('catui.totalSpent', 'en', 'Total spent'),
   ('catui.totalTx', 'en', 'Transactions'),
@@ -3787,17 +3815,17 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'en', 'Import Now'),
   ('dashboard.inflow', 'en', 'Inflow'),
   ('dashboard.invite', 'en', 'Invite'),
-  ('dashboard.manageUsers', 'en', 'Manage members →'),
+  ('dashboard.manageUsers', 'en', 'Manage members →')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('dashboard.markAllRead', 'en', 'Mark all as read'),
   ('dashboard.member', 'en', 'Member'),
   ('dashboard.members', 'en', 'Members'),
   ('dashboard.mtd', 'en', 'MTD'),
   ('dashboard.netBalance', 'en', 'Net Balance'),
   ('dashboard.netPeriod', 'en', 'Net'),
-  ('dashboard.noAccountData', 'en', 'No data')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.noAccountData', 'en', 'No data'),
   ('dashboard.noAccounts', 'en', 'No accounts yet'),
   ('dashboard.noBudgets', 'en', 'No budgets yet'),
   ('dashboard.noData', 'en', 'No data yet'),
@@ -4190,17 +4218,17 @@ insert into public.translations (key, language_code, value) values
   ('placeholders.devSub', 'en', 'This feature is currently under development and will be available in a future update.'),
   ('placeholders.devTitle', 'en', 'Development in progress'),
   ('prefs.birthDate', 'en', 'Date of birth'),
-  ('prefs.confirmPassword', 'en', 'Confirm new password'),
+  ('prefs.confirmPassword', 'en', 'Confirm new password')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('prefs.country', 'en', 'Country'),
   ('prefs.currency', 'en', 'Default currency (new ledgers)'),
   ('prefs.dateFormat', 'en', 'Date format'),
   ('prefs.defaultLedger', 'en', 'Ledger to open on start'),
   ('prefs.displayName', 'en', 'Display name'),
   ('prefs.emailHint', 'en', 'Contact support to change your email'),
-  ('prefs.firstName', 'en', 'First name')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('prefs.firstName', 'en', 'First name'),
   ('prefs.gender', 'en', 'Gender'),
   ('prefs.genderFemale', 'en', 'Female'),
   ('prefs.genderMale', 'en', 'Male'),

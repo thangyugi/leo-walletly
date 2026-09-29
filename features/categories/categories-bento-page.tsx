@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users } from 'lucide-react'
+import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users, TrendingUp } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
@@ -99,9 +99,11 @@ function FeaturedCard({ category, subCategories, expense }: { category: Category
         <span className="absolute right-[-20px] top-[-20px] font-black font-mono opacity-[0.14] leading-none select-none pointer-events-none" style={{ fontSize: 170 }} aria-hidden>
           {categoryGlyph(category.name)}
         </span>
-        <span className="absolute left-[22px] top-4 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm border border-white/20">
-          <span className={cn('w-1.5 h-1.5 rounded-full', category.is_active ? 'bg-emerald-300 animate-pulse' : 'bg-slate-300')} />
-          {category.is_active ? t.catui.active : t.catui.inactive}
+        <span className="absolute left-[22px] top-4 flex items-center gap-2">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm">
+            <TrendingUp className="w-3 h-3" />{t.catui.topSpend}
+          </span>
+          <CategoryAccessBadge category={category} tone="glass" />
         </span>
         <div className="relative z-10 mt-8">
           <div className="flex items-center gap-2 text-xs opacity-85 flex-wrap">
@@ -247,15 +249,19 @@ function CategoryCard({ category, expense, txCount }: { category: Category; expe
       href={categoryHref(category)}
       className="relative bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group p-4 flex flex-col gap-3"
     >
-      <BnArrow className="bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]" />
+      {/* Shared at a glance: a thin accent along the top (green = you share it, blue = shared with you). */}
+      {category.access !== 'private' && (
+        <span aria-hidden className={cn('absolute inset-x-0 top-0 h-[3px]', category.access === 'shared' ? 'bg-[var(--color-brand-500)]' : 'bg-[var(--color-info-500)]')} />
+      )}
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0" style={{ background: `${category.color}22`, color: category.color }}>
           <CategoryIcon name={category.emoji} className="w-5 h-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{category.name}</div>
-          <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5">{meta}</div>
+          <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5 truncate">{meta}</div>
         </div>
+        <CategoryAccessBadge category={category} className="max-w-[48%]" />
       </div>
 
       <div>
@@ -274,26 +280,53 @@ function CategoryCard({ category, expense, txCount }: { category: Category; expe
           <span className="w-2 h-2 rounded-full shrink-0" style={{ background: category.color || '#94a3b8' }} />
           {kind}
         </span>
-        <CategoryAccessBadge category={category} />
       </div>
     </Link>
   )
 }
 
-/** Who can see a category: owner's name (shared with you), "Shared", or "Only you". */
-export function CategoryAccessBadge({ category }: { category: Category }) {
+const initialsOf = (name: string) => (name.trim().split(/\s+/).map((w) => w[0]).join('').slice(0, 2) || '?').toUpperCase()
+
+/**
+ * Who can see a category, as a pill: "Only me" (lock), "Shared · N" with the
+ * people's avatars, or the owner's avatar + name when someone shared it with
+ * you. `tone="glass"` sits on a coloured cover.
+ */
+export function CategoryAccessBadge({ category, tone = 'surface', className }: { category: Category; tone?: 'surface' | 'glass'; className?: string }) {
   const { t } = useTranslation()
-  if (!category.is_mine) {
+  const { members, categories } = useLedgerData()
+  const nameOf = (uid: string) => { const m = members.find((x) => x.user_id === uid); return m?.user?.display_name || m?.user?.email || '—' }
+  const glass = tone === 'glass'
+  const base = cn('shrink-0 inline-flex items-center gap-1.5 h-[22px] rounded-full text-[11px] font-medium whitespace-nowrap max-w-full', className)
+  const avatar = (label: string, i: number, cls: string) => (
+    <span key={i} className={cn('w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ring-[1.5px]', glass ? 'ring-white/40' : 'ring-[var(--color-surface-default)]', cls)} style={{ marginLeft: i ? -5 : 0 }}>{label}</span>
+  )
+
+  if (category.access === 'shared_with_me') {
     return (
-      <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)] border border-[var(--color-info-100)] max-w-[60%] truncate">
-        <Users className="w-2.5 h-2.5 shrink-0" />{fill(t.catui.ownerBadge, { name: category.owner_name })}
+      <span title={fill(t.catui.ownerBadge, { name: category.owner_name })}
+        className={cn(base, 'pl-[3px] pr-2', glass ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-[var(--color-info-50)] text-[var(--color-info-600)] ring-1 ring-inset ring-[var(--color-info-100)]')}>
+        {avatar(initialsOf(category.owner_name), 0, glass ? 'bg-white/30' : 'bg-[var(--color-info-100)]')}
+        <span className="truncate">{glass ? fill(t.catui.ownerBadge, { name: category.owner_name }) : category.owner_name}</span>
       </span>
     )
   }
-  if (category.is_shared) {
-    return <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] px-1.5 py-0.5 rounded-full bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]"><Users className="w-2.5 h-2.5" />{t.catui.shared}</span>
+  if (category.access === 'shared') {
+    const names = category.audience_ids.map(nameOf)
+    const via = category.shared_via ? categories.find((c) => c.id === category.shared_via)?.name : null
+    return (
+      <span title={via ? fill(t.catui.sharedVia, { name: via }) : names.join(', ')}
+        className={cn(base, 'pl-[3px] pr-2', glass ? 'bg-white/20 text-white backdrop-blur-sm' : 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)] ring-1 ring-inset ring-[var(--color-brand-100)]')}>
+        <span className="flex">{names.slice(0, 3).map((n, i) => avatar(initialsOf(n), i, glass ? 'bg-white/30' : 'bg-[var(--color-brand-100)]'))}</span>
+        {fill(t.catui.sharedCount, { count: names.length })}
+      </span>
+    )
   }
-  return <span className="ml-auto shrink-0 inline-flex items-center gap-1 text-[10px] text-[var(--color-text-quaternary)]"><Lock className="w-2.5 h-2.5" />{t.catui.private}</span>
+  return (
+    <span className={cn(base, 'px-2', glass ? 'bg-black/15 text-white/90 backdrop-blur-sm' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>
+      <Lock className="w-3 h-3" />{t.catui.private}
+    </span>
+  )
 }
 
 /* ─── SmartClassifyCard ────────────────────────────────────────────────────── */
@@ -478,7 +511,7 @@ function ArchiveStrip({ archivedCategories, onShowAll }: { archivedCategories: C
 }
 
 /* ─── Main CategoriesBentoPage ─────────────────────────────────────────────── */
-type Tab = 'all' | 'active' | 'shared' | 'recurring' | 'archived'
+type Tab = 'all' | 'active' | 'shared' | 'private' | 'recurring' | 'archived'
 
 export function CategoriesBentoPage() {
   const { t, lang } = useTranslation()
@@ -532,7 +565,8 @@ export function CategoriesBentoPage() {
   const tabCounts: Record<Tab, number> = {
     all: mine.length,
     active: mine.filter((c) => c.is_active).length,
-    shared: categories.filter((c) => c.is_shared).length,
+    shared: categories.filter((c) => c.access !== 'private').length,
+    private: mine.filter((c) => c.access === 'private').length,
     recurring: categories.filter((c) => recurringIds.has(c.id)).length,
     archived: mine.filter((c) => !c.is_active).length,
   }
@@ -540,13 +574,15 @@ export function CategoriesBentoPage() {
     { value: 'all', label: t.catui.tabAll },
     { value: 'active', label: t.catui.tabActive },
     { value: 'shared', label: t.catui.tabShared },
+    { value: 'private', label: t.catui.private },
     { value: 'recurring', label: t.catui.tabRecurring },
     { value: 'archived', label: t.catui.tabArchived },
   ]
 
   const tabFiltered = React.useMemo(() => {
     switch (activeTab) {
-      case 'shared': return categories.filter((c) => c.is_shared)
+      case 'shared': return categories.filter((c) => c.access !== 'private')
+      case 'private': return mine.filter((c) => c.access === 'private')
       case 'recurring': return categories.filter((c) => recurringIds.has(c.id))
       case 'archived': return mine.filter((c) => !c.is_active)
       case 'active': return mine.filter((c) => c.is_active)

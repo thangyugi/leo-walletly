@@ -165,6 +165,8 @@ interface CategoryState {
   addKeyword: (categoryId: string, keyword: string) => Promise<void>
   fetchMembers: (categoryId: string) => Promise<CategoryMember[]>
   setMembers: (categoryId: string, userIds: string[], ownerId?: string) => Promise<void>
+  /** Share a category with these people (none = private again). */
+  shareWith: (categoryId: string, userIds: string[]) => Promise<void>
   /** Stop being part of a category someone shared with you. */
   leaveCategory: (categoryId: string) => Promise<void>
   fetchMemberBalances: (categoryId: string) => Promise<MemberBalance[]>
@@ -254,13 +256,14 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
   fetchCategories: async (ledgerId) => {
     set({ isLoading: true, error: null, ledgerId })
     try {
-      const [withOwner, rules, budgets, translations] = await Promise.all([
+      const [withOwner, rules, budgets, translations, shares] = await Promise.all([
         supabase.from('categories').select('*, owner:users!categories_owner_id_fkey(display_name)').eq('ledger_id', ledgerId).is('deleted_at', null),
         supabase.from('category_rules').select('category_id, pattern').eq('ledger_id', ledgerId)
           .eq('match_type', 'contains').eq('is_active', true).is('deleted_at', null),
         supabase.from('budgets').select('category_id, amount, warning_threshold_pct').eq('ledger_id', ledgerId)
           .eq('period_type', 'monthly').is('period_start', null).is('deleted_at', null),
         supabase.from('category_translations').select('category_id, language_code, name'),
+        supabase.from('category_members').select('category_id, user_id').is('left_at', null),
       ])
       // A database without the privacy migration (0027) has no owner_id: load
       // the plain rows and treat every category as the user's own, as before.
@@ -279,7 +282,30 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
 
       const me = useAuthStore.getState().user?.id
       const visible = new Set((cats.data ?? []).map((c) => c.id))
-      const categories: Category[] = (cats.data ?? []).map((c) => {
+      const rows = cats.data ?? []
+      const rowById = new Map(rows.map((c) => [c.id, c]))
+      const membersBy = new Map<string, string[]>()
+      for (const m of shares.data ?? []) {
+        const row = rowById.get(m.category_id)
+        if (row && m.user_id !== row.owner_id) membersBy.set(m.category_id, [...(membersBy.get(m.category_id) ?? []), m.user_id])
+      }
+      const direct = (id: string) => (rowById.get(id)?.is_shared ? membersBy.get(id) ?? [] : [])
+      // Sharing a category shares its whole branch: walk up for inherited shares.
+      const inherited = (id: string) => {
+        const ids = new Set<string>()
+        let via: string | null = null
+        let cur = rowById.get(rowById.get(id)?.parent_id ?? '')
+        while (cur) {
+          const d = direct(cur.id)
+          if (d.length) { d.forEach((u) => ids.add(u)); via = via ?? cur.id }
+          cur = cur.parent_id ? rowById.get(cur.parent_id) : undefined
+        }
+        return { ids, via }
+      }
+      const categories: Category[] = rows.map((c): Category => {
+        const own = direct(c.id)
+        const up = inherited(c.id)
+        const audience = [...new Set([...own, ...up.ids])].filter((u) => u !== me)
         const tr = trBy.get(c.id) ?? {}
         const budget = budgetBy.get(c.id)
         return {
@@ -290,6 +316,10 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           owner_id: c.owner_id ?? me ?? '',
           owner_name: c.owner?.display_name ?? '—',
           is_mine: !c.owner_id || c.owner_id === me,
+          member_ids: own,
+          audience_ids: audience,
+          shared_via: own.length ? null : up.via,
+          access: c.owner_id && c.owner_id !== me ? 'shared_with_me' : audience.length ? 'shared' : 'private',
           slug: c.slug,
           name: displayName(c, tr),
           base_name: c.name,
@@ -483,6 +513,18 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         add.map((user_id) => ({ category_id: categoryId, user_id, role: user_id === ownerId ? 'owner' : 'member' }))
       )).error)
     }
+  },
+
+  shareWith: async (categoryId, userIds) => {
+    const cat = get().byId(categoryId)
+    if (!cat) return
+    const others = userIds.filter((u) => u !== cat.owner_id)
+    // Removing people first lets the database file their rows back as uncategorized.
+    await get().setMembers(categoryId, others.length ? [cat.owner_id, ...others] : [], cat.owner_id)
+    if (cat.is_shared !== others.length > 0) {
+      fail((await supabase.from('categories').update({ is_shared: others.length > 0 }).eq('id', categoryId)).error)
+    }
+    if (cat.ledger_id) await get().fetchCategories(cat.ledger_id)
   },
 
   leaveCategory: async (categoryId) => {

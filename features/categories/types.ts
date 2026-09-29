@@ -14,6 +14,14 @@ export interface Category {
   owner_name: string
   /** Owned by the signed-in user (false = shared with them by someone else). */
   is_mine: boolean
+  /** People other than the owner this category is shared with directly. */
+  member_ids: string[]
+  /** Everyone besides the owner who can see it, including through a shared parent. */
+  audience_ids: string[]
+  /** Shared through this ancestor rather than on its own (null otherwise). */
+  shared_via: string | null
+  /** 'private' (only the owner), 'shared' (yours, shared), 'shared_with_me' (someone else's). */
+  access: 'private' | 'shared' | 'shared_with_me'
   /** URL-safe, unique per owner within the ledger. */
   slug: string
   /** Display name in the current language. */

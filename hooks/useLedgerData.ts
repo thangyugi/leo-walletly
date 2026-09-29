@@ -10,6 +10,18 @@ import { useSettingsStore } from '@/stores/settings'
 import { useI18nStore } from '@/features/i18n/store'
 import { useTransactionsStore } from '@/stores/transactions'
 
+// Someone may have shared (or stopped sharing) a category meanwhile: refresh
+// once when the tab comes back (one listener, however many screens use the hook).
+let refreshHooked = false
+function hookRefreshOnReturn() {
+  if (refreshHooked) return
+  refreshHooked = true
+  document.addEventListener('visibilitychange', () => {
+    const id = useLedgerStore.getState().current?.id
+    if (document.visibilityState === 'visible' && id) void useCategoryStore.getState().fetchCategories(id)
+  })
+}
+
 /**
  * Loads the open ledger's lookup data (accounts, categories, tags, members)
  * once per ledger and returns it. Categories reload when the language or UI
@@ -50,6 +62,8 @@ export function useLedgerData() {
   useEffect(() => {
     if (ledgerId) void fetchCategories(ledgerId)
   }, [ledgerId, lang, textsLoaded, fetchCategories])
+
+  useEffect(hookRefreshOnReturn, [])
 
   /** Any account a visible transaction points at: yours, or another person's label. */
   const accountOf = (id: string | null | undefined) =>

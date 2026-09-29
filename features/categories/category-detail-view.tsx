@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
-  ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Sun, Trash2, Users, X,
+  ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Sun, Trash2, X,
   Archive, ArchiveRestore, Lock, LogOut,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
@@ -14,7 +14,7 @@ import { CategoryPicker } from '@/components/ui/picker'
 import { CategoryIcon } from './category-icon'
 import { CategoryForm } from './category-form'
 import { MergeCategoryModal } from './merge-category-modal'
-import { categoryHref } from './categories-bento-page'
+import { categoryHref, CategoryAccessBadge } from './categories-bento-page'
 import { useCategoryStore, budgetFactor } from './store'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
@@ -124,12 +124,11 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
     !category.is_mine ? fill(t.catui.ownerBadge, { name: category.owner_name }) : null,
     memberNames.length > 0 ? fill(category.is_shared ? t.catdetail.sharedWith : t.catdetail.membersCount, { count: memberNames.length }) : null,
     ledger?.currency_code ?? 'JPY',
-    category.is_active ? t.catui.active : t.catui.inactive,
   ].filter(Boolean) as string[]
   const badges = [
-    { icon: <Sun className="w-2.5 h-2.5" />, label: category.is_active ? t.catui.active : t.catui.inactive },
+    // Only worth saying when it is archived (hidden from lists and pickers).
+    ...(!category.is_active ? [{ icon: <Archive className="w-2.5 h-2.5" />, label: t.catui.inactive }] : []),
     ...(category.keywords.length ? [{ icon: <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4"><path d="M3 8h18M3 16h12" /></svg>, label: t.catdetail.badgeAuto }] : []),
-    category.is_shared ? { icon: <Users className="w-2.5 h-2.5" />, label: t.catui.shared } : { icon: <Lock className="w-2.5 h-2.5" />, label: t.catui.private },
   ]
 
   return (
@@ -139,6 +138,7 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
         {initials(category.name)}
       </span>
       <div className="absolute right-[18px] top-4 flex items-center gap-1.5 z-20">
+        <CategoryAccessBadge category={category} tone="glass" />
         {badges.map((b) => (
           <span key={b.label} className="inline-flex items-center gap-1 px-2 py-[3px] rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm">{b.icon} {b.label}</span>
         ))}
@@ -894,8 +894,8 @@ function MemberSpendSection({ category, split, nameOf }: { category: Category; s
 function MembersPicker({ category, settlement, readOnly }: { category: Category; settlement: ReturnType<typeof useSettlement>; readOnly: boolean }) {
   const { t } = useTranslation()
   const { members } = useLedgerData()
-  const setMembers = useCategoryStore((s) => s.setMembers)
-  const inCat = new Set(settlement.catMembers.map((m) => m.user_id))
+  const shareWith = useCategoryStore((s) => s.shareWith)
+  const inCat = new Set(category.is_shared ? settlement.catMembers.map((m) => m.user_id) : [])
   return (
     <section className={card}>
       <div className={sectionHead}>
@@ -912,8 +912,7 @@ function MembersPicker({ category, settlement, readOnly }: { category: Category;
               <input type="checkbox" checked={isOwner || inCat.has(m.user_id)} disabled={readOnly || isOwner} className="accent-[var(--color-interactive-primary)] disabled:opacity-60"
                 onChange={async (e) => {
                   const next = e.target.checked ? [...inCat, m.user_id] : [...inCat].filter((u) => u !== m.user_id)
-                  if (!next.includes(category.owner_id)) next.push(category.owner_id)
-                  try { await setMembers(category.id, next, category.owner_id); settlement.reload() } catch (err) { toast.error((err as Error).message) }
+                  try { await shareWith(category.id, next.filter((u) => u !== category.owner_id)); settlement.reload() } catch (err) { toast.error((err as Error).message) }
                 }} />
               <span className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold shrink-0" style={{ background: bg, color }}>{initials(name)}</span>
               <span className="flex-1 text-[var(--color-text-primary)]">{name}</span>
@@ -1082,7 +1081,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           </div>
         )}
         {tab === 'members' && (
-          category.is_shared
+          category.is_shared || canEdit
             ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} readOnly={!canEdit} /><div className="flex flex-col gap-4">{memberSpendSection}{balancesSection}</div></div>
             : <div className={cn(card, 'p-6 text-sm text-[var(--color-text-tertiary)]')}>{t.catdetail.sharedOff}</div>
         )}

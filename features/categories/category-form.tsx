@@ -8,6 +8,7 @@ import { NumberInput } from '@/components/ui/number-input'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
+import { useUserManagementStore } from '@/features/user-management/store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
@@ -225,7 +226,10 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
   const { t, tk } = useTranslation()
   const kinds = useMasterStore((s) => s.categoryKinds)
   const ledger = useLedgerStore((s) => s.current)
-  const { categories, createCategory, updateCategory } = useCategoryStore()
+  const { categories, createCategory, updateCategory, shareWith } = useCategoryStore()
+  const members = useUserManagementStore((s) => s.members)
+  const me = useLedgerStore((s) => s.userId)
+  const others = members.filter((m) => m.user_id !== me)
   const parentDefault = initialData?.parent_id ? categories.find((c) => c.id === initialData.parent_id) : undefined
 
   const [formData, setFormData] = React.useState({
@@ -240,6 +244,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     warning_threshold: initialData?.warning_threshold ?? 80,
     keywords:          (initialData?.keywords ?? []) as string[],
     is_shared:         initialData?.is_shared ?? false,
+    share_ids:         (initialData?.member_ids ?? []) as string[],
   })
   const [keywordInput, setKeywordInput] = React.useState('')
   const [isSaving, setIsSaving] = React.useState(false)
@@ -294,8 +299,15 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
         is_shared: formData.is_shared,
         ledger_id: ledger.id,
       }
-      if (isEdit) await updateCategory(initialData!.id!, payload)
-      else await createCategory(payload)
+      // Sharing means picking people: no one picked = private.
+      const shareIds = formData.is_shared ? formData.share_ids : []
+      const { is_shared: _s, ...rest } = payload
+      void _s
+      let id = initialData?.id
+      if (isEdit) await updateCategory(id!, rest)
+      else id = (await createCategory(rest))?.id
+      const before = [...(initialData?.member_ids ?? [])].sort().join()
+      if (id && (before !== [...shareIds].sort().join() || !!initialData?.is_shared !== shareIds.length > 0)) await shareWith(id, shareIds)
       onClose()
     } catch (err: any) {
       setErrorMsg(err.message)
@@ -374,17 +386,46 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
           </div>
         </div>
 
+        {others.length > 0 && (
+        <div className="space-y-2.5">
         <div className="flex items-center gap-3 select-none">
           <button type="button" role="switch" aria-checked={formData.is_shared} aria-label={t.catform.shared}
-            onClick={() => setFormData((f) => ({ ...f, is_shared: !f.is_shared }))}
+            onClick={() => setFormData((f) => ({
+              ...f,
+              is_shared: !f.is_shared,
+              // First time on: everyone ticked, the usual case in a family ledger.
+              share_ids: !f.is_shared && f.share_ids.length === 0 ? others.map((m) => m.user_id) : f.share_ids,
+            }))}
             className={cn('relative w-9 h-5 rounded-full transition-colors shrink-0', formData.is_shared ? 'bg-[var(--color-interactive-primary)]' : 'bg-[var(--color-border-strong)]')}>
             <span className={cn('absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow-sm transition-transform', formData.is_shared && 'translate-x-4')} />
           </button>
           <span>
             <span className="text-sm font-medium text-[var(--color-text-primary)] block">{t.catform.shared}</span>
-            <span className="text-[11px] text-[var(--color-text-quaternary)]">{t.catform.sharedHint}</span>
+            <span className="text-[11px] text-[var(--color-text-quaternary)]">{formData.is_shared ? t.catform.shareBranchHint : t.catform.privateHint}</span>
           </span>
         </div>
+        {formData.is_shared && (
+          <div className="ml-12 flex flex-wrap gap-2" role="group" aria-label={t.catform.shareWith}>
+            {others.map((m) => {
+              const on = formData.share_ids.includes(m.user_id)
+              const name = m.user?.display_name || m.user?.email || '—'
+              return (
+                <button key={m.user_id} type="button" aria-pressed={on}
+                  onClick={() => setFormData((f) => ({ ...f, share_ids: on ? f.share_ids.filter((u) => u !== m.user_id) : [...f.share_ids, m.user_id] }))}
+                  className={cn('inline-flex items-center gap-1.5 h-8 pl-1 pr-3 rounded-full border text-xs font-medium transition-colors',
+                    on ? 'border-[var(--color-interactive-primary)] bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')}>
+                  <span className={cn('w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-semibold', on ? 'bg-[var(--color-interactive-primary)] text-white' : 'bg-[var(--color-bg-sunken)]')}>
+                    {on ? <Check className="w-3 h-3" /> : name.slice(0, 1).toUpperCase()}
+                  </span>
+                  {name}
+                </button>
+              )
+            })}
+            {formData.share_ids.length === 0 && <span className="text-[11px] text-[var(--color-text-loss)] self-center">{t.catform.shareNone}</span>}
+          </div>
+        )}
+        </div>
+        )}
 
         <div className="p-5 rounded-2xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-5">
           <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t.catform.look}</h3>
