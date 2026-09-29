@@ -157,6 +157,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.opEquals', 'catdetail', null, false),
   ('catdetail.opRegex', 'catdetail', null, false),
   ('catdetail.opStartsWith', 'catdetail', null, false),
+  ('catdetail.otherAccount', 'catdetail', null, false),
+  ('catdetail.otherAccountTip', 'catdetail', null, false),
   ('catdetail.ownedBy', 'catdetail', 'name', false),
   ('catdetail.ownerBadge', 'catdetail', null, false),
   ('catdetail.paidOwed', 'catdetail', 'paid,owed', false),
@@ -405,12 +407,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.budgets', 'dashboard', null, true),
   ('dashboard.cashFlow', 'dashboard', null, true),
   ('dashboard.days30Ago', 'dashboard', null, true),
-  ('dashboard.deposits', 'dashboard', null, true),
-  ('dashboard.financialTip', 'dashboard', null, true),
-  ('dashboard.history', 'dashboard', null, true)
+  ('dashboard.deposits', 'dashboard', null, true)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.financialTip', 'dashboard', null, true),
+  ('dashboard.history', 'dashboard', null, true),
   ('dashboard.importData', 'dashboard', null, true),
   ('dashboard.importNow', 'dashboard', null, true),
   ('dashboard.inflow', 'dashboard', null, true),
@@ -808,12 +810,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('organization_settings.businessType', 'organization_settings', null, false),
   ('organization_settings.infoTitle', 'organization_settings', null, false),
   ('organization_settings.nameLabel', 'organization_settings', null, false),
-  ('organization_settings.slugLabel', 'organization_settings', null, false),
-  ('organization_settings.subtitle', 'organization_settings', null, false),
-  ('organization_settings.taxId', 'organization_settings', null, false)
+  ('organization_settings.slugLabel', 'organization_settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('organization_settings.subtitle', 'organization_settings', null, false),
+  ('organization_settings.taxId', 'organization_settings', null, false),
   ('organization_settings.title', 'organization_settings', null, false),
   ('placeholders.devSub', 'placeholders', null, false),
   ('placeholders.devTitle', 'placeholders', null, false),
@@ -1299,6 +1301,8 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'ja', 'と一致'),
   ('catdetail.opRegex', 'ja', '正規表現'),
   ('catdetail.opStartsWith', 'ja', 'で始まる'),
+  ('catdetail.otherAccount', 'ja', 'ほかのメンバーの口座'),
+  ('catdetail.otherAccountTip', 'ja', 'この人の口座です。名前だけ表示され、開いたり選んだりはできません'),
   ('catdetail.ownedBy', 'ja', '{{name}} さんのカテゴリです。編集・共有の変更は持ち主だけができます'),
   ('catdetail.ownerBadge', 'ja', 'オーナー'),
   ('catdetail.paidOwed', 'ja', '支払 {{paid}} · 負担すべき額 {{owed}}'),
@@ -1547,12 +1551,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.budgets', 'ja', '予算'),
   ('dashboard.cashFlow', 'ja', 'キャッシュフロー'),
   ('dashboard.days30Ago', 'ja', '30日前'),
-  ('dashboard.deposits', 'ja', '件の入金'),
-  ('dashboard.financialTip', 'ja', '財務のヒント'),
-  ('dashboard.history', 'ja', '履歴')
+  ('dashboard.deposits', 'ja', '件の入金')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.financialTip', 'ja', '財務のヒント'),
+  ('dashboard.history', 'ja', '履歴'),
   ('dashboard.importData', 'ja', 'データをインポート'),
   ('dashboard.importNow', 'ja', '今すぐインポート'),
   ('dashboard.inflow', 'ja', '入金'),
@@ -1950,12 +1954,12 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.businessType', 'ja', '事業形態'),
   ('organization_settings.infoTitle', 'ja', '組織情報'),
   ('organization_settings.nameLabel', 'ja', '組織名 (法人名)'),
-  ('organization_settings.slugLabel', 'ja', '組織ID (Slug)'),
-  ('organization_settings.subtitle', 'ja', '法人の基本情報と最上位エンティティを管理します'),
-  ('organization_settings.taxId', 'ja', '登録番号 / 税務ID')
+  ('organization_settings.slugLabel', 'ja', '組織ID (Slug)')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.subtitle', 'ja', '法人の基本情報と最上位エンティティを管理します'),
+  ('organization_settings.taxId', 'ja', '登録番号 / 税務ID'),
   ('organization_settings.title', 'ja', '組織設定'),
   ('placeholders.devSub', 'ja', 'この機能は現在開発中であり、将来のアップデートで利用可能になります。'),
   ('placeholders.devTitle', 'ja', '開発中'),
@@ -2441,6 +2445,8 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'vi', 'bằng'),
   ('catdetail.opRegex', 'vi', 'khớp regex'),
   ('catdetail.opStartsWith', 'vi', 'bắt đầu bằng'),
+  ('catdetail.otherAccount', 'vi', 'Tài khoản của người khác'),
+  ('catdetail.otherAccountTip', 'vi', 'Tài khoản của người này — chỉ hiện tên, bạn không mở hay chọn được'),
   ('catdetail.ownedBy', 'vi', 'Danh mục của {{name}} — chỉ chủ sở hữu được sửa và đổi người chia sẻ'),
   ('catdetail.ownerBadge', 'vi', 'chủ nhóm'),
   ('catdetail.paidOwed', 'vi', 'đã trả {{paid}} · phải chịu {{owed}}'),
@@ -2689,12 +2695,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.budgets', 'vi', 'Ngân sách'),
   ('dashboard.cashFlow', 'vi', 'Dòng tiền'),
   ('dashboard.days30Ago', 'vi', '30 ngày trước'),
-  ('dashboard.deposits', 'vi', 'giao dịch thu'),
-  ('dashboard.financialTip', 'vi', 'Mẹo tài chính'),
-  ('dashboard.history', 'vi', 'Lịch sử')
+  ('dashboard.deposits', 'vi', 'giao dịch thu')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.financialTip', 'vi', 'Mẹo tài chính'),
+  ('dashboard.history', 'vi', 'Lịch sử'),
   ('dashboard.importData', 'vi', 'Nhập dữ liệu'),
   ('dashboard.importNow', 'vi', 'Nhập ngay'),
   ('dashboard.inflow', 'vi', 'Thu nhập'),
@@ -3092,12 +3098,12 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.businessType', 'vi', 'Loại hình kinh doanh'),
   ('organization_settings.infoTitle', 'vi', 'Thông tin tổ chức'),
   ('organization_settings.nameLabel', 'vi', 'Tên tổ chức (Tên công ty)'),
-  ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)'),
-  ('organization_settings.subtitle', 'vi', 'Quản lý cấu hình tài chính và phân cấp tổ chức'),
-  ('organization_settings.taxId', 'vi', 'Mã số thuế')
+  ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.subtitle', 'vi', 'Quản lý cấu hình tài chính và phân cấp tổ chức'),
+  ('organization_settings.taxId', 'vi', 'Mã số thuế'),
   ('organization_settings.title', 'vi', 'Thiết lập Sổ cái'),
   ('placeholders.devSub', 'vi', 'Tính năng này hiện đang được phát triển và sẽ có trong bản cập nhật tương lai.'),
   ('placeholders.devTitle', 'vi', 'Đang phát triển'),
@@ -3583,6 +3589,8 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.opEquals', 'en', 'equals'),
   ('catdetail.opRegex', 'en', 'matches regex'),
   ('catdetail.opStartsWith', 'en', 'starts with'),
+  ('catdetail.otherAccount', 'en', 'Someone else''s account'),
+  ('catdetail.otherAccountTip', 'en', 'This person''s account — shown by name only; you can''t open or pick it'),
   ('catdetail.ownedBy', 'en', '{{name}}''s category — only the owner can edit it or change who it''s shared with'),
   ('catdetail.ownerBadge', 'en', 'owner'),
   ('catdetail.paidOwed', 'en', 'paid {{paid}} · should pay {{owed}}'),
@@ -3831,12 +3839,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.budgets', 'en', 'Budgets'),
   ('dashboard.cashFlow', 'en', 'Cash Flow'),
   ('dashboard.days30Ago', 'en', '30 days ago'),
-  ('dashboard.deposits', 'en', 'deposits'),
-  ('dashboard.financialTip', 'en', 'Financial Tip'),
-  ('dashboard.history', 'en', 'History')
+  ('dashboard.deposits', 'en', 'deposits')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('dashboard.financialTip', 'en', 'Financial Tip'),
+  ('dashboard.history', 'en', 'History'),
   ('dashboard.importData', 'en', 'Import Data'),
   ('dashboard.importNow', 'en', 'Import Now'),
   ('dashboard.inflow', 'en', 'Inflow'),
@@ -4234,12 +4242,12 @@ insert into public.translations (key, language_code, value) values
   ('organization_settings.businessType', 'en', 'Business Type'),
   ('organization_settings.infoTitle', 'en', 'Organization Info'),
   ('organization_settings.nameLabel', 'en', 'Organization Name (Legal)'),
-  ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)'),
-  ('organization_settings.subtitle', 'en', 'Manage legal entity information and top-level entities'),
-  ('organization_settings.taxId', 'en', 'Tax ID / Registration')
+  ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('organization_settings.subtitle', 'en', 'Manage legal entity information and top-level entities'),
+  ('organization_settings.taxId', 'en', 'Tax ID / Registration'),
   ('organization_settings.title', 'en', 'Organization Settings'),
   ('placeholders.devSub', 'en', 'This feature is currently under development and will be available in a future update.'),
   ('placeholders.devTitle', 'en', 'Development in progress'),

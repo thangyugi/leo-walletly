@@ -2,7 +2,20 @@
 
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
-import { mapTransaction, type Transaction, type TransactionType } from '@/types/domain'
+import { mapTransaction as mapRow, type Transaction, type TransactionType } from '@/types/domain'
+import { useAccountsStore } from '@/features/accounts/store'
+
+// Every loaded row goes through here, so others' accounts in shared categories get their labels.
+function mapTransaction(row: Parameters<typeof mapRow>[0]): Transaction {
+  const tx = mapRow(row)
+  queueAccount(tx.accountId)
+  return tx
+}
+let pendingAccounts: string[] = []
+function queueAccount(id: string) {
+  if (pendingAccounts.push(id) > 1) return
+  queueMicrotask(() => { const ids = pendingAccounts; pendingAccounts = []; useAccountsStore.getState().noteAccounts(ids) })
+}
 import type { TablesInsert, TablesUpdate } from '@/types/supabase'
 
 // Server-driven transaction access for schema v2.1. Lists are filtered,

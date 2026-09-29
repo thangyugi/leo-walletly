@@ -1150,6 +1150,8 @@ const ja = {
     noOtherMembers: '移譲できるメンバーがいません',
   },
   catdetail: {
+    otherAccountTip: 'この人の口座です。名前だけ表示され、開いたり選んだりはできません',
+    otherAccount: 'ほかのメンバーの口座',
     addedBy: '{{name}} さんが追加',
     badgeManualTip: '入力した人がこのカテゴリを選びました',
     txReviewTip: '自動で分類されました。正しければ「適用」で確定してください',
@@ -2394,6 +2396,8 @@ const vi: typeof ja = {
     noOtherMembers: 'Chưa có thành viên để chuyển quyền',
   },
   catdetail: {
+    otherAccountTip: 'Tài khoản của người này — chỉ hiện tên, bạn không mở hay chọn được',
+    otherAccount: 'Tài khoản của người khác',
     addedBy: '{{name}} đã thêm',
     badgeManualTip: 'Người nhập tự chọn danh mục này',
     txReviewTip: 'Được xếp tự động — kiểm tra rồi bấm Xác nhận',
@@ -3638,6 +3642,8 @@ const en: typeof ja = {
     noOtherMembers: 'No other member to transfer to',
   },
   catdetail: {
+    otherAccountTip: 'This person\'s account — shown by name only; you can\'t open or pick it',
+    otherAccount: 'Someone else\'s account',
     addedBy: 'Added by {{name}}',
     badgeManualTip: 'The person who entered it picked this category',
     txReviewTip: 'Filed automatically — check it and confirm',

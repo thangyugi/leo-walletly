@@ -49,6 +49,8 @@ interface AccountsState {
   loading: boolean
   load: (ledgerId: string) => Promise<void>
   loadOthers: (ledgerId: string) => Promise<void>
+  /** Transactions just loaded point at these accounts: fetch labels for any we don't know yet. */
+  noteAccounts: (ids: string[]) => void
   create: (ledgerId: string, input: AccountInput) => Promise<Account>
   update: (id: string, input: Partial<AccountInput> & { isArchived?: boolean }) => Promise<void>
   remove: (id: string) => Promise<void>
@@ -75,6 +77,8 @@ function toRow(input: Partial<AccountInput> & { isArchived?: boolean }): TablesU
   if (input.isArchived !== undefined) row.is_archived = input.isArchived
   return row
 }
+
+let lastOthersFetch = 0
 
 export const useAccountsStore = create<AccountsState>((set, get) => ({
   ledgerId: null,
@@ -152,6 +156,18 @@ export const useAccountsStore = create<AccountsState>((set, get) => ({
     fail((await supabase.from('financial_accounts').update({ deleted_at: new Date().toISOString() }).eq('id', id)).error)
     const ledgerId = get().ledgerId
     if (ledgerId) await get().load(ledgerId)
+  },
+
+  noteAccounts: (ids) => {
+    const { ledgerId, accounts, others } = get()
+    if (!ledgerId) return
+    const known = new Set([...accounts, ...others].map((a) => a.id))
+    if (!ids.some((id) => id && !known.has(id))) return
+    // One refresh at a time, and not more than every few seconds.
+    const now = Date.now()
+    if (now - lastOthersFetch < 3000) return
+    lastOthersFetch = now
+    void get().loadOthers(ledgerId)
   },
 
   byId: (id) => (id ? get().accounts.find((a) => a.id === id) ?? get().others.find((a) => a.id === id) : undefined),

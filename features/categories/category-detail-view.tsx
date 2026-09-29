@@ -372,13 +372,21 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
 function LinkedAccountsSection({ txns, accounts }: { txns: Transaction[]; accounts: Account[] }) {
   const { t } = useTranslation()
   const { format } = useMoney()
-  const byAccount = new Map<string, { amount: number; count: number }>()
+  const { members } = useLedgerData()
+  const nameOf = (uid: string | null | undefined) => { const m = members.find((x) => x.user_id === uid); return m?.user?.display_name || m?.user?.email || '—' }
+  const byAccount = new Map<string, { amount: number; count: number; payer: string | null }>()
   for (const x of txns) {
-    const cur = byAccount.get(x.accountId) ?? { amount: 0, count: 0 }
+    const cur = byAccount.get(x.accountId) ?? { amount: 0, count: 0, payer: x.payerId }
     cur.amount += x.baseAmount; cur.count += 1
     byAccount.set(x.accountId, cur)
   }
-  const rows = [...byAccount.entries()].map(([id, v]) => ({ id, ...v, ...accountMeta(accounts.find((a) => a.id === id)) })).sort((a, b) => b.amount - a.amount)
+  const rows = [...byAccount.entries()].map(([id, v]) => {
+    const a = accounts.find((x) => x.id === id)
+    const meta = accountMeta(a)
+    // Someone else's account: same names are common ("Cash"), so say whose it is.
+    const owner = a ? (a.isMine === false ? a.ownerId : null) : v.payer
+    return { id, ...v, ...meta, owner: owner ? nameOf(owner) : null, label: a ? meta.label : t.catdetail.otherAccount }
+  }).sort((a, b) => b.amount - a.amount)
   const grand = rows.reduce((s, r) => s + r.amount, 0)
 
   return (
@@ -394,10 +402,17 @@ function LinkedAccountsSection({ txns, accounts }: { txns: Transaction[]; accoun
       <div className="divide-y divide-[var(--color-border-subtle)]">
         {rows.length === 0 ? <div className="px-[18px] py-4 text-[12px] text-[var(--color-text-tertiary)]">{t.catui.noData}</div> : rows.map((r) => (
           <div key={r.id} className="flex items-center gap-3 px-[18px] py-3 hover:bg-[var(--color-bg-sunken)] transition-colors">
-            <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white text-[11px] font-bold shrink-0" style={{ background: r.color }}>{r.logo}</div>
+            <div className="w-9 h-9 rounded-[9px] flex items-center justify-center text-white text-[11px] font-bold shrink-0" style={{ background: r.color }}>{r.logo === '?' ? <Lock className="w-3.5 h-3.5" /> : r.logo}</div>
             <div className="flex-1 min-w-0">
               <div className="text-[13px] font-medium text-[var(--color-text-primary)] leading-snug truncate">{r.label}</div>
-              <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono">{fill(t.catdetail.statTxSub, { count: r.count })}</div>
+              <div className="text-[11px] text-[var(--color-text-tertiary)] flex items-center gap-1.5 min-w-0">
+                <span className="font-mono shrink-0">{fill(t.catdetail.statTxSub, { count: r.count })}</span>
+                {r.owner && (
+                  <span className="inline-flex items-center gap-1 min-w-0 px-1.5 rounded-full bg-[var(--color-info-50)] text-[var(--color-info-600)]" title={t.catdetail.otherAccountTip}>
+                    <Lock className="w-2.5 h-2.5 shrink-0" /><span className="truncate">{r.owner}</span>
+                  </span>
+                )}
+              </div>
             </div>
             <div className="text-right shrink-0">
               <div className="text-[10px] text-[var(--color-text-quaternary)]">{t.catdetail.spent}</div>
@@ -420,7 +435,7 @@ function LinkedAccountsSection({ txns, accounts }: { txns: Transaction[]; accoun
           <div className="flex items-center gap-2.5 flex-wrap mt-2">
             {rows.map((r) => (
               <span key={r.id} className="flex items-center gap-1 text-[10px] text-[var(--color-text-tertiary)] font-mono">
-                <span className="w-2 h-2 rounded-full inline-block" style={{ background: r.color }} />{r.logo} {grand > 0 ? Math.round((r.amount / grand) * 100) : 0}%
+                <span className="w-2 h-2 rounded-full inline-block" style={{ background: r.color }} />{r.logo === '?' ? '' : r.logo}{r.owner ? `${r.logo === '?' ? '' : ' · '}${r.owner}` : ''} {grand > 0 ? Math.round((r.amount / grand) * 100) : 0}%
               </span>
             ))}
           </div>
