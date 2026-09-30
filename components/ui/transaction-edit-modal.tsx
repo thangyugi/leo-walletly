@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import { X, Trash2, Save } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from './button'
@@ -32,6 +33,7 @@ const todayIso = () => {
 }
 
 export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props) {
+  useEscapeLayer(onClose)
   const { t, lang } = useTranslation()
   const { ledger, accounts, categories, tags, members } = useLedgerData()
   const userId = useLedgerStore((s) => s.userId)
@@ -157,10 +159,10 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   ]
 
   const modal = (
-    <div className="fixed inset-0 z-[300] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className="fixed inset-0 z-[9100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-labelledby="tx-modal-title"
-        className="relative bg-[var(--color-bg-surface)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto shadow-2xl border border-[var(--color-border-default)]">
+        className="relative bg-[var(--color-bg-surface)] rounded-t-[22px] sm:rounded-2xl w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto overscroll-contain animate-sheet-up sm:animate-none shadow-2xl border border-[var(--color-border-default)]">
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-subtle)] sticky top-0 bg-[var(--color-bg-surface)] z-10">
           <h2 id="tx-modal-title" className="font-semibold text-[var(--color-text-primary)]">{txn ? t.txform.editTitle : t.txform.addTitle}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-bg-sunken)]">
@@ -256,7 +258,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
           </div>
         </div>
 
-        <div className="flex items-center gap-2 px-5 py-4 border-t border-[var(--color-border-subtle)] sticky bottom-0 bg-[var(--color-bg-surface)]">
+        <div className="flex items-center gap-2 px-5 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[var(--color-border-subtle)] sticky bottom-0 bg-[var(--color-bg-surface)]">
           {txn && can('transaction.delete') && (
             <Button variant="ghost" size="sm" icon={<Trash2 />} className="text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]" onClick={handleDelete}>
               {t.txform.delete}

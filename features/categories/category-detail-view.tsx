@@ -198,9 +198,16 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
   onPickerChange: (v: PickerValue) => void
 }) {
   const { lang } = useTranslation()
+  const strip = React.useRef<HTMLDivElement>(null)
+  // Keep the chosen tab in view when the row scrolls sideways (phones).
+  React.useEffect(() => {
+    const el = strip.current?.querySelector<HTMLElement>('[aria-selected="true"]')
+    const box = strip.current
+    if (el && box) box.scrollTo({ left: el.offsetLeft - box.clientWidth / 2 + el.clientWidth / 2, behavior: 'smooth' })
+  }, [active])
   return (
-    <div className="flex flex-col-reverse sm:flex-row sm:items-center border-b border-[var(--color-border-subtle)]" role="tablist">
-      <div className="flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar">
+    <div className="flex flex-col-reverse lg:flex-row lg:items-center border-b border-[var(--color-border-subtle)]" role="tablist">
+      <div ref={strip} className="relative flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button key={tab.value} role="tab" aria-selected={active === tab.value} onClick={() => onChange(tab.value)}
             className={cn(
@@ -217,7 +224,7 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 sm:ml-auto max-sm:py-2 max-sm:border-b max-sm:border-[var(--color-border-subtle)]">
+      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)]">
         <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
       </div>
     </div>

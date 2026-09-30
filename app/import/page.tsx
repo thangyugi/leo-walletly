@@ -374,7 +374,7 @@ export default function ImportPage() {
 
       {step === 'review' && (
         <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] overflow-hidden">
-          <div className="grid grid-cols-4 divide-x divide-[var(--color-border-subtle)] border-b border-[var(--color-border-default)]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 sm:divide-x divide-[var(--color-border-subtle)] border-b border-[var(--color-border-default)] max-sm:[&>*:nth-child(-n+2)]:border-b max-sm:[&>*:nth-child(odd)]:border-r max-sm:[&>*]:border-[var(--color-border-subtle)]">
             <div className="px-4 py-3 text-center">
               <p className="text-[10px] text-[var(--color-text-quaternary)] font-semibold uppercase tracking-wide">{t.transactions.txnTotal}</p>
               <p className="text-lg font-bold text-[var(--color-text-primary)]">{rows.length}</p>
@@ -444,7 +444,7 @@ export default function ImportPage() {
                 <tr>
                   <th className="py-2 pl-3 pr-1 w-8" />
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)] whitespace-nowrap">{t.transactions.date}</th>
-                  <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)]">{t.transactions.labelType}</th>
+                  <th className="max-sm:hidden py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)]">{t.transactions.labelType}</th>
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)]">{t.transactions.content}</th>
                   <th className="py-2 px-2 text-left text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)] hidden sm:table-cell">{t.transactions.labelCategory}</th>
                   <th className="py-2 px-3 text-right text-[10px] font-bold uppercase tracking-wide text-[var(--color-text-quaternary)]">{t.transactions.amount}</th>
@@ -459,16 +459,26 @@ export default function ImportPage() {
                         <input type="checkbox" aria-label={r.description} checked={r.selected} onChange={(e) => setRow(r.rowNumber, { selected: e.target.checked })} className="accent-[var(--color-interactive-primary)]" />
                       </td>
                       <td className="py-2.5 px-2 text-xs text-[var(--color-text-quaternary)] whitespace-nowrap">{fmtDate(r.date)}</td>
-                      <td className="py-2.5 px-2">
+                      <td className="max-sm:hidden py-2.5 px-2">
                         <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
                           isIncome ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' : 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]')}>
                           {isIncome ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                           {isIncome ? t.transactions.typeIncome : t.transactions.typeExpense}
                         </span>
                       </td>
-                      <td className="py-2.5 px-2 max-w-[220px]">
+                      <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-none">
                         <p className="text-sm text-[var(--color-text-primary)] truncate">{r.description}</p>
                         {r.duplicate && <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>}
+                        {/* Phones have no category column: the picker sits under the text. */}
+                        <CategoryPicker
+                          aria-label={t.transactions.labelCategory}
+                          size="sm"
+                          className="sm:hidden mt-1.5"
+                          categories={categories.filter((c) => c.is_active && c.type === r.type)}
+                          noneLabel={t.txform.uncategorized}
+                          value={r.categoryId}
+                          onChange={(v) => setRow(r.rowNumber, { categoryId: v })}
+                        />
                       </td>
                       <td className="py-2.5 px-2 hidden sm:table-cell">
                         <CategoryPicker

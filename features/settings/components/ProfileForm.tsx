@@ -61,7 +61,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
 
   return (
     <div className="space-y-6">
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-xl font-bold text-[var(--color-text-primary)]">
             {t.settings.profile.title}
@@ -80,7 +80,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-all"
+                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-all"
               >
                 <Edit3 className="w-4 h-4" />
                 {t.settings.profile.editBtn}
@@ -157,7 +157,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
       </SettingsSection>
 
       <SettingsSection title={t.settings.profile.personalInfo}>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-6">
           
           <ProfileField label="Họ (Last Name)" error={errors.lastName?.message} isEditing={isEditing}>
             <input {...register('lastName')} disabled={!isEditing} placeholder="Nguyễn"
@@ -178,9 +178,9 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
           </ProfileField>
 
           <ProfileField label={t.settings.profile.email} isEditing={false}>
-            <div className="flex items-center gap-2 h-11 text-sm font-semibold text-[var(--color-text-tertiary)]">
-              {initialData.email}
-              <Badge variant="neutral" className="text-[10px] uppercase">
+            <div className="flex items-center gap-2 min-h-11 min-w-0 text-sm font-semibold text-[var(--color-text-tertiary)]">
+              <span className="truncate">{initialData.email}</span>
+              <Badge variant="neutral" className="text-[10px] uppercase whitespace-nowrap shrink-0">
                 {t.settings.profile.verified}
               </Badge>
             </div>

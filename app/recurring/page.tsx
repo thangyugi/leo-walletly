@@ -1,6 +1,8 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import { Plus, Trash2, Pencil, RefreshCw, X, Check, SkipForward } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +29,7 @@ function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'inte
 }
 
 function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose: () => void }) {
+  useEscapeLayer(onClose)
   const { t, lang } = useTranslation()
   const { ledger, accounts, categories } = useLedgerData()
   const { create, update } = useRecurringStore()
@@ -61,11 +64,11 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
     }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label={initial ? t.recurring.edit : t.recurring.add}
-        className="relative bg-[var(--color-surface-default)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-xl border border-[var(--color-border-default)] max-h-[92vh] overflow-y-auto">
+        className="relative bg-[var(--color-surface-default)] rounded-t-[22px] sm:rounded-2xl w-full sm:max-w-lg shadow-xl border border-[var(--color-border-default)] max-h-[92dvh] overflow-y-auto overscroll-contain animate-sheet-up sm:animate-none pb-[env(safe-area-inset-bottom)]">
         <div className="sticky top-0 bg-[var(--color-surface-default)] border-b border-[var(--color-border-subtle)] px-5 py-4 flex items-center justify-between z-10">
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{initial ? t.recurring.edit : t.recurring.add}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><X className="w-4 h-4" /></button>
@@ -117,7 +120,8 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
           <Button className="w-full" onClick={save} loading={saving}>{t.common.save}</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

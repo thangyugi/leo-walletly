@@ -17,6 +17,9 @@ import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { TransactionDetailPanel } from '@/components/transactions/transaction-detail-panel'
+import { Popover } from '@/components/ui/popover'
+import { BottomSheet } from '@/components/ui/bottom-sheet'
+import { useIsPhone } from '@/hooks/useMediaQuery'
 import { DateNavigator, defaultPickerValue, monthPickerValue } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { useTransactionsStore, type SortOption, type PeriodSummary } from '@/stores/transactions'
@@ -86,27 +89,19 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
   ]
 
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
+  const ref = useRef<HTMLButtonElement>(null)
   const current = SORT_OPTIONS.find((o) => o.value === value)
 
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
-
   return (
-    <div className="relative" ref={ref}>
-      <Button variant="outline" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1.5" aria-haspopup="listbox" aria-expanded={open}>
+    <div className="relative">
+      <Button ref={ref} variant="outline" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1.5" aria-haspopup="listbox" aria-expanded={open}>
         <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
         <span className="hidden sm:inline text-[var(--color-text-tertiary)]">{t.transactions.sortBy}:</span>
         <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? t.transactions.date}</span>
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
-      {open && (
-        <div role="listbox" className="absolute right-0 top-full mt-1.5 w-52 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50 py-1 overflow-hidden animate-slide-in-up">
+      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={216} align="start" title={t.transactions.sortBy}>
+        <div role="listbox" className="py-1">
           {SORT_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -114,7 +109,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
               aria-selected={value === opt.value}
               onClick={() => { onChange(opt.value); setOpen(false) }}
               className={cn(
-                'w-full flex items-center gap-2.5 px-3.5 py-2 text-sm text-left transition-colors',
+                'w-full flex items-center gap-2.5 px-5 sm:px-3.5 min-h-[48px] sm:min-h-0 py-2 text-[15px] sm:text-sm text-left transition-colors',
                 value === opt.value
                   ? 'bg-[var(--color-status-gain-bg)] text-[var(--color-interactive-primary)] font-medium'
                   : 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]',
@@ -126,7 +121,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
             </button>
           ))}
         </div>
-      )}
+      </Popover>
     </div>
   )
 }
@@ -145,6 +140,29 @@ function FilterBar() {
     const id = setTimeout(() => { if (search !== filters.search) setFilters({ search }) }, 300)
     return () => clearTimeout(id)
   }, [search, filters.search, setFilters])
+
+  const phone = useIsPhone()
+  const fields = (
+    <>
+      <Select label={t.transactions.labelType} value={filters.type} onChange={(e) => setFilters({ type: e.target.value as typeof filters.type })}>
+        <option value="all">{t.transactions.typeAll}</option>
+        <option value="expense">{t.transactions.typeExpense}</option>
+        <option value="income">{t.transactions.typeIncome}</option>
+        <option value="transfer">{t.transactions.typeTransfer}</option>
+      </Select>
+      <AccountPicker label={t.transactions.labelProvider} accounts={accounts} extra={[{ value: 'all', label: t.common.all }]}
+        value={filters.accountId} onChange={(v) => setFilters({ accountId: v })} />
+      <CategoryPicker label={t.transactions.labelCategory} categories={categories.filter((c) => c.is_active)}
+        extra={[{ value: 'all', label: t.common.all }, { value: 'none', label: t.txform.uncategorized }]}
+        value={filters.categoryId} onChange={(v) => setFilters({ categoryId: v })} />
+      <Select label={t.dashboard.users} value={filters.paidByUserId} onChange={(e) => setFilters({ paidByUserId: e.target.value })}>
+        <option value="all">{t.common.all}</option>
+        {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.user?.display_name ?? m.user?.email}</option>)}
+      </Select>
+      <Input label={t.transactions.labelDateFrom} type="date" value={filters.dateFrom} onChange={(e) => setFilters({ dateFrom: e.target.value })} />
+      <Input label={t.transactions.labelDateTo}   type="date" value={filters.dateTo}   onChange={(e) => setFilters({ dateTo:   e.target.value })} />
+    </>
+  )
 
   const activeCount = [filters.accountId !== 'all', filters.categoryId !== 'all', filters.paidByUserId !== 'all', filters.dateFrom, filters.dateTo, filters.type !== 'all'].filter(Boolean).length
   const hasActive = !!filters.search || activeCount > 0
@@ -189,26 +207,21 @@ function FilterBar() {
           <Button variant="ghost" size="sm" icon={<X />} onClick={() => { setSearch(''); resetFilters() }}>{t.transactions.clear}</Button>
         )}
       </div>
-      {expanded && (
+      {expanded && !phone && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 p-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] animate-slide-in-up">
-          <Select label={t.transactions.labelType} value={filters.type} onChange={(e) => setFilters({ type: e.target.value as typeof filters.type })}>
-            <option value="all">{t.transactions.typeAll}</option>
-            <option value="expense">{t.transactions.typeExpense}</option>
-            <option value="income">{t.transactions.typeIncome}</option>
-            <option value="transfer">{t.transactions.typeTransfer}</option>
-          </Select>
-          <AccountPicker label={t.transactions.labelProvider} accounts={accounts} extra={[{ value: 'all', label: t.common.all }]}
-            value={filters.accountId} onChange={(v) => setFilters({ accountId: v })} />
-          <CategoryPicker label={t.transactions.labelCategory} categories={categories.filter((c) => c.is_active)}
-            extra={[{ value: 'all', label: t.common.all }, { value: 'none', label: t.txform.uncategorized }]}
-            value={filters.categoryId} onChange={(v) => setFilters({ categoryId: v })} />
-          <Select label={t.dashboard.users} value={filters.paidByUserId} onChange={(e) => setFilters({ paidByUserId: e.target.value })}>
-            <option value="all">{t.common.all}</option>
-            {members.map((m) => <option key={m.user_id} value={m.user_id}>{m.user?.display_name ?? m.user?.email}</option>)}
-          </Select>
-          <Input label={t.transactions.labelDateFrom} type="date" value={filters.dateFrom} onChange={(e) => setFilters({ dateFrom: e.target.value })} />
-          <Input label={t.transactions.labelDateTo}   type="date" value={filters.dateTo}   onChange={(e) => setFilters({ dateTo:   e.target.value })} />
+          {fields}
         </div>
+      )}
+      {expanded && phone && (
+        <BottomSheet title={t.transactions.filter} onClose={() => setExpanded(false)}
+          footer={
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1 h-11" onClick={() => { setSearch(''); resetFilters() }} disabled={!hasActive}>{t.transactions.clear}</Button>
+              <Button className="flex-1 h-11" onClick={() => setExpanded(false)}>{t.common.close}</Button>
+            </div>
+          }>
+          <div className="grid grid-cols-2 gap-3 px-4 pb-2">{fields}</div>
+        </BottomSheet>
       )}
     </div>
   )

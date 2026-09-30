@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import Link from 'next/link'
 import { toast } from 'sonner'
 import { X, Maximize2, Minimize2, Edit2, CheckCircle2, Lock } from 'lucide-react'
@@ -41,6 +42,7 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
   const update = useTransactionsStore((s) => s.update)
   const can = useLedgerStore((s) => s.can)
   const [fullscreen, setFullscreen] = useState(false)
+  useEscapeLayer(onClose)
   const [raw, setRaw] = useState<{ column_name: string; value: string | null }[]>([])
   const [receipt, setReceipt] = useState<{
     items: { line_number: number; name: string; quantity: number; amount: number; transaction_id: string | null }[]
@@ -100,26 +102,26 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
   ]
 
   const panel = (
-    <div className="fixed inset-0 z-[200] flex items-end sm:items-start sm:justify-end pointer-events-none">
-      <div className="absolute inset-0 bg-black/20 pointer-events-auto" onClick={onClose} />
+    <div className="fixed inset-0 z-[9000] flex items-end sm:items-start sm:justify-end pointer-events-none">
+      <div className="absolute inset-0 bg-black/30 sm:bg-black/20 pointer-events-auto" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label={t.transactions.detailTitle} className={cn(
         'relative pointer-events-auto bg-[var(--color-surface-default)] shadow-2xl flex flex-col transition-all duration-200',
         fullscreen
           ? 'w-full h-full'
-          : 'w-full sm:w-[420px] rounded-t-2xl sm:rounded-none sm:h-full border-l border-[var(--color-border-default)] animate-slide-in-up sm:animate-none',
+          : 'w-full sm:w-[420px] max-h-[92dvh] sm:max-h-none rounded-t-[22px] sm:rounded-none sm:h-full sm:border-l border-[var(--color-border-default)] animate-sheet-up sm:animate-none',
       )}>
         <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-default)] shrink-0">
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">{t.transactions.detailTitle}</span>
           <div className="flex items-center gap-1">
             {canUpdate && (
-              <button onClick={onEdit} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.edit}>
+              <button onClick={onEdit} className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.edit}>
                 <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
               </button>
             )}
-            <button onClick={() => setFullscreen((v) => !v)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={fullscreen ? t.common.minimize : t.common.maximize}>
+            <button onClick={() => setFullscreen((v) => !v)} className="max-sm:hidden w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={fullscreen ? t.common.minimize : t.common.maximize}>
               {fullscreen ? <Minimize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" /> : <Maximize2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />}
             </button>
-            <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.close}>
+            <button onClick={onClose} className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.close}>
               <X className="w-4 h-4 text-[var(--color-text-tertiary)]" />
             </button>
           </div>

@@ -11,6 +11,7 @@ import { useMasterStore } from '@/features/master/store'
 import { useUserManagementStore } from '@/features/user-management/store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { Popover } from '@/components/ui/popover'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
 import type { Category, CategoryType } from './types'
 
@@ -62,7 +63,7 @@ function TreeNodeItem({ category, depth, selected, onSelect, children }: TreeNod
         type="button"
         onClick={() => onSelect(category.id)}
         className={cn(
-          'w-full flex items-center gap-2 px-3 py-[7px] rounded-[8px] text-[13px] text-left transition-colors cursor-pointer',
+          'w-full flex items-center gap-2 px-3 py-[7px] max-sm:min-h-[46px] rounded-[8px] text-[13px] max-sm:text-[15px] text-left transition-colors cursor-pointer',
           isSelected
             ? 'bg-[var(--color-brand-500)] text-white'
             : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
@@ -130,24 +131,17 @@ export function ParentTreeDropdown({
 }) {
   const { t } = useTranslation()
   const [open, setOpen] = React.useState(false)
-  const ref = React.useRef<HTMLDivElement>(null)
+  const ref = React.useRef<HTMLButtonElement>(null)
 
   const selectedCategory = allCategories.find(c => c.id === value)
 
   // Build tree from valid options
   const rootNodes = options.filter(g => !options.find(o => o.id === g.parent_id))
 
-  React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [open])
-
   return (
-    <div ref={ref} className="relative">
+    <div className="relative">
       <button
+        ref={ref}
         type="button"
         disabled={disabled}
         onClick={() => setOpen(v => !v)}
@@ -178,11 +172,8 @@ export function ParentTreeDropdown({
         <ChevronDown className={cn('w-4 h-4 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </button>
 
-      {open && (
-        <div className={cn(
-          'absolute left-0 right-0 top-[calc(100%+6px)] z-50 rounded-xl shadow-xl overflow-hidden',
-          'bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)]',
-        )}>
+      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} title={t.catform.parent} className="overflow-hidden">
+        <div>
           {/* None option */}
           {allowNone !== false && (
             <div className="p-2 border-b border-[var(--color-border-subtle)]">
@@ -190,7 +181,7 @@ export function ParentTreeDropdown({
                 type="button"
                 onClick={() => { onChange(''); setOpen(false) }}
                 className={cn(
-                  'w-full flex items-center gap-2 px-3 py-[7px] rounded-[8px] text-[13px] transition-colors cursor-pointer',
+                  'w-full flex items-center gap-2 px-3 py-[7px] max-sm:min-h-[46px] rounded-[8px] text-[13px] max-sm:text-[15px] transition-colors cursor-pointer',
                   !value
                     ? 'bg-[var(--color-brand-500)] text-white'
                     : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]',
@@ -206,7 +197,7 @@ export function ParentTreeDropdown({
           )}
 
           {/* Tree */}
-          <div className="p-2 max-h-64 overflow-y-auto custom-scrollbar">
+          <div className="p-2 sm:max-h-64 sm:overflow-y-auto custom-scrollbar">
             {renderTree(rootNodes, options, 0, value, (id) => { onChange(id); setOpen(false) })}
             {rootNodes.length === 0 && (
               <p className="text-[12px] text-[var(--color-text-quaternary)] text-center py-3">
@@ -215,7 +206,7 @@ export function ParentTreeDropdown({
             )}
           </div>
         </div>
-      )}
+      </Popover>
     </div>
   )
 }
@@ -343,7 +334,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
   ]
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-[24px] shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-t-[22px] sm:rounded-[24px] shadow-xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]">
       <div className="flex items-center justify-between px-6 sm:px-8 py-5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">{isEdit ? t.catform.editTitle : t.catform.createTitle}</h2>
@@ -504,7 +495,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
           <AlertCircle className="w-4 h-4 shrink-0" /><span className="flex-1">{errorMsg}</span>
         </div>
       )}
-      <div className="flex items-center justify-end gap-3 px-6 sm:px-8 py-4 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
+      <div className="flex items-center justify-end gap-3 px-6 sm:px-8 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
         <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl">{t.common.cancel}</Button>
         <Button type="submit" icon={<Save className="w-4 h-4" />} loading={isSaving} className="h-11 px-8 rounded-xl font-semibold">
           {isEdit ? t.catform.save : t.catform.create}

@@ -161,13 +161,13 @@ export function ClassifyPage() {
         <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}>{t.classify.runRules}</Button>
       </div>
 
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {[
           [t.classify.pending, fill(t.classify.groupsCount, { groups: groups.length, count: pending.length })],
           [t.catui.typeExpense, format(expense)],
           [t.catui.typeIncome, format(income)],
-        ].map(([l, v]) => (
-          <div key={l} className="card-base p-4">
+        ].map(([l, v], i) => (
+          <div key={l} className={cn('card-base p-4', i === 0 && 'col-span-2 sm:col-span-1')}>
             <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{l}</p>
             <p className="text-lg font-semibold font-tabular text-[var(--color-text-primary)] mt-1">{v}</p>
           </div>

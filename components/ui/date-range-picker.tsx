@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { ChevronLeft, ChevronRight, Calendar } from 'lucide-react'
 import { cn, toLocalISODate, formatMonthLocale, formatDayLocale } from '@/lib/utils'
 import type { Lang } from '@/lib/i18n'
 import { useTranslation } from '@/hooks/useTranslation'
+import { useIsPhone } from '@/hooks/useMediaQuery'
+import { Popover } from './popover'
 
 // ------------------------------------------------------------------
 // Types
@@ -141,7 +143,7 @@ function DayCalendar({
               onMouseEnter={() => onDayHover(d)}
               onMouseLeave={onDayLeave}
               className={cn(
-                'h-8 w-full flex items-center justify-center text-xs rounded-md transition-all duration-75',
+                'h-10 sm:h-8 w-full flex items-center justify-center text-sm sm:text-xs rounded-md transition-all duration-75',
                 (isS || isE) && 'bg-[var(--color-interactive-primary)] text-white font-semibold z-10',
                 rng && !isS && !isE && 'bg-[var(--color-status-gain-bg)] rounded-none',
                 !isS && !isE && !rng && 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
@@ -169,6 +171,7 @@ export function DateRangePicker({
   lang?: Lang
 }) {
   const { t } = useTranslation()
+  const phone = useIsPhone()
   const { y: initY, m: initM } = parseDate(value.start)
   const [mode,       setMode]       = useState<DatePickerMode>(value.mode)
   const [navYear,    setNavYear]    = useState(initY)
@@ -229,8 +232,18 @@ export function DateRangePicker({
     : mode === 'year' ? `${navYear - 4} – ${navYear + 5}` : `${navYear}`
 
   return (
-    <div className="flex w-[520px] max-w-[95vw]">
-      {/* Presets sidebar */}
+    <div className="flex flex-col sm:flex-row w-full sm:w-[520px]">
+      {/* Presets: a swipeable chip row on phones, a sidebar otherwise */}
+      {phone ? (
+        <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 pt-1 pb-3 border-b border-[var(--color-border-subtle)]">
+          {presets.map((p) => (
+            <button key={p.label} onClick={() => handlePreset(p)}
+              className="shrink-0 h-9 px-3.5 rounded-full border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[13px] font-medium text-[var(--color-text-secondary)] whitespace-nowrap">
+              {p.label}
+            </button>
+          ))}
+        </div>
+      ) : (
       <div className="w-36 border-r border-[var(--color-border-subtle)] py-2 shrink-0 bg-[var(--color-bg-sunken)]">
         <p className="px-3 pt-1 pb-2 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">
           {t.datepicker.quick}
@@ -245,6 +258,7 @@ export function DateRangePicker({
           </button>
         ))}
       </div>
+      )}
 
       {/* Calendar area */}
       <div className="flex-1 p-4">
@@ -255,7 +269,7 @@ export function DateRangePicker({
               key={m}
               onClick={() => setMode(m)}
               className={cn(
-                'flex-1 py-1 text-xs font-medium rounded-md transition-all',
+                'flex-1 py-2 sm:py-1 text-[13px] sm:text-xs font-medium rounded-md transition-all',
                 mode === m
                   ? 'bg-[var(--color-surface-default)] text-[var(--color-text-primary)] shadow-xs'
                   : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]'
@@ -268,11 +282,11 @@ export function DateRangePicker({
 
         {/* Nav header */}
         <div className="flex items-center justify-between mb-3">
-          <button onClick={prevNav} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--color-bg-sunken)] transition-colors">
+          <button onClick={prevNav} aria-label="Previous" className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center rounded-md hover:bg-[var(--color-bg-sunken)] transition-colors">
             <ChevronLeft className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
           </button>
           <span className="text-sm font-semibold text-[var(--color-text-primary)]">{navLabel}</span>
-          <button onClick={nextNav} className="w-7 h-7 flex items-center justify-center rounded-md hover:bg-[var(--color-bg-sunken)] transition-colors">
+          <button onClick={nextNav} aria-label="Next" className="w-10 h-10 sm:w-7 sm:h-7 flex items-center justify-center rounded-md hover:bg-[var(--color-bg-sunken)] transition-colors">
             <ChevronRight className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
           </button>
         </div>
@@ -292,13 +306,13 @@ export function DateRangePicker({
               </p>
             )}
             <div className="flex gap-2 mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
-              <button onClick={onClose} className="flex-1 py-1.5 text-xs border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
+              <button onClick={onClose} className="flex-1 py-2.5 sm:py-1.5 text-sm sm:text-xs border border-[var(--color-border-default)] rounded-lg text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] transition-colors">
                 {t.datepicker.cancel}
               </button>
               <button
                 onClick={handleApply}
                 disabled={!rangeStart}
-                className="flex-1 py-1.5 text-xs font-semibold bg-[var(--color-interactive-primary)] text-white rounded-lg hover:bg-[var(--color-interactive-primary-hover)] transition-colors disabled:opacity-40"
+                className="flex-1 py-2.5 sm:py-1.5 text-sm sm:text-xs font-semibold bg-[var(--color-interactive-primary)] text-white rounded-lg hover:bg-[var(--color-interactive-primary-hover)] transition-colors disabled:opacity-40"
               >
                 {t.datepicker.apply}
               </button>
@@ -320,7 +334,7 @@ export function DateRangePicker({
                     onClose()
                   }}
                   className={cn(
-                    'py-2.5 text-xs rounded-lg transition-all font-medium',
+                    'py-3 sm:py-2.5 text-sm sm:text-xs rounded-lg transition-all font-medium',
                     sel ? 'bg-[var(--color-interactive-primary)] text-white'
                         : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
                     mi === new Date().getMonth() && navYear === new Date().getFullYear() && !sel &&
@@ -379,7 +393,7 @@ export function DateRangePicker({
                     onClose()
                   }}
                   className={cn(
-                    'py-2.5 text-xs rounded-lg transition-all font-medium',
+                    'py-3 sm:py-2.5 text-sm sm:text-xs rounded-lg transition-all font-medium',
                     sel ? 'bg-[var(--color-interactive-primary)] text-white'
                         : 'hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]',
                     isCurrentYear && !sel && 'ring-1 ring-[var(--color-interactive-primary)]'
@@ -409,15 +423,7 @@ export function DateNavigator({
   align?: 'center' | 'end'
 }) {
   const [open, setOpen] = useState(false)
-  const ref = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    function onDown(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
-    }
-    if (open) document.addEventListener('mousedown', onDown)
-    return () => document.removeEventListener('mousedown', onDown)
-  }, [open])
+  const ref = useRef<HTMLButtonElement>(null)
 
   function navigate(dir: -1 | 1) {
     const { start, end, mode } = value
@@ -447,7 +453,7 @@ export function DateNavigator({
   const label = buildLabel(value.start, value.end, value.mode, lang)
 
   return (
-    <div className="relative" ref={ref}>
+    <div className="relative min-w-0">
       <div className="flex items-center gap-0.5">
         <button
           onClick={() => navigate(-1)}
@@ -458,9 +464,12 @@ export function DateNavigator({
         </button>
 
         <button
+          ref={ref}
           onClick={() => setOpen((v) => !v)}
+          aria-haspopup="dialog"
+          aria-expanded={open}
           className={cn(
-            'h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all min-w-[200px] justify-center',
+            'h-9 sm:h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all min-w-[168px] sm:min-w-[200px] justify-center',
             open
               ? 'bg-[var(--color-status-gain-bg)] border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]'
               : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]'
@@ -479,16 +488,15 @@ export function DateNavigator({
         </button>
       </div>
 
-      {open && (
-        <div className={cn('absolute top-full mt-2 z-[300]', align === 'end' ? 'right-0' : 'left-1/2 -translate-x-1/2', 'bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl overflow-hidden animate-slide-in-up')}>
-          <DateRangePicker
-            value={value}
-            onChange={(v) => { onChange(v); setOpen(false) }}
-            onClose={() => setOpen(false)}
-            lang={lang}
-          />
-        </div>
-      )}
+      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={520} align={align === 'end' ? 'end' : 'center'}
+        title={label} className="overflow-hidden">
+        <DateRangePicker
+          value={value}
+          onChange={(v) => { onChange(v); setOpen(false) }}
+          onClose={() => setOpen(false)}
+          lang={lang}
+        />
+      </Popover>
     </div>
   )
 }

@@ -15,14 +15,14 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
   const pathname = usePathname()
 
   return (
-    <div className="flex flex-col md:flex-row h-full max-w-6xl mx-auto w-full gap-8 py-8 px-4 md:px-6">
+    <div className="flex flex-col lg:flex-row h-full max-w-6xl mx-auto w-full gap-0 lg:gap-8 lg:py-8 lg:px-6">
       {/* Mobile Nav (Redesigned for touch) */}
-      <div className="md:hidden mb-6 overflow-x-auto whitespace-nowrap scrollbar-hide -mx-4 px-4 border-b border-[var(--color-border-subtle)] pb-2">
+      <div className="lg:hidden mb-5 overflow-x-auto whitespace-nowrap no-scrollbar -mx-4 px-4 md:-mx-6 md:px-6 border-b border-[var(--color-border-subtle)]">
         <SettingsSidebarMobile />
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden md:block">
+      <div className="hidden lg:block">
         <SettingsSidebar />
       </div>
 

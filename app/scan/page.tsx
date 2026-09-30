@@ -625,12 +625,12 @@ export default function ScanPage() {
             ) : (
               <div className="divide-y divide-[var(--color-border-subtle)]">
                 {items.map((it) => (
-                  <div key={it.key} className="grid grid-cols-[1fr_96px_minmax(0,170px)_28px] items-center gap-2 px-3 py-2">
+                  <div key={it.key} className="grid grid-cols-[minmax(0,1fr)_104px_28px] sm:grid-cols-[1fr_96px_minmax(0,170px)_28px] items-center gap-2 px-3 py-2">
                     <input aria-label={L('品名', 'Tên món', 'Item')} value={it.name} onChange={(e) => setItem(it.key, { name: e.target.value })}
                       className="min-w-0 h-8 px-2 text-sm rounded-md border border-transparent hover:border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-transparent" />
                     <AmountInput aria-label={L('金額', 'Số tiền', 'Amount')} currency={ledger?.currency_code ?? 'JPY'} value={it.amount} onChange={(v) => setItem(it.key, { amount: v })}
                       className="h-8 px-2 text-sm text-right font-tabular rounded-md border border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none bg-[var(--color-surface-default)]" />
-                    <CategoryPicker aria-label={L('カテゴリ', 'Danh mục', 'Category')} size="sm" categories={categories} noneLabel={t.txform.uncategorized}
+                    <CategoryPicker aria-label={L('カテゴリ', 'Danh mục', 'Category')} size="sm" className="max-sm:order-last max-sm:col-span-3" categories={categories} noneLabel={t.txform.uncategorized}
                       value={it.categoryId} onChange={(v) => setItem(it.key, { categoryId: v, source: 'manual' })} />
                     <button type="button" aria-label={L('行を削除', 'Xoá dòng', 'Remove line')} onClick={() => setItems((list) => list.filter((x) => x.key !== it.key))}
                       className="w-7 h-7 flex items-center justify-center rounded-md text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)] hover:bg-[var(--color-bg-sunken)]">

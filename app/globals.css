@@ -597,3 +597,15 @@ body {
 /* Horizontally scrolling chip/tab rows on small screens: swipe, no scrollbar. */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* Bottom sheets rise from the screen edge. */
+@keyframes sheet-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.animate-sheet-up { animation: sheet-up 220ms var(--ease-out) both; }
+
+/* Phones: 16px form text so iOS Safari doesn't zoom the page on focus. */
+@media (max-width: 767.98px) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px; }
+}
