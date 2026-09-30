@@ -4,14 +4,17 @@ import React, { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
-import { User, Users, Briefcase, Building2, ArrowRight, CheckCircle2, Loader2, Globe, Coins, Clock, ChevronLeft } from 'lucide-react'
+import { User, Users, Briefcase, Building2, ArrowRight, CheckCircle2, Loader2, Globe, Coins, Clock, ChevronLeft, Languages } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { regionalDefaults } from '@/features/master/regional'
 import { CustomSelect } from '@/features/settings/components/CustomSelect'
 import { formatMoney } from '@/lib/money'
-import { cn } from '@/lib/utils'
+import { cn, formatDayLocale, toLocalISODate } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { useSettingsStore } from '@/stores/settings'
+import type { Lang } from '@/lib/i18n'
 
 type Step = 'purpose' | 'details' | 'regional' | 'success'
 const TYPE_ICON: Record<string, React.ElementType> = { personal: User, family: Users, business: Building2, freelance: Briefcase }
@@ -20,6 +23,8 @@ export default function OnboardingPage() {
   const { t, tk, lang } = useTranslation()
   const router = useRouter()
   const setupOnboarding = useLedgerStore((s) => s.setupOnboarding)
+  const setLang = useSettingsStore((s) => s.setLang)
+  const userId = useLedgerStore((s) => s.userId)
   const { ledgerTypes, currencies, timeZones, countries, languages, load } = useMasterStore()
   const [step, setStep] = useState<Step>('purpose')
   const [typeCode, setTypeCode] = useState<string | null>(null)
@@ -56,8 +61,15 @@ export default function OnboardingPage() {
     if (!typeCode || loading) return
     setLoading(true)
     try {
+      // The app language chosen here (already live) must be stored before the
+      // ledger store reloads preferences, or the old one would come back.
+      if (userId) await supabase.from('user_preferences').update({ language_code: lang }).eq('user_id', userId)
+      // Personal / family ledgers skip the name step: name them in the language picked here.
+      const autoName = typeCode === 'personal' || typeCode === 'family'
+        ? tk(`ledger_type.${typeCode}.name`) + (lang === 'ja' ? 'の家計簿' : lang === 'vi' ? '' : ' budget')
+        : ''
       await setupOnboarding({
-        name: name.trim() || tk(`ledger_type.${typeCode}.name`),
+        name: autoName || name.trim() || tk(`ledger_type.${typeCode}.name`),
         ledgerTypeCode: typeCode,
         currencyCode: currency,
         timezoneCode: timezone,
@@ -74,7 +86,7 @@ export default function OnboardingPage() {
   }
 
   const localeOptions = (languages.length ? languages : [{ locale: 'ja-JP', native_name: '日本語' }, { locale: 'vi-VN', native_name: 'Tiếng Việt' }, { locale: 'en-US', native_name: 'English' }])
-    .map((l) => ({ value: l.locale, label: `${l.native_name} (${l.locale})` }))
+    .map((l) => ({ value: l.locale, label: `${l.locale} · ${formatDayLocale('2026-09-30', lang, l.locale)} · ${new Intl.NumberFormat(l.locale).format(1234567.8)}` }))
 
   return (
     <div className="min-h-screen bg-[var(--color-bg-base)] flex items-center justify-center p-6">
@@ -139,14 +151,23 @@ export default function OnboardingPage() {
                 <Field icon={Coins} label={t.onboarding.currency}>
                   <CustomSelect options={currencies.map((c) => ({ value: c.code, label: `${c.code} · ${tk(c.name_key)} (${c.symbol})` }))} value={currency} onChange={setCurrency} />
                 </Field>
-                <Field icon={Globe} label={t.onboarding.language}>
+                <Field icon={Languages} label={t.onboarding.appLanguage} hint={t.onboarding.appLanguageSub}>
+                  <CustomSelect options={APP_LANGUAGES} value={lang} onChange={(v) => setLang(v as Lang, { persistRemote: false })} />
+                </Field>
+                <Field icon={Globe} label={t.onboarding.regionalFormat} hint={t.onboarding.regionalFormatSub}>
                   <CustomSelect options={localeOptions} value={locale} onChange={setLocale} />
                 </Field>
-                <Field icon={Clock} label={t.onboarding.timezone}>
+                <Field icon={Clock} label={t.onboarding.timezone} hint={t.onboarding.timezoneSub}>
                   <CustomSelect options={timeZones.map((z) => ({ value: z.code, label: tk(z.name_key) }))} value={timezone} onChange={setTimezone} />
                 </Field>
-                <div className="p-4 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] flex justify-between items-end">
-                  <p className="text-2xl font-semibold text-[var(--color-text-primary)] font-tabular">{formatMoney(1000, currency)}</p>
+                <div className="p-4 rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">{t.onboarding.preview}</p>
+                  <div className="flex flex-wrap justify-between items-end gap-2">
+                    <p className="text-2xl font-semibold text-[var(--color-text-primary)] font-tabular">{formatMoney(1000, currency)}</p>
+                    <p className="text-sm text-[var(--color-text-secondary)] font-tabular">
+                      {formatDayLocale(todayIn(timezone), lang, locale)} · {new Date().toLocaleTimeString(locale, { timeZone: timezone, hour: '2-digit', minute: '2-digit' })}
+                    </p>
+                  </div>
                   <p className="text-xs text-[var(--color-text-tertiary)]">{t.ledger_settings.fiscalYearLabel}: {type?.default_fiscal_start_month ?? 1}/1</p>
                 </div>
                 <button disabled={loading} onClick={complete} className="w-full h-14 rounded-xl bg-[var(--color-interactive-primary)] text-white font-semibold flex items-center justify-center gap-2 disabled:opacity-60">
@@ -169,10 +190,24 @@ export default function OnboardingPage() {
   )
 }
 
-function Field({ icon: Icon, label, children }: { icon: React.ElementType; label: string; children: React.ReactNode }) {
+const APP_LANGUAGES = [
+  { value: 'ja', label: '日本語' },
+  { value: 'vi', label: 'Tiếng Việt' },
+  { value: 'en', label: 'English' },
+]
+
+/** Today's date (YYYY-MM-DD) in a time zone. */
+function todayIn(timeZone: string) {
+  try { return new Intl.DateTimeFormat('en-CA', { timeZone }).format(new Date()) } catch { return toLocalISODate() }
+}
+
+function Field({ icon: Icon, label, hint, children }: { icon: React.ElementType; label: string; hint?: string; children: React.ReactNode }) {
   return (
     <div className="space-y-2">
-      <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] flex items-center gap-2"><Icon className="w-3 h-3" /> {label}</p>
+      <div>
+        <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-tertiary)] flex items-center gap-2"><Icon className="w-3 h-3" /> {label}</p>
+        {hint && <p className="mt-1 text-xs text-[var(--color-text-quaternary)]">{hint}</p>}
+      </div>
       {children}
     </div>
   )
