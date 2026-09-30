@@ -80,12 +80,12 @@ export default function MonthlyReportPage() {
               { label: t.analytics.income,  value: summary.income,  color: 'var(--color-text-gain)',    icon: TrendingUp  },
               { label: t.analytics.net,     value: summary.net,     color: summary.net >= 0 ? 'var(--color-text-gain)' : 'var(--color-text-loss)', icon: Wallet },
             ].map(({ label, value, color, icon: Icon }) => (
-              <div key={label} className="card-base p-4">
+              <div key={label} className="card-base p-3 sm:p-4 min-w-0">
                 <div className="flex items-center gap-1.5 mb-2">
                   <Icon className="w-4 h-4" style={{ color }} />
                   <span className="text-xs text-[var(--color-text-tertiary)]">{label}</span>
                 </div>
-                <p className="text-base font-semibold font-tabular" style={{ color }}>{format(Math.abs(value))}</p>
+                <p className="text-sm sm:text-base font-semibold font-tabular truncate" style={{ color }}>{format(Math.abs(value))}</p>
               </div>
             ))}
           </div>

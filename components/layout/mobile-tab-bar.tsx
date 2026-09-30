@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, ArrowDownUp, FolderTree, Menu, Plus, PenLine, ScanLine, Upload, ChevronRight, LogOut, X } from 'lucide-react'
+import { LayoutDashboard, ArrowDownUp, FolderTree, Menu, Plus, PenLine, ScanLine, Upload, ChevronRight, LogOut } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useAuthStore } from '@/stores/auth'
@@ -11,6 +11,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath } from './nav'
 import { LanguagePicker } from './sidebar'
+import { BottomSheet } from '@/components/ui/bottom-sheet'
 
 const TABS = [
   { href: '/', icon: LayoutDashboard, key: 'mobnav.dashboard' },
@@ -21,29 +22,8 @@ const TABS = [
 const IN_TABS = new Set(['/', '/transactions', '/categories'])
 const QUICK = new Set(['/calendar', '/analytics', '/scan', '/import'])
 
-/** A sheet that slides up from the bottom; closes on backdrop tap or Escape. */
 function Sheet({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [onClose])
-  return (
-    <div className="md:hidden fixed inset-0 z-[300]">
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label={title}
-        className="absolute left-0 right-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-[22px] bg-[var(--color-bg-canvas)] shadow-2xl animate-slide-in-up pb-[max(16px,env(safe-area-inset-bottom))]">
-        <div className="flex justify-center pt-2"><span className="w-10 h-1.5 rounded-full bg-[var(--color-border-strong)]" /></div>
-        <div className="flex items-center justify-between pl-5 pr-2 pt-1 pb-2">
-          <h2 className="text-[15px] font-semibold text-[var(--color-text-primary)]">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="×" className="w-11 h-11 flex items-center justify-center rounded-xl text-[var(--color-text-tertiary)]">
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-        <div className="px-4">{children}</div>
-      </div>
-    </div>
-  )
+  return <BottomSheet title={title} onClose={onClose} className="md:hidden bg-[var(--color-bg-canvas)]" bodyClassName="px-4">{children}</BottomSheet>
 }
 
 /**

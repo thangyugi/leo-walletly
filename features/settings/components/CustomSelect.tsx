@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 import { cn } from '@/lib/utils'
-import { motion, AnimatePresence } from 'framer-motion'
+import { Popover } from '@/components/ui/popover'
 
 interface Option {
   value: string
@@ -29,23 +29,14 @@ export function CustomSelect({
   className 
 }: CustomSelectProps) {
   const [isOpen, setIsOpen] = React.useState(false)
-  const containerRef = React.useRef<HTMLDivElement>(null)
+  const buttonRef = React.useRef<HTMLButtonElement>(null)
 
   const selectedOption = options.find(opt => opt.value === value)
 
-  React.useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
-        setIsOpen(false)
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
-
   return (
-    <div className={cn("relative w-full", className)} ref={containerRef}>
+    <div className={cn("relative w-full", className)}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
@@ -64,42 +55,34 @@ export function CustomSelect({
         <ChevronDown className={cn("h-4 w-4 text-[var(--color-text-quaternary)] transition-transform duration-200", isOpen && "rotate-180")} />
       </button>
 
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.98 }}
-            transition={{ duration: 0.15 }}
-            className="absolute z-[300] mt-2 w-full overflow-hidden rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-surface)] shadow-xl"
-          >
-            <div className="max-h-60 overflow-y-auto p-1 scrollbar-hide">
-              {options.map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => {
-                    onChange(option.value)
-                    setIsOpen(false)
-                  }}
-                  className={cn(
-                    "flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left text-sm transition-colors",
-                    value === option.value 
-                      ? "bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)]" 
-                      : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] hover:text-[var(--color-text-primary)]"
-                  )}
-                >
-                  <div className="flex items-center gap-2">
-                    {option.icon && <option.icon className="w-4 h-4" />}
-                    <span>{option.label}</span>
-                  </div>
-                  {value === option.value && <Check className="h-4 w-4" />}
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      <Popover anchorRef={buttonRef} open={isOpen} onClose={() => setIsOpen(false)} className="p-1">
+        <div role="listbox" className="max-sm:px-3 sm:max-h-60 sm:overflow-y-auto">
+          {options.map((option) => (
+            <button
+              key={option.value}
+              type="button"
+              role="option"
+              aria-selected={value === option.value}
+              onClick={() => {
+                onChange(option.value)
+                setIsOpen(false)
+              }}
+              className={cn(
+                "flex w-full items-center justify-between rounded-lg px-3 py-2.5 max-sm:min-h-[48px] text-left text-[15px] sm:text-sm transition-colors",
+                value === option.value
+                  ? "bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)]"
+                  : "text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)] hover:text-[var(--color-text-primary)]"
+              )}
+            >
+              <div className="flex items-center gap-2">
+                {option.icon && <option.icon className="w-4 h-4" />}
+                <span>{option.label}</span>
+              </div>
+              {value === option.value && <Check className="h-4 w-4" />}
+            </button>
+          ))}
+        </div>
+      </Popover>
     </div>
   )
 }

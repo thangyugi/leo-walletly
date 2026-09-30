@@ -41,7 +41,7 @@ export function SettingsSection({
 
 export function SettingsCard({ children, className }: { children: React.ReactNode, className?: string }) {
   return (
-    <div className={cn("card-base p-6 space-y-6", className)}>
+    <div className={cn("card-base p-4 sm:p-6 space-y-6", className)}>
       {children}
     </div>
   )

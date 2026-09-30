@@ -11,6 +11,9 @@ import type { Category } from '@/features/categories/types'
 import type { Account } from '@/features/accounts/store'
 import { PROVIDERS } from '@/lib/constants'
 import { useMasterStore } from '@/features/master/store'
+import { useIsPhone } from '@/hooks/useMediaQuery'
+import { BottomSheet } from './bottom-sheet'
+import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 
 export interface PickerOption {
   value: string
@@ -47,6 +50,7 @@ export function Picker({
   value, onChange, options, label, placeholder, size = 'md', disabled, className, searchable, ...rest
 }: PickerProps) {
   const { t } = useTranslation()
+  const phone = useIsPhone()
   const id = React.useId()
   const buttonRef = React.useRef<HTMLButtonElement>(null)
   const menuRef = React.useRef<HTMLDivElement>(null)
@@ -55,6 +59,8 @@ export function Picker({
   const [query, setQuery] = React.useState('')
   const [active, setActive] = React.useState(0)
   const [pos, setPos] = React.useState<{ left: number; top: number; width: number; up: boolean; maxH: number } | null>(null)
+
+  useEscapeLayer(() => { setOpen(false); buttonRef.current?.focus() }, open && !phone)
 
   const selected = options.find((o) => o.value === value)
   const withSearch = searchable ?? options.length > 8
@@ -85,7 +91,7 @@ export function Picker({
   }
 
   React.useEffect(() => {
-    if (!open) return
+    if (!open || phone) return
     const onDown = (e: MouseEvent) => {
       const target = e.target as Node
       if (!menuRef.current?.contains(target) && !buttonRef.current?.contains(target)) setOpen(false)
@@ -101,7 +107,7 @@ export function Picker({
       window.removeEventListener('scroll', onMove, true)
       window.removeEventListener('resize', onMove)
     }
-  }, [open, place, withSearch])
+  }, [open, place, withSearch, phone])
 
   // Keep the highlighted row in view.
   React.useEffect(() => {
@@ -115,6 +121,61 @@ export function Picker({
     else if (e.key === 'Escape') { e.preventDefault(); setOpen(false); buttonRef.current?.focus() }
     else if (e.key === 'Tab') setOpen(false)
   }
+
+  const body = (big: boolean) => (
+    <>
+    {withSearch && (
+      <div className={cn('border-b border-[var(--color-border-subtle)] shrink-0', big ? 'px-4 pb-3' : 'p-2')}>
+        <div className="relative">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
+          <input
+            ref={big ? undefined : searchRef}
+            value={query}
+            onChange={(e) => { setQuery(e.target.value); setActive(0) }}
+            placeholder={t.common.searchPlaceholder}
+            aria-label={t.common.searchPlaceholder}
+            className={cn('w-full pl-8 pr-2 rounded-lg', big ? 'h-11 text-base' : 'h-8 text-sm', ' border border-[var(--color-border-default)] bg-[var(--color-surface-default)] focus:outline-none focus:border-[var(--color-border-focus)]')}
+          />
+        </div>
+      </div>
+    )}
+    <div role="listbox" aria-labelledby={id} className={cn('py-1', !big && 'overflow-y-auto')}>
+      {shown.length === 0 && <p className="px-3.5 py-2 text-xs text-[var(--color-text-quaternary)]">{t.common.empty}</p>}
+      {shown.map((o, i) => {
+        const on = o.value === value
+        const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
+        return (
+          <React.Fragment key={o.value || '__none'}>
+          {heading && (
+            <div role="presentation" className={cn(big ? 'px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]' : 'px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
+              {heading}
+            </div>
+          )}
+          <button
+            type="button"
+            role="option"
+            aria-selected={on}
+            data-idx={i}
+            onMouseEnter={() => setActive(i)}
+            onClick={() => pick(o.value)}
+            className={cn(
+              'w-full flex items-center gap-2.5 pr-3 text-left transition-colors', big ? 'min-h-[48px] py-2.5 text-[15px]' : 'py-2 text-sm',
+              on ? 'text-[var(--color-interactive-primary)] font-medium' : 'text-[var(--color-text-secondary)]',
+              i === active ? 'bg-[var(--color-bg-sunken)]' : on && 'bg-[var(--color-status-gain-bg)]',
+            )}
+            style={{ paddingLeft: (big ? 20 : 14) + (o.depth ?? 0) * 16, paddingRight: big ? 20 : undefined }}
+          >
+            {o.icon && <span className="shrink-0 flex items-center">{o.icon}</span>}
+            <span className="flex-1 min-w-0 truncate">{o.label}</span>
+            {o.hint && <span className="shrink-0 text-[11px] text-[var(--color-text-quaternary)]">{o.hint}</span>}
+            {on && <Check className="w-3.5 h-3.5 shrink-0" />}
+          </button>
+          </React.Fragment>
+        )
+      })}
+    </div>
+    </>
+  )
 
   const h = size === 'sm' ? 'h-8 text-xs px-2.5' : 'h-9 text-sm px-3'
 
@@ -147,64 +208,21 @@ export function Picker({
         <ChevronDown className={cn('w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </button>
 
-      {open && pos && createPortal(
+      {open && phone && (
+        <BottomSheet title={label ?? rest['aria-label'] ?? placeholder} onClose={() => setOpen(false)}>
+          <div ref={menuRef} onKeyDown={onKey}>{body(true)}</div>
+        </BottomSheet>
+      )}
+      {open && !phone && pos && createPortal(
         <div
           ref={menuRef}
+          data-popover-layer
           tabIndex={-1}
           onKeyDown={onKey}
           className="fixed z-[10000] bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl overflow-hidden flex flex-col animate-slide-in-up focus:outline-none"
           style={{ left: pos.left, width: pos.width, maxHeight: pos.maxH, ...(pos.up ? { bottom: window.innerHeight - pos.top } : { top: pos.top }) }}
         >
-          {withSearch && (
-            <div className="p-2 border-b border-[var(--color-border-subtle)] shrink-0">
-              <div className="relative">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
-                <input
-                  ref={searchRef}
-                  value={query}
-                  onChange={(e) => { setQuery(e.target.value); setActive(0) }}
-                  placeholder={t.common.searchPlaceholder}
-                  aria-label={t.common.searchPlaceholder}
-                  className="w-full h-8 pl-8 pr-2 text-sm rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] focus:outline-none focus:border-[var(--color-border-focus)]"
-                />
-              </div>
-            </div>
-          )}
-          <div role="listbox" aria-labelledby={id} className="overflow-y-auto py-1">
-            {shown.length === 0 && <p className="px-3.5 py-2 text-xs text-[var(--color-text-quaternary)]">{t.common.empty}</p>}
-            {shown.map((o, i) => {
-              const on = o.value === value
-              const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
-              return (
-                <React.Fragment key={o.value || '__none'}>
-                {heading && (
-                  <div role="presentation" className={cn('px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
-                    {heading}
-                  </div>
-                )}
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={on}
-                  data-idx={i}
-                  onMouseEnter={() => setActive(i)}
-                  onClick={() => pick(o.value)}
-                  className={cn(
-                    'w-full flex items-center gap-2.5 py-2 pr-3 text-sm text-left transition-colors',
-                    on ? 'text-[var(--color-interactive-primary)] font-medium' : 'text-[var(--color-text-secondary)]',
-                    i === active ? 'bg-[var(--color-bg-sunken)]' : on && 'bg-[var(--color-status-gain-bg)]',
-                  )}
-                  style={{ paddingLeft: 14 + (o.depth ?? 0) * 16 }}
-                >
-                  {o.icon && <span className="shrink-0 flex items-center">{o.icon}</span>}
-                  <span className="flex-1 min-w-0 truncate">{o.label}</span>
-                  {o.hint && <span className="shrink-0 text-[11px] text-[var(--color-text-quaternary)]">{o.hint}</span>}
-                  {on && <Check className="w-3.5 h-3.5 shrink-0" />}
-                </button>
-                </React.Fragment>
-              )
-            })}
-          </div>
+          {body(false)}
         </div>,
         document.body,
       )}

@@ -1,6 +1,8 @@
 'use client'
 
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
+import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import Link from 'next/link'
 import { Plus, Pencil, Archive, ArchiveRestore, Trash2, X, ArrowRight, Landmark } from 'lucide-react'
 import { toast } from 'sonner'
@@ -21,6 +23,7 @@ import { cn, toLocalISODate } from '@/lib/utils'
 const COLORS = ['#10b981', '#3b82f6', '#6366f1', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b']
 
 function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => void }) {
+  useEscapeLayer(onClose)
   const { t, tk } = useTranslation()
   const { ledger } = useLedgerData()
   const { accountTypes, providers, currencies } = useMasterStore()
@@ -49,11 +52,11 @@ function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => v
     } catch (e: any) { toast.error(e.message) } finally { setSaving(false) }
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[9100] flex items-end sm:items-center justify-center p-0 sm:p-4">
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label={initial ? t.accounts.edit : t.accounts.add}
-        className="relative bg-[var(--color-surface-default)] rounded-t-2xl sm:rounded-2xl w-full sm:max-w-lg shadow-xl border border-[var(--color-border-default)] max-h-[92vh] overflow-y-auto">
+        className="relative bg-[var(--color-surface-default)] rounded-t-[22px] sm:rounded-2xl w-full sm:max-w-lg shadow-xl border border-[var(--color-border-default)] max-h-[92dvh] overflow-y-auto overscroll-contain animate-sheet-up sm:animate-none pb-[env(safe-area-inset-bottom)]">
         <div className="sticky top-0 bg-[var(--color-surface-default)] border-b border-[var(--color-border-subtle)] px-5 py-4 flex items-center justify-between z-10">
           <h2 className="text-sm font-semibold">{initial ? t.accounts.edit : t.accounts.add}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><X className="w-4 h-4" /></button>
@@ -102,7 +105,8 @@ function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => v
           <Button className="w-full" onClick={save} loading={saving}>{t.common.save}</Button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   )
 }
 

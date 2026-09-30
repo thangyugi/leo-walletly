@@ -74,14 +74,14 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[400] flex items-start justify-center pt-[12vh] px-4">
+    <div className="fixed inset-0 z-[10000] flex items-start justify-center sm:pt-[12vh] sm:px-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
       <div
         ref={containerRef}
-        className="relative w-full max-w-xl bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-2xl shadow-2xl overflow-hidden animate-slide-in-up"
+        className="relative w-full sm:max-w-xl h-[100dvh] sm:h-auto flex flex-col bg-[var(--color-bg-surface)] sm:border border-[var(--color-border-subtle)] sm:rounded-2xl shadow-2xl overflow-hidden animate-slide-in-up"
       >
-        <div className="flex items-center gap-3 px-4 py-3.5 border-b border-[var(--color-border-subtle)]">
+        <div className="flex items-center gap-3 px-4 py-3.5 max-sm:h-14 border-b border-[var(--color-border-subtle)] shrink-0">
           <Search className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0" />
           <input
             ref={inputRef}
@@ -89,17 +89,18 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
             placeholder={t.common.search + '...'}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            className="flex-1 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] outline-none"
+            className="flex-1 min-w-0 bg-transparent text-base sm:text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] outline-none"
           />
           {query && (
             <button onClick={() => setQuery('')} className="text-[var(--color-text-quaternary)] hover:text-[var(--color-text-secondary)] transition-colors">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
-          <kbd className="font-mono text-[10px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)] rounded px-1.5 py-0.5">Esc</kbd>
+          <button type="button" onClick={onClose} className="sm:hidden text-sm font-medium text-[var(--color-text-brand)] px-1">{t.common.cancel}</button>
+          <kbd className="max-sm:hidden font-mono text-[10px] bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)] rounded px-1.5 py-0.5">Esc</kbd>
         </div>
 
-        <div className="max-h-[360px] overflow-y-auto py-2">
+        <div className="flex-1 sm:flex-none sm:max-h-[360px] overflow-y-auto overscroll-contain py-2">
           {txnResults.length > 0 && (
             <div>
               <p className="px-4 py-1.5 text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)]">
@@ -164,7 +165,7 @@ export function CommandPalette({ open, onClose }: { open: boolean; onClose: () =
           )}
         </div>
 
-        <div className="flex items-center gap-3 px-4 py-2.5 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]">
+        <div className="max-sm:hidden flex items-center gap-3 px-4 py-2.5 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]">
           <span className="text-[10px] text-[var(--color-text-quaternary)]">
             <kbd className="font-mono bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded px-1">↑↓</kbd> {lang === 'vi' ? 'di chuyển' : (lang === 'ja' ? '移動' : 'navigate')}
           </span>

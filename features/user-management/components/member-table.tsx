@@ -36,10 +36,10 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
       <table className="w-full text-left">
         <thead className="bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
           <tr>
-            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.email}</th>
-            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.role}</th>
-            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.joined}</th>
-            <th className="px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.members.action}</th>
+            <th className="px-3 sm:px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.email}</th>
+            <th className="px-3 sm:px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.role}</th>
+            <th className="max-sm:hidden px-3 sm:px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.members.joined}</th>
+            <th className="px-3 sm:px-4 py-2.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.members.action}</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-[var(--color-border-subtle)]">
@@ -50,7 +50,7 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
             const name = m.user?.display_name ?? '—'
             return (
               <tr key={m.id}>
-                <td className="px-4 py-3">
+                <td className="px-3 sm:px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0" style={{ background: m.color ?? '#6b7280' }}>
                       {name.slice(0, 2).toUpperCase()}
@@ -63,7 +63,7 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
                     </div>
                   </div>
                 </td>
-                <td className="px-4 py-3">
+                <td className="px-3 sm:px-4 py-3">
                   {editable ? (
                     <select
                       aria-label={t.members.role}
@@ -82,10 +82,10 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
                     </span>
                   )}
                 </td>
-                <td className="px-4 py-3 text-xs text-[var(--color-text-tertiary)] font-mono">
+                <td className="max-sm:hidden px-3 sm:px-4 py-3 text-xs text-[var(--color-text-tertiary)] font-mono">
                   {new Date(m.joined_at).toLocaleDateString(lang)}
                 </td>
-                <td className="px-4 py-3 text-right">
+                <td className="px-3 sm:px-4 py-3 text-right">
                   <div className="flex items-center justify-end gap-1">
                     {isOwner && !isSelf && (
                       <button onClick={() => onTransfer(m)} className="text-xs px-2 py-1 rounded-md text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)]">

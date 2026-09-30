@@ -90,7 +90,7 @@ export default function UserManagementPage() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-3 gap-2 sm:gap-4">
         <Stat label={t.members.totalMembers} value={members.length} />
         <Stat label={t.members.pendingInvites} value={invitations.length} />
         <Stat label={t.members.role} value={tk(`role.${current.role_code}.name`)} />
@@ -175,9 +175,9 @@ export default function UserManagementPage() {
 
 function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   return (
-    <div className="p-4 rounded-xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[var(--shadow-card)]">
-      <p className="text-[11px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider">{label}</p>
-      <p className="text-xl font-semibold text-[var(--color-text-primary)] mt-1">{value}</p>
+    <div className="p-3 sm:p-4 min-w-0 rounded-xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[var(--shadow-card)]">
+      <p className="text-[10px] sm:text-[11px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider leading-tight">{label}</p>
+      <p className="text-lg sm:text-xl truncate font-semibold text-[var(--color-text-primary)] mt-1">{value}</p>
     </div>
   )
 }
