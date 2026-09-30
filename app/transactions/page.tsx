@@ -29,7 +29,9 @@ import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 
 // Columns: checkbox | icon | 内容 | 日付 | ユーザー | カテゴリ | アカウント | 金額
-const ROW_GRID = 'grid grid-cols-[20px_32px_1fr_auto] sm:grid-cols-[20px_32px_minmax(0,1fr)_90px_60px_110px_110px_110px]'
+// Phone: icon · text · amount. Tablet / small laptop: + select, person, category
+// (account shown under the name). Wide: every column.
+const ROW_GRID = 'grid grid-cols-[32px_minmax(0,1fr)_auto] sm:grid-cols-[20px_32px_minmax(0,1fr)_76px_110px_100px] xl:grid-cols-[20px_32px_minmax(0,1fr)_90px_60px_110px_110px_110px]'
 
 // ------------------------------------------------------------------
 // Helpers
@@ -296,7 +298,9 @@ function BulkBar({ ids, total, onDone }: { ids: string[]; total: number; onDone:
 // ------------------------------------------------------------------
 // Table row
 // ------------------------------------------------------------------
-function TxnTableRow({ txn, checked, onCheck, onView }: {
+function TxnTableRow({ txn, checked, onCheck, onView, showDate }: {
+  /** Rows aren't grouped by day (other sort): say the date on narrow screens. */
+  showDate?: boolean
   txn: Transaction
   checked: boolean
   onCheck: (id: string) => void
@@ -313,6 +317,8 @@ function TxnTableRow({ txn, checked, onCheck, onView }: {
   const isExpense = txn.transactionType === 'expense'
   const accentHex = '#6b7280'
   const accColor = acc?.color ?? '#6b7280'
+  const catLabel = cat?.name ?? (txn.transactionType === 'transfer' ? t.transactions.typeTransfer : t.txform.uncategorized)
+  const dateLabel = showDate ? fmtDateDMY(txn.transactionDate) : null
 
   return (
     <div
@@ -328,7 +334,7 @@ function TxnTableRow({ txn, checked, onCheck, onView }: {
         aria-label={txn.description}
         aria-pressed={checked}
         onClick={(e) => { e.stopPropagation(); onCheck(txn.id) }}
-        className="w-5 h-5 flex items-center justify-center"
+        className="hidden sm:flex w-5 h-5 items-center justify-center"
       >
         {checked
           ? <CheckSquare className="w-4 h-4 text-[var(--color-interactive-primary)]" />
@@ -344,10 +350,13 @@ function TxnTableRow({ txn, checked, onCheck, onView }: {
 
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="text-xs text-[var(--color-text-quaternary)] sm:hidden">{fmtDateDMY(txn.transactionDate)}</p>
+        <p className="xl:hidden mt-0.5 text-xs text-[var(--color-text-tertiary)] truncate">
+          <span className="sm:hidden">{[catLabel, acc?.name, dateLabel].filter(Boolean).join(' · ')}</span>
+          <span className="hidden sm:inline">{[acc?.name, dateLabel].filter(Boolean).join(' · ')}</span>
+        </p>
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden xl:block">
         <span className="text-xs text-[var(--color-text-tertiary)] font-mono whitespace-nowrap">{fmtDateDMY(txn.transactionDate)}</span>
       </div>
 
@@ -373,7 +382,7 @@ function TxnTableRow({ txn, checked, onCheck, onView }: {
         )}
       </div>
 
-      <div className="hidden sm:block">
+      <div className="hidden xl:block">
         {acc ? (
           <span
             className="inline-flex items-center text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
@@ -563,9 +572,9 @@ function TransactionsContent() {
             <DateNavigator value={picker} onChange={setPicker} lang={lang} />
             <SortDropdown value={sortOption} onChange={setSortOption} />
             {can('transaction.create') && (
-              <Button variant="outline" size="sm" icon={<Plus />} onClick={() => setAdding(true)}>{t.dashboard.addTransaction}</Button>
+              <Button variant="outline" size="sm" icon={<Plus />} onClick={() => setAdding(true)} className="max-md:hidden">{t.dashboard.addTransaction}</Button>
             )}
-            <Link href="/import">
+            <Link href="/import" className="max-md:hidden">
               <Button size="sm" icon={<Upload />}>{t.transactions.import}</Button>
             </Link>
             {total > 0 && can('transaction.delete') && (
@@ -619,10 +628,10 @@ function TransactionsContent() {
               </button>
               <div className="w-8" />
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
+              <p className="hidden xl:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.dashboard.users}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelCategory}</p>
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
+              <p className="hidden xl:block text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.labelProvider}</p>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
             </div>
 
@@ -633,7 +642,7 @@ function TransactionsContent() {
                     <DateGroupHeader date={group.date} income={group.income} expense={group.expense} />
                     <div className="divide-y divide-[var(--color-border-subtle)]">
                       {group.txns.map((txn) => (
-                        <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} />
+                        <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate} />
                       ))}
                     </div>
                   </div>
@@ -641,7 +650,7 @@ function TransactionsContent() {
               ) : (
                 <div className="divide-y divide-[var(--color-border-subtle)]">
                   {items.map((txn) => (
-                    <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} />
+                    <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate} />
                   ))}
                 </div>
               )}

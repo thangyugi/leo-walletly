@@ -20,12 +20,12 @@ const FALLBACK_LANGUAGES = [
   { code: 'en', native_name: 'English', short_label: 'US' },
 ]
 
-export function LanguagePicker({ className }: { className?: string }) {
+export function LanguagePicker({ className, vertical }: { className?: string; vertical?: boolean }) {
   const { lang, setLang } = useSettingsStore()
   const dbLanguages = useMasterStore((s) => s.languages)
   const languages = dbLanguages.length ? dbLanguages : FALLBACK_LANGUAGES
   return (
-    <div className={cn('grid gap-1', className)} style={{ gridTemplateColumns: `repeat(${Math.min(languages.length, 4)}, minmax(0, 1fr))` }}>
+    <div className={cn('grid gap-1', className)} style={{ gridTemplateColumns: vertical ? '1fr' : `repeat(${Math.min(languages.length, 4)}, minmax(0, 1fr))` }}>
       {languages.map((opt) => (
         <button
           key={opt.code}
@@ -94,10 +94,60 @@ export function NavList({ onNavigate }: { onNavigate?: () => void }) {
   )
 }
 
+/** Tablet (md–lg): icons with short labels, so the page keeps most of the width. */
+function RailNav() {
+  const pathname = usePathname()
+  const { tk } = useTranslation()
+  const groups: NavGroup[] = ['main', 'manage', 'tools', 'system']
+  return (
+    <nav className="flex-1 w-full overflow-y-auto px-1.5 pb-2" aria-label="main">
+      {groups.map((group, gi) => (
+        <div key={group} className={cn('flex flex-col items-center gap-0.5 py-1.5', gi > 0 && 'border-t border-[var(--color-sidebar-border)]')}>
+          {NAV_ITEMS.filter((n) => n.group === group).map(({ href, labelKey, shortKey, icon: Icon }) => {
+            const active = isActivePath(pathname, href)
+            return (
+              <Link
+                key={href}
+                href={href}
+                title={tk(labelKey)}
+                aria-label={tk(labelKey)}
+                aria-current={active ? 'page' : undefined}
+                className={cn(
+                  'w-full min-h-[52px] rounded-xl flex flex-col items-center justify-center gap-1 px-0.5 transition-colors',
+                  active
+                    ? 'bg-[var(--color-sidebar-item-active-bg)] text-[var(--color-sidebar-item-active-text)]'
+                    : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-secondary)]',
+                )}
+              >
+                <Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2.1 : 1.75} />
+                <span className="text-[10px] font-semibold leading-tight text-center line-clamp-2">{tk(shortKey)}</span>
+              </Link>
+            )
+          })}
+        </div>
+      ))}
+    </nav>
+  )
+}
+
 export function Sidebar() {
   const { t } = useTranslation()
   return (
-    <aside className="hidden md:flex flex-col w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
+    <aside className="hidden md:flex flex-col md:w-[76px] lg:w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
+      {/* Tablet rail */}
+      <div className="flex lg:hidden flex-col items-center flex-1 sticky top-0 h-screen pt-3">
+        <Link href="/" aria-label={APP_NAME} className="w-9 h-9 mb-3 rounded-[10px] bg-[var(--color-interactive-primary)] flex items-center justify-center shrink-0">
+          <Wallet className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
+        </Link>
+        <LedgerSwitcher variant="rail" />
+        <RailNav />
+        <div className="w-full px-2 py-2 border-t border-[var(--color-sidebar-border)]">
+          <LanguagePicker vertical />
+        </div>
+      </div>
+
+      {/* Desktop */}
+      <div className="hidden lg:flex flex-col flex-1">
       <Link href="/" className="flex items-center gap-2.5 px-4 h-14">
         <div className="w-7 h-7 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />
@@ -118,6 +168,7 @@ export function Sidebar() {
         </p>
         <LanguagePicker />
         <p className="mt-2.5 px-2 text-[10px] text-[var(--color-text-quaternary)]">v0.3.0 · {APP_NAME}</p>
+      </div>
       </div>
     </aside>
   )

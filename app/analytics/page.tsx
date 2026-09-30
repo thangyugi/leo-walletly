@@ -136,7 +136,7 @@ export default function AnalyticsPage() {
           <CardHeader>
             <CardTitle>{t.analytics.byCategory}</CardTitle>
           </CardHeader>
-          <CardContent className="flex gap-4">
+          <CardContent className="flex flex-col sm:flex-row items-center sm:items-stretch gap-4">
             <div className="h-48 w-48 shrink-0">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -159,7 +159,7 @@ export default function AnalyticsPage() {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="flex-1 min-w-0 space-y-2 py-2">
+            <div className="w-full sm:flex-1 min-w-0 space-y-2 py-2">
               {displayData.slice(0, 6).map((d) => (
                 <div key={d.name} className="flex items-center gap-2">
                   <span className="w-2 h-2 rounded-full shrink-0" style={{ background: d.color }} />

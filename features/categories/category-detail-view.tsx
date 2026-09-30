@@ -199,8 +199,8 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
 }) {
   const { lang } = useTranslation()
   return (
-    <div className="flex items-center border-b border-[var(--color-border-subtle)]" role="tablist">
-      <div className="flex items-center flex-1 overflow-x-auto">
+    <div className="flex flex-col-reverse sm:flex-row sm:items-center border-b border-[var(--color-border-subtle)]" role="tablist">
+      <div className="flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button key={tab.value} role="tab" aria-selected={active === tab.value} onClick={() => onChange(tab.value)}
             className={cn(
@@ -217,7 +217,7 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 ml-auto">
+      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 sm:ml-auto max-sm:py-2 max-sm:border-b max-sm:border-[var(--color-border-subtle)]">
         <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
       </div>
     </div>
@@ -720,21 +720,22 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
           const who = person(x.createdBy ?? x.payerId)
           return (
             <div key={x.id} role="button" tabIndex={0} onClick={() => onOpen(x)} onKeyDown={(e) => e.key === 'Enter' && onOpen(x)}
-              className="grid items-center gap-3 px-[18px] py-[11px] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer" style={{ gridTemplateColumns: '32px minmax(0,1fr) minmax(0,120px) auto auto' }}>
+              className="grid items-center gap-2.5 sm:gap-3 px-4 sm:px-[18px] py-[11px] grid-cols-[32px_minmax(0,1fr)_auto_auto_auto] sm:grid-cols-[32px_minmax(0,1fr)_minmax(0,120px)_auto_auto] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
               <div className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: c.color + '22', color: c.color }}><CategoryIcon name={c.emoji} className="w-4 h-4" /></div>
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
                   <div className="text-[13px] font-medium text-[var(--color-text-primary)] truncate">{x.merchantName || x.description || '—'}</div>
-                  <span title={badge[kind].tip} className={cn('text-[10px] font-medium px-[7px] py-[2px] rounded-full shrink-0 cursor-help', badge[kind].cls)}>{badge[kind].label}</span>
+                  <span title={badge[kind].tip} className={cn('max-sm:hidden text-[10px] font-medium px-[7px] py-[2px] rounded-full shrink-0 cursor-help', badge[kind].cls)}>{badge[kind].label}</span>
                 </div>
-                <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 flex items-center gap-2 truncate">
-                  {x.transactionDate.split('-').reverse().join('/')} · {c.name}
+                <div className="text-[11px] text-[var(--color-text-tertiary)] font-mono mt-0.5 flex items-center gap-x-2 gap-y-0.5 max-sm:flex-wrap sm:truncate">
+                  {x.transactionDate.split('-').reverse().join('/')}<span className="max-sm:hidden -ml-1"> · {c.name}</span>
+                  <span className={cn('sm:hidden font-sans text-[10px] font-medium px-1.5 rounded-full shrink-0', badge[kind].cls)}>{badge[kind].label}</span>
                   {kw && kind !== 'manual' && <span className="text-[var(--color-brand-600)] bg-[var(--color-brand-50)] px-1 rounded">{fill(t.catdetail.matched, { kw })}</span>}
                 </div>
               </div>
               <span className="flex items-center gap-1.5 min-w-0" title={fill(t.catdetail.addedBy, { name: who.name })}>
                 <span className="w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: who.bg, color: who.color }}>{initials(who.name)}</span>
-                <span className="text-[11px] text-[var(--color-text-secondary)] truncate">{who.name}</span>
+                <span className="max-sm:hidden text-[11px] text-[var(--color-text-secondary)] truncate">{who.name}</span>
               </span>
               {kind === 'review' && canEdit ? (
                 <button onClick={async (e) => { e.stopPropagation(); await bulkUpdate([x.id], { categoryId: x.categoryId ?? category.id }); toast.success(t.txform.saved) }}

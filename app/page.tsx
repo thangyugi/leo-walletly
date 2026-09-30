@@ -81,7 +81,7 @@ function KpiCard({
 }) {
   const up = trend != null && trend >= 0
   return (
-    <div className="card-base p-5 flex flex-col gap-0 overflow-hidden relative">
+    <div className="card-base p-4 sm:p-5 flex flex-col gap-0 overflow-hidden relative">
       <div className="flex items-start justify-between mb-3">
         <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', iconBg)}>
           <Icon className={cn('shrink-0', iconColor)} style={{ width: 18, height: 18 }} />
@@ -100,7 +100,7 @@ function KpiCard({
       <p className="text-[11px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider mb-1">
         {label}
       </p>
-      <p className="text-2xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)] leading-none">
+      <p className="text-xl sm:text-2xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)] leading-none whitespace-nowrap">
         {value}
         {currency && (
           <span className="text-xs font-semibold text-[var(--color-text-quaternary)] ml-1 align-baseline">{currency}</span>
@@ -394,14 +394,15 @@ export default function DashboardPage() {
     <div className="animate-fade-in space-y-5">
 
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+      <div className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
         <PageHeader title={t.dashboard.title} subtitle={t.dashboard.subtitle} className="mb-0" />
-        <div className="flex items-center gap-2 shrink-0 pb-0.5">
+        <div className="flex flex-wrap items-center gap-2 xl:shrink-0 pb-0.5">
           <DateNavigator value={picker} onChange={setPicker} lang={lang} />
-          <Button variant="outline" size="sm" icon={<Plus />} disabled={!can('transaction.create')} onClick={() => setEditing('new')}>
+          {/* On phones these two live behind the tab bar's + button. */}
+          <Button variant="outline" size="sm" icon={<Plus />} disabled={!can('transaction.create')} onClick={() => setEditing('new')} className="max-md:hidden">
             {t.dashboard.addTransaction}
           </Button>
-          <Link href="/import">
+          <Link href="/import" className="max-md:hidden">
             <Button variant="primary" size="sm" icon={<Upload />}>{t.dashboard.importData}</Button>
           </Link>
         </div>

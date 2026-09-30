@@ -593,3 +593,7 @@ body {
 }
 .cell-amount.gain  { color: var(--color-text-gain); }
 .cell-amount.loss  { color: var(--color-text-loss); }
+
+/* Horizontally scrolling chip/tab rows on small screens: swipe, no scrollbar. */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }

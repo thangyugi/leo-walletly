@@ -11,7 +11,12 @@ const TYPE_ICON: Record<string, React.ElementType> = {
   personal: User, family: Users, business: Building2, freelance: Briefcase,
 }
 
-export function LedgerSwitcher() {
+/**
+ * Current ledger + switch menu. `sidebar`: full card (desktop); `rail`: square
+ * button with the ledger's initials (tablet icon rail, menu opens to the right);
+ * `bar`: inline name for the phone top bar.
+ */
+export function LedgerSwitcher({ variant = 'sidebar' }: { variant?: 'sidebar' | 'rail' | 'bar' }) {
   const ledgers = useLedgerStore((s) => s.ledgers)
   const current = useLedgerStore((s) => s.current)
   const switchLedger = useLedgerStore((s) => s.switchLedger)
@@ -22,8 +27,39 @@ export function LedgerSwitcher() {
   if (!current) return null
   const Icon = TYPE_ICON[current.ledger_type_code] ?? User
 
+  const roleLine = `${current.currency_code} · ${tk(`role.${current.role_code}.name`)}`
+  const trigger = variant === 'rail' ? (
+    <button
+      onClick={() => setIsOpen(!isOpen)}
+      aria-expanded={isOpen}
+      aria-label={`${current.name} · ${roleLine}`}
+      title={current.name}
+      className="w-11 h-11 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:border-[var(--color-border-strong)] flex items-center justify-center text-[11px] font-bold text-[var(--color-text-brand)] transition-colors"
+    >
+      {Array.from(current.name).slice(0, 2).join('')}
+    </button>
+  ) : variant === 'bar' ? (
+    <button
+      onClick={() => setIsOpen(!isOpen)}
+      aria-expanded={isOpen}
+      className="flex items-center gap-2 min-h-11 pr-1 min-w-0 text-left"
+    >
+      <span className="w-8 h-8 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center text-white shrink-0">
+        <Icon className="w-4 h-4" />
+      </span>
+      <span className="min-w-0">
+        <span className="flex items-center gap-1 text-[13px] font-bold text-[var(--color-text-primary)]">
+          <span className="truncate max-w-[150px]">{current.name}</span>
+          <ChevronDown className={cn('w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)] transition-transform', isOpen && 'rotate-180')} />
+        </span>
+        <span className="block text-[10px] text-[var(--color-text-tertiary)] uppercase font-semibold tracking-wider">{roleLine}</span>
+      </span>
+    </button>
+  ) : null
+
   return (
-    <div className="relative px-2.5 mb-4">
+    <div className={cn('relative', variant === 'sidebar' && 'px-2.5 mb-4', variant === 'rail' && 'mb-2', variant === 'bar' && 'min-w-0')}>
+      {trigger ?? (
       <button
         onClick={() => setIsOpen(!isOpen)}
         aria-expanded={isOpen}
@@ -36,17 +72,23 @@ export function LedgerSwitcher() {
           <div className="text-left overflow-hidden">
             <p className="text-xs font-bold text-[var(--color-text-primary)] truncate">{current.name}</p>
             <p className="text-[10px] text-[var(--color-text-tertiary)] uppercase font-semibold tracking-wider">
-              {current.currency_code} · {tk(`role.${current.role_code}.name`)}
+              {roleLine}
             </p>
           </div>
         </div>
         <ChevronDown className={cn('w-4 h-4 text-[var(--color-text-quaternary)] transition-transform', isOpen && 'rotate-180')} />
       </button>
+      )}
 
       {isOpen && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-2.5 right-2.5 mt-2 p-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50">
+          <div className={cn(
+            'absolute p-1.5 bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl z-50',
+            variant === 'sidebar' && 'top-full left-2.5 right-2.5 mt-2',
+            variant === 'rail' && 'top-0 left-full ml-2 w-64',
+            variant === 'bar' && 'top-full left-0 mt-1 w-72',
+          )}>
             <p className="px-3 py-1.5 text-[10px] font-bold text-[var(--color-text-quaternary)] uppercase tracking-widest border-b border-[var(--color-border-subtle)] mb-1">
               {t.ledger_switcher.title}
             </p>

@@ -754,6 +754,27 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('merge.target', 'merge', null, false),
   ('merge.title', 'merge', null, false),
   ('merge.warning', 'merge', 'name', false),
+  ('mobnav.accounts', 'mobnav', null, false),
+  ('mobnav.add', 'mobnav', null, false),
+  ('mobnav.addTitle', 'mobnav', null, false),
+  ('mobnav.addTx', 'mobnav', null, false),
+  ('mobnav.addTxSub', 'mobnav', null, false),
+  ('mobnav.analytics', 'mobnav', null, false),
+  ('mobnav.calendar', 'mobnav', null, false),
+  ('mobnav.categories', 'mobnav', null, false),
+  ('mobnav.dashboard', 'mobnav', null, false),
+  ('mobnav.import', 'mobnav', null, false),
+  ('mobnav.importSub', 'mobnav', null, false),
+  ('mobnav.menuTitle', 'mobnav', null, false),
+  ('mobnav.more', 'mobnav', null, false),
+  ('mobnav.profile', 'mobnav', null, false),
+  ('mobnav.recurring', 'mobnav', null, false),
+  ('mobnav.report', 'mobnav', null, false),
+  ('mobnav.scan', 'mobnav', null, false),
+  ('mobnav.scanSub', 'mobnav', null, false),
+  ('mobnav.settings', 'mobnav', null, false),
+  ('mobnav.transactions', 'mobnav', null, false),
+  ('mobnav.users', 'mobnav', null, false),
   ('nav.accounts', 'nav', null, true),
   ('nav.analytics', 'nav', null, true),
   ('nav.calendar', 'nav', null, true),
@@ -789,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('notifications.type', 'notifications', null, false),
   ('notifications.unread', 'notifications', null, false),
   ('onboarding.allSet', 'onboarding', null, false),
-  ('onboarding.back', 'onboarding', null, false),
+  ('onboarding.back', 'onboarding', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('onboarding.business', 'onboarding', null, false),
   ('onboarding.businessSub', 'onboarding', null, false),
   ('onboarding.companyName', 'onboarding', null, false),
@@ -810,10 +834,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('onboarding.timezone', 'onboarding', null, false),
   ('onboarding.title', 'onboarding', null, false),
   ('organization_settings.address', 'organization_settings', null, false),
-  ('organization_settings.businessType', 'organization_settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('organization_settings.businessType', 'organization_settings', null, false),
   ('organization_settings.infoTitle', 'organization_settings', null, false),
   ('organization_settings.nameLabel', 'organization_settings', null, false),
   ('organization_settings.slugLabel', 'organization_settings', null, false),
@@ -1901,6 +1922,27 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'ja', '統合先'),
   ('merge.title', 'ja', 'カテゴリを統合'),
   ('merge.warning', 'ja', '元に戻せません。「{{name}}」の取引・キーワード・サブカテゴリは統合先に移動し、「{{name}}」は削除されます。'),
+  ('mobnav.accounts', 'ja', '口座'),
+  ('mobnav.add', 'ja', '追加'),
+  ('mobnav.addTitle', 'ja', '何を追加しますか？'),
+  ('mobnav.addTx', 'ja', '取引を入力'),
+  ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
+  ('mobnav.analytics', 'ja', '分析'),
+  ('mobnav.calendar', 'ja', 'カレンダー'),
+  ('mobnav.categories', 'ja', 'カテゴリ'),
+  ('mobnav.dashboard', 'ja', 'ホーム'),
+  ('mobnav.import', 'ja', '取込'),
+  ('mobnav.importSub', 'ja', 'CSV・PDF の明細を取り込む'),
+  ('mobnav.menuTitle', 'ja', 'メインメニュー'),
+  ('mobnav.more', 'ja', 'その他'),
+  ('mobnav.profile', 'ja', 'プロフィール'),
+  ('mobnav.recurring', 'ja', '定期'),
+  ('mobnav.report', 'ja', 'レポート'),
+  ('mobnav.scan', 'ja', '読取'),
+  ('mobnav.scanSub', 'ja', 'レシートを撮って自動入力'),
+  ('mobnav.settings', 'ja', '設定'),
+  ('mobnav.transactions', 'ja', '明細'),
+  ('mobnav.users', 'ja', 'メンバー'),
   ('nav.accounts', 'ja', '口座管理'),
   ('nav.analytics', 'ja', '分析'),
   ('nav.calendar', 'ja', 'カレンダー'),
@@ -1936,7 +1978,10 @@ insert into public.translations (key, language_code, value) values
   ('notifications.type', 'ja', '通知タイプ'),
   ('notifications.unread', 'ja', '未読'),
   ('onboarding.allSet', 'ja', '準備完了！'),
-  ('onboarding.back', 'ja', '戻る'),
+  ('onboarding.back', 'ja', '戻る')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('onboarding.business', 'ja', 'ビジネス・スタートアップ'),
   ('onboarding.businessSub', 'ja', '複数のワークスペースと企業財務管理。'),
   ('onboarding.companyName', 'ja', '会社名'),
@@ -1957,10 +2002,7 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'ja', 'タイムゾーン'),
   ('onboarding.title', 'ja', 'Walletlyへようこそ'),
   ('organization_settings.address', 'ja', '本店所在地'),
-  ('organization_settings.businessType', 'ja', '事業形態')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('organization_settings.businessType', 'ja', '事業形態'),
   ('organization_settings.infoTitle', 'ja', '組織情報'),
   ('organization_settings.nameLabel', 'ja', '組織名 (法人名)'),
   ('organization_settings.slugLabel', 'ja', '組織ID (Slug)'),
@@ -3048,6 +3090,27 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'vi', 'Danh mục đích'),
   ('merge.title', 'vi', 'Gộp danh mục'),
   ('merge.warning', 'vi', 'Không thể hoàn tác. Giao dịch, từ khoá và danh mục con của "{{name}}" sẽ chuyển sang danh mục đích, sau đó "{{name}}" bị xoá.'),
+  ('mobnav.accounts', 'vi', 'Tài khoản'),
+  ('mobnav.add', 'vi', 'Thêm mới'),
+  ('mobnav.addTitle', 'vi', 'Bạn muốn thêm gì?'),
+  ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
+  ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
+  ('mobnav.analytics', 'vi', 'Phân tích'),
+  ('mobnav.calendar', 'vi', 'Lịch'),
+  ('mobnav.categories', 'vi', 'Danh mục'),
+  ('mobnav.dashboard', 'vi', 'Tổng quan'),
+  ('mobnav.import', 'vi', 'Nhập'),
+  ('mobnav.importSub', 'vi', 'Nhập sao kê CSV / PDF'),
+  ('mobnav.menuTitle', 'vi', 'Điều hướng chính'),
+  ('mobnav.more', 'vi', 'Thêm'),
+  ('mobnav.profile', 'vi', 'Hồ sơ'),
+  ('mobnav.recurring', 'vi', 'Định kỳ'),
+  ('mobnav.report', 'vi', 'Báo cáo'),
+  ('mobnav.scan', 'vi', 'Quét'),
+  ('mobnav.scanSub', 'vi', 'Chụp hoá đơn, tự điền giao dịch'),
+  ('mobnav.settings', 'vi', 'Cài đặt'),
+  ('mobnav.transactions', 'vi', 'Giao dịch'),
+  ('mobnav.users', 'vi', 'Thành viên'),
   ('nav.accounts', 'vi', 'Quản lý tài khoản'),
   ('nav.analytics', 'vi', 'Phân tích'),
   ('nav.calendar', 'vi', 'Lịch'),
@@ -3083,7 +3146,10 @@ insert into public.translations (key, language_code, value) values
   ('notifications.type', 'vi', 'Loại thông báo'),
   ('notifications.unread', 'vi', 'Chưa đọc'),
   ('onboarding.allSet', 'vi', 'Đã sẵn sàng!'),
-  ('onboarding.back', 'vi', 'Quay lại'),
+  ('onboarding.back', 'vi', 'Quay lại')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('onboarding.business', 'vi', 'Doanh nghiệp & Startup'),
   ('onboarding.businessSub', 'vi', 'Quản lý nhiều không gian làm việc và tài chính doanh nghiệp.'),
   ('onboarding.companyName', 'vi', 'Tên công ty'),
@@ -3104,10 +3170,7 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'vi', 'Múi giờ'),
   ('onboarding.title', 'vi', 'Chào mừng đến với Walletly'),
   ('organization_settings.address', 'vi', 'Địa chỉ trụ sở'),
-  ('organization_settings.businessType', 'vi', 'Loại hình kinh doanh')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('organization_settings.businessType', 'vi', 'Loại hình kinh doanh'),
   ('organization_settings.infoTitle', 'vi', 'Thông tin tổ chức'),
   ('organization_settings.nameLabel', 'vi', 'Tên tổ chức (Tên công ty)'),
   ('organization_settings.slugLabel', 'vi', 'Mã định danh (Slug)'),
@@ -4195,6 +4258,27 @@ insert into public.translations (key, language_code, value) values
   ('merge.target', 'en', 'Target category'),
   ('merge.title', 'en', 'Merge categories'),
   ('merge.warning', 'en', 'This cannot be undone. Transactions, keywords and sub-categories of "{{name}}" move to the target, then "{{name}}" is deleted.'),
+  ('mobnav.accounts', 'en', 'Accounts'),
+  ('mobnav.add', 'en', 'Add'),
+  ('mobnav.addTitle', 'en', 'What would you like to add?'),
+  ('mobnav.addTx', 'en', 'Enter a transaction'),
+  ('mobnav.addTxSub', 'en', 'Type the amount and category'),
+  ('mobnav.analytics', 'en', 'Insights'),
+  ('mobnav.calendar', 'en', 'Calendar'),
+  ('mobnav.categories', 'en', 'Categories'),
+  ('mobnav.dashboard', 'en', 'Home'),
+  ('mobnav.import', 'en', 'Import'),
+  ('mobnav.importSub', 'en', 'Bring in a CSV / PDF statement'),
+  ('mobnav.menuTitle', 'en', 'Main navigation'),
+  ('mobnav.more', 'en', 'More'),
+  ('mobnav.profile', 'en', 'Profile'),
+  ('mobnav.recurring', 'en', 'Recurring'),
+  ('mobnav.report', 'en', 'Report'),
+  ('mobnav.scan', 'en', 'Scan'),
+  ('mobnav.scanSub', 'en', 'Snap a receipt, fill it in automatically'),
+  ('mobnav.settings', 'en', 'Settings'),
+  ('mobnav.transactions', 'en', 'Activity'),
+  ('mobnav.users', 'en', 'Members'),
   ('nav.accounts', 'en', 'Accounts'),
   ('nav.analytics', 'en', 'Analytics'),
   ('nav.calendar', 'en', 'Calendar'),
@@ -4230,7 +4314,10 @@ insert into public.translations (key, language_code, value) values
   ('notifications.type', 'en', 'Notification Type'),
   ('notifications.unread', 'en', 'Unread'),
   ('onboarding.allSet', 'en', 'All set!'),
-  ('onboarding.back', 'en', 'Back'),
+  ('onboarding.back', 'en', 'Back')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('onboarding.business', 'en', 'Business or Startup'),
   ('onboarding.businessSub', 'en', 'Multiple workspaces and enterprise financial management.'),
   ('onboarding.companyName', 'en', 'Company Name'),
@@ -4251,10 +4338,7 @@ insert into public.translations (key, language_code, value) values
   ('onboarding.timezone', 'en', 'Timezone'),
   ('onboarding.title', 'en', 'Welcome to Walletly'),
   ('organization_settings.address', 'en', 'Legal Address'),
-  ('organization_settings.businessType', 'en', 'Business Type')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('organization_settings.businessType', 'en', 'Business Type'),
   ('organization_settings.infoTitle', 'en', 'Organization Info'),
   ('organization_settings.nameLabel', 'en', 'Organization Name (Legal)'),
   ('organization_settings.slugLabel', 'en', 'Organization ID (Slug)'),

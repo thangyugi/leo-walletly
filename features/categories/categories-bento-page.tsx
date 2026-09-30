@@ -689,7 +689,7 @@ export function CategoriesBentoPage() {
         </section>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="inline-flex bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs flex-wrap gap-0.5" role="tablist">
+          <div className="inline-flex max-w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5" role="tablist">
             {filterTabs.map((tab) => (
               <button
                 key={tab.value}
