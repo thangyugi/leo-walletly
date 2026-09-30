@@ -1,0 +1,1082 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Import & Ingestion Pipeline - System Architecture Blueprint</title>
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --color-primary: #3b82f6; /* Modern Blue */
+      --color-primary-hover: #2563eb;
+      --color-brand-light: #eff6ff;
+      --color-bg-dark: #0f172a;
+      --color-bg-card-dark: #1e293b;
+      --color-text-dark: #f8fafc;
+      --color-text-muted-dark: #94a3b8;
+      
+      --color-bg-light: #f8fafc;
+      --color-bg-card-light: #ffffff;
+      --color-text-light: #0f172a;
+      --color-text-muted-light: #64748b;
+      --color-border-light: #e2e8f0;
+      
+      --color-loss: #ef4444;   /* Red */
+      --color-warn: #f59e0b;   /* Amber */
+      --color-gain: #10b981;   /* Emerald */
+      --color-info: #06b6d4;   /* Cyan */
+      
+      --provider-paypay: #FF0033;
+      --provider-rakuten: #BF0000;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--color-bg-light);
+      color: var(--color-text-light);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Navigation */
+    aside {
+      width: 320px;
+      background-color: var(--color-bg-dark);
+      color: var(--color-text-dark);
+      padding: 2.5rem 1.5rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      border-right: 1px solid #334155;
+      z-index: 10;
+    }
+
+    aside .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 3rem;
+    }
+
+    aside .logo-area .icon {
+      background: linear-gradient(135deg, var(--color-primary) 0%, #1d4ed8 100%);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      color: white;
+    }
+
+    aside .logo-area .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    aside .logo-area .subtitle {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1rem;
+      color: #60a5fa;
+      display: block;
+      margin-top: 0.2rem;
+    }
+
+    aside nav ul {
+      list-style: none;
+    }
+
+    aside nav ul li {
+      margin-bottom: 0.5rem;
+    }
+
+    aside nav ul li a {
+      color: var(--color-text-muted-dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.88rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    aside nav ul li a:hover, aside nav ul li.active a {
+      color: white;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    aside nav ul li.active a {
+      border-left: 3px solid var(--color-primary);
+      background-color: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    /* Main Container */
+    main {
+      margin-left: 320px;
+      flex: 1;
+      padding: 3rem 4rem;
+      max-width: 1300px;
+    }
+
+    header {
+      margin-bottom: 3.5rem;
+      border-bottom: 1px solid var(--color-border-light);
+      padding-bottom: 2rem;
+    }
+
+    h1, h2, h3, h4 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--color-text-light);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--color-brand-light);
+      color: var(--color-primary);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    p.lead {
+      font-size: 1.1rem;
+      color: var(--color-text-muted-light);
+      margin-top: 1rem;
+      max-width: 900px;
+    }
+
+    section {
+      margin-bottom: 4.5rem;
+      scroll-margin-top: 2rem;
+    }
+
+    section > h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    section > h2::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 1.75rem;
+      background: linear-gradient(180deg, var(--color-primary) 0%, #1d4ed8 100%);
+      border-radius: 9999px;
+    }
+
+    /* Panels & Cards */
+    .panel {
+      background-color: var(--color-bg-card-light);
+      border: 1px solid var(--color-border-light);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    @media (max-width: 960px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      background-color: #fafafa;
+      border: 1px solid var(--color-border-light);
+      border-radius: 12px;
+      padding: 1.5rem;
+      transition: all 0.2s ease;
+    }
+
+    .card:hover {
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+      border-color: #cbd5e1;
+    }
+
+    .card-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* Specific Branding Colors */
+    .brand-paypay { color: var(--provider-paypay); }
+    .brand-rakuten { color: var(--provider-rakuten); }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #334155;
+      text-align: left;
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--color-border-light);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+      vertical-align: top;
+      color: #334155;
+    }
+
+    tr:hover td {
+      background-color: #f8fafc;
+    }
+
+    /* Code Blocks */
+    code {
+      font-family: 'Fira Code', monospace;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    pre {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 1.25rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin: 0.75rem 0 1.5rem 0;
+      border: 1px solid #1e293b;
+    }
+
+    pre code {
+      background-color: transparent;
+      color: inherit;
+      padding: 0;
+      font-size: 0.85rem;
+    }
+
+    /* Callouts & Badges */
+    .callout {
+      padding: 1.25rem;
+      border-radius: 10px;
+      border-left: 4px solid;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    .callout-info {
+      background-color: #eff6ff;
+      border-left-color: var(--color-primary);
+      color: #1e3a8a;
+    }
+
+    .callout-warn {
+      background-color: #fffbeb;
+      border-left-color: var(--color-warn);
+      color: #78350f;
+    }
+
+    .callout-success {
+      background-color: #ecfdf5;
+      border-left-color: var(--color-gain);
+      color: #065f46;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.2rem 0.6rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+      gap: 0.35rem;
+    }
+    .badge-blue { background-color: #dbeafe; color: #1e40af; }
+    .badge-red { background-color: #fee2e2; color: #991b1b; }
+    .badge-amber { background-color: #fef3c7; color: #92400e; }
+    .badge-green { background-color: #d1fae5; color: #065f46; }
+
+    /* Interactive Tab Mechanism */
+    .tab-container {
+      margin: 2rem 0;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--color-border-light);
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--color-text-muted-light);
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-text-light);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--color-primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    /* Specs block */
+    .spec-block {
+      border: 1px solid var(--color-border-light);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background-color: #fcfcfc;
+    }
+
+    .spec-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-text-light);
+      margin-bottom: 1rem;
+      border-bottom: 1px dashed var(--color-border-light);
+      padding-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .spec-label {
+      font-weight: 600;
+      color: var(--color-text-muted-light);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+      padding-top: 0.15rem;
+    }
+
+    .spec-content {
+      color: #334155;
+    }
+
+    /* Flow diagram styled with HTML/CSS */
+    .flow-diagram {
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      margin: 2rem 0;
+      background-color: #0f172a;
+      padding: 2rem;
+      border-radius: 16px;
+      color: #f8fafc;
+    }
+
+    .flow-step {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .flow-number {
+      background-color: var(--color-primary);
+      color: white;
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 0.9rem;
+      flex-shrink: 0;
+    }
+
+    .flow-info {
+      flex: 1;
+    }
+
+    .flow-title {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: white;
+      margin-bottom: 0.25rem;
+    }
+
+    .flow-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .flow-arrow {
+      height: 20px;
+      width: 2px;
+      background-color: #334155;
+      margin-left: 15px;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Left Sidebar Navigation -->
+  <aside>
+    <div class="logo-area">
+      <div class="icon">W</div>
+      <div>
+        <div class="title">Leo Walletly</div>
+        <span class="subtitle">Platform Architect</span>
+      </div>
+    </div>
+    <nav>
+      <ul>
+        <li class="active"><a href="#overview">1. Tổng quan Luồng Ingest</a></li>
+        <li><a href="#auto-detection">2. Tự động hóa Pipeline</a></li>
+        <li><a href="#rakuten-pay">3. Phân tích Rakuten Pay</a></li>
+        <li><a href="#paypay">4. Phân tích PayPay & PayPay Card</a></li>
+        <li><a href="#data-mappings">5. Sơ đồ Ánh xạ Trường</a></li>
+        <li><a href="#reconciliation">6. Chống Trùng Lặp Số Liệu</a></li>
+        <li><a href="#db-sync">7. Cơ chế Ghi Dữ Liệu & DB</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <header>
+      <div class="meta-badge">Enterprise FinTech Ingestion Platform</div>
+      <h1>ĐẶC TẢ LUỒNG NHẬP DỮ LIỆU & IMPORT PIPELINE V3</h1>
+      <p class="lead">Tài liệu kiến trúc chi tiết mô tả cách hệ thống tự động nhận dạng cấu trúc tập tin, giải mã bảng mã ký tự Nhật Bản, bóc tách các dòng giao dịch từ tệp CSV/PDF của Rakuten Pay và PayPay, lọc bỏ các giao dịch trùng lắp, tự động gán phân cấp danh mục (Auto-Categorization), và đồng bộ hóa bất đồng bộ với cơ sở dữ liệu Supabase.</p>
+    </header>
+
+    <!-- SECTION 1: OVERVIEW -->
+    <section id="overview">
+      <h2>1. Tổng quan Luồng Ingest Giao dịch</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">
+          Trang Nhập dữ liệu (<code>app/import/page.tsx</code>) đóng vai trò là một <strong>Ingestion Pipeline Client-side</strong> mạnh mẽ. Người dùng có thể kéo thả bất kỳ tập tin xuất ra từ các ứng dụng thanh toán phổ biến như PayPay, Rakuten Pay hay ngân hàng lớn (SMBC, MUFG, VCB, MBBank). Hệ thống tiến hành xử lý hoàn toàn trên trình duyệt để bảo mật quyền riêng tư tài chính, hiển thị bảng kiểm duyệt (Review Table) trước khi thực hiện ghi dữ liệu vĩnh viễn (Commit).
+        </p>
+
+        <div class="flow-diagram">
+          <div class="flow-step">
+            <div class="flow-number">1</div>
+            <div class="flow-info">
+              <div class="flow-title">File Selection & Encoding Analysis</div>
+              <div class="flow-desc">Người dùng chọn file CSV hoặc PDF. Hệ thống kiểm tra BOM (Byte Order Mark) để tự động quyết định giải mã bảng mã Shift-JIS hay UTF-8.</div>
+            </div>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-step">
+            <div class="flow-number">2</div>
+            <div class="flow-info">
+              <div class="flow-title">Provider & Format Auto-Detection</div>
+              <div class="flow-desc">Hệ thống quét dòng tiêu đề hoặc đuôi mở rộng để nhận diện nhà cung cấp (PayPay, Rakuten Pay, SMBC...) mà không bắt buộc chọn trước.</div>
+            </div>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-step">
+            <div class="flow-number">3</div>
+            <div class="flow-info">
+              <div class="flow-title">Parsing & Normalization (Extracting Values)</div>
+              <div class="flow-desc">Thực hiện regex bóc tách ngày tháng (Date), chuyển đổi đơn vị Yên (¥) thành số âm hoặc dương phù hợp, xử lý tên cửa hàng.</div>
+            </div>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-step">
+            <div class="flow-number">4</div>
+            <div class="flow-info">
+              <div class="flow-title">Smart Categorization & Deduplication Rule Matching</div>
+              <div class="flow-desc">Áp dụng bộ quy tắc Regex gán danh mục mặc định. Đối chiếu các chuỗi chuyển khoản nạp tiền (Top-up) để chuyển thành giao dịch Transfer.</div>
+            </div>
+          </div>
+          <div class="flow-arrow"></div>
+          <div class="flow-step">
+            <div class="flow-number">5</div>
+            <div class="flow-info">
+              <div class="flow-title">Zustand Client Store & Batch Supabase DB Upsert</div>
+              <div class="flow-desc">Dữ liệu được đẩy vào store giao diện và gọi hàm <code>upsert()</code> chia theo lô (Batch) 10 bản ghi để cập nhật cơ sở dữ liệu Supabase.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 2: AUTO-DETECTION -->
+    <section id="auto-detection">
+      <h2>2. Cơ chế Tự động hóa Pipeline (Auto-Detection Engine)</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">Hệ thống tối ưu hóa UX bằng cách tự động hóa 3 khâu phức tạp nhất trong việc xử lý tệp tin thô từ Nhật Bản:</p>
+        
+        <div class="tab-container">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'auto-encoding')">A. Tự động Nhận dạng Bảng mã (Encoding)</button>
+            <button class="tab-btn" onclick="switchTab(event, 'auto-provider')">B. Tự động Nhận dạng Nhà cung cấp</button>
+            <button class="tab-btn" onclick="switchTab(event, 'auto-category')">C. Tự động Phân loại (Smart Category)</button>
+          </div>
+
+          <!-- Tab A: Encoding -->
+          <div id="auto-encoding" class="tab-content active">
+            <div class="callout callout-info">
+              <strong>Vấn đề kỹ thuật:</strong> Các file CSV xuất từ các hệ thống tài chính Nhật Bản cũ thường sử dụng mã hóa <code>Shift-JIS</code>, trong khi các hệ thống hiện đại xuất file <code>UTF-8</code>. Nếu đọc không đúng, toàn bộ tiếng Nhật (tên cửa hàng, loại giao dịch) sẽ bị lỗi font (Mojibake - 文字化け).
+            </div>
+            <p>Hệ thống đọc file dưới dạng Buffer nhị phân (ArrayBuffer) và chạy thuật toán kiểm tra mã hóa sau:</p>
+            <pre><code>// Đọc file nhị phân trong file:///Users/Leonardo%20Thang/Code/leo-walletly/features/import/parsers/index.ts
+async function readFileText(file: File): Promise&lt;string&gt; {
+  const buffer = await file.arrayBuffer()
+  const bytes  = new Uint8Array(buffer)
+  
+  // 1. Kiểm tra UTF-8 Byte Order Mark (BOM: EF BB BF)
+  const hasUtf8Bom = bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf
+  let text: string
+  
+  if (hasUtf8Bom) {
+    text = new TextDecoder('utf-8').decode(buffer)
+  } else {
+    // 2. Thử giải mã Shift-JIS trước
+    const sjis = new TextDecoder('shift-jis').decode(buffer)
+    // Nếu kết quả chứa các kí tự lỗi hoặc không hợp lệ, fallback về UTF-8
+    text = sjis.includes('') ? new TextDecoder('utf-8').decode(buffer) : sjis
+  }
+  return text.replace(/^\uFEFF/, '') // Loại bỏ ký tự BOM nếu có ở đầu chuỗi
+}</code></pre>
+          </div>
+
+          <!-- Tab B: Provider -->
+          <div id="auto-provider" class="tab-content">
+            <p style="margin-bottom: 1rem;">
+              Khi người dùng tải lên tập tin CSV, hệ thống trích xuất dòng đầu tiên chứa danh sách các cột tiêu đề (Headers) và quét qua bộ từ khóa đặc trưng (Signature Columns) để tự định vị nhà cung cấp:
+            </p>
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên Provider</th>
+                  <th>Cột đặc trưng (Signature Headers)</th>
+                  <th>Mã Provider (DB)</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><span class="badge badge-red">Rakuten Pay CSV</span></td>
+                  <td><code>利用日</code> VÀ <code>利用金額</code></td>
+                  <td><code>rakuten_pay</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-amber">PayPay App CSV</span></td>
+                  <td><code>取引日時</code> VÀ <code>残高</code> VÀ <code>支払い金額</code></td>
+                  <td><code>paypay</code></td>
+                </tr>
+                <tr>
+                  <td><span class="badge badge-amber">PayPay Card CSV</span></td>
+                  <td>Chứa cột <code>利用日/キャンセル日</code> HOẶC (<code>利用店名</code> VÀ <code>支払区分</code>)</td>
+                  <td><code>paypay_card</code></td>
+                </tr>
+                <tr>
+                  <td>SMBC Card CSV</td>
+                  <td>Chứa cột <code>お取り扱い内容</code> HOẶC <code>お支払い金額</code></td>
+                  <td><code>smbc</code></td>
+                </tr>
+                <tr>
+                  <td>MUFG Bank CSV</td>
+                  <td><code>摘要内容</code> VÀ <code>支払い金額</code></td>
+                  <td><code>mufg</code></td>
+                </tr>
+                <tr>
+                  <td>Vietcombank CSV</td>
+                  <td>Chứa cột <code>ngày gd</code> HOẶC <code>phát sinh</code></td>
+                  <td><code>vcb</code></td>
+                </tr>
+                <tr>
+                  <td>MB Bank CSV</td>
+                  <td>Chứa cột <code>ngày giao dịch</code></td>
+                  <td><code>mbbank</code></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Tab C: Category -->
+          <div id="auto-category" class="tab-content">
+            <p style="margin-bottom: 1rem;">
+              Trong quá trình phân tích, hệ thống chạy chuỗi ký tự mô tả giao dịch (<code>description</code>) qua một bộ động cơ regex biểu thức chính quy (Regex Pattern Engine) để gán danh mục chi tiêu sơ cấp (Legacy Categories):
+            </p>
+            <pre><code>// Regex gán danh mục tự động dựa trên từ khóa tiếng Nhật & Anh
+function guessCategory(desc: string): Category {
+  const d = desc.toLowerCase()
+  
+  if (/コンビニ|スーパー|マート|食|レストラン|カフェ|ファミマ|ローソン|セブン|吉野家|すき家|マクドナルド|ケンタ|pizza|すし|cafe|restaurant|food|grocery/.test(d))
+    return 'food'
+    
+  if (/電車|バス|鉄道|jr|タクシー|ガソリン|駐車|エキ|metro|subway|交通|新幹線|taxi|train|transit/.test(d))
+    return 'transport'
+    
+  if (/amazon|楽天|ヤフー|zara|ユニクロ|ネット|通販|ショッピング|shopping|store|shop/.test(d))
+    return 'shopping'
+    
+  if (/映画|ゲーム|娯楽|カラオケ|ネットフリックス|netflix|spotify|アミューズ|game|cinema|entertainment/.test(d))
+    return 'entertainment'
+    
+  if (/薬|ドラッグ|病院|クリニック|医|健康|fitness|gym|ジム|pharmacy|hospital|clinic/.test(d))
+    return 'health'
+    
+  if (/電気|ガス|水道|光熱|通信|ネット|電話|ntt|softbank|docomo|au|mobile|internet|utility/.test(d))
+    return 'utilities'
+    
+  return 'other'
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: RAKUTEN PAY -->
+    <section id="rakuten-pay">
+      <h2>3. Xử lý Rakuten Pay (CSV & PDF)</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">Hệ thống hỗ trợ cả file bảng kê giao dịch CSV lẫn tệp hóa đơn thanh toán PDF trực tiếp của Rakuten Pay.</p>
+        
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title brand-rakuten">
+              <span>🔴 Rakuten Pay CSV Parser</span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-muted-light); margin-bottom: 1rem;">
+              Trích xuất các giao dịch thanh toán qua ví điện tử Rakuten Pay hoặc thẻ tín dụng liên kết.
+            </p>
+            <ul style="list-style-type: square; margin-left: 1.25rem; font-size: 0.88rem; color: #475569;">
+              <li><strong>Các cột ánh xạ chính:</strong> <code>利用日</code> (Ngày sử dụng), <code>利用店名・商品名</code> (Tên cửa hàng/mô tả), <code>利用金額（税込）</code> (Số tiền giao dịch), <code>備考</code> (Ghi chú).</li>
+              <li><strong>Xử lý số tiền:</strong> Loại bỏ kí tự tiền tệ <code>¥</code>, dấu phẩy phân tách nghìn <code>,</code> và chữ <code>円</code>. Các khoản thanh toán luôn được tự động nhân với hệ số âm (ví dụ: chi tiêu 1,000 Yên → lưu trữ là <code>-1000</code>).</li>
+            </ul>
+          </div>
+
+          <div class="card">
+            <div class="card-title brand-rakuten">
+              <span>📄 Rakuten Card PDF Parser</span>
+            </div>
+            <p style="font-size: 0.88rem; color: var(--color-text-muted-light); margin-bottom: 1rem;">
+              Bóc tách tệp PDF "ご利用代金請求明細書" (Hóa đơn yêu cầu thanh toán thẻ tín dụng Rakuten).
+            </p>
+            <ul style="list-style-type: square; margin-left: 1.25rem; font-size: 0.88rem; color: #475569;">
+              <li><strong>Nhận diện dòng:</strong> Quét các dòng văn bản bắt đầu bằng định dạng ngày <code>YYYY/MM/DD</code>.</li>
+              <li><strong>Tách tên cửa hàng:</strong> Sử dụng các mốc neo <code>本人</code> (Thẻ chính) hoặc <code>家族</code> (Thẻ phụ) để cắt chuỗi mô tả ở giữa làm tên cửa hàng.</li>
+              <li><strong>Bóc tách số tiền thanh toán:</strong> Tìm mốc neo phân loại thanh toán (<code>払い</code> hoặc <code>一括</code>). Hệ thống bóc ra 5 cột số phía sau và lấy cột thứ 4 làm <strong>Số tiền yêu cầu thanh toán tháng này (当月請求額)</strong>.</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">Ví dụ cấu trúc dòng PDF của Rakuten Card & Giải thuật Cắt chuỗi</div>
+          <pre><code>Dòng văn bản thô trích xuất từ PDF:
+"2026/04/01 楽天モバイル通信料 本人 * 1 回払い 3435 0 3435 3435 0"
+
+Thuật toán Parser xử lý (file:///Users/Leonardo%20Thang/Code/leo-walletly/features/import/parsers/rakuten_pay_pdf.ts):
+1. Nhận diện ngày: "2026/04/01" -> Chuỗi Date chuẩn: "2026-04-01"
+2. Cắt chuỗi Store bằng mốc "本人":
+   rest = "楽天モバイル通信料 本人 * 1 回払い 3435 0 3435 3435 0"
+   storeName = rest.slice(0, index_of("本人")) -> "楽天モバイル通信料"
+3. Tìm kiếm cụm từ khóa phương thức thanh toán "払い" để lấy phần số tiền:
+   amountSection = " 3435 0 3435 3435 0"
+   Trích xuất mảng các số: nums = [3435, 0, 3435, 3435, 0]
+4. Lấy cột số thứ 4 (chỉ số index 3) làm số tiền thanh toán:
+   billingAmount = nums[3] = 3435 -> Lưu trữ: -3435 (Expense)</code></pre>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: PAYPAY -->
+    <section id="paypay">
+      <h2>4. Xử lý PayPay & PayPay Card</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">Hệ thống xử lý PayPay cực kỳ linh hoạt do hỗ trợ 3 định dạng tài liệu khác nhau:</p>
+        
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>A. PayPay Balance CSV (Lịch sử số dư PayPay)</span>
+            <span class="badge badge-blue">Đa ngôn ngữ</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Mô tả định dạng</div>
+            <div class="spec-content">Lịch sử số dư ví PayPay tải trực tiếp từ ứng dụng PayPay trên điện thoại.</div>
+            <div class="spec-label">Cột biến thể Nhật</div>
+            <div class="spec-content"><code>取引日時</code>, <code>取引名/加盟店名</code>, <code>金額（円）</code>, <code>取引種別</code></div>
+            <div class="spec-label">Cột biến thể Anh</div>
+            <div class="spec-content"><code>Date & Time</code>, <code>Business Name</code>, <code>Amount Outgoing (Yen)</code>, <code>Amount Incoming (Yen)</code>, <code>Transaction Type</code></div>
+            <div class="spec-label">Quy tắc dấu số tiền</div>
+            <div class="spec-content">Hệ thống phân tích cột Loại giao dịch (<code>取引種別</code>). Nếu thuộc nhóm nạp tiền, nhận tiền hoặc hoàn tiền (<code>チャージ|入金|受取|返金</code>) thì số tiền mang giá trị dương. Các loại khác như thanh toán tại quầy mang giá trị âm.</div>
+          </div>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>B. PayPay Credit Card CSV (Sao kê thẻ PayPay)</span>
+            <span class="badge badge-amber">CSV Trực tiếp</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Mô tả định dạng</div>
+            <div class="spec-content">Tệp sao kê nợ hàng tháng của thẻ tín dụng PayPay Card tải về từ trang web thành viên.</div>
+            <div class="spec-label">Tiêu đề cột chuẩn</div>
+            <div class="spec-content"><code>利用日/キャンセル日</code> | <code>利用店名・商品名</code> | <code>利用者</code> | <code>決済方法</code> | <code>支払区分</code> | <code>利用金額</code></div>
+            <div class="spec-label">Xử lý đặc thù</div>
+            <div class="spec-content">Các dòng thanh toán thẻ tín dụng luôn được mặc định lưu trữ là giá trị âm (Expense). Riêng các dòng có chứa từ khóa nạp tiền vào ví PayPay được phân loại là <code>transfer</code> (xem chi tiết ở mục 6).</div>
+          </div>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>C. PayPay PDF Statement (Lịch sử giao dịch dạng PDF)</span>
+            <span class="badge badge-green">PDF Reader</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Mô tả định dạng</div>
+            <div class="spec-content">Tập tin PDF xuất ra từ ứng dụng PayPay. Gồm các cột thông tin: <code>取引日時 | 取引種別 | 取引名/加盟店名 | 金額（円）| 残高（円）</code>.</div>
+            <div class="spec-label">Giải thuật Parser</div>
+            <div class="spec-content">Đọc văn bản PDF. Nhận dạng các dòng có định dạng ngày tháng. Tìm kiếm các từ khóa tiếng Nhật <code>支払い</code> (Thanh toán), <code>チャージ</code> (Nạp tiền), <code>送金</code> (Chuyển khoản), <code>受取</code> (Nhận tiền). Bóc tách số đầu tiên làm số tiền giao dịch và số cuối cùng làm số dư ví sau giao dịch.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: DATA MAPPINGS -->
+    <section id="data-mappings">
+      <h2>5. Sơ đồ Ánh xạ Trường (Source Columns to DB Columns)</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">Dưới đây là bảng đặc tả mô tả cách các trường thông tin trong tệp nguồn CSV/PDF được chuyển đổi và lưu trữ vào cấu trúc bảng cơ sở dữ liệu <code>transactions</code> (kiểu <code>Transaction</code> v3):</p>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Raw Source Field (CSV/PDF)</th>
+              <th>Destination Property (React Code)</th>
+              <th>Database Column (Supabase)</th>
+              <th>Kiểu Dữ Liệu & Quy Tắc Xử Lý</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><em>(Auto-Generated)</em></td>
+              <td><code>id</code></td>
+              <td><code>id</code></td>
+              <td><code>uuid</code>. Tạo mã UUIDv4 ngẫu nhiên ngay tại trình duyệt để làm khóa chính duy nhất.</td>
+            </tr>
+            <tr>
+              <td><code>利用日</code> / <code>取引日時</code> / <code>Date & Time</code></td>
+              <td><code>transactionDate</code></td>
+              <td><code>transaction_date</code></td>
+              <td><code>date</code>. Chuyển đổi mọi định dạng Nhật Bản (như <code>2026/04/01 12:30</code> hoặc <code>2026年04月01日</code>) về chuẩn ISO <code>YYYY-MM-DD</code>. Lấy phần ngày, lược bỏ giờ.</td>
+            </tr>
+            <tr>
+              <td><code>利用店名・商品名</code> / <code>Business Name</code> / <code>利用店名</code></td>
+              <td><code>description</code></td>
+              <td><code>description</code></td>
+              <td><code>text</code>. Lưu tên cửa hàng hoặc tên giao dịch. Nếu rỗng, mặc định là <code>"不明"</code> (Không rõ) hoặc tên loại giao dịch.</td>
+            </tr>
+            <tr>
+              <td><code>利用金額</code> / <code>金額（円）</code> / <code>Amount Outgoing / Incoming</code></td>
+              <td><code>amount</code></td>
+              <td><code>amount</code></td>
+              <td><code>numeric</code>.
+                <ul>
+                  <li>Khoản chi tiêu: Số âm (ví dụ: <code>-3435</code>).</li>
+                  <li>Khoản thu nhập/Hoàn tiền: Số dương (ví dụ: <code>500</code>).</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td><em>(Auto-Guessed from Description)</em></td>
+              <td><code>categoryId</code></td>
+              <td><code>category_id</code></td>
+              <td><code>text/uuid</code>. Khớp từ khóa để gán mã danh mục (ví dụ: <code>food</code>, <code>shopping</code>, <code>transport</code>, <code>utilities</code>).</td>
+            </tr>
+            <tr>
+              <td><em>(Selected Provider value)</em></td>
+              <td><code>paymentInstrumentId</code></td>
+              <td><code>payment_instrument_id</code></td>
+              <td><code>text</code>. Lưu định danh loại tài khoản (ví dụ: <code>paypay</code>, <code>paypay_card</code>, <code>rakuten_pay</code>).</td>
+            </tr>
+            <tr>
+              <td><code>備考</code> / <code>メモ</code></td>
+              <td><code>notes</code></td>
+              <td><code>notes</code></td>
+              <td><code>text</code>. Lưu thông tin ghi chú kèm theo giao dịch trong CSV (nếu có).</td>
+            </tr>
+            <tr>
+              <td><em>(Tất cả các cột còn lại)</em></td>
+              <td><code>metadata</code></td>
+              <td><code>metadata</code></td>
+              <td><code>jsonb</code>. Lưu toàn bộ dòng dữ liệu CSV gốc dưới dạng Object để làm dữ liệu đối soát phục vụ kiểm toán tài chính sau này.</td>
+            </tr>
+            <tr>
+              <td><em>(Tĩnh)</em></td>
+              <td><code>status</code></td>
+              <td><code>status</code></td>
+              <td><code>text</code>. Gán mặc định là <code>'posted'</code>.</td>
+            </tr>
+            <tr>
+              <td><em>(Tĩnh)</em></td>
+              <td><code>isReconciled</code></td>
+              <td><code>is_reconciled</code></td>
+              <td><code>boolean</code>. Gán mặc định là <code>false</code> để người dùng đối soát thủ công nếu cần.</td>
+            </tr>
+            <tr>
+              <td><em>(Tĩnh)</em></td>
+              <td><code>currencyCode</code></td>
+              <td><code>currency_code</code></td>
+              <td><code>text</code>. Gán mặc định là <code>'JPY'</code> đối với các hóa đơn thanh toán Nhật Bản.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 6: RECONCILIATION -->
+    <section id="reconciliation">
+      <h2>6. Giải Thuật Tránh Tính Trùng Số Liệu (Double-Counting Prevention)</h2>
+      <div class="panel">
+        <div class="callout callout-warn" style="margin-top: 0;">
+          <strong>Rủi ro tài chính FinTech:</strong> Khi người dùng nạp tiền từ thẻ tín dụng <code>PayPay Card</code> vào ví điện tử <code>PayPay</code>:
+          <br>1. Trong sao kê thẻ PayPay Card sẽ xuất hiện dòng chi tiêu: <em>"PayPay残高チャージ" (Chi tiêu nạp tiền)</em>.
+          <br>2. Trong sao kê ví PayPay App sẽ xuất hiện dòng thu nhập: <em>"チャージ" (Nạp tiền vào ví)</em>.
+          <br>Nếu tính cả hai dòng này vào báo cáo, tổng chi tiêu của người dùng sẽ bị nhân đôi một cách ảo, gây sai lệch báo cáo dòng tiền nghiêm trọng.
+        </div>
+        
+        <p style="margin-bottom: 1rem;">Hệ thống xử lý bài toán này thông qua thuật toán lọc loại giao dịch (<code>resolveType</code>) phân bổ như sau:</p>
+        
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-title brand-paypay">
+              <span>📱 PayPay App CSV Rules</span>
+            </div>
+            <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">
+              Kiểm tra cột <code>取引種別</code> (Loại giao dịch):
+            </p>
+            <pre style="margin: 0; padding: 0.75rem;"><code style="font-size: 0.8rem;">if (/チャージ|charge|top.?up/.test(typeStr)) 
+  return 'transfer' // Ghi nhận là Chuyển khoản nội bộ
+if (/送金|振込|transfer|send/.test(typeStr)) 
+  return 'transfer' // Ghi nhận là Chuyển khoản nội bộ</code></pre>
+          </div>
+
+          <div class="card">
+            <div class="card-title brand-paypay">
+              <span>💳 PayPay Card CSV Rules</span>
+            </div>
+            <p style="font-size: 0.88rem; margin-bottom: 0.75rem;">
+              Kiểm tra cột <code>利用店名・商品名</code> (Tên cửa hàng):
+            </p>
+            <pre style="margin: 0; padding: 0.75rem;"><code style="font-size: 0.8rem;">const TRANSFER_RE = /paypay残高|残高チャージ|paypayチャージ/i
+if (TRANSFER_RE.test(storeName)) 
+  return 'transfer' // Ghi nhận là Chuyển khoản nội bộ</code></pre>
+          </div>
+        </div>
+
+        <div class="callout callout-success">
+          <strong>Kết quả:</strong> Cả hai dòng đối ứng trên đều được đánh dấu loại giao dịch là <code>transfer</code> trong database. Các công cụ biểu đồ báo cáo tài chính sẽ loại bỏ các dòng có <code>transaction_type = 'transfer'</code> khi tính tổng chi tiêu thực tế, giải quyết triệt để vấn đề tính trùng số liệu.
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: DB SYNC -->
+    <section id="db-sync">
+      <h2>7. Cơ chế Ghi Dữ Liệu & Đồng Bộ Hóa Supabase (Data Sync Pipeline)</h2>
+      <div class="panel">
+        <p style="margin-bottom: 1.5rem;">
+          Để mang lại trải nghiệm người dùng tối ưu, hệ thống sử dụng kiến trúc ghi dữ liệu 2 giai đoạn (Two-Stage Commit Pipeline):
+        </p>
+
+        <div class="spec-block">
+          <div class="spec-title">Giai đoạn 1: Đọc và Hiển thị Preview tạm thời trên Trình duyệt</div>
+          <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem;">
+            Tệp tin được phân tích hoàn toàn client-side bằng thư viện <code>papaparse</code> (cho CSV) hoặc thư viện xử lý PDF. Kết quả được lưu vào biến trạng thái cục bộ <code>result</code> trong React component. 
+          </p>
+          <ul style="list-style-type: disc; margin-left: 1.5rem; font-size: 0.9rem; color: #475569;">
+            <li>Người dùng có thể tick chọn hoặc bỏ chọn từng dòng giao dịch trên bảng.</li>
+            <li>Các thông số tổng lượng thu, chi, số dư ròng được cập nhật liên tục dựa trên các dòng được chọn.</li>
+            <li>Chưa có bất kỳ dữ liệu nào được ghi xuống database ở giai đoạn này. Người dùng có thể bấm Hủy (Reset) để xóa sạch trạng thái tạm thời này.</li>
+          </ul>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">Giai đoạn 2: Lưu vào Zustand Store và Đồng bộ hàng loạt xuống Supabase</div>
+          <p style="font-size: 0.9rem; color: #475569; margin-bottom: 1rem;">
+            Khi người dùng bấm nút <strong>"Nhập [X] giao dịch"</strong>, hệ thống gọi hàm <code>addTransactions(toAdd)</code> của <code>useTransactionsStore</code>. Quá trình xử lý diễn ra như sau:
+          </p>
+          <pre><code>// Xử lý trong file:///Users/Leonardo%20Thang/Code/leo-walletly/stores/transactions.ts
+addTransactions: (txns) => {
+  const currentLedger = useLedgerStore.getState().currentLedger
+  
+  // 1. Ánh xạ tenant context của Ledger hiện tại vào giao dịch
+  const processedTxns = txns.map(tx => ({
+    ...tx,
+    ledgerId: tx.ledgerId || currentLedger?.id || '',
+    workspaceId: tx.workspaceId || currentLedger?.workspace_id || '',
+    organizationId: tx.organizationId || currentLedger?.organization_id || '',
+  }))
+
+  // 2. Cập nhật state local ngay lập tức trên UI (Optimistic Update)
+  set((s) => {
+    const existing = new Set(s.transactions.map((t) => t.id))
+    const fresh = processedTxns.filter((t) => !existing.has(t.id))
+    return { transactions: [...s.transactions, ...fresh] }
+  })
+
+  // 3. Đồng bộ bất đồng bộ xuống bảng "transactions" trong Supabase DB
+  supabase.auth.getUser().then(async ({ data: { user } }) => {
+    if (!user) return
+
+    const toInsert = processedTxns.map(t => ({
+      id:                      t.id,
+      organization_id:         t.organizationId,
+      workspace_id:            t.workspaceId,
+      ledger_id:               t.ledgerId,
+      payment_instrument_id:   t.paymentInstrumentId || null,
+      category_id:             t.categoryId || null,
+      status:                  t.status || 'posted',
+      transaction_type:        t.transactionType,
+      source:                  t.source || 'manual',
+      description:             t.description || null,
+      transaction_date:        t.transactionDate,
+      amount:                  t.amount,
+      currency_code:           t.currencyCode || 'JPY',
+      metadata:                t.metadata || {},
+    }))
+
+    // Sử dụng câu lệnh upsert để ghi đè nếu trùng ID hoặc chèn mới nếu chưa có
+    const { error } = await supabase.from('transactions').upsert(toInsert)
+    if (error) {
+      console.error('Lỗi đồng bộ Supabase:', error.message)
+    }
+  })
+}</code></pre>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Interactive JavaScript -->
+  <script>
+    function switchTab(event, tabId) {
+      // Get all tab buttons in the current container
+      const container = event.currentTarget.closest('.tab-container');
+      const buttons = container.querySelectorAll('.tab-btn');
+      const contents = container.querySelectorAll('.tab-content');
+
+      // Deactivate all buttons & contents
+      buttons.forEach(btn => btn.classList.remove('active'));
+      contents.forEach(content => content.classList.remove('active'));
+
+      // Activate clicked button & corresponding content
+      event.currentTarget.classList.add('active');
+      document.getElementById(tabId).classList.add('active');
+    }
+
+    // Smooth scroll navigation active state highlight
+    window.addEventListener('DOMContentLoaded', () => {
+      const observer = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          const id = entry.target.getAttribute('id');
+          if (entry.intersectionRatio > 0.5) {
+            document.querySelectorAll('aside nav ul li').forEach(li => {
+              li.classList.remove('active');
+            });
+            const activeLink = document.querySelector(`aside nav ul li a[href="#${id}"]`);
+            if (activeLink) {
+              activeLink.parentElement.classList.add('active');
+            }
+          }
+        });
+      }, { threshold: 0.5 });
+
+      // Track all sections
+      document.querySelectorAll('section').forEach(section => {
+        observer.observe(section);
+      });
+    });
+  </script>
+</body>
+</html>

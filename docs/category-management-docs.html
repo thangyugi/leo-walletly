@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Category Management (Quản lý danh mục) - Complete Master Blueprint</title>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --color-primary: #10b981;
+      --color-primary-hover: #059669;
+      --color-brand-light: #ecfdf5;
+      --color-bg-dark: #0f172a;
+      --color-bg-card-dark: #1e293b;
+      --color-text-dark: #f8fafc;
+      --color-text-muted-dark: #94a3b8;
+      
+      --color-bg-light: #f8fafc;
+      --color-bg-card-light: #ffffff;
+      --color-text-light: #0f172a;
+      --color-text-muted-light: #64748b;
+      --color-border-light: #e2e8f0;
+      --color-border-focus: #10b981;
+      
+      --color-loss: #ef4444;
+      --color-warn: #f59e0b;
+      --color-gain: #10b981;
+      --color-info: #3b82f6;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: var(--color-bg-light);
+      color: var(--color-text-light);
+      line-height: 1.6;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar Styling */
+    aside {
+      width: 320px;
+      background-color: var(--color-bg-dark);
+      color: var(--color-text-dark);
+      padding: 2.5rem 1.5rem;
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      overflow-y: auto;
+      border-right: 1px solid #334155;
+      z-index: 10;
+    }
+
+    aside .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 3rem;
+    }
+
+    aside .logo-area .icon {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      color: white;
+    }
+
+    aside .logo-area .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    aside .logo-area .subtitle {
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--color-primary);
+      display: block;
+      margin-top: 0.2rem;
+    }
+
+    aside nav ul {
+      list-style: none;
+    }
+
+    aside nav ul li {
+      margin-bottom: 0.5rem;
+    }
+
+    aside nav ul li a {
+      color: var(--color-text-muted-dark);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: all 0.2s ease;
+    }
+
+    aside nav ul li a:hover, aside nav ul li.active a {
+      color: white;
+      background-color: rgba(255, 255, 255, 0.08);
+    }
+
+    aside nav ul li.active a {
+      border-left: 3px solid var(--color-primary);
+      background-color: rgba(16, 185, 129, 0.15);
+      color: var(--color-primary);
+    }
+
+    /* Main Content Area */
+    main {
+      margin-left: 320px;
+      flex: 1;
+      padding: 3rem 4rem;
+      max-width: 1300px;
+    }
+
+    header {
+      margin-bottom: 3.5rem;
+      border-bottom: 1px solid var(--color-border-light);
+      padding-bottom: 2rem;
+    }
+
+    h1, h2, h3, h4, h5 {
+      font-family: 'Outfit', sans-serif;
+      color: var(--color-text-light);
+      font-weight: 700;
+      letter-spacing: -0.025em;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, #0f172a 0%, #334155 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .meta-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background-color: var(--color-brand-light);
+      color: var(--color-primary);
+      padding: 0.35rem 0.85rem;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-top: 0.5rem;
+    }
+
+    p.lead {
+      font-size: 1.125rem;
+      color: var(--color-text-muted-light);
+      margin-top: 1rem;
+      max-width: 850px;
+    }
+
+    section {
+      margin-bottom: 4.5rem;
+      scroll-margin-top: 2rem;
+    }
+
+    section > h2 {
+      font-size: 1.75rem;
+      margin-bottom: 1.5rem;
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    section > h2::before {
+      content: "";
+      display: inline-block;
+      width: 6px;
+      height: 1.75rem;
+      background: linear-gradient(180deg, var(--color-primary) 0%, #059669 100%);
+      border-radius: 9999px;
+    }
+
+    /* Panels */
+    .panel {
+      background-color: var(--color-bg-card-light);
+      border: 1px solid var(--color-border-light);
+      border-radius: 16px;
+      padding: 2rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+      margin-bottom: 2rem;
+    }
+
+    /* Tables */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background-color: #f1f5f9;
+      color: #334155;
+      text-align: left;
+      font-weight: 600;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--color-border-light);
+    }
+
+    td {
+      padding: 0.85rem 1rem;
+      border-bottom: 1px solid var(--color-border-light);
+      vertical-align: top;
+      color: #334155;
+    }
+
+    tr:hover td {
+      background-color: #f8fafc;
+    }
+
+    code {
+      font-family: 'Fira Code', monospace;
+      background-color: #f1f5f9;
+      color: #0f172a;
+      padding: 0.15rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.85rem;
+    }
+
+    pre {
+      background-color: #0f172a;
+      color: #f8fafc;
+      padding: 1.25rem;
+      border-radius: 10px;
+      overflow-x: auto;
+      margin-top: 0.5rem;
+      border: 1px solid #1e293b;
+    }
+
+    .spec-block {
+      border: 1px solid var(--color-border-light);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      background-color: #fafafa;
+    }
+
+    .spec-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--color-text-light);
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 180px 1fr;
+      gap: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .spec-label {
+      font-weight: 600;
+      color: var(--color-text-muted-light);
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      letter-spacing: 0.05em;
+    }
+
+    .spec-content {
+      color: #334155;
+    }
+
+    .callout {
+      padding: 1.25rem;
+      border-radius: 10px;
+      border-left: 4px solid;
+      margin: 1.5rem 0;
+      font-size: 0.9rem;
+    }
+
+    .callout-info {
+      background-color: #eff6ff;
+      border-left-color: var(--color-info);
+      color: #1e3a8a;
+    }
+
+    .callout-warn {
+      background-color: #fffbeb;
+      border-left-color: var(--color-warn);
+      color: #78350f;
+    }
+
+    .status-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.5rem;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+    .status-done { background-color: #d1fae5; color: #065f46; }
+    .status-todo { background-color: #f1f5f9; color: #475569; }
+
+    /* Interactive diagram tab selectors */
+    .tab-container {
+      margin: 2rem 0;
+    }
+
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid var(--color-border-light);
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+    }
+
+    .tab-btn {
+      background: none;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      cursor: pointer;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--color-text-muted-light);
+      position: relative;
+      transition: color 0.2s ease;
+    }
+
+    .tab-btn:hover {
+      color: var(--color-text-light);
+    }
+
+    .tab-btn.active {
+      color: var(--color-primary);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background-color: var(--color-primary);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside>
+    <div class="logo-area">
+      <div class="icon">W</div>
+      <div>
+        <div class="title">Leo Walletly</div>
+        <span class="subtitle">Platform Architect</span>
+      </div>
+    </div>
+    <nav>
+      <ul>
+        <li class="active"><a href="#file-map">1. Bản đồ File & Routes</a></li>
+        <li><a href="#db-structure">2. Cấu trúc Database</a></li>
+        <li><a href="#kpi-detail">3. Chi tiết KPI Strip</a></li>
+        <li><a href="#nav-bar-detail">4. Bộ lọc & Sắp xếp</a></li>
+        <li><a href="#bento-grid-cards">5. Bento Grid Cards</a></li>
+        <li><a href="#create-edit-flow">6. Tạo/Sửa & GroupForm</a></li>
+        <li><a href="#detail-page-specs">7. Chi tiết Route /id</a></li>
+        <li><a href="#smart-classify-specs">8. Leo Phân loại thông minh</a></li>
+      </ul>
+    </nav>
+  </aside>
+
+  <!-- Main Content -->
+  <main>
+    <header>
+      <div class="meta-badge">Enterprise UI Platform Architecture Document</div>
+      <h1>TOÀN BỘ CẤU TRÚC: MODULE QUẢN LÝ DANH MỤC</h1>
+      <p class="lead">Đặc tả toàn diện từng chi tiết nhỏ nhất trong Module Quản lý danh mục (Category / Group V3). Từ đường dẫn file, cấu trúc cơ sở dữ liệu, các biến lưu trữ cục bộ, luồng validate, đến cách hoạt động của từng nút bấm và tab hiển thị.</p>
+    </header>
+
+    <!-- SECTION 1: FILE MAP -->
+    <section id="file-map">
+      <h2>1. Bản đồ File & Phân chia Route</h2>
+      <div class="panel">
+        <p>Tính năng Quản lý danh mục được xây dựng trên Next.js App Router và chia nhỏ thành các file component, store quản lý trạng thái, và trang chức năng:</p>
+        
+        <table>
+          <thead>
+            <tr>
+              <th>Đường dẫn file (Workspace)</th>
+              <th>Loại thành phần</th>
+              <th>Mô tả chức năng</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>app/categories/page.tsx</code></td>
+              <td>Route chính (Page)</td>
+              <td>Điểm truy cập trang Quản lý danh mục. Khởi tạo và render component <code>GroupsBentoPage</code>.</td>
+            </tr>
+            <tr>
+              <td><code>features/groups/groups-bento-page.tsx</code></td>
+              <td>Giao diện chính (Container)</td>
+              <td>Giao diện Bento Grid chứa KPI Strip, thanh điều hướng bộ lọc, lưới Bento Grid các danh mục, widget Phân loại thông minh Leo, và form modal.</td>
+            </tr>
+            <tr>
+              <td><code>app/categories/[id]/page.tsx</code></td>
+              <td>Route động (Detail Route)</td>
+              <td>Điểm truy cập trang chi tiết của một danh mục cụ thể. Trích xuất <code>id</code> và render component <code>GroupDetailView</code>.</td>
+            </tr>
+            <tr>
+              <td><code>features/groups/group-detail-view.tsx</code></td>
+              <td>Giao diện chi tiết (Container)</td>
+              <td>Chứa HeroCover, Month Selector, thanh Tab phụ (7 tab) và các panel thống kê chi tiết của một danh mục.</td>
+            </tr>
+            <tr>
+              <td><code>features/groups/group-form.tsx</code></td>
+              <td>Form nhập liệu (Component)</td>
+              <td>Component Form dùng chung cho cả hành động Tạo mới và Chỉnh sửa danh mục. Quản lý trạng thái nhập liệu, validate độ sâu, và ràng buộc ngân sách.</td>
+            </tr>
+            <tr>
+              <td><code>app/categories/classify/page.tsx</code></td>
+              <td>Route phụ (Classify Route)</td>
+              <td>Trang tập trung xử lý phân loại hàng loạt các giao dịch chưa được gán danh mục. Render component <code>ClassifyPage</code>.</td>
+            </tr>
+            <tr>
+              <td><code>features/groups/classify-page.tsx</code></td>
+              <td>Giao diện phân loại (Container)</td>
+              <td>Hiển thị danh sách các giao dịch chưa phân loại kèm dropdown chọn nhanh danh mục phả hệ cho từng giao dịch.</td>
+            </tr>
+            <tr>
+              <td><code>features/groups/store.ts</code></td>
+              <td>Quản lý trạng thái (Zustand Store)</td>
+              <td>Định nghĩa <code>useGroupStore</code> quản lý danh sách danh mục (<code>groups</code>), loading state và các hàm bất đồng bộ tương tác với Supabase API (fetch, create, update, delete, seed).</td>
+            </tr>
+            <tr>
+              <td><code>stores/transactions.ts</code></td>
+              <td>Quản lý trạng thái (Zustand Store)</td>
+              <td>Định nghĩa <code>useTransactionsStore</code> quản lý mảng giao dịch toàn cục (<code>transactions</code>) và hàm <code>bulkUpdateTransactions</code> dùng cho tính năng tự động phân loại.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SECTION 2: DATABASE SCHEMA -->
+    <section id="db-structure">
+      <h2>2. Cấu trúc Database & Khai báo Kiểu dữ liệu</h2>
+      <div class="panel">
+        <p>Hệ thống sử dụng cơ sở dữ liệu Supabase PostgreSQL với hai bảng cốt lõi là <code>categories</code>, <code>transactions</code> và một database view là <code>category_balances</code>.</p>
+        
+        <div class="tab-container">
+          <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab(event, 'db-tables')">Bảng categories</button>
+            <button class="tab-btn" onclick="switchTab(event, 'db-types')">Interface TypeScript</button>
+          </div>
+
+          <div id="db-tables" class="tab-content active">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tên cột DB</th>
+                  <th>Kiểu dữ liệu</th>
+                  <th>Ràng buộc</th>
+                  <th>Mô tả nghiệp vụ</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td><code>id</code></td>
+                  <td><code>uuid</code></td>
+                  <td>Primary Key</td>
+                  <td>Mã UUID phiên bản 4 định danh danh mục.</td>
+                </tr>
+                <tr>
+                  <td><code>workspace_id</code></td>
+                  <td><code>uuid</code></td>
+                  <td>Foreign Key (ledgers)</td>
+                  <td>Liên kết đến Workspace chủ quản của sổ cái.</td>
+                </tr>
+                <tr>
+                  <td><code>parent_id</code></td>
+                  <td><code>uuid</code></td>
+                  <td>Foreign Key (categories), Null</td>
+                  <td>Mã của danh mục cha. Bằng <code>null</code> nếu là nhóm gốc (Level 1).</td>
+                </tr>
+                <tr>
+                  <td><code>name_en</code>, <code>name_vi</code>, <code>name_ja</code></td>
+                  <td><code>text</code></td>
+                  <td>Not Null</td>
+                  <td>Tên danh mục tương ứng theo các ngôn ngữ (EN, VI, JA).</td>
+                </tr>
+                <tr>
+                  <td><code>category_type</code></td>
+                  <td><code>text</code> / <code>enum</code></td>
+                  <td>Default 'cost_center'</td>
+                  <td>Loại nhóm: <code>cost_center</code>, <code>department</code>, <code>project</code>, <code>team</code>, <code>subsidiary</code>.</td>
+                </tr>
+                <tr>
+                  <td><code>color</code></td>
+                  <td><code>text</code></td>
+                  <td>Hex Color String</td>
+                  <td>Mã màu hex dùng để hiển thị chủ đề của card danh mục.</td>
+                </tr>
+                <tr>
+                  <td><code>emoji</code></td>
+                  <td><code>text</code></td>
+                  <td>Icon Name / Unicode</td>
+                  <td>Mã Icon hoặc emoji của nhóm.</td>
+                </tr>
+                <tr>
+                  <td><code>path</code></td>
+                  <td><code>text</code></td>
+                  <td>Không trùng lặp</td>
+                  <td>Chuỗi đường dẫn phân cấp (VD: <code>/A001/AA01</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>category_code</code></td>
+                  <td><code>text</code></td>
+                  <td>Tối đa 4 ký tự</td>
+                  <td>Mã định danh viết tắt kế toán của danh mục (VD: <code>A001</code>).</td>
+                </tr>
+                <tr>
+                  <td><code>sort_order</code></td>
+                  <td><code>integer</code></td>
+                  <td>Bắt đầu từ 0</td>
+                  <td>Thứ tự sắp xếp thủ công của danh mục so với các nhóm cùng cấp.</td>
+                </tr>
+                <tr>
+                  <td><code>is_active</code></td>
+                  <td><code>boolean</code></td>
+                  <td>Default true</td>
+                  <td><code>true</code>: đang hoạt động, <code>false</code>: đã lưu trữ.</td>
+                </tr>
+                <tr>
+                  <td><code>metadata</code></td>
+                  <td><code>jsonb</code></td>
+                  <td>Default '{}'</td>
+                  <td>Lưu trữ: <code>budget_limit</code> (ngân sách tháng), <code>keywords</code> (mảng từ khóa phân loại), <code>is_shared</code> (chia sẻ), <code>is_recurring</code> (định kỳ), <code>rules</code> (mảng các rule nâng cao).</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div id="db-types" class="tab-content">
+            <pre><code>export interface Group {
+  id: string
+  workspace_id: string
+  parent_id: string | null
+  name: string
+  name_en: string
+  name_vi: string
+  name_ja: string
+  type: 'cost_center' | 'department' | 'project' | 'team' | 'subsidiary'
+  color: string
+  emoji: string
+  path: string
+  categoryCode: string
+  sort_order: number
+  is_active: boolean
+  budget_limit: number
+  keywords: string[]
+  metadata?: {
+    is_shared?: boolean
+    is_recurring?: boolean
+    rules?: any[]
+    [key: string]: any
+  }
+}</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 3: KPI DETAILED -->
+    <section id="kpi-detail">
+      <h2>3. Bóc tách Chi tiết dải Chỉ số Tổng quát (KPI Strip)</h2>
+      <div class="panel">
+        <p>Giao diện có 4 khối thông tin chỉ số hiển thị dạng dải thanh KPI ngang. Dưới đây là cách tính toán và tương tác cụ thể của từng con số:</p>
+
+        <!-- KPI 1 -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>A. Chi tiêu tháng này</span>
+            <span class="val">totalExpense</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Cách hiển thị lớn</div>
+            <div class="spec-content">Số tiền chi tiêu tháng hiện tại kèm ký hiệu tiền tệ (Ví dụ: <strong><code>6,828¥</code></strong>).</div>
+            <div class="spec-label">Cách hiển thị nhỏ</div>
+            <div class="spec-content">Số lượng giao dịch phát sinh chi tiêu trong tháng (Ví dụ: <strong><code>12 giao dịch</code></strong>).</div>
+            <div class="spec-label">Bảng & Cột dữ liệu</div>
+            <div class="spec-content">Bảng <code>transactions</code>, các cột: <code>amount</code>, <code>transaction_type</code>, <code>transaction_date</code>.</div>
+            <div class="spec-label">Hàm & Logic xử lý</div>
+            <div class="spec-content">
+              - Lấy năm tháng hiện tại dạng chuỗi: <code>ym = "YYYY-MM"</code>.<br>
+              - Lọc giao dịch tháng này: <code>monthTxns = transactions.filter(t => t.transactionDate.startsWith(ym))</code>.<br>
+              - Tính tổng chi tiêu: <code>totalExpense = monthTxns.filter(t => t.transactionType === 'expense').reduce((sum, t) => sum + Math.abs(t.amount), 0)</code>.<br>
+              - Đếm số giao dịch: <code>monthTxns.filter(t => t.transactionType === 'expense').length</code>.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 2 -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>B. Danh mục hoạt động</span>
+            <span class="val">activeGroupsCount</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Cách hiển thị lớn</div>
+            <div class="spec-content">Số lượng danh mục đang hoạt động (Ví dụ: <strong><code>18 danh mục</code></strong>).</div>
+            <div class="spec-label">Cách hiển thị nhỏ</div>
+            <div class="spec-content">Hiển thị nhãn tĩnh: <strong><code>Đang hoạt động</code></strong>.</div>
+            <div class="spec-label">Bảng & Cột dữ liệu</div>
+            <div class="spec-content">Bảng <code>categories</code>, cột <code>is_active</code>.</div>
+            <div class="spec-label">Hàm & Logic xử lý</div>
+            <div class="spec-content">
+              - Tính số nhóm đang hoạt động từ store local: <code>activeCount = groups.filter(g => g.is_active).length</code>.<br>
+              - Thay đổi ra sao: Khi người dùng thêm danh mục mới thành công hoặc chỉnh sửa lưu trữ danh mục, mảng <code>groups</code> trong <code>useGroupStore</code> thay đổi làm kích hoạt render lại số lượng này ngay lập tức.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 3 -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>C. Ngân sách còn lại</span>
+            <span class="val">remainingBudget</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Cách hiển thị lớn</div>
+            <div class="spec-content">Số tiền ngân sách còn lại sau chi tiêu (Ví dụ: <strong><code>482,172¥</code></strong>).</div>
+            <div class="spec-label">Cách hiển thị nhỏ</div>
+            <div class="spec-content">Tỷ lệ phần trăm ngân sách còn lại (Ví dụ: <strong><code>99% ngân sách còn lại</code></strong>).</div>
+            <div class="spec-label">Bảng & Cột dữ liệu</div>
+            <div class="spec-content">Bảng <code>categories</code> (cột <code>budget_limit</code>) và bảng <code>transactions</code> (cột <code>amount</code>).</div>
+            <div class="spec-label">Hàm & Logic xử lý</div>
+            <div class="spec-content">
+              - Tính tổng ngân sách: <code>totalBudget = groups.filter(g => g.is_active).reduce((sum, g) => sum + (g.budget_limit || 0), 0)</code>.<br>
+              - Tính ngân sách còn lại: <code>remaining = Math.max(0, totalBudget - totalExpense)</code>.<br>
+              - Tính tỷ lệ phần trăm: <code>pct = totalBudget > 0 ? Math.round((remaining / totalBudget) * 100) : 0</code>.<br>
+              - Fallback: Nếu <code>totalBudget = 0</code>, phần nhỏ hiển thị: <strong>"Chưa đặt ngân sách"</strong>.<br>
+              - Màu sắc: Nếu <code>totalExpense > totalBudget</code>, phần trăm hiển thị 0% và nhãn màu chữ chuyển sang màu đỏ báo hiệu vượt ngân sách.
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI 4 -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>D. Tự động phân loại & Chờ đối soát</span>
+            <span class="val">autoClassify & reconcile</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Cách hiển thị lớn</div>
+            <div class="spec-content">Tỷ lệ tự động phân loại (Ví dụ: <strong><code>99%</code></strong>) hoặc số lượng chờ đối soát (Ví dụ: <strong><code>2 giao dịch</code></strong>).</div>
+            <div class="spec-label">Cách hiển thị nhỏ</div>
+            <div class="spec-content">Số giao dịch khớp danh mục (Ví dụ: <code>182 / 184 giao dịch</code>) hoặc nhãn trạng thái đối soát (Ví dụ: <code>Cần xem lại</code>).</div>
+            <div class="spec-label">Bảng & Cột dữ liệu</div>
+            <div class="spec-content">Bảng <code>transactions</code>, các cột: <code>category_id</code>, <code>is_reconciled</code>.</div>
+            <div class="spec-label">Hàm & Logic xử lý</div>
+            <div class="spec-content">
+              - Tỷ lệ phân loại: <code>(transactions.filter(t => t.categoryId).length / transactions.length) * 100</code>.<br>
+              - Số giao dịch cần đối soát: <code>transactions.filter(t => !t.isReconciled).length</code>. Nếu số này > 0, hiển thị nhãn màu vàng cảnh báo "Cần xem lại", ngược lại hiển thị "Đã đối soát hết".
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 4: NAVIGATION SPECS -->
+    <section id="nav-bar-detail">
+      <h2>4. Bóc tách Thanh điều hướng Bộ lọc & Sắp xếp</h2>
+      <div class="panel">
+        <p>Bao gồm bộ chọn lọc loại hiển thị, tìm kiếm thời gian thực và các dropdown điều khiển danh sách:</p>
+
+        <!-- Filter tabs -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>A. Thanh tab hiển thị (Segmented Tabs)</span>
+            <span class="val">activeTab</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Trạng thái phát triển</div>
+            <div class="spec-content"><span class="status-badge status-done">Đã hoàn thành</span></div>
+            <div class="spec-label">Cách thức hoạt động</div>
+            <div class="spec-content">
+              Khi click vào một tab, state <code>activeTab</code> được thay đổi tương ứng. Giao diện lọc trực tiếp mảng <code>groups</code> trên client-side:<br>
+              - <strong>Tất cả</strong> (All): Hiện danh sách các nhóm có <code>is_active === true</code>.<br>
+              - <strong>Đang hoạt động</strong> (Active): Hiện danh sách các nhóm có <code>is_active === true</code>. (Hiện tại xử lý tương tự tab Tất cả).<br>
+              - <strong>Chia sẻ</strong> (Shared): Lọc danh sách nhóm có <code>metadata.is_shared === true</code>.<br>
+              - <strong>Định kỳ</strong> (Recurring): Lọc danh sách nhóm có <code>metadata.is_recurring === true</code> hoặc loại nhóm <code>category_type = 'project'</code>.<br>
+              - <strong>Lưu trữ</strong> (Archived): Lọc các nhóm bị vô hiệu hóa có <code>is_active === false</code>.<br>
+              - <strong>Badge đếm số bên cạnh tab</strong>: Được tính toán thời gian thực thông qua bộ đếm local React <code>useMemo</code> từ mảng <code>groups</code> ban đầu.
+            </div>
+          </div>
+        </div>
+
+        <!-- Search Input -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>B. Tìm kiếm danh mục (Search Input)</span>
+            <span class="val">search</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Trạng thái phát triển</div>
+            <div class="spec-content"><span class="status-badge status-done">Đã hoàn thành</span></div>
+            <div class="spec-label">Cách thức hoạt động</div>
+            <div class="spec-content">
+              Người dùng nhập từ khóa vào ô tìm kiếm. Trạng thái <code>search</code> lưu trữ chuỗi văn bản. Logic lọc client thực thi tìm kiếm không phân biệt chữ hoa chữ thường (case-insensitive):<br>
+              - Khớp tên nhóm: <code>name_en</code>, <code>name_vi</code>, <code>name_ja</code>.<br>
+              - Khớp loại nhóm: <code>category_type</code> (cost_center, project...).<br>
+              - Khớp từ khóa tự động phân loại: tìm kiếm trong mảng <code>keywords</code> của danh mục.<br>
+              - Không thực hiện gọi API database khi gõ phím để giữ hiệu năng mượt mà.
+            </div>
+          </div>
+        </div>
+
+        <!-- Dropdown Account -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>C. Dropdown "Tài khoản: tất cả"</span>
+            <span class="val">Dropdown</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Trạng thái phát triển</div>
+            <div class="spec-content"><span class="status-badge status-todo">Chưa phát triển</span> (Chỉ hiển thị giao diện tĩnh/UI Placeholder).</div>
+            <div class="spec-label">Logic thiết kế sau này</div>
+            <div class="spec-content">Dropdown sẽ truy vấn danh sách tài khoản từ bảng <code>payment_instruments</code> và lọc danh sách danh mục chỉ hiển thị những nhóm có giao dịch liên kết với tài khoản được chọn.</div>
+          </div>
+        </div>
+
+        <!-- Dropdown Sort -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>D. Dropdown "Sắp xếp: chi tiêu cao nhất"</span>
+            <span class="val">Dropdown</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Trạng thái phát triển</div>
+            <div class="spec-content"><span class="status-badge status-todo">Chưa phát triển</span> (Chỉ hiển thị giao diện tĩnh/UI Placeholder).</div>
+            <div class="spec-label">Cách hoạt động hiện tại</div>
+            <div class="spec-content">Hệ thống đang tự động sắp xếp mặc định theo chi tiêu từ cao đến thấp bằng cách lấy dữ liệu chi tiêu trong tháng hiện tại từ mảng giao dịch. Khi click dropdown này chưa làm thay đổi logic sắp xếp.</div>
+          </div>
+        </div>
+
+        <!-- View mode -->
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>E. Toggle "Bento"</span>
+            <span class="val">ViewToggle</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Trạng thái phát triển</div>
+            <div class="spec-content"><span class="status-badge status-todo">Chưa phát triển</span> (Mặc định luôn khóa hiển thị dạng lưới bento grid phẳng 4 cột, chưa hỗ trợ đổi sang List View).</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 5: BENTO GRID CARDS -->
+    <section id="bento-grid-cards">
+      <h2>5. Cấu trúc các thẻ bên trong Lưới Bento Grid</h2>
+      <div class="panel">
+        <p>Lưới Bento Grid hiển thị hỗn hợp các thẻ KPI, Thống kê, và Thẻ thông tin danh mục:</p>
+        
+        <h3>Các loại thẻ đặc biệt trong Grid</h3>
+        <ul>
+          <li><strong>Featured Card (Danh mục nổi bật)</strong>: Thẻ chiếm diện tích lớn gấp đôi, tự động hiển thị danh mục có chi tiêu lớn nhất trong tháng hiện tại, kèm biểu đồ ngân sách phóng to.</li>
+          <li><strong>Auto Classify Card (Thống kê phân loại)</strong>: Thẻ màu sẫm hiển thị số lượng giao dịch đã được hệ thống tự động phân loại, tỷ lệ % và gợi ý đặt thêm từ khóa.</li>
+          <li><strong>Top Spending Groups Card (Nhóm chi nhiều nhất)</strong>: Liệt kê danh sách top 3 nhóm chi tiêu nhiều nhất kèm thanh tiến trình nhỏ.</li>
+          <li><strong>Add Group Tile (Ô Tạo danh mục mới)</strong>: Một thẻ trống có viền nét đứt và nút cộng ở cuối danh sách bento, bấm vào sẽ kích hoạt mở Modal Tạo nhóm mới tương tự như nút bấm ở header.</li>
+          <li><strong>Archive Strip (Thanh Lưu trữ)</strong>: Nằm ở dưới cùng của lưới Bento Grid, chỉ xuất hiện nếu có nhóm lưu trữ, click vào để xem các nhóm đã bị ẩn (<code>is_active = false</code>).</li>
+        </ul>
+
+        <h3 style="margin-top: 2rem;">Thẻ danh mục thông thường (Regular Group Card)</h3>
+        <div class="spec-block">
+          <div class="spec-title">Cấu trúc chi tiết của một thẻ Danh mục</div>
+          <div class="spec-grid">
+            <div class="spec-label">1. Biểu tượng & Màu sắc</div>
+            <div class="spec-content">Hiển thị Emoji (<code>emoji</code>) đặt trên nền màu nhạt của mã màu chủ đề (<code>color + "22"</code>).</div>
+
+            <div class="spec-label">2. Tên nhóm</div>
+            <div class="spec-content">Tên của danh mục (<code>name</code>). Khi rê chuột vào thẻ sẽ hiển thị hiệu ứng đổi màu tên nhóm.</div>
+
+            <div class="spec-label">3. Số nhóm con & Giao dịch</div>
+            <div class="spec-content">Bong bóng số nhỏ ở góc hiển thị số lượng danh mục con trực thuộc tầng dưới và số lượng giao dịch phát sinh trong tháng của nhóm đó.</div>
+
+            <div class="spec-label">4. Chi tiêu tháng này</div>
+            <div class="spec-content">Số tiền chi tiêu thực tế của nhóm tính bằng tổng các giao dịch thuộc danh mục này trong tháng.</div>
+
+            <div class="spec-label">5. Thanh Tiến độ Ngân sách</div>
+            <div class="spec-content">Thanh progress bar hiển thị tỷ lệ chi tiêu thực tế so với ngân sách hạn mức (<code>budget_limit</code>). Nếu chi tiêu vượt quá 90% ngân sách, thanh tiến độ sẽ tự động chuyển sang màu cam/đỏ cảnh báo.</div>
+
+            <div class="spec-label">6. Ngân sách còn lại</div>
+            <div class="spec-content">Hiển thị số tiền ngân sách còn lại. Nếu nhóm chưa cấu hình ngân sách (<code>budget_limit = 0</code>), hiển thị ký hiệu <code>—</code>.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 6: CREATE / EDIT FLOW -->
+    <section id="create-edit-flow">
+      <h2>6. Luồng Nghiệp vụ Tạo/Sửa & Đặc tả GroupForm</h2>
+      <div class="panel">
+        <p>Hành động Tạo mới hoặc Chỉnh sửa danh mục đều gọi component <code>GroupForm</code> hiển thị trong Modal. Component này thực thi các logic validate ràng buộc cấu trúc cây dữ liệu phức tạp.</p>
+
+        <div class="spec-block">
+          <div class="spec-title">Các Trường Nhập Liệu Trong Form</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Tên nhãn Form</th>
+                <th>Kiểu nhập liệu</th>
+                <th>State React tương ứng</th>
+                <th>Validate & Logic Xử Lý</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Tên nhóm</td>
+                <td>Text Input</td>
+                <td><code>formData.name</code></td>
+                <td>Bắt buộc (<code>required</code>). Nhập tên đại diện cho nhóm.</td>
+              </tr>
+              <tr>
+                <td>Loại nhóm</td>
+                <td>Select Dropdown</td>
+                <td><code>formData.type</code></td>
+                <td>Giá trị thuộc kiểu <code>GroupType</code> (cost_center, department, project, team, subsidiary). Mặc định là <code>cost_center</code>.</td>
+              </tr>
+              <tr>
+                <td>Nhóm cha (nếu có)</td>
+                <td>Select Dropdown</td>
+                <td><code>formData.parent_id</code></td>
+                <td>
+                  Danh sách lựa chọn được tính toán bằng <code>parentOptions</code>:<br>
+                  - Không hiển thị chính danh mục đó (khi chỉnh sửa) để tránh tự chọn mình làm cha.<br>
+                  - Loại bỏ tất cả các danh mục thuộc nhánh con của danh mục hiện tại để tránh vòng lặp đệ quy vô hạn.<br>
+                  - <strong>Kiểm tra độ sâu:</strong> Chỉ hiển thị các nhóm cha thỏa mãn công thức: <code>(Độ sâu của cha + Chiều cao nhánh con hiện tại) &le; 4</code> để bảo vệ giới hạn tối đa 4 tầng của hệ thống.
+                </td>
+              </tr>
+              <tr>
+                <td>Biểu tượng (Icon)</td>
+                <td>Lưới chọn Icon (8 biểu tượng preset)</td>
+                <td><code>formData.emoji</code></td>
+                <td>Biểu tượng được tô màu chủ đề được chọn bên dưới để đồng bộ nhận diện thương hiệu trực quan.</td>
+              </tr>
+              <tr>
+                <td>Màu sắc</td>
+                <td>Lưới chọn màu sắc (8 màu preset dạng tròn)</td>
+                <td><code>formData.color</code></td>
+                <td>Mặc định chọn màu đầu tiên của mảng preset màu sắc.</td>
+              </tr>
+              <tr>
+                <td>Ngân sách hàng tháng</td>
+                <td>Number Input</td>
+                <td><code>formData.budget_limit</code></td>
+                <td>Giá trị số. Mặc định bằng 0 (không giới hạn chi tiêu).</td>
+              </tr>
+              <tr>
+                <td>Từ khóa phân loại</td>
+                <td>Input Text + Nút "Thêm"</td>
+                <td><code>formData.keywords</code></td>
+                <td>
+                  Người dùng nhập từ khóa và nhấn Enter hoặc nút "Thêm":<br>
+                  - Đẩy chuỗi từ khóa vào mảng <code>keywords</code>.<br>
+                  - Hiển thị các tag từ khóa dạng pill kèm nút X màu đỏ để xóa từ khóa khỏi danh sách.<br>
+                  - Nếu người dùng nhập dở từ khóa trong ô input mà bấm "Lưu nhóm" ngay, hệ thống tự động nhận diện và đẩy từ khóa dở này vào mảng trước khi gửi payload lên API.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">Quy tắc Validate Ngân sách của Form</div>
+          <div class="spec-grid">
+            <div class="spec-label">Điều kiện kích hoạt</div>
+            <div class="spec-content">Nhóm đang tạo/sửa có chọn <code>parent_id</code> (tức là nhóm con) và có khai báo hạn mức <code>budget_limit > 0</code>. Nhóm cha cũng phải có cấu hình <code>budget_limit > 0</code>.</div>
+            <div class="spec-label">Công thức kiểm tra</div>
+            <div class="spec-content">
+              Hệ thống lấy danh sách các nhóm con khác đang cùng trực thuộc nhóm cha đó (loại trừ nhóm hiện tại nếu đang chỉnh sửa), cộng dồn ngân sách của chúng và cộng thêm ngân sách đề xuất của nhóm hiện tại:<br>
+              <code>Tổng ngân sách con = (Ngân sách nhóm mới/sửa) + (Tổng ngân sách các nhóm con cùng cha khác)</code><br>
+              Nếu <code>Tổng ngân sách con > Ngân sách của nhóm cha</code>, hệ thống kích hoạt hiển thị <strong>Budget Warning Modal</strong>.
+            </div>
+            <div class="spec-label">Hành động Cảnh báo</div>
+            <div class="spec-content">
+              - Người dùng click <strong>"Xem lại"</strong>: Đóng hộp thoại cảnh báo, giữ lại form để chỉnh sửa thông số.<br>
+              - Người dùng click <strong>"Vẫn tiếp tục lưu"</strong>: Tiếp tục gọi API lưu đè dữ liệu bất chấp vượt hạn mức.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 7: DETAILED ROUTE SPECS -->
+    <section id="detail-page-specs">
+      <h2>7. Chi tiết các thành phần trang Dynamic Route /categories/[id]</h2>
+      <div class="panel">
+        <p>Khi nhấp vào card danh mục, hệ thống điều hướng đến trang chi tiết. Tại đây hiển thị 7 tab thông tin phục vụ quản lý sâu:</p>
+        
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>A. Header Cover & Month Selector</span>
+            <span class="status-badge status-done">Đã hoàn thành</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Header Cover</div>
+            <div class="spec-content">Hiển thị dải màu gradient từ màu chủ đề của nhóm, tên nhóm kèm emoji, số thành viên, và các nút chỉnh sửa (Pencil) và xóa (Trash) danh mục.</div>
+            <div class="spec-label">Month Selector</div>
+            <div class="spec-content">Ô chọn tháng dạng <code>input type="month"</code> cho phép thay đổi phạm vi hiển thị dữ liệu của toàn bộ các tab bên dưới theo tháng được chọn.</div>
+          </div>
+        </div>
+
+        <div class="spec-block">
+          <div class="spec-title">Bóc tách 7 Tab Nội dung phụ bên trong</div>
+          <table>
+            <thead>
+              <tr>
+                <th>Tên Tab</th>
+                <th>Thành phần giao diện hiển thị</th>
+                <th>Logic xử lý & Tương tác API</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Tổng quan</strong> (Overview)</td>
+                <td>
+                  - Thống kê chi tiết: Tổng chi tiêu, Hạn mức ngân sách, Trung bình chi tiêu mỗi người, và số lượng giao dịch đã khớp từ khóa tự động.<br>
+                  - Tiến trình sử dụng ngân sách.
+                </td>
+                <td>Tính toán động dựa trên mảng giao dịch của tháng được chọn.</td>
+              </tr>
+              <tr>
+                <td><strong>Nhóm con</strong> (Subgroups)</td>
+                <td>
+                  - Lưới các danh mục con trực thuộc.<br>
+                  - Nút chuyển đổi sắp xếp: "Theo chi tiêu" hoặc "Theo tên".<br>
+                  - Nút "Thêm nhóm con": Tự động mở modal điền sẵn <code>parent_id</code>. Nút này sẽ chuyển thành nhãn <code>Đạt cấp tối đa (Cấp 4)</code> nếu cấp độ sâu của nhóm hiện tại bằng 4.
+                </td>
+                <td>Lọc các danh mục trong store có <code>parent_id = groupId</code>. Sắp xếp mảng trực tiếp ở client khi chuyển đổi tab sắp xếp.</td>
+              </tr>
+              <tr>
+                <td><strong>Từ khóa</strong> (Keywords)</td>
+                <td>
+                  - Quản lý từ khóa tự động phân loại của nhóm và các nhóm con trực thuộc.<br>
+                  - Thống kê số lần khớp (hits) từ khóa trong lịch sử giao dịch.<br>
+                  - Thêm/Xóa từ khóa thời gian thực.<br>
+                  - Quản lý Quy tắc đang hoạt động (Advanced Rules) lưu tại trường <code>metadata.rules</code>, cho phép bật/tắt bằng Toggle switch.
+                </td>
+                <td>
+                  - Thống kê hits: Quét mảng giao dịch local để tìm chuỗi chứa từ khóa.<br>
+                  - Thêm/Xóa từ khóa: Gọi API cập nhật mảng keywords của danh mục tương ứng tại database.
+                </td>
+              </tr>
+              <tr>
+                <td><strong>Giao dịch</strong> (Transactions)</td>
+                <td>
+                  - Danh sách các giao dịch thuộc danh mục này.<br>
+                  - Thanh tab phân loại con: <em>Tất cả</em>, <em>Tự động</em> (khớp từ khóa), và <em>Cần xem lại</em> (chưa đối soát).<br>
+                  - Nút "Xem tất cả" để dẫn sang trang Lịch sử giao dịch tổng hợp.
+                </td>
+                <td>Lọc giao dịch theo <code>categoryId === currentGroupId</code> của tháng được chọn.</td>
+              </tr>
+              <tr>
+                <td><strong>Số dư</strong> (Balances)</td>
+                <td>Hiển thị số tiền dư nợ thực tế của từng thành viên trong nhóm chi tiêu chung.</td>
+                <td>Lấy dữ liệu từ view <code>category_balances</code> và thực hiện phép chia đều cho số lượng thành viên.</td>
+              </tr>
+              <tr>
+                <td><strong>Thành viên</strong> (Members)</td>
+                <td>Danh sách ảnh đại diện (avatar) tròn của các thành viên sở hữu sổ cái đang dùng chung nhóm chi tiêu này.</td>
+                <td>Truy vấn từ bảng <code>ledger_members</code> và thông tin cấu hình vai trò của tài khoản.</td>
+              </tr>
+              <tr>
+                <td><strong>Cài đặt</strong> (Settings)</td>
+                <td>Nơi cho phép lưu trữ nhóm (vô hiệu hóa tạm thời) hoặc xóa vĩnh viễn danh mục khỏi hệ thống.</td>
+                <td>
+                  - Lưu trữ: Update <code>is_active = false</code>.<br>
+                  - Xóa: Gọi lệnh DELETE danh mục. Kích hoạt xóa Cascade các con ở DB.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- SECTION 8: SMART CLASSIFY SPECS -->
+    <section id="smart-classify-specs">
+      <h2>8. Leo Phân loại thông minh & Trang Classify Page</h2>
+      <div class="panel">
+        <p>Tính năng phân loại giao dịch tự động giúp người dùng dọn dẹp các giao dịch "chưa được phân loại" một cách thông minh.</p>
+        
+        <div class="spec-block">
+          <div class="spec-title">
+            <span>A. Trang Classify Page tập trung (Route: /categories/classify)</span>
+            <span class="status-badge status-done">Đã hoàn thành</span>
+          </div>
+          <div class="spec-grid">
+            <div class="spec-label">Input tìm kiếm</div>
+            <div class="spec-content">Lọc nhanh các giao dịch theo chuỗi văn bản gõ vào (khớp tên cửa hàng hoặc mô tả giao dịch). Xử lý lọc reactive tại client-side.</div>
+            <div class="spec-label">Danh sách giao dịch</div>
+            <div class="spec-content">Hiển thị các giao dịch có <code>categoryId</code> rỗng và loại giao dịch khác chuyển khoản (<code>transactionType !== 'transfer'</code>). Hiển thị ngày tháng, nguồn tiền liên kết (Ví dụ: MoMo, VCB), số tiền chi tiêu.</div>
+            <div class="spec-label">Dropdown chọn nhanh</div>
+            <div class="spec-content">Mỗi giao dịch hiển thị một select dropdown chứa toàn bộ cây danh mục phả hệ hoạt động của Workspace. Nếu giao dịch khớp từ khóa tự động, danh mục gợi ý sẽ được chọn sẵn làm mặc định giúp tiết kiệm thời gian.</div>
+            <div class="spec-label">Nút "Lưu phân loại"</div>
+            <div class="spec-content">Gọi hàm API cập nhật hàng loạt <code>bulkUpdateTransactions</code> gửi payload chứa danh sách các giao dịch được gán danh mục lên Supabase. Kết thúc sẽ chuyển hướng người dùng quay lại trang quản lý danh mục.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    function switchTab(evt, tabId) {
+      const container = evt.currentTarget.closest('.tab-container');
+      const tabs = container.querySelectorAll('.tab-content');
+      const buttons = container.querySelectorAll('.tab-btn');
+      tabs.forEach(tab => tab.classList.remove('active'));
+      buttons.forEach(btn => btn.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      evt.currentTarget.classList.add('active');
+    }
+  </script>
+</body>
+</html>
