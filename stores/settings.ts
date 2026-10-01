@@ -12,6 +12,9 @@ interface SettingsState {
   lang: Lang
   /** Regional format (user_preferences.locale, e.g. vi-VN, en-GB) for dates; '' = follow the language. */
   locale: string
+  /** Open ledger's time zone (ledgers.timezone_code): what "today" means; '' = the device's. */
+  timeZone: string
+  setTimeZone: (timeZone: string) => void
   setLang: (lang: Lang, opts?: { persistRemote?: boolean }) => void
   setLocale: (locale: string) => void
 }
@@ -21,7 +24,9 @@ export const useSettingsStore = create<SettingsState>()(
     (set) => ({
       lang: 'ja' as Lang,
       locale: '',
+      timeZone: '',
       setLocale: (locale) => set({ locale }),
+      setTimeZone: (timeZone) => set({ timeZone }),
       setLang: (lang, opts) => {
         set({ lang })
         if (typeof document !== 'undefined') document.documentElement.lang = lang

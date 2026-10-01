@@ -133,9 +133,9 @@ function RailNav() {
 export function Sidebar() {
   const { t } = useTranslation()
   return (
-    <aside className="hidden md:flex flex-col md:w-[76px] lg:w-56 min-h-screen bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
+    <aside className="hidden md:flex flex-col md:w-[76px] lg:w-56 h-dvh overflow-hidden bg-[var(--color-sidebar-bg)] border-r border-[var(--color-sidebar-border)] shrink-0">
       {/* Tablet rail */}
-      <div className="flex lg:hidden flex-col items-center flex-1 sticky top-0 h-screen pt-3">
+      <div className="flex lg:hidden flex-col items-center flex-1 min-h-0 pt-3">
         <Link href="/" aria-label={APP_NAME} className="w-9 h-9 mb-3 rounded-[10px] bg-[var(--color-interactive-primary)] flex items-center justify-center shrink-0">
           <Wallet className="w-[18px] h-[18px] text-white" strokeWidth={2.5} />
         </Link>
@@ -147,7 +147,7 @@ export function Sidebar() {
       </div>
 
       {/* Desktop */}
-      <div className="hidden lg:flex flex-col flex-1">
+      <div className="hidden lg:flex flex-col flex-1 min-h-0">
       <Link href="/" className="flex items-center gap-2.5 px-4 h-14">
         <div className="w-7 h-7 rounded-lg bg-[var(--color-interactive-primary)] flex items-center justify-center">
           <Wallet className="w-4 h-4 text-white" strokeWidth={2.5} />

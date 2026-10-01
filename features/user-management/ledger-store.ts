@@ -91,6 +91,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
         useSettingsStore.getState().setLang(prefs.language_code as Lang, { persistRemote: false })
       }
       useSettingsStore.getState().setLocale(prefs?.locale ?? '')
+      useSettingsStore.getState().setTimeZone(current?.timezone_code ?? '')
 
       set({
         userId: user.id,
@@ -120,6 +121,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
   switchLedger: async (ledgerId) => {
     const target = get().ledgers.find((l) => l.id === ledgerId)
     if (!target) return
+    useSettingsStore.getState().setTimeZone(target.timezone_code ?? '')
     set({ current: target, permissions: await loadPermissions(target.role_code) })
     const userId = get().userId
     if (userId) {
@@ -137,6 +139,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const { data, error } = await supabase.from('ledgers').update(patch).eq('id', current.id).select('*').single()
     if (error) throw new Error(error.message)
     const updated = { ...current, ...data }
+    useSettingsStore.getState().setTimeZone(updated.timezone_code ?? '')
     set({ current: updated, ledgers: get().ledgers.map((l) => (l.id === updated.id ? updated : l)) })
   },
 

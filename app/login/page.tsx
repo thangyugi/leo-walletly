@@ -22,14 +22,33 @@ function LoginForm() {
   const router = useRouter()
   const params = useSearchParams()
   const next = params.get('next')
+  const authError = params.get('auth_error')
   const { t, lang } = useTranslation()
   const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  // A confirmation link that failed (see AuthProvider) arrives as ?auth_error=.
+  const [error, setError] = useState<string | null>(() =>
+    !authError ? null
+      : authError === 'otp_expired' ? t.login.linkExpired
+        : t.login.linkError.replace('{{msg}}', params.get('auth_msg') || authError))
   const [success, setSuccess] = useState<string | null>(null)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [displayName, setDisplayName] = useState('')
   const [mode, setMode] = useState<'login' | 'signup'>('login')
+  const [resending, setResending] = useState(false)
+  const canResend = !!authError || !!success
+
+  const redirectTo = () => `${window.location.origin}${next ?? '/'}`
+
+  async function resend() {
+    if (!email.trim()) { setError(t.login.emailFirst); return }
+    setResending(true)
+    setError(null)
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim(), options: { emailRedirectTo: redirectTo() } })
+    setResending(false)
+    if (error) setError(error.message)
+    else setSuccess(t.login.resent.replace('{{email}}', email.trim()))
+  }
 
   // After sign-in the AuthProvider decides: onboarding, a pending /join, or the start page.
   const afterAuth = () => router.replace(next && next.startsWith('/') ? next : '/')
@@ -51,7 +70,7 @@ function LoginForm() {
           options: {
             // Read by the handle_new_auth_user trigger (users.display_name, user_preferences.language_code).
             data: { display_name: displayName.trim(), language_code: lang },
-            emailRedirectTo: typeof window !== 'undefined' ? `${window.location.origin}${next ?? '/'}` : undefined,
+            emailRedirectTo: redirectTo(),
           },
         })
         if (error) throw error
@@ -113,6 +132,13 @@ function LoginForm() {
               <ArrowRight className="w-4 h-4" />
             </Button>
           </form>
+
+          {canResend && (
+            <button type="button" onClick={resend} disabled={resending}
+              className="mt-3 w-full h-11 rounded-xl border border-[var(--color-border-default)] text-sm font-semibold text-[var(--color-text-secondary)] hover:border-[var(--color-interactive-primary)] hover:text-[var(--color-interactive-primary)] transition-colors disabled:opacity-50 inline-flex items-center justify-center gap-2">
+              <Mail className="w-4 h-4" />{t.login.resend}
+            </button>
+          )}
 
           <div className="relative mt-8 mb-6 flex items-center justify-center">
             <span className="absolute inset-x-0 top-1/2 border-t border-[var(--color-border-subtle)]" />

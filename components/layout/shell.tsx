@@ -31,7 +31,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="flex h-full min-h-screen">
+    <div className="flex h-dvh overflow-hidden">
       <Sidebar />
       <div className="flex flex-col flex-1 min-w-0">
         <MobileHeader onSearchOpen={() => setSearchOpen(true)} />

@@ -48,10 +48,10 @@ export function formatMonthLocale(year: number, month1: number, lang: string): s
 }
 
 /** Day label (YYYY-MM-DD in) in the regional order: ja-JP 2026/09/25, vi-VN and en-GB 25/09/2026, en-US 09/25/2026. */
-export function formatDayLocale(isoDate: string, lang: string): string {
+export function formatDayLocale(isoDate: string, lang: string, locale?: string): string {
   const [y, m, d] = isoDate.slice(0, 10).split('-').map(Number)
   if (!y || !m || !d) return isoDate
-  return new Intl.DateTimeFormat(localeOf(lang), { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(y, m - 1, d))
+  return new Intl.DateTimeFormat(locale || localeOf(lang), { year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(y, m - 1, d))
 }
 
 export function formatDateRelative(dateStr: string): string {
@@ -133,6 +133,14 @@ export function slugify(str: string) {
 }
 
 /** Local calendar date as YYYY-MM-DD (toISOString would give the UTC date). */
-export function toLocalISODate(d: Date = new Date()): string {
+export function toLocalISODate(d?: Date): string {
+  if (!d) {
+    // "Today" follows the open ledger's time zone (set up at onboarding / in the ledger settings).
+    const tz = useSettingsStore.getState().timeZone
+    if (tz) {
+      try { return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(new Date()) } catch { /* unknown zone: device time */ }
+    }
+    d = new Date()
+  }
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }

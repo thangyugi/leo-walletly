@@ -22,7 +22,7 @@ export function SettingsLayout({ children }: SettingsLayoutProps) {
       </div>
 
       {/* Desktop Sidebar */}
-      <div className="hidden lg:block">
+      <div className="hidden lg:block lg:sticky lg:top-0 lg:self-start">
         <SettingsSidebar />
       </div>
 

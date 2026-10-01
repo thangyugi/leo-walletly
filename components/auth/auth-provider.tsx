@@ -12,6 +12,19 @@ import { supabase } from '@/lib/supabase'
 
 const PUBLIC_PATHS = ['/login', '/join']
 
+// A failed e-mail link (expired / already used) lands on the Site URL with the
+// error in the hash. Read it when this module loads, before the auth client
+// clears the hash, so the login page can say what happened and offer a resend.
+function readAuthError(): string | null {
+  if (typeof window === 'undefined') return null
+  const hash = window.location.hash
+  if (!hash.includes('error_code=')) return null
+  const p = new URLSearchParams(hash.slice(1))
+  window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  return `/login?auth_error=${encodeURIComponent(p.get('error_code') ?? 'error')}&auth_msg=${encodeURIComponent(p.get('error_description') ?? '')}`
+}
+let pendingAuthError = readAuthError()
+
 function describeDevice() {
   const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
   const browser = /Edg\//.test(ua) ? 'Edge' : /Chrome\//.test(ua) ? 'Chrome' : /Firefox\//.test(ua) ? 'Firefox' : /Safari\//.test(ua) ? 'Safari' : 'Browser'
@@ -73,6 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!authReady) return
     if (!user) {
+      if (pendingAuthError) { router.replace(pendingAuthError); pendingAuthError = null; return }
       if (!isPublic) router.replace(`/login${pathname && pathname !== '/' ? `?next=${encodeURIComponent(pathname)}` : ''}`)
       return
     }
