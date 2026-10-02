@@ -34,7 +34,20 @@ export default function OnboardingPage() {
   const [locale, setLocale] = useState('ja-JP')
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => { void load() }, [load])
+  // Reference data (ledger types, currencies…) needs the session: retry until it arrives.
+  const [loadFailed, setLoadFailed] = useState(false)
+  useEffect(() => {
+    let tries = 0
+    let timer: ReturnType<typeof setTimeout>
+    const attempt = async () => {
+      await load(true)
+      if (useMasterStore.getState().ledgerTypes.length) { setLoadFailed(false); return }
+      if (++tries >= 4) { setLoadFailed(true); return }
+      timer = setTimeout(attempt, 800 * tries)
+    }
+    void attempt()
+    return () => clearTimeout(timer)
+  }, [load])
 
   // Currency drives sensible regional defaults (JPY → Asia/Tokyo, ja-JP).
   useEffect(() => {
@@ -111,6 +124,17 @@ export default function OnboardingPage() {
                 <h1 className="text-3xl font-bold tracking-tight text-[var(--color-text-primary)]">{t.onboarding.title}</h1>
                 <p className="text-[var(--color-text-tertiary)]">{t.onboarding.subtitle}</p>
               </div>
+              {ledgerTypes.length === 0 && (
+                loadFailed ? (
+                  <div role="alert" className="p-4 rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-center space-y-3">
+                    <p className="text-sm text-[var(--color-text-secondary)]">{t.onboarding.loadFailed}</p>
+                    <button type="button" onClick={() => { setLoadFailed(false); void load(true).then(() => { if (!useMasterStore.getState().ledgerTypes.length) setLoadFailed(true) }) }}
+                      className="h-10 px-5 rounded-xl bg-[var(--color-interactive-primary)] text-white text-sm font-semibold">{t.onboarding.retry}</button>
+                  </div>
+                ) : (
+                  <div className="flex justify-center py-6"><Loader2 className="w-6 h-6 animate-spin text-[var(--color-interactive-primary)]" /></div>
+                )
+              )}
               <div className="grid grid-cols-1 gap-3">
                 {ledgerTypes.map((lt) => {
                   const Icon = TYPE_ICON[lt.code] ?? User

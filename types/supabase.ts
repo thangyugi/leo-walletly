@@ -3878,6 +3878,10 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      ensure_user_profile: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       get_invitation: {
         Args: {
           p_token: string

@@ -591,6 +591,8 @@ const ja = {
     regionalFormatSub: '例: 2026/09/30 · 09/30/2026 · 30/09/2026',
     timezoneSub: '「今日」の日付と記録時刻の基準。',
     preview: 'プレビュー',
+    loadFailed: '設定データを読み込めませんでした。接続を確認してもう一度お試しください。',
+    retry: '再読み込み',
   },
   ledger_settings: {
     title: '元帳設定',
@@ -1897,6 +1899,8 @@ const vi: typeof ja = {
     regionalFormatSub: 'Ví dụ: 2026/09/30 · 09/30/2026 · 30/09/2026',
     timezoneSub: 'Dùng để tính "hôm nay" và giờ ghi nhận.',
     preview: 'Xem trước',
+    loadFailed: 'Không tải được dữ liệu thiết lập. Hãy kiểm tra kết nối rồi thử lại.',
+    retry: 'Thử lại',
   },
   ledger_settings: {
     title: 'Cấu hình Sổ cái',
@@ -3202,6 +3206,8 @@ const en: typeof ja = {
     regionalFormatSub: 'e.g. 2026/09/30 · 09/30/2026 · 30/09/2026',
     timezoneSub: 'Used for "today" and recorded times.',
     preview: 'Preview',
+    loadFailed: 'Could not load the setup data. Check your connection and try again.',
+    retry: 'Try again',
   },
   ledger_settings: {
     title: 'Ledger Configuration',

@@ -25,7 +25,9 @@ interface MasterState {
   categoryKinds: Tables<'category_kinds'>[]
   loaded: boolean
   loadLanguages: () => Promise<void>
-  load: () => Promise<void>
+  /** Loads once per sign-in; `force` reloads. */
+  load: (force?: boolean) => Promise<void>
+  reset: () => void
   provider: (code: string | null | undefined) => ProviderRow | undefined
   currency: (code: string | null | undefined) => CurrencyRow | undefined
 }
@@ -52,8 +54,10 @@ export const useMasterStore = create<MasterState>((set, get) => ({
     if (data) set({ languages: data })
   },
 
-  load: async () => {
-    if (get().loaded) return
+  reset: () => set({ loaded: false }),
+
+  load: async (force) => {
+    if (get().loaded && !force) return
     const [languages, currencies, timeZones, countries, providers, accountTypes, ledgerTypes, roles, templates, nTypes, nCats, nChannels, categoryKinds] =
       await Promise.all([
         supabase.from('languages').select('*').eq('is_active', true).order('sort_order'),
@@ -84,7 +88,9 @@ export const useMasterStore = create<MasterState>((set, get) => ({
       notificationCategories: nCats.data ?? [],
       notificationChannels: nChannels.data ?? [],
       categoryKinds: categoryKinds.data ?? [],
-      loaded: true,
+      // Reference data is readable only when signed in. A load that ran without a
+      // (valid) session comes back empty: don't remember it, so the next call retries.
+      loaded: !ledgerTypes.error && !currencies.error && (ledgerTypes.data?.length ?? 0) > 0,
     })
   },
 

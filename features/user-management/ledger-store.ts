@@ -67,6 +67,9 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
         return
       }
 
+      // Recreate the profile rows if they are missing (see migration 0039).
+      await supabase.rpc('ensure_user_profile')
+
       const [profileRes, prefsRes, membersRes] = await Promise.all([
         supabase.from('users').select('*').eq('id', user.id).maybeSingle(),
         supabase.from('user_preferences').select('*').eq('user_id', user.id).maybeSingle(),
