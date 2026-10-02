@@ -10,17 +10,22 @@ import { useI18nStore } from '@/features/i18n/store'
 import { useNotificationsStore } from '@/features/notifications/store'
 import { supabase } from '@/lib/supabase'
 
-const PUBLIC_PATHS = ['/login', '/join']
+const PUBLIC_PATHS = ['/login', '/join', '/reset-password']
 
 // A failed e-mail link (expired / already used) lands on the Site URL with the
 // error in the hash. Read it when this module loads, before the auth client
 // clears the hash, so the login page can say what happened and offer a resend.
+/** The password-reset link the page was opened with was expired or already used. */
+export let recoveryLinkFailed = false
+
 function readAuthError(): string | null {
   if (typeof window === 'undefined') return null
   const hash = window.location.hash
   if (!hash.includes('error_code=')) return null
   const p = new URLSearchParams(hash.slice(1))
   window.history.replaceState(null, '', window.location.pathname + window.location.search)
+  // A password-reset link that failed: the reset page says so (even when another session is open).
+  if (window.location.pathname === '/reset-password') { recoveryLinkFailed = true; return null }
   return `/login?auth_error=${encodeURIComponent(p.get('error_code') ?? 'error')}&auth_msg=${encodeURIComponent(p.get('error_description') ?? '')}`
 }
 let pendingAuthError = readAuthError()
@@ -87,11 +92,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!authReady) return
     if (!user) {
       if (pendingAuthError) { router.replace(pendingAuthError); pendingAuthError = null; return }
+      if (pathname === '/reset-password') return
       if (!isPublic) router.replace(`/login${pathname && pathname !== '/' ? `?next=${encodeURIComponent(pathname)}` : ''}`)
       return
     }
     if (!ledgerReady) return
-    if (pathname === '/join') return
+    if (pathname === '/join' || pathname === '/reset-password') return
     if (ledgers.length === 0) {
       if (pathname !== '/onboarding') router.replace('/onboarding')
       return

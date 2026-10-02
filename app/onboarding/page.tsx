@@ -80,6 +80,13 @@ export default function OnboardingPage() {
       setStep('success')
       setTimeout(() => router.replace('/'), 1500)
     } catch (err: any) {
+      // The account may have been deleted while this page was open.
+      const { error: gone } = await supabase.auth.getUser()
+      if (gone) {
+        await supabase.auth.signOut({ scope: 'local' })
+        router.replace('/login?auth_error=session_gone')
+        return
+      }
       toast.error(err.message)
       setLoading(false)
     }
