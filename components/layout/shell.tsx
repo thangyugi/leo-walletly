@@ -24,7 +24,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     return () => document.removeEventListener('keydown', onKey)
   }, [])
 
-  const isAuthRoute = ['/login', '/join', '/onboarding'].includes(pathname)
+  const isAuthRoute = ['/login', '/join', '/onboarding', '/reset-password'].includes(pathname)
 
   if (isAuthRoute) {
     return <>{children}</>

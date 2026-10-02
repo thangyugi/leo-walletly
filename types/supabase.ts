@@ -3759,6 +3759,12 @@ export type Database = {
         }
         Returns: number
       }
+      auth_email_status: {
+        Args: {
+          p_email: string
+        }
+        Returns: string
+      }
       bulk_delete_transactions: {
         Args: {
           p_ids: string[]
