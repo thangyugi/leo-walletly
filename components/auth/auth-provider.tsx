@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!authReady) return
     if (user) void initLedger()
-    else resetLedger()
+    else { resetLedger(); useMasterStore.getState().reset() }
   }, [authReady, user, initLedger, resetLedger])
 
   // UI texts follow the language and the open ledger (ledger-level overrides).
