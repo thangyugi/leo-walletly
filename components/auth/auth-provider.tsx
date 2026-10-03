@@ -10,7 +10,7 @@ import { useI18nStore } from '@/features/i18n/store'
 import { useNotificationsStore } from '@/features/notifications/store'
 import { supabase } from '@/lib/supabase'
 
-const PUBLIC_PATHS = ['/login', '/join', '/reset-password']
+const PUBLIC_PATHS = ['/login', '/join', '/reset-password', '/offline']
 
 // A failed e-mail link (expired / already used) lands on the Site URL with the
 // error in the hash. Read it when this module loads, before the auth client
@@ -46,6 +46,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const initLedger = useLedgerStore((s) => s.initialize)
   const resetLedger = useLedgerStore((s) => s.reset)
   const ledgers = useLedgerStore((s) => s.ledgers)
+  const ledgerError = useLedgerStore((s) => s.error)
+  const ledgerLoading = useLedgerStore((s) => s.loading)
   const current = useLedgerStore((s) => s.current)
   const preferences = useLedgerStore((s) => s.preferences)
   const lang = useSettingsStore((s) => s.lang)
@@ -65,6 +67,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (user) void initLedger()
     else { resetLedger(); useMasterStore.getState().reset() }
   }, [authReady, user, initLedger, resetLedger])
+
+  // Loading failed while offline: try again as soon as the network is back.
+  useEffect(() => {
+    if (!ledgerError || !user) return
+    const retry = () => void initLedger()
+    window.addEventListener('online', retry)
+    return () => window.removeEventListener('online', retry)
+  }, [ledgerError, user, initLedger])
 
   // UI texts follow the language and the open ledger (ledger-level overrides).
   useEffect(() => { void loadTexts(lang, current?.id ?? null) }, [lang, current?.id, loadTexts])
@@ -90,14 +100,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!authReady) return
+    if (pathname === '/offline') return
     if (!user) {
       if (pendingAuthError) { router.replace(pendingAuthError); pendingAuthError = null; return }
       if (pathname === '/reset-password') return
       if (!isPublic) router.replace(`/login${pathname && pathname !== '/' ? `?next=${encodeURIComponent(pathname)}` : ''}`)
       return
     }
-    if (!ledgerReady) return
+    if (!ledgerReady || ledgerLoading) return
     if (pathname === '/join' || pathname === '/reset-password') return
+    // Ledgers could not be loaded (offline, network error): stay where we are
+    // instead of treating the account as new.
+    if (ledgerError) return
     if (ledgers.length === 0) {
       if (pathname !== '/onboarding') router.replace('/onboarding')
       return
@@ -105,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (pathname === '/login' || pathname === '/onboarding') {
       router.replace(preferences?.start_page || '/')
     }
-  }, [authReady, ledgerReady, user, ledgers.length, pathname, isPublic, router, preferences?.start_page])
+  }, [authReady, ledgerReady, user, ledgers.length, pathname, isPublic, router, preferences?.start_page, ledgerError, ledgerLoading])
 
   const booting = !authReady || (user && !ledgerReady)
   if (booting && !isPublic) {

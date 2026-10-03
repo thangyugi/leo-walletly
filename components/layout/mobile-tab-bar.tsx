@@ -12,6 +12,7 @@ import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath } from './nav'
 import { LanguagePicker } from './sidebar'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
+import { InstallAppButton } from '@/features/pwa/components/install-app-button'
 
 const TABS = [
   { href: '/', icon: LayoutDashboard, key: 'mobnav.dashboard' },
@@ -133,6 +134,7 @@ export function MobileTabBar() {
               </div>
             </section>
           ))}
+          <div className="mt-4 empty:hidden"><InstallAppButton variant="row" /></div>
           <section className="mt-4">
             <h3 className="mb-1.5 ml-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">{t.common.language}</h3>
             <div className="p-1 rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)]"><LanguagePicker /></div>

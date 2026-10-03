@@ -29,7 +29,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   initialize: async () => {
     const { data: { session } } = await supabase.auth.getSession()
     let user = session?.user ?? null
-    if (session) {
+    if (session && navigator.onLine) {
       // getSession only reads the browser's copy of the token, which outlives a
       // deleted account. Ask the server whether the user still exists.
       const { data, error } = await supabase.auth.getUser()
