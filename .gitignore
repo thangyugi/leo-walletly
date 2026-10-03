@@ -10,3 +10,5 @@ node_modules/
 # Supabase internals
 supabase/.temp/
 supabase/.branches/
+# Local-only operations guides (not pushed)
+/docs/guides/
