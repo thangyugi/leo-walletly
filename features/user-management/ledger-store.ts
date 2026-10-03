@@ -60,8 +60,16 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
   initialize: async () => {
     set({ loading: true, error: null })
+    // Offline: fail at once (the client would retry for seconds) and keep what is shown.
+    if (typeof navigator !== 'undefined' && !navigator.onLine) {
+      set({ error: 'offline', initialized: true, loading: false })
+      return
+    }
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      // The auth store has already checked the session with the server; reading
+      // the stored one here also works offline (getUser would need the network).
+      const { data: { session } } = await supabase.auth.getSession()
+      const user = session?.user
       if (!user) {
         set({ initialized: true, loading: false })
         return
@@ -80,6 +88,8 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
           .eq('status', 'active'),
       ])
       if (profileRes.error) throw profileRes.error
+      // A failed ledger list must not look like "no ledgers yet" (that sends the user to onboarding).
+      if (membersRes.error) throw membersRes.error
 
       const ledgers: LedgerWithRole[] = (membersRes.data ?? [])
         .filter((m) => m.ledger && !m.ledger.deleted_at && m.ledger.status === 'active')

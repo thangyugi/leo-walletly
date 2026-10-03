@@ -464,7 +464,9 @@ function TransactionsContent() {
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
   const [detailTxn, setDetailTxn] = useState<Transaction | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
-  const [adding, setAdding] = useState(false)
+  // Home-screen shortcut "Add transaction": /transactions?new=1
+  const [adding, setAdding] = useState(() => params.get('new') === '1')
+  useEffect(() => { if (params.get('new') === '1') router.replace('/transactions') }, [params, router])
 
   const ledgerId = ledger?.id
   const range = useMemo(() => ({ start: filters.dateFrom || picker.start, end: filters.dateTo || picker.end }), [filters.dateFrom, filters.dateTo, picker.start, picker.end])
