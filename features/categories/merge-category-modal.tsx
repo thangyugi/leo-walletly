@@ -168,7 +168,7 @@ export function MergeCategoryModal({
               {t.merge.source}
             </label>
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[var(--color-status-loss-bg)] border border-[var(--color-border-error)]/20">
-              <span className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 bg-[var(--color-bg-canvas)] shadow-sm">
+              <span className="w-8 h-8 rounded-[8px] flex items-center justify-center shrink-0 bg-[var(--color-surface-subtle)] shadow-sm">
                 <CategoryIcon name={sourceCategory.emoji} className="w-5 h-5" />
               </span>
               <span className="font-semibold text-[var(--color-text-loss)]">{sourceCategory.name}</span>
@@ -179,7 +179,7 @@ export function MergeCategoryModal({
             <label className="block text-xs font-semibold text-[var(--color-text-secondary)] uppercase tracking-wider mb-2">
               {t.merge.target}
             </label>
-            <div className="border border-[var(--color-border-default)] rounded-[12px] bg-[var(--color-bg-canvas)] max-h-64 overflow-y-auto p-1.5">
+            <div className="border border-[var(--color-border-default)] rounded-[12px] bg-[var(--color-surface-subtle)] max-h-64 overflow-y-auto p-1.5">
               {validOptions.length === 0 ? (
                 <div className="p-4 text-center text-[13px] text-[var(--color-text-tertiary)]">
                   {t.merge.none}

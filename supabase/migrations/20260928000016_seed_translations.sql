@@ -428,6 +428,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.verified', 'common', null, false),
   ('common.workspace', 'common', null, false),
   ('common.yes', 'common', null, false),
+  ('confirm.deleteTitle', 'confirm', null, false),
+  ('confirm.notifyOthers', 'confirm', null, false),
+  ('confirm.title', 'confirm', null, false),
+  ('confirm.undo', 'confirm', null, false),
   ('dashboard.accounts', 'dashboard', null, true),
   ('dashboard.addAccount', 'dashboard', null, true),
   ('dashboard.addTransaction', 'dashboard', null, true),
@@ -806,14 +810,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('merge.warning', 'merge', 'name', false),
   ('mobnav.accounts', 'mobnav', null, false),
   ('mobnav.add', 'mobnav', null, false),
-  ('mobnav.addTitle', 'mobnav', null, false),
-  ('mobnav.addTx', 'mobnav', null, false),
-  ('mobnav.addTxSub', 'mobnav', null, false),
-  ('mobnav.analytics', 'mobnav', null, false),
-  ('mobnav.calendar', 'mobnav', null, false)
+  ('mobnav.addTitle', 'mobnav', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('mobnav.addTx', 'mobnav', null, false),
+  ('mobnav.addTxSub', 'mobnav', null, false),
+  ('mobnav.analytics', 'mobnav', null, false),
+  ('mobnav.calendar', 'mobnav', null, false),
   ('mobnav.categories', 'mobnav', null, false),
   ('mobnav.dashboard', 'mobnav', null, false),
   ('mobnav.import', 'mobnav', null, false),
@@ -1209,14 +1213,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.txnNet', 'transactions', null, true),
   ('transactions.txnTotal', 'transactions', null, true),
   ('transactions.typeAll', 'transactions', null, true),
-  ('transactions.typeExpense', 'transactions', null, true),
-  ('transactions.typeIncome', 'transactions', null, true),
-  ('transactions.typeTransfer', 'transactions', null, true),
-  ('transactions.uncategorized', 'transactions', null, true),
-  ('txform.account', 'txform', null, false)
+  ('transactions.typeExpense', 'transactions', null, true)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('transactions.typeIncome', 'transactions', null, true),
+  ('transactions.typeTransfer', 'transactions', null, true),
+  ('transactions.uncategorized', 'transactions', null, true),
+  ('txform.account', 'txform', null, false),
   ('txform.addTitle', 'txform', null, false),
   ('txform.amount', 'txform', null, false),
   ('txform.category', 'txform', null, false),
@@ -1687,6 +1691,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'ja', '認証済み'),
   ('common.workspace', 'ja', 'ワークスペース'),
   ('common.yes', 'ja', 'はい'),
+  ('confirm.deleteTitle', 'ja', '削除しますか？'),
+  ('confirm.notifyOthers', 'ja', 'この取引を見られるメンバーに通知されます。'),
+  ('confirm.title', 'ja', '確認'),
+  ('confirm.undo', 'ja', 'この操作は元に戻せません。'),
   ('dashboard.accounts', 'ja', 'アカウント'),
   ('dashboard.addAccount', 'ja', '口座を追加'),
   ('dashboard.addTransaction', 'ja', '取引を追加'),
@@ -2065,14 +2073,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'ja', '元に戻せません。「{{name}}」の取引・キーワード・サブカテゴリは統合先に移動し、「{{name}}」は削除されます。'),
   ('mobnav.accounts', 'ja', '口座'),
   ('mobnav.add', 'ja', '追加'),
-  ('mobnav.addTitle', 'ja', '何を追加しますか？'),
-  ('mobnav.addTx', 'ja', '取引を入力'),
-  ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
-  ('mobnav.analytics', 'ja', '分析'),
-  ('mobnav.calendar', 'ja', 'カレンダー')
+  ('mobnav.addTitle', 'ja', '何を追加しますか？')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'ja', '取引を入力'),
+  ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
+  ('mobnav.analytics', 'ja', '分析'),
+  ('mobnav.calendar', 'ja', 'カレンダー'),
   ('mobnav.categories', 'ja', 'カテゴリ'),
   ('mobnav.dashboard', 'ja', 'ホーム'),
   ('mobnav.import', 'ja', '取込'),
@@ -2468,14 +2476,14 @@ insert into public.translations (key, language_code, value) values
   ('transactions.txnNet', 'ja', '純計'),
   ('transactions.txnTotal', 'ja', '取引総数'),
   ('transactions.typeAll', 'ja', 'すべてのタイプ'),
-  ('transactions.typeExpense', 'ja', '支出'),
-  ('transactions.typeIncome', 'ja', '収入'),
-  ('transactions.typeTransfer', 'ja', '振替'),
-  ('transactions.uncategorized', 'ja', '未分類'),
-  ('txform.account', 'ja', '口座')
+  ('transactions.typeExpense', 'ja', '支出')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('transactions.typeIncome', 'ja', '収入'),
+  ('transactions.typeTransfer', 'ja', '振替'),
+  ('transactions.uncategorized', 'ja', '未分類'),
+  ('txform.account', 'ja', '口座'),
   ('txform.addTitle', 'ja', '取引を追加'),
   ('txform.amount', 'ja', '金額'),
   ('txform.category', 'ja', 'カテゴリ'),
@@ -2946,6 +2954,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'vi', 'Đã xác minh'),
   ('common.workspace', 'vi', 'không gian'),
   ('common.yes', 'vi', 'Có'),
+  ('confirm.deleteTitle', 'vi', 'Xác nhận xoá'),
+  ('confirm.notifyOthers', 'vi', 'Những người cùng xem giao dịch này sẽ nhận được thông báo.'),
+  ('confirm.title', 'vi', 'Xác nhận'),
+  ('confirm.undo', 'vi', 'Thao tác này không thể hoàn tác.'),
   ('dashboard.accounts', 'vi', 'Tài khoản'),
   ('dashboard.addAccount', 'vi', 'Thêm tài khoản'),
   ('dashboard.addTransaction', 'vi', 'Thêm giao dịch'),
@@ -3324,14 +3336,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'vi', 'Không thể hoàn tác. Giao dịch, từ khoá và danh mục con của "{{name}}" sẽ chuyển sang danh mục đích, sau đó "{{name}}" bị xoá.'),
   ('mobnav.accounts', 'vi', 'Tài khoản'),
   ('mobnav.add', 'vi', 'Thêm mới'),
-  ('mobnav.addTitle', 'vi', 'Bạn muốn thêm gì?'),
-  ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
-  ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
-  ('mobnav.analytics', 'vi', 'Phân tích'),
-  ('mobnav.calendar', 'vi', 'Lịch')
+  ('mobnav.addTitle', 'vi', 'Bạn muốn thêm gì?')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
+  ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
+  ('mobnav.analytics', 'vi', 'Phân tích'),
+  ('mobnav.calendar', 'vi', 'Lịch'),
   ('mobnav.categories', 'vi', 'Danh mục'),
   ('mobnav.dashboard', 'vi', 'Tổng quan'),
   ('mobnav.import', 'vi', 'Nhập'),
@@ -3727,14 +3739,14 @@ insert into public.translations (key, language_code, value) values
   ('transactions.txnNet', 'vi', 'Cân đối'),
   ('transactions.txnTotal', 'vi', 'Tổng giao dịch'),
   ('transactions.typeAll', 'vi', 'Tất cả loại'),
-  ('transactions.typeExpense', 'vi', 'Chi tiêu'),
-  ('transactions.typeIncome', 'vi', 'Thu nhập'),
-  ('transactions.typeTransfer', 'vi', 'Chuyển khoản'),
-  ('transactions.uncategorized', 'vi', 'Chưa phân loại'),
-  ('txform.account', 'vi', 'Tài khoản')
+  ('transactions.typeExpense', 'vi', 'Chi tiêu')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('transactions.typeIncome', 'vi', 'Thu nhập'),
+  ('transactions.typeTransfer', 'vi', 'Chuyển khoản'),
+  ('transactions.uncategorized', 'vi', 'Chưa phân loại'),
+  ('txform.account', 'vi', 'Tài khoản'),
   ('txform.addTitle', 'vi', 'Thêm giao dịch'),
   ('txform.amount', 'vi', 'Số tiền'),
   ('txform.category', 'vi', 'Danh mục'),
@@ -4205,6 +4217,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'en', 'Verified'),
   ('common.workspace', 'en', 'workspace'),
   ('common.yes', 'en', 'Yes'),
+  ('confirm.deleteTitle', 'en', 'Delete?'),
+  ('confirm.notifyOthers', 'en', 'People who can see this transaction will be notified.'),
+  ('confirm.title', 'en', 'Are you sure?'),
+  ('confirm.undo', 'en', 'This can''t be undone.'),
   ('dashboard.accounts', 'en', 'Accounts'),
   ('dashboard.addAccount', 'en', 'Add account'),
   ('dashboard.addTransaction', 'en', 'Add Transaction'),
@@ -4583,14 +4599,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'en', 'This cannot be undone. Transactions, keywords and sub-categories of "{{name}}" move to the target, then "{{name}}" is deleted.'),
   ('mobnav.accounts', 'en', 'Accounts'),
   ('mobnav.add', 'en', 'Add'),
-  ('mobnav.addTitle', 'en', 'What would you like to add?'),
-  ('mobnav.addTx', 'en', 'Enter a transaction'),
-  ('mobnav.addTxSub', 'en', 'Type the amount and category'),
-  ('mobnav.analytics', 'en', 'Insights'),
-  ('mobnav.calendar', 'en', 'Calendar')
+  ('mobnav.addTitle', 'en', 'What would you like to add?')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'en', 'Enter a transaction'),
+  ('mobnav.addTxSub', 'en', 'Type the amount and category'),
+  ('mobnav.analytics', 'en', 'Insights'),
+  ('mobnav.calendar', 'en', 'Calendar'),
   ('mobnav.categories', 'en', 'Categories'),
   ('mobnav.dashboard', 'en', 'Home'),
   ('mobnav.import', 'en', 'Import'),
@@ -4986,14 +5002,14 @@ insert into public.translations (key, language_code, value) values
   ('transactions.txnNet', 'en', 'Net'),
   ('transactions.txnTotal', 'en', 'Total Transactions'),
   ('transactions.typeAll', 'en', 'All'),
-  ('transactions.typeExpense', 'en', 'Expenses'),
-  ('transactions.typeIncome', 'en', 'Income'),
-  ('transactions.typeTransfer', 'en', 'Transfers'),
-  ('transactions.uncategorized', 'en', 'Uncategorized'),
-  ('txform.account', 'en', 'Account')
+  ('transactions.typeExpense', 'en', 'Expenses')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('transactions.typeIncome', 'en', 'Income'),
+  ('transactions.typeTransfer', 'en', 'Transfers'),
+  ('transactions.uncategorized', 'en', 'Uncategorized'),
+  ('txform.account', 'en', 'Account'),
   ('txform.addTitle', 'en', 'Add transaction'),
   ('txform.amount', 'en', 'Amount'),
   ('txform.category', 'en', 'Category'),

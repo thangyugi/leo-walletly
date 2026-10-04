@@ -5,7 +5,8 @@ import { createPortal } from 'react-dom'
 import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { X, Maximize2, Minimize2, Edit2, CheckCircle2, Lock } from 'lucide-react'
+import { X, Maximize2, Minimize2, Edit2, CheckCircle2, Lock, Trash2 } from 'lucide-react'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 import { Button } from '@/components/ui/button'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { useTransactionsStore } from '@/stores/transactions'
@@ -54,6 +55,18 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
   // Only whoever entered or paid a transaction changes it; others in a shared category just see it.
   const own = !!me && (txn.createdBy === me || txn.paidByUserId === me)
   const canUpdate = own && can('transaction.update')
+  const canDelete = own && can('transaction.delete')
+  const remove = useTransactionsStore((s) => s.remove)
+  async function handleDelete() {
+    if (!(await confirmDialog({ danger: true, message: `${t.txform.deleteConfirm} "${txn.description}"`, note: t.confirm.notifyOthers }))) return
+    try {
+      await remove(txn.id)
+      toast.success(t.txform.deleted, { action: { label: t.common.undo, onClick: () => void useTransactionsStore.getState().restore(txn.id) } })
+      onClose()
+    } catch (e) {
+      toast.error((e as Error).message)
+    }
+  }
   const ownerName = (uid: string | null | undefined) => members.find((m) => m.user_id === uid)?.user?.display_name ?? '—'
   const accountLabel = (a: typeof acc) => !a ? '—' : a.isMine === false ? `${a.name} · ${t.catui.ownerBadge.replaceAll('{{name}}', ownerName(a.ownerId))}` : a.name
   const isExpense = txn.transactionType === 'expense'
@@ -116,6 +129,11 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
             {canUpdate && (
               <button onClick={onEdit} className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={t.common.edit}>
                 <Edit2 className="w-3.5 h-3.5 text-[var(--color-text-tertiary)]" />
+              </button>
+            )}
+            {canDelete && (
+              <button onClick={() => void handleDelete()} className="w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-status-loss-bg)] transition-colors" aria-label={t.common.delete} title={t.common.delete}>
+                <Trash2 className="w-3.5 h-3.5 text-[var(--color-text-loss)]" />
               </button>
             )}
             <button onClick={() => setFullscreen((v) => !v)} className="max-sm:hidden w-10 h-10 sm:w-8 sm:h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors" aria-label={fullscreen ? t.common.minimize : t.common.maximize}>
@@ -215,11 +233,19 @@ export function TransactionDetailPanel({ txn, onClose, onEdit, onOpenTransaction
         </div>
 
         {canUpdate ? (
-          <div className="px-5 py-4 border-t border-[var(--color-border-default)] shrink-0">
-            <Button variant="primary" size="sm" className="w-full" onClick={onEdit}>
-              <Edit2 className="w-3.5 h-3.5" />
-              {t.transactions.editTitle}
-            </Button>
+          <div className="px-5 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[var(--color-border-default)] shrink-0">
+            <div className="flex gap-2">
+              {canDelete && (
+                <Button variant="outline" size="sm" className="flex-1 max-sm:h-11 text-[var(--color-text-loss)] border-[var(--color-status-loss-bg)] hover:bg-[var(--color-status-loss-bg)]" onClick={() => void handleDelete()}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                  {t.common.delete}
+                </Button>
+              )}
+              <Button variant="primary" size="sm" className="flex-[2] max-sm:h-11" onClick={onEdit}>
+                <Edit2 className="w-3.5 h-3.5" />
+                {t.transactions.editTitle}
+              </Button>
+            </div>
           </div>
         ) : !own && (
           <div className="px-5 py-3 border-t border-[var(--color-border-default)] shrink-0 flex items-center gap-2 text-xs text-[var(--color-text-tertiary)]">

@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input'
 import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
 import type { Member } from '@/features/user-management/types'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 export default function UserManagementPage() {
   const { t, tk, lang } = useTranslation()
@@ -55,13 +56,13 @@ export default function UserManagementPage() {
     }
   }
 
-  function onRemove(m: Member) {
-    if (!confirm(t.members.removeConfirm.replace('{{name}}', m.user?.display_name ?? ''))) return
+  async function onRemove(m: Member) {
+    if (!(await confirmDialog({ danger: true, message: t.members.removeConfirm.replace('{{name}}', m.user?.display_name ?? '') }))) return
     void run(() => remove(m.id), t.common.saved)
   }
 
-  function onTransfer(m: Member) {
-    if (!confirm(t.members.transferConfirm.replace('{{name}}', m.user?.display_name ?? ''))) return
+  async function onTransfer(m: Member) {
+    if (!(await confirmDialog(t.members.transferConfirm.replace('{{name}}', m.user?.display_name ?? '')))) return
     void run(async () => {
       await MemberService.transferOwnership(current!.id, m.user_id)
       await reloadLedgers()
@@ -141,7 +142,7 @@ export default function UserManagementPage() {
                 <Button
                   variant="ghost" size="xs" icon={<Trash2 />}
                   className="text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]"
-                  onClick={() => { if (confirm(t.members.cancelConfirm.replace('{{email}}', inv.email))) void run(() => revokeInvitation(inv.id), t.common.saved) }}
+                  onClick={async () => { if (await confirmDialog({ danger: true, message: t.members.cancelConfirm.replace('{{email}}', inv.email) })) void run(() => revokeInvitation(inv.id), t.common.saved) }}
                 >
                   {t.members.cancel}
                 </Button>
@@ -156,8 +157,8 @@ export default function UserManagementPage() {
           <Button
             variant="ghost" size="sm" icon={<LogOut />}
             className="text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]"
-            onClick={() => {
-              if (!confirm(t.members.leaveConfirm)) return
+            onClick={async () => {
+              if (!(await confirmDialog({ danger: true, message: t.members.leaveConfirm }))) return
               void run(async () => { await MemberService.leave(current.id); await reloadLedgers() })
             }}
           >

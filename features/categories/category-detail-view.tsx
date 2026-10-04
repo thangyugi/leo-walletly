@@ -673,7 +673,7 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
         ))}
       </div>
 
-      <div className="bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)]">
+      <div className="bg-[var(--color-surface-subtle)] border-t border-[var(--color-border-subtle)]">
         <div className="flex items-start gap-2 px-[18px] pt-3 pb-2">
           <Clock className="w-3.5 h-3.5 mt-px shrink-0 text-[var(--color-text-tertiary)]" />
           <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-2">
@@ -923,7 +923,7 @@ function SettleUpSection({ category, txns, settlement, nameOf, canEdit }: {
           const a = colorFor(tr.from, members)
           const b = colorFor(tr.to, members)
           return (
-            <div key={`${tr.from}-${tr.to}-${i}`} className="grid items-center gap-2 p-2 border border-dashed border-[var(--color-border-default)] rounded-[9px] bg-[var(--color-bg-canvas)] text-[11px]" style={{ gridTemplateColumns: '1fr auto 1fr auto' }}>
+            <div key={`${tr.from}-${tr.to}-${i}`} className="grid items-center gap-2 p-2 border border-dashed border-[var(--color-border-default)] rounded-[9px] bg-[var(--color-surface-subtle)] text-[11px]" style={{ gridTemplateColumns: '1fr auto 1fr auto' }}>
               <div className="flex items-center gap-1.5 min-w-0">
                 <span className="w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-semibold shrink-0" style={{ background: a.bg, color: a.color }}>{initials(nameOf(tr.from))}</span>
                 <span className="truncate">{nameOf(tr.from)}</span>

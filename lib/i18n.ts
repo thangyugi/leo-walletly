@@ -1372,6 +1372,12 @@ const ja = {
     belowChildren: '予算 ({{limit}}) がサブカテゴリの合計 ({{total}}) より少なくなっています',
     view: '内訳を見る',
   },
+  confirm: {
+    deleteTitle: '削除しますか？',
+    title: '確認',
+    undo: 'この操作は元に戻せません。',
+    notifyOthers: 'この取引を見られるメンバーに通知されます。',
+  },
 }
 
 const vi: typeof ja = {
@@ -2740,6 +2746,12 @@ const vi: typeof ja = {
     belowChildren: 'Ngân sách ({{limit}}) nhỏ hơn tổng ngân sách các nhóm con ({{total}})',
     view: 'Xem chi tiết',
   },
+  confirm: {
+    deleteTitle: 'Xác nhận xoá',
+    title: 'Xác nhận',
+    undo: 'Thao tác này không thể hoàn tác.',
+    notifyOthers: 'Những người cùng xem giao dịch này sẽ nhận được thông báo.',
+  },
 }
 
 const en: typeof ja = {
@@ -4107,6 +4119,12 @@ const en: typeof ja = {
     formChildren: 'Sub-categories total: {{total}}',
     belowChildren: 'The budget ({{limit}}) is less than its sub-categories\' total ({{total}})',
     view: 'View breakdown',
+  },
+  confirm: {
+    deleteTitle: 'Delete?',
+    title: 'Are you sure?',
+    undo: 'This can\'t be undone.',
+    notifyOthers: 'People who can see this transaction will be notified.',
   },
 }
 

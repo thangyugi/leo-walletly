@@ -24,6 +24,7 @@ import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, formatDate, toLocalISODate } from '@/lib/utils'
 import { SheetGrip } from '@/components/ui/sheet-grip'
 import { useSwipeToClose } from '@/hooks/useSwipeToClose'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 /** Rough monthly cost of a rule, for the header total. */
 function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'intervalCount'>) {
@@ -222,7 +223,7 @@ export default function RecurringPage() {
                     </Tooltip>
                     {can('recurring.delete') && (
                       <Tooltip text={t.recurring.tipDelete}>
-                        <button type="button" aria-label={t.common.delete} onClick={() => { if (confirm(t.recurring.deleteConfirm)) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label={t.common.delete} onClick={async () => { if (await confirmDialog({ danger: true, message: t.recurring.deleteConfirm })) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
                       </Tooltip>
                     )}
                   </div>

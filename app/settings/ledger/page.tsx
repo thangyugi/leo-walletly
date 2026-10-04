@@ -14,6 +14,7 @@ import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { supabase } from '@/lib/supabase'
 import { AppSelect } from '@/components/ui/app-select'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 export default function LedgerSettingsPage() {
   const { t, tk, lang } = useTranslation()
@@ -37,7 +38,7 @@ export default function LedgerSettingsPage() {
 
   async function save() {
     if (!form) return
-    if (form.currency_code !== current!.currency_code && !confirm(t.ledgerx.currencyWarn)) return
+    if (form.currency_code !== current!.currency_code && !(await confirmDialog(t.ledgerx.currencyWarn))) return
     setSaving(true)
     try {
       await updateCurrent({
@@ -50,12 +51,12 @@ export default function LedgerSettingsPage() {
 
   async function transfer() {
     const m = others.find((x) => x.user_id === newOwner)
-    if (!m || !confirm(t.members.transferConfirm.replace('{{name}}', m.user?.display_name ?? ''))) return
+    if (!m || !(await confirmDialog(t.members.transferConfirm.replace('{{name}}', m.user?.display_name ?? '')))) return
     try { await MemberService.transferOwnership(current!.id, newOwner); await initialize(); toast.success(t.ledgerx.transferred) } catch (e: any) { toast.error(e.message) }
   }
 
   async function leave() {
-    if (!confirm(t.members.leaveConfirm)) return
+    if (!(await confirmDialog({ danger: true, message: t.members.leaveConfirm }))) return
     try { await MemberService.leave(current!.id); await initialize(); toast.success(t.ledgerx.left); router.replace('/') } catch (e: any) { toast.error(e.message) }
   }
 

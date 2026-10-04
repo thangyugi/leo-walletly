@@ -33,6 +33,7 @@ import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 import { SummaryPanel } from '@/components/summary/summary-panel'
 import { prevPeriod } from '@/lib/periods'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 // Columns: checkbox | icon | 内容 | 日付 | ユーザー | カテゴリ | アカウント | 金額
 // Phone: icon · text · amount. Tablet / small laptop: + select, person, category
@@ -277,7 +278,7 @@ function BulkBar({ ids, total, onDone }: { ids: string[]; total: number; onDone:
         )}
         {can('transaction.delete') && (
           <button
-            onClick={() => { if (confirm(t.bulk.deleteConfirm.replace('{{count}}', String(count)))) void run(() => bulkDelete(ids)) }}
+            onClick={async () => { if (await confirmDialog({ danger: true, message: t.bulk.deleteConfirm.replace('{{count}}', String(count)), note: t.confirm.notifyOthers })) void run(() => bulkDelete(ids)) }}
             className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
           >
             {t.common.delete}
@@ -351,7 +352,7 @@ function PhoneBulkBar({ ids, pageIds, onSelectAll, onClearAll, onDone }: {
         </button>
         {can('transaction.delete') && (
           <button type="button" disabled={!count}
-            onClick={() => { if (confirm(t.bulk.deleteConfirm.replace('{{count}}', String(count)))) void run(() => bulkDelete(ids)) }}
+            onClick={async () => { if (await confirmDialog({ danger: true, message: t.bulk.deleteConfirm.replace('{{count}}', String(count)), note: t.confirm.notifyOthers })) void run(() => bulkDelete(ids)) }}
             className={cn(act, 'text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]')}>
             <Trash2 className="w-5 h-5" />{t.common.delete}
           </button>
@@ -689,7 +690,7 @@ function TransactionsContent() {
 
   // Header trash: delete every transaction shown for the selected period.
   async function deleteAllInPeriod() {
-    if (!ledgerId || !confirm(t.transactions.deleteConfirm)) return
+    if (!ledgerId || !(await confirmDialog({ danger: true, message: t.transactions.deleteConfirm, note: t.confirm.notifyOthers }))) return
     try {
       const rows = await fetchRange(ledgerId, range.start, range.end)
       const n = await bulkDelete(rows.map((r) => r.id))
