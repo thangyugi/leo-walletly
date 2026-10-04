@@ -18,7 +18,7 @@ export function SettingsSection({
   danger = false
 }: SettingsSectionProps) {
   return (
-    <section className={cn("space-y-6 pb-12 border-b border-[var(--color-border-subtle)] last:border-0", className)}>
+    <section className={cn("card-base p-4 sm:p-6 space-y-5", className)}>
       <div className="space-y-1">
         <h3 className={cn(
           "text-lg font-semibold tracking-tight",

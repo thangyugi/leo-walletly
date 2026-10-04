@@ -144,7 +144,7 @@ function StepBar({ step, L }: { step: 1 | 2 | 3; L: (ja: string, vi: string, en:
               'flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold transition-all',
               done    ? 'bg-brand-100 text-brand-700' :
               current ? 'bg-brand-600 text-white' :
-                        'bg-surface-alt text-text-muted'
+                        'bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-text-muted'
             )}>
               <span className={cn(
                 'w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold',
@@ -472,7 +472,7 @@ export default function ScanPage() {
             </div>
           </div>
 
-          <div className="rounded-xl border border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)] p-3.5 flex items-start gap-2.5">
+          <div className="rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] p-3.5 flex items-start gap-2.5">
             <ScanLine className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0 mt-0.5" />
             <p className="text-[11px] text-[var(--color-text-quaternary)] leading-relaxed">
               {L(

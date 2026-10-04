@@ -68,7 +68,7 @@ function StepBar({ step, file, provider }: { step: PageStep; file: File | null; 
               'flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all',
               done ? 'bg-[var(--color-brand-100)] text-[var(--color-brand-700)]'
                 : current ? 'bg-[var(--color-interactive-primary)] text-white shadow-sm'
-                : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]',
+                : 'bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-[var(--color-text-quaternary)]',
             )}>
               <span className={cn(
                 'w-4 h-4 rounded-full flex items-center justify-center text-[10px] font-bold shrink-0',

@@ -27,7 +27,7 @@ export default function AppearanceSettingsPage() {
           <button key={item.id} role="radio" aria-checked={theme === item.id}
             onClick={async () => { try { await updatePreferences({ theme: item.id }); toast.success(t.prefs.themeSaved) } catch (e: any) { toast.error(e.message) } }}
             className={cn('flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all',
-              theme === item.id ? 'border-[var(--color-interactive-primary)] bg-[var(--color-sidebar-item-active-bg)]' : 'border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]')}>
+              theme === item.id ? 'border-[var(--color-interactive-primary)] bg-[var(--color-sidebar-item-active-bg)]' : 'border-[var(--color-border-default)] bg-[var(--color-surface-default)] hover:border-[var(--color-border-strong)]')}>
             <item.icon className={cn('w-8 h-8', theme === item.id ? 'text-[var(--color-interactive-primary)]' : 'text-[var(--color-text-quaternary)]')} />
             <span className="text-sm font-semibold text-[var(--color-text-primary)]">{item.label}</span>
           </button>

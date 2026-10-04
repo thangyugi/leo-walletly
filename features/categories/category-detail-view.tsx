@@ -190,6 +190,72 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
   )
 }
 
+/** Scrolls a sideways tab strip just enough to show the active tab (never the page). */
+function useRevealActive<T extends HTMLElement>(active: string) {
+  const strip = React.useRef<T>(null)
+  React.useEffect(() => {
+    const box = strip.current
+    const el = box?.querySelector<HTMLElement>('[aria-selected="true"]')
+    if (!box || !el) return
+    const pad = 16
+    if (el.offsetLeft < box.scrollLeft + pad) box.scrollTo({ left: el.offsetLeft - pad, behavior: 'smooth' })
+    else if (el.offsetLeft + el.offsetWidth > box.scrollLeft + box.clientWidth - pad)
+      box.scrollTo({ left: el.offsetLeft + el.offsetWidth - box.clientWidth + pad, behavior: 'smooth' })
+  }, [active])
+  return strip
+}
+
+// ── Phone tabs: pill row pinned under the header while the content scrolls ──
+function PhoneTabs({ tabs, active, onChange, nested }: {
+  tabs: { value: DetailTab; label: string; count?: number }[]
+  active: DetailTab
+  onChange: (t: DetailTab) => void
+  nested?: boolean
+}) {
+  const strip = useRevealActive<HTMLDivElement>(active)
+  const mark = React.useRef<HTMLDivElement>(null)
+  // Switching tabs while the row is pinned keeps it pinned: the new content
+  // starts right under it instead of the page jumping to wherever it lands.
+  const choose = (v: DetailTab) => {
+    const bar = mark.current?.nextElementSibling as HTMLElement | null
+    let box = mark.current?.parentElement ?? null
+    while (box && !/(auto|scroll)/.test(getComputedStyle(box).overflowY)) box = box.parentElement
+    const pinned = !!(bar && mark.current && bar.getBoundingClientRect().top < mark.current.getBoundingClientRect().top - 1)
+    onChange(v)
+    if (pinned && box) {
+      const target = box
+      requestAnimationFrame(() => {
+        if (!mark.current) return
+        target.scrollTop += mark.current.getBoundingClientRect().top - target.getBoundingClientRect().top
+      })
+    }
+  }
+  return (
+    <>
+    <div ref={mark} aria-hidden className="sm:hidden h-0" />
+    <div className={cn('sm:hidden sticky top-0 z-30 py-2 !mt-0 bg-[var(--color-bg-base)]/95 backdrop-blur', nested ? '-mx-3 px-3' : '-mx-4 px-4')}>
+      <div ref={strip} role="tablist" className="flex gap-1.5 overflow-x-auto no-scrollbar">
+        {tabs.map((tab) => {
+          const on = active === tab.value
+          return (
+            <button key={tab.value} type="button" role="tab" aria-selected={on} onClick={() => choose(tab.value)}
+              className={cn('shrink-0 h-9 pl-3.5 rounded-full text-[13px] font-medium inline-flex items-center gap-1.5 border transition-colors whitespace-nowrap',
+                tab.count != null ? 'pr-1.5' : 'pr-3.5',
+                on ? 'bg-[#111827] border-[#111827] text-white' : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-secondary)]')}>
+              {tab.label}
+              {tab.count != null && (
+                <span className={cn('min-w-[22px] h-[22px] px-1.5 rounded-full text-[11px] font-semibold inline-flex items-center justify-center font-tabular',
+                  on ? 'bg-white/20 text-white' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>{tab.count}</span>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+    </>
+  )
+}
+
 // ── Tab bar ──────────────────────────────────────────────────
 function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
   tabs: { value: DetailTab; label: string; count?: number }[]
@@ -199,16 +265,11 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
   onPickerChange: (v: PickerValue) => void
 }) {
   const { lang } = useTranslation()
-  const strip = React.useRef<HTMLDivElement>(null)
-  // Keep the chosen tab in view when the row scrolls sideways (phones).
-  React.useEffect(() => {
-    const el = strip.current?.querySelector<HTMLElement>('[aria-selected="true"]')
-    const box = strip.current
-    if (el && box) box.scrollTo({ left: el.offsetLeft - box.clientWidth / 2 + el.clientWidth / 2, behavior: 'smooth' })
-  }, [active])
+  const strip = useRevealActive<HTMLDivElement>(active)
   return (
-    <div className="flex flex-col-reverse lg:flex-row lg:items-center border-b border-[var(--color-border-subtle)]" role="tablist">
-      <div ref={strip} className="relative flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar">
+    // Phones: only the period row here; the tabs are the sticky PhoneTabs under the figures.
+    <div className="flex flex-col-reverse lg:flex-row lg:items-center border-b border-[var(--color-border-subtle)] max-sm:border-b-0" role="tablist">
+      <div ref={strip} className="relative flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar max-sm:hidden">
         {tabs.map((tab) => (
           <button key={tab.value} role="tab" aria-selected={active === tab.value} onClick={() => onChange(tab.value)}
             className={cn(
@@ -225,7 +286,7 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 max-sm:w-full lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)]">
+      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 max-sm:w-full lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)] max-sm:pt-0 max-sm:pb-3 max-sm:border-b-0">
         <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
       </div>
     </div>
@@ -1125,7 +1186,8 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         </div>
       </div>
 
-      <div className={cn('space-y-4', isNested && 'overflow-y-auto flex-1 px-3 pb-3 sm:px-5 sm:pb-5 md:px-6 md:pb-6')}>
+      <div className={cn('space-y-4 max-sm:min-h-[calc(100dvh-160px)]', isNested && 'overflow-y-auto flex-1 px-3 pb-3 sm:px-5 sm:pb-5 md:px-6 md:pb-6')}>
+        <PhoneTabs tabs={tabs} active={tab} onChange={setTab} nested={isNested} />
         {tab === 'overview' && (
           <>
             {/* Two independent columns (no row pairing), so a short card never leaves a hole
