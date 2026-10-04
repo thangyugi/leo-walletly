@@ -1112,6 +1112,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settingsNav.ledger', 'settingsNav', null, false),
   ('settingsNav.members', 'settingsNav', null, false),
   ('settingsNav.texts', 'settingsNav', null, false),
+  ('summary.budgetLeft', 'summary', 'pct', false),
+  ('summary.budgetOver', 'summary', 'pct', false),
+  ('summary.categories', 'summary', null, false),
+  ('summary.over', 'summary', 'amount', false),
+  ('summary.perPerson', 'summary', 'count', false),
+  ('summary.sharedCount', 'summary', 'count', false),
+  ('summary.short', 'summary', 'amount', false),
   ('texts.applyLedger', 'texts', null, false),
   ('texts.applyMe', 'texts', null, false),
   ('texts.defaultValue', 'texts', null, false),
@@ -1206,17 +1213,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.errorDescription', 'txform', null, false),
   ('txform.errorTransfer', 'txform', null, false),
   ('txform.markReconciled', 'txform', null, false),
-  ('txform.notReconciled', 'txform', null, false),
+  ('txform.notReconciled', 'txform', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('txform.notes', 'txform', null, false),
   ('txform.paidBy', 'txform', null, false),
   ('txform.pending', 'txform', null, false),
   ('txform.rawData', 'txform', null, false),
   ('txform.receipt', 'txform', null, false),
   ('txform.receiptImage', 'txform', null, false),
-  ('txform.receiptItems', 'txform', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('txform.receiptItems', 'txform', null, false),
   ('txform.receiptSiblings', 'txform', null, false),
   ('txform.reconciled', 'txform', null, false),
   ('txform.save', 'txform', null, false),
@@ -2348,6 +2355,13 @@ insert into public.translations (key, language_code, value) values
   ('settingsNav.ledger', 'ja', '元帳設定'),
   ('settingsNav.members', 'ja', 'メンバー'),
   ('settingsNav.texts', 'ja', '表示テキスト'),
+  ('summary.budgetLeft', 'ja', '残り {{pct}}%'),
+  ('summary.budgetOver', 'ja', '{{pct}}% 超過'),
+  ('summary.categories', 'ja', 'カテゴリ'),
+  ('summary.over', 'ja', '{{amount}} 多く支払い'),
+  ('summary.perPerson', 'ja', '{{count}} 人で均等割り'),
+  ('summary.sharedCount', 'ja', '共有 {{count}}'),
+  ('summary.short', 'ja', '{{amount}} 不足'),
   ('texts.applyLedger', 'ja', 'この元帳に適用'),
   ('texts.applyMe', 'ja', '自分だけに適用'),
   ('texts.defaultValue', 'ja', '標準'),
@@ -2442,17 +2456,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'ja', '内容を入力してください'),
   ('txform.errorTransfer', 'ja', '振替先の口座を選択してください'),
   ('txform.markReconciled', 'ja', '照合済みにする'),
-  ('txform.notReconciled', 'ja', '未照合'),
+  ('txform.notReconciled', 'ja', '未照合')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.notes', 'ja', 'メモ'),
   ('txform.paidBy', 'ja', '支払者'),
   ('txform.pending', 'ja', '確認待ち'),
   ('txform.rawData', 'ja', '元データ'),
   ('txform.receipt', 'ja', 'レシート'),
   ('txform.receiptImage', 'ja', 'レシート画像を見る'),
-  ('txform.receiptItems', 'ja', 'レシートの明細')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.receiptItems', 'ja', 'レシートの明細'),
   ('txform.receiptSiblings', 'ja', '同じレシートの他の取引'),
   ('txform.reconciled', 'ja', '照合済み'),
   ('txform.save', 'ja', '保存'),
@@ -3584,6 +3598,13 @@ insert into public.translations (key, language_code, value) values
   ('settingsNav.ledger', 'vi', 'Cài đặt sổ'),
   ('settingsNav.members', 'vi', 'Thành viên'),
   ('settingsNav.texts', 'vi', 'Văn bản hiển thị'),
+  ('summary.budgetLeft', 'vi', 'còn {{pct}}%'),
+  ('summary.budgetOver', 'vi', 'vượt {{pct}}%'),
+  ('summary.categories', 'vi', 'Danh mục'),
+  ('summary.over', 'vi', 'trả dư {{amount}}'),
+  ('summary.perPerson', 'vi', 'chia đều {{count}} người'),
+  ('summary.sharedCount', 'vi', '{{count}} chia sẻ'),
+  ('summary.short', 'vi', 'thiếu {{amount}}'),
   ('texts.applyLedger', 'vi', 'Áp dụng cho sổ'),
   ('texts.applyMe', 'vi', 'Chỉ áp cho tôi'),
   ('texts.defaultValue', 'vi', 'Mặc định'),
@@ -3678,17 +3699,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'vi', 'Hãy nhập nội dung'),
   ('txform.errorTransfer', 'vi', 'Hãy chọn tài khoản nhận'),
   ('txform.markReconciled', 'vi', 'Đánh dấu đã đối soát'),
-  ('txform.notReconciled', 'vi', 'Chưa đối soát'),
+  ('txform.notReconciled', 'vi', 'Chưa đối soát')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.notes', 'vi', 'Ghi chú'),
   ('txform.paidBy', 'vi', 'Người trả'),
   ('txform.pending', 'vi', 'Chờ xác nhận'),
   ('txform.rawData', 'vi', 'Dữ liệu gốc'),
   ('txform.receipt', 'vi', 'Hoá đơn'),
   ('txform.receiptImage', 'vi', 'Xem ảnh hoá đơn'),
-  ('txform.receiptItems', 'vi', 'Các món trong hoá đơn')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.receiptItems', 'vi', 'Các món trong hoá đơn'),
   ('txform.receiptSiblings', 'vi', 'Giao dịch khác cùng hoá đơn'),
   ('txform.reconciled', 'vi', 'Đã đối soát'),
   ('txform.save', 'vi', 'Lưu'),
@@ -4820,6 +4841,13 @@ insert into public.translations (key, language_code, value) values
   ('settingsNav.ledger', 'en', 'Ledger settings'),
   ('settingsNav.members', 'en', 'Members'),
   ('settingsNav.texts', 'en', 'Display texts'),
+  ('summary.budgetLeft', 'en', '{{pct}}% left'),
+  ('summary.budgetOver', 'en', '{{pct}}% over'),
+  ('summary.categories', 'en', 'Categories'),
+  ('summary.over', 'en', '{{amount}} over'),
+  ('summary.perPerson', 'en', 'split by {{count}}'),
+  ('summary.sharedCount', 'en', '{{count}} shared'),
+  ('summary.short', 'en', '{{amount}} short'),
   ('texts.applyLedger', 'en', 'Apply to ledger'),
   ('texts.applyMe', 'en', 'Apply for me'),
   ('texts.defaultValue', 'en', 'Default'),
@@ -4914,17 +4942,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'en', 'Enter a description'),
   ('txform.errorTransfer', 'en', 'Choose the destination account'),
   ('txform.markReconciled', 'en', 'Mark reconciled'),
-  ('txform.notReconciled', 'en', 'Not reconciled'),
+  ('txform.notReconciled', 'en', 'Not reconciled')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.notes', 'en', 'Notes'),
   ('txform.paidBy', 'en', 'Paid by'),
   ('txform.pending', 'en', 'Pending'),
   ('txform.rawData', 'en', 'Original data'),
   ('txform.receipt', 'en', 'Receipt'),
   ('txform.receiptImage', 'en', 'View receipt image'),
-  ('txform.receiptItems', 'en', 'Receipt items')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.receiptItems', 'en', 'Receipt items'),
   ('txform.receiptSiblings', 'en', 'Other transactions on this receipt'),
   ('txform.reconciled', 'en', 'Reconciled'),
   ('txform.save', 'en', 'Save'),

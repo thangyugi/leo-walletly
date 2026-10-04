@@ -1345,6 +1345,15 @@ const ja = {
     editProfile: 'プロフィールを編集',
     back: '戻る',
   },
+  summary: {
+    categories: 'カテゴリ',
+    sharedCount: '共有 {{count}}',
+    short: '{{amount}} 不足',
+    over: '{{amount}} 多く支払い',
+    budgetLeft: '残り {{pct}}%',
+    budgetOver: '{{pct}}% 超過',
+    perPerson: '{{count}} 人で均等割り',
+  },
 }
 
 const vi: typeof ja = {
@@ -2686,6 +2695,15 @@ const vi: typeof ja = {
     editProfile: 'Sửa hồ sơ cá nhân',
     back: 'Quay lại',
   },
+  summary: {
+    categories: 'Danh mục',
+    sharedCount: '{{count}} chia sẻ',
+    short: 'thiếu {{amount}}',
+    over: 'trả dư {{amount}}',
+    budgetLeft: 'còn {{pct}}%',
+    budgetOver: 'vượt {{pct}}%',
+    perPerson: 'chia đều {{count}} người',
+  },
 }
 
 const en: typeof ja = {
@@ -4026,6 +4044,15 @@ const en: typeof ja = {
     sectionAdvanced: 'Data & advanced',
     editProfile: 'Edit profile',
     back: 'Back',
+  },
+  summary: {
+    categories: 'Categories',
+    sharedCount: '{{count}} shared',
+    short: '{{amount}} short',
+    over: '{{amount}} over',
+    budgetLeft: '{{pct}}% left',
+    budgetOver: '{{pct}}% over',
+    perPerson: 'split by {{count}}',
   },
 }
 
