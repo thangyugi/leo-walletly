@@ -79,6 +79,22 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('auditx.subtitle', 'auditx', null, false),
   ('auditx.system', 'auditx', null, false),
   ('auditx.title', 'auditx', null, false),
+  ('budget.allocated', 'budget', 'used,limit', true),
+  ('budget.belowChildren', 'budget', 'limit,total', true),
+  ('budget.formChildren', 'budget', 'total', true),
+  ('budget.formParent', 'budget', 'parent,used,limit,free', true),
+  ('budget.fromChildren', 'budget', null, true),
+  ('budget.left', 'budget', null, true),
+  ('budget.noBudget', 'budget', null, true),
+  ('budget.none', 'budget', null, true),
+  ('budget.over', 'budget', null, true),
+  ('budget.overAllocated', 'budget', 'amount', true),
+  ('budget.own', 'budget', null, true),
+  ('budget.spent', 'budget', null, true),
+  ('budget.sub', 'budget', null, true),
+  ('budget.title', 'budget', null, true),
+  ('budget.unallocated', 'budget', 'amount', true),
+  ('budget.view', 'budget', null, true),
   ('bulk.account', 'bulk', null, false),
   ('bulk.addTag', 'bulk', null, false),
   ('bulk.category', 'bulk', null, false),
@@ -391,7 +407,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.page', 'common', null, false),
   ('common.prevPage', 'common', null, false),
   ('common.restore', 'common', null, false),
-  ('common.retry', 'common', null, false),
+  ('common.retry', 'common', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('common.save', 'common', null, false),
   ('common.saved', 'common', null, false),
   ('common.saving', 'common', null, false),
@@ -407,10 +426,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.unknown', 'common', null, false),
   ('common.update', 'common', null, false),
   ('common.verified', 'common', null, false),
-  ('common.workspace', 'common', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('common.workspace', 'common', null, false),
   ('common.yes', 'common', null, false),
   ('dashboard.accounts', 'dashboard', null, true),
   ('dashboard.addAccount', 'dashboard', null, true),
@@ -794,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('mobnav.addTx', 'mobnav', null, false),
   ('mobnav.addTxSub', 'mobnav', null, false),
   ('mobnav.analytics', 'mobnav', null, false),
-  ('mobnav.calendar', 'mobnav', null, false),
+  ('mobnav.calendar', 'mobnav', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('mobnav.categories', 'mobnav', null, false),
   ('mobnav.dashboard', 'mobnav', null, false),
   ('mobnav.import', 'mobnav', null, false),
@@ -810,10 +829,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('mobnav.transactions', 'mobnav', null, false),
   ('mobnav.users', 'mobnav', null, false),
   ('nav.accounts', 'nav', null, true),
-  ('nav.analytics', 'nav', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('nav.analytics', 'nav', null, true),
   ('nav.calendar', 'nav', null, true),
   ('nav.dashboard', 'nav', null, true),
   ('nav.groups', 'nav', null, true),
@@ -1197,7 +1213,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.typeIncome', 'transactions', null, true),
   ('transactions.typeTransfer', 'transactions', null, true),
   ('transactions.uncategorized', 'transactions', null, true),
-  ('txform.account', 'txform', null, false),
+  ('txform.account', 'txform', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('txform.addTitle', 'txform', null, false),
   ('txform.amount', 'txform', null, false),
   ('txform.category', 'txform', null, false),
@@ -1213,10 +1232,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.errorDescription', 'txform', null, false),
   ('txform.errorTransfer', 'txform', null, false),
   ('txform.markReconciled', 'txform', null, false),
-  ('txform.notReconciled', 'txform', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('txform.notReconciled', 'txform', null, false),
   ('txform.notes', 'txform', null, false),
   ('txform.paidBy', 'txform', null, false),
   ('txform.pending', 'txform', null, false),
@@ -1322,6 +1338,22 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'ja', 'この元帳で誰がいつ何を変更したか'),
   ('auditx.system', 'ja', 'システム'),
   ('auditx.title', 'ja', 'アクティビティログ'),
+  ('budget.allocated', 'ja', 'サブカテゴリに配分 {{used}} / {{limit}}'),
+  ('budget.belowChildren', 'ja', '予算 ({{limit}}) がサブカテゴリの合計 ({{total}}) より少なくなっています'),
+  ('budget.formChildren', 'ja', 'サブカテゴリの予算合計: {{total}}'),
+  ('budget.formParent', 'ja', '親「{{parent}}」: 配分済み {{used}} / {{limit}} · 残り {{free}}'),
+  ('budget.fromChildren', 'ja', 'サブカテゴリの合計'),
+  ('budget.left', 'ja', '残り'),
+  ('budget.noBudget', 'ja', '予算なし'),
+  ('budget.none', 'ja', 'このカテゴリとサブカテゴリには予算が設定されていません'),
+  ('budget.over', 'ja', '超過'),
+  ('budget.overAllocated', 'ja', 'サブカテゴリが {{amount}} 超過'),
+  ('budget.own', 'ja', '個別の予算'),
+  ('budget.spent', 'ja', '支出'),
+  ('budget.sub', 'ja', '親カテゴリからサブカテゴリまで、選択した期間の予算と支出'),
+  ('budget.title', 'ja', '予算の内訳'),
+  ('budget.unallocated', 'ja', '未配分 {{amount}}'),
+  ('budget.view', 'ja', '内訳を見る'),
   ('bulk.account', 'ja', '口座'),
   ('bulk.addTag', 'ja', 'タグ追加'),
   ('bulk.category', 'ja', 'カテゴリ'),
@@ -1634,7 +1666,10 @@ insert into public.translations (key, language_code, value) values
   ('common.page', 'ja', 'ページ'),
   ('common.prevPage', 'ja', '前のページ'),
   ('common.restore', 'ja', '復元'),
-  ('common.retry', 'ja', '再試行'),
+  ('common.retry', 'ja', '再試行')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.save', 'ja', '保存'),
   ('common.saved', 'ja', '保存しました'),
   ('common.saving', 'ja', '保存中…'),
@@ -1650,10 +1685,7 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'ja', '不明'),
   ('common.update', 'ja', '更新'),
   ('common.verified', 'ja', '認証済み'),
-  ('common.workspace', 'ja', 'ワークスペース')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('common.workspace', 'ja', 'ワークスペース'),
   ('common.yes', 'ja', 'はい'),
   ('dashboard.accounts', 'ja', 'アカウント'),
   ('dashboard.addAccount', 'ja', '口座を追加'),
@@ -2037,7 +2069,10 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.addTx', 'ja', '取引を入力'),
   ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
   ('mobnav.analytics', 'ja', '分析'),
-  ('mobnav.calendar', 'ja', 'カレンダー'),
+  ('mobnav.calendar', 'ja', 'カレンダー')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('mobnav.categories', 'ja', 'カテゴリ'),
   ('mobnav.dashboard', 'ja', 'ホーム'),
   ('mobnav.import', 'ja', '取込'),
@@ -2053,10 +2088,7 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'ja', '明細'),
   ('mobnav.users', 'ja', 'メンバー'),
   ('nav.accounts', 'ja', '口座管理'),
-  ('nav.analytics', 'ja', '分析')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.analytics', 'ja', '分析'),
   ('nav.calendar', 'ja', 'カレンダー'),
   ('nav.dashboard', 'ja', 'ダッシュボード'),
   ('nav.groups', 'ja', 'カテゴリ管理'),
@@ -2440,7 +2472,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'ja', '収入'),
   ('transactions.typeTransfer', 'ja', '振替'),
   ('transactions.uncategorized', 'ja', '未分類'),
-  ('txform.account', 'ja', '口座'),
+  ('txform.account', 'ja', '口座')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.addTitle', 'ja', '取引を追加'),
   ('txform.amount', 'ja', '金額'),
   ('txform.category', 'ja', 'カテゴリ'),
@@ -2456,10 +2491,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'ja', '内容を入力してください'),
   ('txform.errorTransfer', 'ja', '振替先の口座を選択してください'),
   ('txform.markReconciled', 'ja', '照合済みにする'),
-  ('txform.notReconciled', 'ja', '未照合')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.notReconciled', 'ja', '未照合'),
   ('txform.notes', 'ja', 'メモ'),
   ('txform.paidBy', 'ja', '支払者'),
   ('txform.pending', 'ja', '確認待ち'),
@@ -2565,6 +2597,22 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'vi', 'Ai đã thay đổi gì trong sổ này'),
   ('auditx.system', 'vi', 'Hệ thống'),
   ('auditx.title', 'vi', 'Nhật ký hoạt động'),
+  ('budget.allocated', 'vi', 'Đã chia cho nhóm con {{used}} / {{limit}}'),
+  ('budget.belowChildren', 'vi', 'Ngân sách ({{limit}}) nhỏ hơn tổng ngân sách các nhóm con ({{total}})'),
+  ('budget.formChildren', 'vi', 'Tổng ngân sách các nhóm con: {{total}}'),
+  ('budget.formParent', 'vi', 'Nhóm cha "{{parent}}": đã chia {{used}} / {{limit}} · còn {{free}}'),
+  ('budget.fromChildren', 'vi', 'Tổng từ nhóm con'),
+  ('budget.left', 'vi', 'Còn lại'),
+  ('budget.noBudget', 'vi', 'Chưa đặt'),
+  ('budget.none', 'vi', 'Nhóm này và các nhóm con chưa đặt ngân sách'),
+  ('budget.over', 'vi', 'Vượt'),
+  ('budget.overAllocated', 'vi', 'Nhóm con vượt {{amount}}'),
+  ('budget.own', 'vi', 'Ngân sách riêng'),
+  ('budget.spent', 'vi', 'Đã chi'),
+  ('budget.sub', 'vi', 'Từ nhóm cha đến các nhóm con, theo kỳ đang chọn'),
+  ('budget.title', 'vi', 'Ngân sách theo nhóm'),
+  ('budget.unallocated', 'vi', 'Còn chưa chia {{amount}}'),
+  ('budget.view', 'vi', 'Xem chi tiết'),
   ('bulk.account', 'vi', 'Tài khoản'),
   ('bulk.addTag', 'vi', 'Thêm nhãn'),
   ('bulk.category', 'vi', 'Danh mục'),
@@ -2877,7 +2925,10 @@ insert into public.translations (key, language_code, value) values
   ('common.page', 'vi', 'Trang'),
   ('common.prevPage', 'vi', 'Trang trước'),
   ('common.restore', 'vi', 'Khôi phục'),
-  ('common.retry', 'vi', 'Thử lại'),
+  ('common.retry', 'vi', 'Thử lại')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.save', 'vi', 'Lưu'),
   ('common.saved', 'vi', 'Đã lưu'),
   ('common.saving', 'vi', 'Đang lưu…'),
@@ -2893,10 +2944,7 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'vi', 'Không rõ'),
   ('common.update', 'vi', 'Cập nhật'),
   ('common.verified', 'vi', 'Đã xác minh'),
-  ('common.workspace', 'vi', 'không gian')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('common.workspace', 'vi', 'không gian'),
   ('common.yes', 'vi', 'Có'),
   ('dashboard.accounts', 'vi', 'Tài khoản'),
   ('dashboard.addAccount', 'vi', 'Thêm tài khoản'),
@@ -3280,7 +3328,10 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
   ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
   ('mobnav.analytics', 'vi', 'Phân tích'),
-  ('mobnav.calendar', 'vi', 'Lịch'),
+  ('mobnav.calendar', 'vi', 'Lịch')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('mobnav.categories', 'vi', 'Danh mục'),
   ('mobnav.dashboard', 'vi', 'Tổng quan'),
   ('mobnav.import', 'vi', 'Nhập'),
@@ -3296,10 +3347,7 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'vi', 'Giao dịch'),
   ('mobnav.users', 'vi', 'Thành viên'),
   ('nav.accounts', 'vi', 'Quản lý tài khoản'),
-  ('nav.analytics', 'vi', 'Phân tích')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.analytics', 'vi', 'Phân tích'),
   ('nav.calendar', 'vi', 'Lịch'),
   ('nav.dashboard', 'vi', 'Tổng quan'),
   ('nav.groups', 'vi', 'Quản lý danh mục'),
@@ -3683,7 +3731,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'vi', 'Thu nhập'),
   ('transactions.typeTransfer', 'vi', 'Chuyển khoản'),
   ('transactions.uncategorized', 'vi', 'Chưa phân loại'),
-  ('txform.account', 'vi', 'Tài khoản'),
+  ('txform.account', 'vi', 'Tài khoản')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.addTitle', 'vi', 'Thêm giao dịch'),
   ('txform.amount', 'vi', 'Số tiền'),
   ('txform.category', 'vi', 'Danh mục'),
@@ -3699,10 +3750,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'vi', 'Hãy nhập nội dung'),
   ('txform.errorTransfer', 'vi', 'Hãy chọn tài khoản nhận'),
   ('txform.markReconciled', 'vi', 'Đánh dấu đã đối soát'),
-  ('txform.notReconciled', 'vi', 'Chưa đối soát')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.notReconciled', 'vi', 'Chưa đối soát'),
   ('txform.notes', 'vi', 'Ghi chú'),
   ('txform.paidBy', 'vi', 'Người trả'),
   ('txform.pending', 'vi', 'Chờ xác nhận'),
@@ -3808,6 +3856,22 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'en', 'Who changed what in this ledger'),
   ('auditx.system', 'en', 'System'),
   ('auditx.title', 'en', 'Activity log'),
+  ('budget.allocated', 'en', 'Allocated to sub-categories {{used}} / {{limit}}'),
+  ('budget.belowChildren', 'en', 'The budget ({{limit}}) is less than its sub-categories'' total ({{total}})'),
+  ('budget.formChildren', 'en', 'Sub-categories total: {{total}}'),
+  ('budget.formParent', 'en', 'Parent "{{parent}}": {{used}} of {{limit}} allocated · {{free}} free'),
+  ('budget.fromChildren', 'en', 'Sum of sub-categories'),
+  ('budget.left', 'en', 'Left'),
+  ('budget.noBudget', 'en', 'Not set'),
+  ('budget.none', 'en', 'No budget is set for this category or its sub-categories'),
+  ('budget.over', 'en', 'Over'),
+  ('budget.overAllocated', 'en', 'Sub-categories exceed by {{amount}}'),
+  ('budget.own', 'en', 'Own budget'),
+  ('budget.spent', 'en', 'Spent'),
+  ('budget.sub', 'en', 'From the parent down to its sub-categories, for the chosen period'),
+  ('budget.title', 'en', 'Budget breakdown'),
+  ('budget.unallocated', 'en', '{{amount}} unallocated'),
+  ('budget.view', 'en', 'View breakdown'),
   ('bulk.account', 'en', 'Account'),
   ('bulk.addTag', 'en', 'Add tag'),
   ('bulk.category', 'en', 'Category'),
@@ -4120,7 +4184,10 @@ insert into public.translations (key, language_code, value) values
   ('common.page', 'en', 'Page'),
   ('common.prevPage', 'en', 'Previous page'),
   ('common.restore', 'en', 'Restore'),
-  ('common.retry', 'en', 'Retry'),
+  ('common.retry', 'en', 'Retry')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.save', 'en', 'Save'),
   ('common.saved', 'en', 'Saved'),
   ('common.saving', 'en', 'Saving…'),
@@ -4136,10 +4203,7 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'en', 'Unknown'),
   ('common.update', 'en', 'Update'),
   ('common.verified', 'en', 'Verified'),
-  ('common.workspace', 'en', 'workspace')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('common.workspace', 'en', 'workspace'),
   ('common.yes', 'en', 'Yes'),
   ('dashboard.accounts', 'en', 'Accounts'),
   ('dashboard.addAccount', 'en', 'Add account'),
@@ -4523,7 +4587,10 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.addTx', 'en', 'Enter a transaction'),
   ('mobnav.addTxSub', 'en', 'Type the amount and category'),
   ('mobnav.analytics', 'en', 'Insights'),
-  ('mobnav.calendar', 'en', 'Calendar'),
+  ('mobnav.calendar', 'en', 'Calendar')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('mobnav.categories', 'en', 'Categories'),
   ('mobnav.dashboard', 'en', 'Home'),
   ('mobnav.import', 'en', 'Import'),
@@ -4539,10 +4606,7 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'en', 'Activity'),
   ('mobnav.users', 'en', 'Members'),
   ('nav.accounts', 'en', 'Accounts'),
-  ('nav.analytics', 'en', 'Analytics')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.analytics', 'en', 'Analytics'),
   ('nav.calendar', 'en', 'Calendar'),
   ('nav.dashboard', 'en', 'Dashboard'),
   ('nav.groups', 'en', 'Categories'),
@@ -4926,7 +4990,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'en', 'Income'),
   ('transactions.typeTransfer', 'en', 'Transfers'),
   ('transactions.uncategorized', 'en', 'Uncategorized'),
-  ('txform.account', 'en', 'Account'),
+  ('txform.account', 'en', 'Account')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.addTitle', 'en', 'Add transaction'),
   ('txform.amount', 'en', 'Amount'),
   ('txform.category', 'en', 'Category'),
@@ -4942,10 +5009,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'en', 'Enter a description'),
   ('txform.errorTransfer', 'en', 'Choose the destination account'),
   ('txform.markReconciled', 'en', 'Mark reconciled'),
-  ('txform.notReconciled', 'en', 'Not reconciled')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.notReconciled', 'en', 'Not reconciled'),
   ('txform.notes', 'en', 'Notes'),
   ('txform.paidBy', 'en', 'Paid by'),
   ('txform.pending', 'en', 'Pending'),

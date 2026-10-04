@@ -3,7 +3,7 @@
 import * as React from 'react'
 import {
   WalletMinimal, TrendingUp, TrendingDown, Receipt, Divide, Gauge, Sparkles, Hourglass, UsersRound, PiggyBank, CircleCheck,
-  ChevronUp, ChevronDown, Minus,
+  ChevronUp, ChevronDown, ChevronRight, Minus,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -47,6 +47,8 @@ export interface SummaryMetric {
   /** Shown instead of a change (a status such as "Not set"). */
   note?: string
   noteTone?: 'good' | 'bad' | 'neutral'
+  /** Makes the cell a button (e.g. open a breakdown). */
+  onClick?: () => void
 }
 
 function verdict(c: SummaryChange): 'good' | 'bad' | 'neutral' {
@@ -133,15 +135,23 @@ export function SummaryPanel({ lead, items, vs, embedded, loading, className }: 
           </div>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-px bg-[var(--color-border-subtle)] flex-1">
-          {items.map((m) => (
-            <div key={m.label} className="bg-[var(--color-surface-default)] px-3.5 py-3 md:px-4 md:py-4 min-w-0 flex flex-col">
-              <Title metric={m} />
+          {items.map((m) => {
+            const Cell = m.onClick ? 'button' : 'div'
+            return (
+            <Cell key={m.label} {...(m.onClick ? { type: 'button' as const, onClick: m.onClick } : {})}
+              className={cn('bg-[var(--color-surface-default)] px-3.5 py-3 md:px-4 md:py-4 min-w-0 flex flex-col text-left',
+                m.onClick && 'group cursor-pointer hover:bg-[var(--color-bg-sunken)] active:bg-[var(--color-bg-sunken)] transition-colors')}>
+              <div className="flex items-center gap-1 min-w-0">
+                <div className="min-w-0 flex-1"><Title metric={m} /></div>
+                {m.onClick && <ChevronRight className="w-3.5 h-3.5 shrink-0 text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-secondary)]" />}
+              </div>
               {loading
                 ? <div className="h-6 w-24 my-2 rounded-md bg-[var(--color-bg-sunken)] animate-pulse" />
                 : <div className="text-[18px] font-semibold tracking-[-0.02em] font-tabular leading-tight text-[var(--color-text-primary)] my-1.5 whitespace-nowrap truncate">{m.value}</div>}
               <div className="mt-auto min-w-0"><Change metric={m} vs={vs} /></div>
-            </div>
-          ))}
+            </Cell>
+            )
+          })}
         </div>
       </div>
     </section>

@@ -16,6 +16,8 @@ import { CategoryForm } from './category-form'
 import { MergeCategoryModal } from './merge-category-modal'
 import { categoryHref, CategoryAccessBadge } from './categories-bento-page'
 import { useCategoryStore, budgetFactor, loadPeriodStats } from './store'
+import { budgetTree, effectiveBudget } from './budget'
+import { BudgetBreakdownModal } from './budget-breakdown'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -303,9 +305,14 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
   const { format } = useMoney()
   const isIncome = category.type === 'income'
   const total = txns.filter((x) => x.transactionType === (isIncome ? 'income' : 'expense')).reduce((s, x) => s + x.baseAmount, 0)
-  // Monthly budget scaled to the chosen period (a quarter = 3 months, a day ≈ 1/30).
-  const budget = category.budget_limit * budgetFactor(picker.start, picker.end)
+  // Budget = own, or the sub-categories' sum; monthly → chosen period (a quarter = 3, a day ≈ 1/30).
+  const all = useCategoryStore((s) => s.categories)
+  const tree = React.useMemo(() => budgetTree(category, all), [category, all])
+  const factor = budgetFactor(picker.start, picker.end)
+  const budget = tree.effective * factor
   const left = budget - total
+  const kidsOver = tree.own > 0 && tree.childrenSum > tree.own ? (tree.childrenSum - tree.own) * factor : 0
+  const [breakdown, setBreakdown] = React.useState(false)
   const mine = split.rows.find((r) => r.userId === userId)
   const youPaid = mine?.paid ?? 0
   const share = category.is_shared && mine?.share != null ? Math.round(mine.share) : null
@@ -317,16 +324,19 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
   const gap = share != null ? youPaid - share : 0
 
   return (
+    <>
+    <BudgetBreakdownModal open={breakdown} onClose={() => setBreakdown(false)} category={category} categories={all} txns={txns} factor={factor} />
     <SummaryPanel embedded className="border-t border-[var(--color-border-subtle)]"
       vs={vsPrevLabel(picker, t)}
       lead={{ tone: isIncome ? 'income' : 'expense', label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total),
         change: { value: prev != null ? pctChange(total, prev) : null, better: isIncome ? 'up' : 'down' } }}
       items={[
         budget > 0
-          ? { tone: 'budget', label: t.catui.budget, value: format(budget),
-              note: left >= 0 ? fill(t.summary.budgetLeft, { pct: Math.round((left / budget) * 100) }) : fill(t.summary.budgetOver, { pct: Math.round((-left / budget) * 100) }),
-              noteTone: left >= 0 ? 'neutral' : 'bad' }
-          : { tone: 'budget', label: t.catui.budget, value: '—', note: t.catui.kpiNoBudget },
+          ? { tone: 'budget', label: t.catui.budget, value: format(budget), onClick: () => setBreakdown(true),
+              note: kidsOver ? fill(t.budget.overAllocated, { amount: format(kidsOver) })
+                : left >= 0 ? fill(t.summary.budgetLeft, { pct: Math.round((left / budget) * 100) }) : fill(t.summary.budgetOver, { pct: Math.round((-left / budget) * 100) }),
+              noteTone: kidsOver || left < 0 ? 'bad' : 'neutral' }
+          : { tone: 'budget', label: t.catui.budget, value: '—', note: t.catui.kpiNoBudget, onClick: () => setBreakdown(true) },
         { tone: 'people', label: t.catdetail.statAvg, value: format(Math.round(total / people)), note: fill(t.summary.perPerson, { count: people }) },
         { tone: 'paid', label: t.catdetail.statYouPaid, value: format(youPaid),
           note: share == null ? t.catui.totalSpent : gap < 0 ? fill(t.summary.short, { amount: format(-gap) }) : gap > 0 ? fill(t.summary.over, { amount: format(gap) }) : fill(t.catdetail.statYouPaidSub, { amount: format(share) }),
@@ -334,6 +344,7 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
         { tone: 'auto', label: t.catdetail.statAuto, value: `${auto} / ${txns.length}`, note: fill(t.catdetail.statAutoSub, { pct: autoPct, count: review }) },
       ]}
     />
+    </>
   )
 }
 
@@ -359,7 +370,7 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
     const ids = descendantIds(sg.id, all)
     const list = txns.filter((x) => x.categoryId && ids.has(x.categoryId))
     const expense = list.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
-    const budget = sg.budget_limit * factor
+    const budget = effectiveBudget(sg, all) * factor
     const barPct = budget > 0 ? Math.min(Math.round((expense / budget) * 100), 100) : 0
     return { sg, budget, expense, count: list.length, pct: total > 0 ? Math.round((expense / total) * 100) : 0, barPct }
   })

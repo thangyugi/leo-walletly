@@ -1,5 +1,7 @@
 'use client'
 
+import { effectiveBudget } from './budget'
+
 import { create } from 'zustand'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { supabase } from '@/lib/supabase'
@@ -191,9 +193,11 @@ export async function loadPeriodStats(ledgerId: string, r: { start: string; end:
     expense: Number(row.expense ?? 0),
     income: Number(row.income ?? 0),
     tx_count: Number(row.tx_count ?? 0),
-    budget_limit: (byId.get(row.category_id)?.budget_limit ?? 0) * factor,
+    budget_limit: (byId.has(row.category_id) ? effectiveBudget(byId.get(row.category_id)!, categories) : 0) * factor,
   }))
-  const totalBudget = categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0) * factor
+  // Top-level categories only: a parent's budget already covers its sub-categories.
+  const totalBudget = categories.filter((c) => c.is_active && (!c.parent_id || !byId.has(c.parent_id)))
+    .reduce((s, c) => s + effectiveBudget(c, categories), 0) * factor
   const c = cls.data
   return {
     stats,
