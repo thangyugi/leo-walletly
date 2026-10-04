@@ -7,7 +7,7 @@ import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
-import { useCategoryStore } from './store'
+import { loadPeriodStats, useCategoryStore } from './store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { useTransactionsStore } from '@/stores/transactions'
@@ -17,6 +17,9 @@ import { useLedgerData } from '@/hooks/useLedgerData'
 import { formatMoney, getCurrencyPrecision } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { SummaryPanel } from '@/components/summary/summary-panel'
+import { usePeriodSeries } from '@/hooks/usePeriodSeries'
+import { vsPrevLabel, pctChange } from '@/lib/periods'
 import type { Category } from './types'
 import type { Transaction } from '@/types/domain'
 
@@ -637,6 +640,13 @@ export function CategoriesBentoPage() {
     void fetchUncategorized(ledgerId, 200, range).then(setPending)
   }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats, fetchUncategorized])
 
+  // Summary panel: the same KPIs for the last 6 periods (bars + "vs previous").
+  const loadKpi = React.useMemo(() => (ledgerId && categories.length
+    ? async (r: { start: string; end: string }) => (await loadPeriodStats(ledgerId, r, categories)).kpi
+    : null), [ledgerId, categories])
+  const kpiSeries = usePeriodSeries(loadKpi, picker, [revision])
+  const prevKpi = kpiSeries && kpiSeries.length > 1 ? kpiSeries[kpiSeries.length - 2] : null
+
   const statBy = React.useMemo(() => new Map(stats.map((s) => [s.id, s])), [stats])
   // A parent's figures include its sub-categories.
   const rolled = React.useCallback((c: Category) => {
@@ -710,18 +720,6 @@ export function CategoriesBentoPage() {
   }
 
   const budgetLeft = kpi ? kpi.total_budget - kpi.total_expense : 0
-  const kpiData = [
-    { label: t.catui.kpiSpend, value: kpi ? fmt(kpi.total_expense) : '—', unit: kpi ? ` ${sym}` : '', sub: fill(t.catui.kpiActive, { count: tabCounts.active }), subLoss: false },
-    {
-      label: t.catui.kpiBudgetLeft,
-      value: kpi && kpi.total_budget > 0 ? fmt(Math.max(0, budgetLeft)) : '—',
-      unit: kpi && kpi.total_budget > 0 ? ` ${sym}` : '',
-      sub: kpi && kpi.total_budget > 0 ? fill(t.catui.kpiBudgetLeftSub, { pct: Math.round((budgetLeft / kpi.total_budget) * 100) }) : t.catui.kpiNoBudget,
-      subLoss: budgetLeft < 0,
-    },
-    { label: t.catui.kpiAuto, value: kpi ? String(Math.round(kpi.auto_classify_pct)) : '—', unit: kpi ? '%' : '', sub: kpi ? fill(t.catui.kpiAutoSub, { done: kpi.classified_count, total: kpi.total_count }) : '', subLoss: false },
-    { label: t.catui.kpiUnreconciled, value: kpi ? String(kpi.pending_reconcile) : '—', unit: kpi ? t.catui.txUnit : '', sub: kpi && kpi.pending_reconcile > 0 ? t.catui.kpiUnreconciledSub : t.catui.kpiAllReconciled, subLoss: false },
-  ]
 
   const showBentoTabs = activeTab === 'all' || activeTab === 'active'
   // Phones: rows grouped by money direction (+ categories others shared with you), biggest first.
@@ -768,18 +766,6 @@ export function CategoriesBentoPage() {
           </div>
           <span className="flex-1 max-sm:hidden" />
           <DateNavigator value={picker} onChange={setPicker} lang={lang} className="max-sm:order-3" />
-          <div className="relative max-sm:order-4 max-sm:w-full">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
-            <label htmlFor="cat-search" className="sr-only">{t.catui.search}</label>
-            <input
-              id="cat-search"
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder={t.catui.search}
-              className="pl-8 pr-3 h-9 w-52 max-sm:w-full max-sm:h-10 max-sm:rounded-xl max-sm:text-[15px] rounded-lg border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
-            />
-          </div>
           {can('category.create') && (
             <button onClick={() => setIsFormOpen(true)} aria-label={t.catui.create} title={t.catui.create}
               className="max-sm:order-2 inline-flex items-center justify-center gap-2 h-9 px-4 max-sm:w-10 max-sm:h-10 max-sm:px-0 max-sm:rounded-full max-sm:shadow-[0_4px_12px_rgba(16,185,129,0.35)] rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
@@ -788,24 +774,41 @@ export function CategoriesBentoPage() {
           )}
         </div>
 
-        <section className="grid grid-cols-2 lg:grid-cols-4 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-          {kpiData.map((kp, i) => (
-            <div key={kp.label} className={cn('px-4 lg:px-5 py-4', i < kpiData.length - 1 && 'border-b lg:border-b-0 lg:border-r border-[var(--color-border-subtle)]', i === 1 && 'border-r')}>
-              <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">{kp.label}</div>
-              {statsLoading && !kpi ? (
-                <div className="h-7 w-24 rounded bg-[var(--color-bg-sunken)] animate-pulse mt-1" />
-              ) : (
-                <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-1 leading-tight">
-                  {kp.value}<span className="text-[var(--color-text-tertiary)] font-medium text-sm">{kp.unit}</span>
-                </div>
-              )}
-              <div className={cn('text-[11px] mt-0.5', kp.subLoss ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>{kp.sub}</div>
-            </div>
-          ))}
-        </section>
+        <SummaryPanel
+          vs={vsPrevLabel(picker, t)}
+          loading={statsLoading && !kpi}
+          lead={{ tone: 'expense', label: t.catui.kpiSpend, value: kpi ? `${fmt(kpi.total_expense)} ${sym}` : '—',
+            change: { value: kpi && prevKpi ? pctChange(kpi.total_expense, prevKpi.total_expense) : null, better: 'down' } }}
+          series={kpiSeries?.map((k) => k.total_expense)}
+          items={[
+            kpi && kpi.total_budget > 0
+              ? { tone: 'budget', label: t.catui.kpiBudgetLeft, value: `${fmt(budgetLeft)} ${sym}`,
+                  note: budgetLeft >= 0 ? fill(t.summary.budgetLeft, { pct: Math.round((budgetLeft / kpi.total_budget) * 100) }) : fill(t.summary.budgetOver, { pct: Math.round((-budgetLeft / kpi.total_budget) * 100) }),
+                  noteTone: budgetLeft >= 0 ? 'neutral' : 'bad' }
+              : { tone: 'budget', label: t.catui.kpiBudgetLeft, value: '—', note: t.catui.kpiNoBudget },
+            { tone: 'auto', label: t.catui.kpiAuto, value: kpi ? `${Math.round(kpi.auto_classify_pct)}%` : '—',
+              change: { value: kpi && prevKpi && prevKpi.total_count ? Math.round(kpi.auto_classify_pct - prevKpi.auto_classify_pct) : null, unit: 'pt', better: 'up' } },
+            { tone: 'pending', label: t.catui.kpiUnreconciled, value: kpi ? String(kpi.pending_reconcile) : '—',
+              change: { value: kpi && prevKpi ? pctChange(kpi.pending_reconcile, prevKpi.pending_reconcile) : null, better: 'down' } },
+            { tone: 'count', label: t.summary.categories, value: String(tabCounts.active),
+              note: tabCounts.shared ? fill(t.summary.sharedCount, { count: tabCounts.shared }) : undefined },
+          ]}
+        />
 
         <div className="flex items-center gap-2.5 flex-wrap">
           {/* Phones: separate pill buttons (bigger targets, like the detail page tabs). */}
+          <div className="relative max-sm:order-first max-sm:w-full sm:order-last sm:ml-auto">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
+            <label htmlFor="cat-search" className="sr-only">{t.catui.search}</label>
+            <input
+              id="cat-search"
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder={t.catui.search}
+              className="pl-8 pr-3 h-9 w-64 max-sm:w-full max-sm:h-10 max-sm:rounded-xl max-sm:text-[15px] rounded-lg border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
+            />
+          </div>
           <div className="inline-flex max-w-full max-sm:w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5 max-sm:bg-transparent max-sm:border-0 max-sm:p-0 max-sm:shadow-none max-sm:gap-1.5" role="tablist">
             {filterTabs.map((tab) => (
               <button

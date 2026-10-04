@@ -174,6 +174,41 @@ interface CategoryState {
   byId: (id: string | null | undefined) => Category | undefined
 }
 
+/**
+ * Per-category figures and the overview KPIs for one period, without touching
+ * the store (also used for the previous periods of the summary panel).
+ */
+export async function loadPeriodStats(ledgerId: string, r: { start: string; end: string }, categories: Category[]): Promise<{ stats: CategoryStat[]; kpi: CategoryKpi }> {
+  const factor = budgetFactor(r.start, r.end)
+  const [period, cls] = await Promise.all([
+    supabase.rpc('category_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }),
+    supabase.rpc('classification_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }).maybeSingle(),
+  ])
+  const byId = new Map(categories.map((c) => [c.id, c]))
+  const stats: CategoryStat[] = (period.data ?? []).map((row) => ({
+    id: row.category_id,
+    name: byId.get(row.category_id)?.name ?? '—',
+    expense: Number(row.expense ?? 0),
+    income: Number(row.income ?? 0),
+    tx_count: Number(row.tx_count ?? 0),
+    budget_limit: (byId.get(row.category_id)?.budget_limit ?? 0) * factor,
+  }))
+  const totalBudget = categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0) * factor
+  const c = cls.data
+  return {
+    stats,
+    kpi: {
+      total_expense: stats.reduce((s, x) => s + x.expense, 0),
+      total_budget: totalBudget,
+      classified_count: Number(c?.classified ?? 0),
+      total_count: Number(c?.total ?? 0),
+      pending_reconcile: Number(c?.unreconciled ?? 0),
+      auto_classify_pct: Number(c?.auto_pct ?? 0),
+      auto_count: Number(c?.auto_classified ?? 0),
+    },
+  }
+}
+
 function currentMonthRange() {
   const d = new Date()
   const ym = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
@@ -352,23 +387,9 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
     const r = range ?? get().range
     const factor = budgetFactor(r.start, r.end)
     set({ statsLoading: true, range: r, budgetFactor: factor })
-    const [period, cls] = await Promise.all([
-      supabase.rpc('category_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }),
-      supabase.rpc('classification_period_stats', { p_ledger_id: ledgerId, p_from: r.start, p_to: r.end }).maybeSingle(),
-    ])
+    const { stats, kpi } = await loadPeriodStats(ledgerId, r, get().categories)
     // A newer period was picked while this one was loading.
     if (get().range !== r) return
-    const byId = new Map(get().categories.map((c) => [c.id, c]))
-    const stats: CategoryStat[] = (period.data ?? []).map((row) => ({
-      id: row.category_id,
-      name: byId.get(row.category_id)?.name ?? '—',
-      expense: Number(row.expense ?? 0),
-      income: Number(row.income ?? 0),
-      tx_count: Number(row.tx_count ?? 0),
-      budget_limit: (byId.get(row.category_id)?.budget_limit ?? 0) * factor,
-    }))
-    const totalBudget = get().categories.filter((c) => c.is_active).reduce((s, c) => s + c.budget_limit, 0) * factor
-    const c = cls.data
     set({
       statsLoading: false,
       stats,
@@ -376,15 +397,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         group_id: s.id, name: s.name, ledger_id: ledgerId, month: r.start,
         total_income: s.income, total_expense: s.expense, net_balance: s.income - s.expense, transaction_count: s.tx_count,
       })),
-      kpi: {
-        total_expense: stats.reduce((s, x) => s + x.expense, 0),
-        total_budget: totalBudget,
-        classified_count: Number(c?.classified ?? 0),
-        total_count: Number(c?.total ?? 0),
-        pending_reconcile: Number(c?.unreconciled ?? 0),
-        auto_classify_pct: Number(c?.auto_pct ?? 0),
-        auto_count: Number(c?.auto_classified ?? 0),
-      },
+      kpi,
     })
   },
 

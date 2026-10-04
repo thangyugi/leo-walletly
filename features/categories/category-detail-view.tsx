@@ -15,7 +15,7 @@ import { CategoryIcon } from './category-icon'
 import { CategoryForm } from './category-form'
 import { MergeCategoryModal } from './merge-category-modal'
 import { categoryHref, CategoryAccessBadge } from './categories-bento-page'
-import { useCategoryStore, budgetFactor } from './store'
+import { useCategoryStore, budgetFactor, loadPeriodStats } from './store'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useRangeTransactions } from '@/hooks/useRangeTransactions'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
@@ -26,6 +26,9 @@ import { PROVIDERS } from '@/lib/constants'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { DateNavigator, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { SummaryPanel } from '@/components/summary/summary-panel'
+import { usePeriodSeries } from '@/hooks/usePeriodSeries'
+import { vsPrevLabel, pctChange } from '@/lib/periods'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import type { Category, CategoryMember, MemberBalance } from './types'
 import type { Transaction } from '@/types/domain'
@@ -256,20 +259,16 @@ function PhoneTabs({ tabs, active, onChange, nested }: {
   )
 }
 
-// ── Tab bar ──────────────────────────────────────────────────
-function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
+// ── Tab bar (tablet / desktop; phones use PhoneTabs) ─────────
+function TabBar({ tabs, active, onChange }: {
   tabs: { value: DetailTab; label: string; count?: number }[]
   active: DetailTab
   onChange: (t: DetailTab) => void
-  picker: PickerValue
-  onPickerChange: (v: PickerValue) => void
 }) {
-  const { lang } = useTranslation()
   const strip = useRevealActive<HTMLDivElement>(active)
   return (
-    // Phones: only the period row here; the tabs are the sticky PhoneTabs under the figures.
-    <div className="flex flex-col-reverse lg:flex-row lg:items-center border-b border-[var(--color-border-subtle)] max-sm:border-b-0" role="tablist">
-      <div ref={strip} className="relative flex items-center flex-1 min-w-0 overflow-x-auto no-scrollbar max-sm:hidden">
+    <div className="max-sm:hidden border-t border-[var(--color-border-subtle)]" role="tablist">
+      <div ref={strip} className="relative flex items-center min-w-0 overflow-x-auto no-scrollbar">
         {tabs.map((tab) => (
           <button key={tab.value} role="tab" aria-selected={active === tab.value} onClick={() => onChange(tab.value)}
             className={cn(
@@ -286,58 +285,56 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 max-sm:w-full lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)] max-sm:py-3.5">
-        <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
-      </div>
     </div>
   )
 }
 
-// ── Stats strip ──────────────────────────────────────────────
-function StatsStrip({ category, txns, split, userId }: {
+// ── Figures for the period (summary panel, inside the cover card) ──
+function StatsStrip({ category, txns, split, userId, series, picker }: {
+  picker: PickerValue
   category: Category
   txns: Transaction[]
   split: ReturnType<typeof periodSplit>
   userId: string | null
+  /** This category's total for the last periods (oldest first). */
+  series: number[] | null
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
   const isIncome = category.type === 'income'
   const total = txns.filter((x) => x.transactionType === (isIncome ? 'income' : 'expense')).reduce((s, x) => s + x.baseAmount, 0)
   // Monthly budget scaled to the chosen period (a quarter = 3 months, a day ≈ 1/30).
-  const budget = category.budget_limit * useCategoryStore((s) => (s.picker ? budgetFactor(s.picker.start, s.picker.end) : 1))
-  const pct = budget > 0 ? Math.round((total / budget) * 100) : 0
-  // All figures here are for the chosen period.
+  const budget = category.budget_limit * budgetFactor(picker.start, picker.end)
+  const left = budget - total
   const mine = split.rows.find((r) => r.userId === userId)
   const youPaid = mine?.paid ?? 0
+  const share = category.is_shared && mine?.share != null ? Math.round(mine.share) : null
   const people = Math.max(split.participants, 1)
   const auto = txns.filter((x) => x.categorizedBy && AUTO.has(x.categorizedBy)).length
   const review = txns.filter((x) => x.needsReview).length
   const autoPct = txns.length ? Math.round((auto / txns.length) * 100) : 0
-
-  const stats = [
-    { label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total), sub: fill(t.catdetail.statTxSub, { count: txns.length }), tone: '' },
-    {
-      label: t.catui.budget,
-      value: budget > 0 ? format(budget) : '—',
-      sub: budget > 0 ? fill(t.catdetail.statBudgetSub, { pct, amount: format(budget - total) }) : t.catui.kpiNoBudget,
-      tone: budget > 0 ? (pct > 100 ? 'loss' : 'brand') : '',
-    },
-    { label: t.catdetail.statAvg, value: format(Math.round(total / people)), sub: fill(t.catdetail.statAvgSub, { count: people }), tone: '' },
-    { label: t.catdetail.statYouPaid, value: format(youPaid), sub: category.is_shared && mine?.share != null ? fill(t.catdetail.statYouPaidSub, { amount: format(Math.round(mine.share)) }) : t.catui.totalSpent, tone: '' },
-    { label: t.catdetail.statAuto, value: `${auto} / ${txns.length}`, sub: fill(t.catdetail.statAutoSub, { pct: autoPct, count: review }), tone: 'brand' },
-  ]
+  const prev = series && series.length > 1 ? series[series.length - 2] : null
+  const gap = share != null ? youPaid - share : 0
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-5">
-      {stats.map((s, i) => (
-        <div key={s.label} className={cn('px-[18px] py-[14px]', i < stats.length - 1 && 'border-b md:border-b-0 md:border-r border-[var(--color-border-subtle)]')}>
-          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">{s.label}</div>
-          <div className="text-[18px] font-semibold tracking-[-0.022em] font-tabular mt-1 leading-tight text-[var(--color-text-primary)]">{s.value}</div>
-          <div className={cn('text-[11px] mt-0.5', s.tone === 'brand' ? 'text-[var(--color-brand-700)]' : s.tone === 'loss' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>{s.sub}</div>
-        </div>
-      ))}
-    </div>
+    <SummaryPanel embedded className="border-t border-[var(--color-border-subtle)]"
+      vs={vsPrevLabel(picker, t)}
+      lead={{ tone: isIncome ? 'income' : 'expense', label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total),
+        change: { value: prev != null ? pctChange(total, prev) : null, better: isIncome ? 'up' : 'down' } }}
+      series={series}
+      items={[
+        budget > 0
+          ? { tone: 'budget', label: t.catui.budget, value: format(budget),
+              note: left >= 0 ? fill(t.summary.budgetLeft, { pct: Math.round((left / budget) * 100) }) : fill(t.summary.budgetOver, { pct: Math.round((-left / budget) * 100) }),
+              noteTone: left >= 0 ? 'neutral' : 'bad' }
+          : { tone: 'budget', label: t.catui.budget, value: '—', note: t.catui.kpiNoBudget },
+        { tone: 'people', label: t.catdetail.statAvg, value: format(Math.round(total / people)), note: fill(t.summary.perPerson, { count: people }) },
+        { tone: 'paid', label: t.catdetail.statYouPaid, value: format(youPaid),
+          note: share == null ? t.catui.totalSpent : gap < 0 ? fill(t.summary.short, { amount: format(-gap) }) : gap > 0 ? fill(t.summary.over, { amount: format(gap) }) : fill(t.catdetail.statYouPaidSub, { amount: format(share) }),
+          noteTone: share != null && gap < 0 ? 'bad' : 'neutral' },
+        { tone: 'auto', label: t.catdetail.statAuto, value: `${auto} / ${txns.length}`, note: fill(t.catdetail.statAutoSub, { pct: autoPct, count: review }) },
+      ]}
+    />
   )
 }
 
@@ -1080,6 +1077,15 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   }, [category, categories])
 
   const monthTx = useRangeTransactions(picker.start, picker.end)
+  // This category (with its sub-categories) for the last 6 periods: bars + "vs previous".
+  const ledgerIdForSeries = categories[0]?.ledger_id
+  const isIncomeCat = category?.type === 'income'
+  const loadTotal = React.useMemo(() => (ledgerIdForSeries
+    ? async (r: { start: string; end: string }) => (await loadPeriodStats(ledgerIdForSeries, r, categories)).stats
+        .filter((x) => ids.has(x.id)).reduce((a, x) => a + (isIncomeCat ? x.income : x.expense), 0)
+    : null), [ledgerIdForSeries, categories, ids, isIncomeCat])
+  const seriesRevision = useTransactionsStore((s) => s.revision)
+  const totalSeries = usePeriodSeries(loadTotal, picker, [seriesRevision])
   const txns = React.useMemo(() => monthTx.filter((x) => x.categoryId && ids.has(x.categoryId)).sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)), [monthTx, ids])
   const uncategorized = React.useMemo(() => monthTx.filter((x) => !x.categoryId && x.transactionType !== 'transfer'), [monthTx])
   const settlement = useSettlement(category ?? ({ id: categoryId } as Category))
@@ -1155,7 +1161,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   return (
     <div className={cn('animate-fade-in flex flex-col w-full', isNested ? 'max-h-[85vh] h-[80vh] overflow-hidden' : 'pb-10')}>
       <div className={cn('flex flex-col gap-4 pb-4 w-full shrink-0', isNested ? 'bg-[var(--color-bg-canvas)] pt-4 px-3 sm:px-5 md:px-6' : 'pt-2')}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <nav aria-label="breadcrumb" className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-text-tertiary)] flex-wrap">
             <Link href="/categories" className="hover:text-[var(--color-text-primary)] transition-colors">{t.catdetail.breadcrumb}</Link>
             <ChevronRight className="w-3.5 h-3.5 opacity-60" />
@@ -1169,6 +1175,8 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
             ))}
             <span className="text-[var(--color-text-primary)]">{category.name}</span>
           </nav>
+          {/* Period: on top, outside the card, like the other pages (own row on phones). */}
+          <DateNavigator value={picker} onChange={setPicker} lang={lang} align="end" className="sm:ml-auto max-sm:order-last" />
           {onClose && (
             <button onClick={onClose} aria-label={t.common.close} className="w-10 h-10 -mr-2.5 flex items-center justify-center rounded-full hover:bg-[var(--color-border-default)] transition-colors text-[var(--color-text-secondary)]">
               <X className="w-5 h-5" />
@@ -1176,13 +1184,12 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
           )}
         </div>
 
-        {/* Not overflow-hidden: the period picker's popup has to reach past the card. */}
-        <div className="bg-white border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)]">
+        <div className="bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
           <HeroCover category={category} memberNames={memberNames} canEdit={canEdit}
             onEdit={() => setForm({ initial: category })} onMerge={() => setMergeOpen(true)}
             onDelete={canDelete && !category.is_system ? () => setDeleting(category) : undefined} />
-          <TabBar tabs={tabs} active={tab} onChange={setTab} picker={picker} onPickerChange={setPicker} />
-          <StatsStrip category={category} txns={txns} split={split} userId={userId} />
+          <StatsStrip category={category} txns={txns} split={split} userId={userId} series={totalSeries} picker={picker} />
+          <TabBar tabs={tabs} active={tab} onChange={setTab} />
         </div>
       </div>
 

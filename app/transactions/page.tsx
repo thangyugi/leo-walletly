@@ -31,6 +31,9 @@ import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
+import { SummaryPanel } from '@/components/summary/summary-panel'
+import { usePeriodSeries } from '@/hooks/usePeriodSeries'
+import { prevPeriod } from '@/lib/periods'
 
 // Columns: checkbox | icon | 内容 | 日付 | ユーザー | カテゴリ | アカウント | 金額
 // Phone: icon · text · amount. Tablet / small laptop: + select, person, category
@@ -40,14 +43,7 @@ const ROW_GRID = 'grid grid-cols-[32px_minmax(0,1fr)_auto] sm:grid-cols-[20px_32
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
-function getPrevPeriod(picker: PickerValue) {
-  const start = new Date(picker.start + 'T00:00:00')
-  const end = new Date(picker.end + 'T00:00:00')
-  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
-  const prevEnd = new Date(start); prevEnd.setDate(prevEnd.getDate() - 1)
-  const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - days)
-  return { start: toLocalISODate(prevStart), end: toLocalISODate(prevEnd) }
-}
+const getPrevPeriod = (picker: PickerValue) => prevPeriod(picker)
 
 function pct(curr: number, prev: number) {
   if (prev === 0) return null
@@ -235,31 +231,6 @@ function FilterBar({ sort }: { sort?: React.ReactNode }) {
           }>
           <div className="grid grid-cols-2 gap-3 px-4 pb-2">{fields}</div>
         </BottomSheet>
-      )}
-    </div>
-  )
-}
-
-// ------------------------------------------------------------------
-// Stat Card
-// ------------------------------------------------------------------
-function StatCard({ label, main, sub, trend, trendLabel, isLoss }: {
-  label: string; main: string; sub?: string
-  trend?: number | null; trendLabel?: string; isLoss?: boolean
-}) {
-  const up = trend != null && trend >= 0
-  return (
-    <div className="card-base p-4 flex flex-col gap-1">
-      <p className="text-[11px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider">{label}</p>
-      <p className={cn('text-xl font-bold font-tabular', isLoss ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-gain)]')}>
-        {main}
-      </p>
-      {sub && <p className="text-xs text-[var(--color-text-quaternary)]">{sub}</p>}
-      {trend != null && (
-        <div className={cn('flex items-center gap-1 text-[11px] font-semibold mt-0.5', up ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
-          <span>{up ? '↑' : '↓'} {Math.abs(trend)}%</span>
-          {trendLabel && <span className="text-[var(--color-text-quaternary)] font-normal">{trendLabel}</span>}
-        </div>
       )}
     </div>
   )
@@ -623,6 +594,8 @@ function TransactionsContent() {
   useEffect(() => { if (params.get('new') === '1') router.replace('/transactions') }, [params, router])
 
   const ledgerId = ledger?.id
+  const loadSummary = useMemo(() => (ledgerId ? (r: { start: string; end: string }) => summarize(ledgerId, r.start, r.end) : null), [ledgerId, summarize])
+  const series = usePeriodSeries(loadSummary, picker, [revision])
   const range = useMemo(() => ({ start: filters.dateFrom || picker.start, end: filters.dateTo || picker.end }), [filters.dateFrom, filters.dateTo, picker.start, picker.end])
 
   useEffect(() => {
@@ -670,6 +643,7 @@ function TransactionsContent() {
   }
 
   const avgExpense = totals.expenseCount > 0 ? totals.expense / totals.expenseCount : 0
+  const prevAvgExpense = prevTotals.expenseCount > 0 ? prevTotals.expense / prevTotals.expenseCount : 0
   const trendVsLabel = getTrendVsLabel(picker, t)
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
@@ -764,21 +738,20 @@ function TransactionsContent() {
         ) : undefined}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <StatCard label={t.dashboard.inflow} main={`+${format(totals.income)}`} trend={pct(totals.income, prevTotals.income)} trendLabel={trendVsLabel} />
-        <StatCard label={t.dashboard.outflow} main={`−${format(totals.expense)}`} trend={pct(totals.expense, prevTotals.expense)} trendLabel={trendVsLabel} isLoss />
-        <StatCard
-          label={t.transactions.count}
-          main={String(totals.count)}
-          sub={`${totals.expenseCount} ${t.transactions.typeExpense} · ${totals.incomeCount} ${t.transactions.typeIncome}`}
-        />
-        <StatCard
-          label={`${t.transactions.average} · ${t.transactions.typeExpense}`}
-          main={avgExpense ? `−${format(avgExpense)}` : '—'}
-          sub={totals.expenseCount > 0 ? `${t.dashboard.total} ${totals.expenseCount} ${t.transactions.shown}` : undefined}
-          isLoss={avgExpense > 0}
-        />
-      </div>
+      <SummaryPanel
+        vs={trendVsLabel}
+        lead={{ tone: 'balance', label: t.dashboard.netPeriod, value: format(totals.net), change: { value: pct(totals.net, prevTotals.net), better: 'up' } }}
+        series={series?.map((x) => x.net)}
+        items={[
+          { tone: 'income', label: t.dashboard.inflow, value: `+${format(totals.income)}`, change: { value: pct(totals.income, prevTotals.income), better: 'up' } },
+          { tone: 'expense', label: t.dashboard.outflow, value: `−${format(totals.expense)}`, change: { value: pct(totals.expense, prevTotals.expense), better: 'down' } },
+          { tone: 'count', label: t.transactions.count, value: String(totals.count), change: { value: pct(totals.count, prevTotals.count), better: null } },
+          {
+            tone: 'avg', label: `${t.transactions.average} · ${t.transactions.typeExpense}`, value: avgExpense ? format(avgExpense) : '—',
+            change: { value: avgExpense && prevAvgExpense ? pct(avgExpense, prevAvgExpense) : null, better: 'down' },
+          },
+        ]}
+      />
 
       <FilterBar sort={<>
         <SortDropdown value={sortOption} onChange={setSortOption} iconOnly className="sm:hidden" />

@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
-  TrendingDown, TrendingUp, Wallet, Upload, ArrowRight,
-  Inbox, Sparkles, CreditCard, PiggyBank, Plus, Users,
-  UserPlus, ChevronDown, ChevronUp,
+  Upload, ArrowRight,
+  Inbox, Sparkles, CreditCard, Plus, Users,
+  UserPlus,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -26,18 +26,14 @@ import { CHART_COLORS, CHART_AXIS, CHART_MARGINS } from '@/components/charts/cha
 import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
+import { SummaryPanel } from '@/components/summary/summary-panel'
+import { usePeriodSeries } from '@/hooks/usePeriodSeries'
+import { prevPeriod } from '@/lib/periods'
 
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
-function getPrevPeriod(picker: PickerValue): { start: string; end: string } {
-  const start = new Date(picker.start + 'T00:00:00')
-  const end = new Date(picker.end + 'T00:00:00')
-  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1
-  const prevEnd = new Date(start); prevEnd.setDate(prevEnd.getDate() - 1)
-  const prevStart = new Date(start); prevStart.setDate(prevStart.getDate() - days)
-  return { start: toLocalISODate(prevStart), end: toLocalISODate(prevEnd) }
-}
+const getPrevPeriod = (picker: PickerValue) => prevPeriod(picker)
 
 function trendPct(curr: number, prev: number): number | null {
   if (prev === 0) return null
@@ -63,57 +59,6 @@ function getInitials(text: string): string {
 const fmtDateDMY = (d: string) => formatDate(d)
 
 const EMPTY: PeriodSummary = { income: 0, expense: 0, net: 0, count: 0, expenseCount: 0, incomeCount: 0 }
-
-// ------------------------------------------------------------------
-// DS-style KPI Card
-// ------------------------------------------------------------------
-function KpiCard({
-  label, value, currency, trend, trendLabel, icon: Icon, iconBg, iconColor,
-}: {
-  label: string
-  value: string
-  currency?: string
-  trend?: number | null
-  trendLabel?: string
-  icon: React.ElementType
-  iconBg: string
-  iconColor: string
-}) {
-  const up = trend != null && trend >= 0
-  return (
-    <div className="card-base p-4 sm:p-5 flex flex-col gap-0 overflow-hidden relative">
-      <div className="flex items-start justify-between mb-3">
-        <div className={cn('w-9 h-9 rounded-lg flex items-center justify-center shrink-0', iconBg)}>
-          <Icon className={cn('shrink-0', iconColor)} style={{ width: 18, height: 18 }} />
-        </div>
-        {trend != null && (
-          <div className={cn(
-            'flex items-center gap-0.5 text-xs font-semibold px-1.5 py-0.5 rounded-md',
-            up ? 'bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)]'
-               : 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]',
-          )}>
-            {up ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            {Math.abs(trend)}%
-          </div>
-        )}
-      </div>
-      <p className="text-[11px] font-semibold text-[var(--color-text-quaternary)] uppercase tracking-wider mb-1">
-        {label}
-      </p>
-      <p className="text-xl sm:text-2xl font-semibold font-tabular tracking-tight text-[var(--color-text-primary)] leading-none whitespace-nowrap">
-        {value}
-        {currency && (
-          <span className="text-xs font-semibold text-[var(--color-text-quaternary)] ml-1 align-baseline">{currency}</span>
-        )}
-      </p>
-      {trendLabel && (
-        <p className="text-[11px] text-[var(--color-text-quaternary)] mt-1.5">
-          {trend != null ? `${up ? '↑' : '↓'} ${Math.abs(trend)}% ` : ''}{trendLabel}
-        </p>
-      )}
-    </div>
-  )
-}
 
 // ------------------------------------------------------------------
 // Users panel (ledger_members)
@@ -349,6 +294,8 @@ export default function DashboardPage() {
   const [viewing, setViewing] = useState<Transaction | null>(null)
 
   const ledgerId = ledger?.id
+  const loadSummary = useMemo(() => (ledgerId ? (r: { start: string; end: string }) => summarize(ledgerId, r.start, r.end) : null), [ledgerId, summarize])
+  const series = usePeriodSeries(loadSummary, picker, [revision])
 
   useEffect(() => {
     if (!ledgerId) return
@@ -386,7 +333,6 @@ export default function DashboardPage() {
     [accounts],
   )
   const reserve30dAgo = reserve - last30.net
-  const currency = ledger?.currency_code ?? ''
   const hasData = !loaded || total > 0
   const trendVsLabel = getTrendVsLabel(picker, t)
 
@@ -408,49 +354,19 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard
-          label={t.dashboard.totalBalance}
-          value={format(stats.net)}
-          currency={currency}
-          icon={Wallet}
-          iconBg={stats.net >= 0 ? 'bg-[var(--color-status-gain-bg)]' : 'bg-[var(--color-status-loss-bg)]'}
-          iconColor={stats.net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]'}
-          trend={trendPct(stats.net, prevStats.net)}
-          trendLabel={trendVsLabel}
-        />
-        <KpiCard
-          label={t.dashboard.inflow}
-          value={format(stats.income)}
-          currency={currency}
-          icon={TrendingUp}
-          iconBg="bg-[var(--color-status-gain-bg)]"
-          iconColor="text-[var(--color-text-gain)]"
-          trend={trendPct(stats.income, prevStats.income)}
-          trendLabel={trendVsLabel}
-        />
-        <KpiCard
-          label={t.dashboard.outflow}
-          value={format(stats.expense)}
-          currency={currency}
-          icon={TrendingDown}
-          iconBg="bg-[var(--color-status-loss-bg)]"
-          iconColor="text-[var(--color-text-loss)]"
-          trend={trendPct(stats.expense, prevStats.expense)}
-          trendLabel={trendVsLabel}
-        />
-        <KpiCard
-          label={`${t.dashboard.reserve} · ${currency}`}
-          value={format(reserve)}
-          currency={currency}
-          icon={PiggyBank}
-          iconBg={reserve >= 0 ? 'bg-[var(--color-brand-50)]' : 'bg-[var(--color-status-loss-bg)]'}
-          iconColor={reserve >= 0 ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-text-loss)]'}
-          trend={trendPct(reserve, reserve30dAgo)}
-          trendLabel={t.dashboard.vsPrev.replace('{{label}}', t.dashboard.days30Ago)}
-        />
-      </div>
+      {/* Summary: lead = net for the period; bars = the last 6 periods. */}
+      <SummaryPanel
+        vs={trendVsLabel}
+        loading={!series}
+        lead={{ tone: 'balance', label: t.dashboard.totalBalance, value: format(stats.net), change: { value: trendPct(stats.net, prevStats.net), better: 'up' } }}
+        series={series?.map((x) => x.net)}
+        items={[
+          { tone: 'income', label: t.dashboard.inflow, value: format(stats.income), change: { value: trendPct(stats.income, prevStats.income), better: 'up' } },
+          { tone: 'expense', label: t.dashboard.outflow, value: format(stats.expense), change: { value: trendPct(stats.expense, prevStats.expense), better: 'down' } },
+          { tone: 'reserve', label: t.dashboard.reserve, value: format(reserve), change: { value: trendPct(reserve, reserve30dAgo), better: 'up', vs: t.dashboard.vsPrev.replace('{{label}}', t.dashboard.days30Ago) } },
+          { tone: 'count', label: t.transactions.count, value: String(stats.count), change: { value: trendPct(stats.count, prevStats.count), better: null } },
+        ]}
+      />
 
       {/* Main content */}
       {!hasData ? (
