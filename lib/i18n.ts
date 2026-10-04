@@ -291,6 +291,12 @@ const ja = {
       monthly: '毎月',
       yearly:  '毎年',
     },
+    deleteTitle: '定期取引「{{name}}」を削除しますか？',
+    deleteMsg: '今後この定期取引から取引は作成されません。確認待ちの取引も削除されます。',
+    deleteWithTx: '作成済みの取引 {{count}} 件も削除する',
+    deletedTx: '定期取引と取引 {{count}} 件を削除しました',
+    deletedRule: '定期取引を削除しました',
+    pendingBadge: '確認待ち',
   },
   report: {
     title:    '月次レポート',
@@ -1372,6 +1378,12 @@ const ja = {
     belowChildren: '予算 ({{limit}}) がサブカテゴリの合計 ({{total}}) より少なくなっています',
     view: '内訳を見る',
   },
+  confirm: {
+    deleteTitle: '削除しますか？',
+    title: '確認',
+    undo: 'この操作は元に戻せません。',
+    notifyOthers: 'この取引を見られるメンバーに通知されます。',
+  },
 }
 
 const vi: typeof ja = {
@@ -1660,6 +1672,12 @@ const vi: typeof ja = {
       monthly: 'Hàng tháng',
       yearly:  'Hàng năm',
     },
+    deleteTitle: 'Xoá khoản định kỳ "{{name}}"?',
+    deleteMsg: 'Từ nay sẽ không tạo giao dịch mới từ khoản này. Các giao dịch đang chờ xác nhận cũng bị xoá.',
+    deleteWithTx: 'Xoá luôn {{count}} giao dịch đã tạo từ khoản này',
+    deletedTx: 'Đã xoá khoản định kỳ và {{count}} giao dịch',
+    deletedRule: 'Đã xoá khoản định kỳ',
+    pendingBadge: 'Chờ xác nhận',
   },
   report: {
     title:    'Báo cáo tháng',
@@ -2740,6 +2758,12 @@ const vi: typeof ja = {
     belowChildren: 'Ngân sách ({{limit}}) nhỏ hơn tổng ngân sách các nhóm con ({{total}})',
     view: 'Xem chi tiết',
   },
+  confirm: {
+    deleteTitle: 'Xác nhận xoá',
+    title: 'Xác nhận',
+    undo: 'Thao tác này không thể hoàn tác.',
+    notifyOthers: 'Những người cùng xem giao dịch này sẽ nhận được thông báo.',
+  },
 }
 
 const en: typeof ja = {
@@ -3028,6 +3052,12 @@ const en: typeof ja = {
       monthly: 'Monthly',
       yearly:  'Yearly',
     },
+    deleteTitle: 'Delete recurring "{{name}}"?',
+    deleteMsg: 'No new transactions will be created from it. Ones waiting for confirmation are removed too.',
+    deleteWithTx: 'Also delete the {{count}} transactions it created',
+    deletedTx: 'Deleted the rule and {{count}} transactions',
+    deletedRule: 'Recurring rule deleted',
+    pendingBadge: 'Pending',
   },
   report: {
     title:    'Monthly Report',
@@ -4107,6 +4137,12 @@ const en: typeof ja = {
     formChildren: 'Sub-categories total: {{total}}',
     belowChildren: 'The budget ({{limit}}) is less than its sub-categories\' total ({{total}})',
     view: 'View breakdown',
+  },
+  confirm: {
+    deleteTitle: 'Delete?',
+    title: 'Are you sure?',
+    undo: 'This can\'t be undone.',
+    notifyOthers: 'People who can see this transaction will be notified.',
   },
 }
 

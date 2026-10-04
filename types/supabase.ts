@@ -4028,6 +4028,17 @@ export type Database = {
         }
         Returns: Database['public']['Tables']["user_sessions"]['Row']
       }
+      recurring_first_on_or_after: {
+        Args: {
+          p_start: string
+          p_from: string
+          p_frequency: string
+          p_interval: number
+          p_day_of_month: number
+          p_day_of_week: number
+        }
+        Returns: string
+      }
       recurring_next_date: {
         Args: {
           p_from: string

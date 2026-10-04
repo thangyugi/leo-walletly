@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Search, Filter, Trash2, Upload, X, ArrowUpDown,
   ArrowUp, ArrowDown, ChevronDown, ChevronLeft, ChevronRight,
-  CheckSquare, Square, Minus, Plus, Check, ListChecks, Shapes, Wallet,
+  CheckSquare, Square, Minus, Plus, Check, ListChecks, Shapes, Wallet, Clock3, CalendarDays,
 } from 'lucide-react'
 import { CategoryIcon } from '@/features/categories/category-icon'
 import { toast } from 'sonner'
@@ -33,6 +33,7 @@ import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 import { SummaryPanel } from '@/components/summary/summary-panel'
 import { prevPeriod } from '@/lib/periods'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 // Columns: checkbox | icon | 内容 | 日付 | ユーザー | カテゴリ | アカウント | 金額
 // Phone: icon · text · amount. Tablet / small laptop: + select, person, category
@@ -277,7 +278,7 @@ function BulkBar({ ids, total, onDone }: { ids: string[]; total: number; onDone:
         )}
         {can('transaction.delete') && (
           <button
-            onClick={() => { if (confirm(t.bulk.deleteConfirm.replace('{{count}}', String(count)))) void run(() => bulkDelete(ids)) }}
+            onClick={async () => { if (await confirmDialog({ danger: true, message: t.bulk.deleteConfirm.replace('{{count}}', String(count)), note: t.confirm.notifyOthers })) void run(() => bulkDelete(ids)) }}
             className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-white/20 hover:bg-white/30 transition-colors"
           >
             {t.common.delete}
@@ -351,7 +352,7 @@ function PhoneBulkBar({ ids, pageIds, onSelectAll, onClearAll, onDone }: {
         </button>
         {can('transaction.delete') && (
           <button type="button" disabled={!count}
-            onClick={() => { if (confirm(t.bulk.deleteConfirm.replace('{{count}}', String(count)))) void run(() => bulkDelete(ids)) }}
+            onClick={async () => { if (await confirmDialog({ danger: true, message: t.bulk.deleteConfirm.replace('{{count}}', String(count)), note: t.confirm.notifyOthers })) void run(() => bulkDelete(ids)) }}
             className={cn(act, 'text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]')}>
             <Trash2 className="w-5 h-5" />{t.common.delete}
           </button>
@@ -460,7 +461,14 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate, selecting, onLon
       )}
 
       <div className="min-w-0">
-        <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
+          {txn.status === 'pending' && (
+            <span className="shrink-0 inline-flex items-center gap-1 h-[18px] px-1.5 rounded-md text-[10.5px] font-semibold bg-[#fffaeb] text-[#b54708] ring-1 ring-inset ring-[#fedf89]" title={t.recurring.pendingBadge}>
+              <Clock3 className="w-3 h-3" />{t.recurring.pendingBadge}
+            </span>
+          )}
+        </div>
         {/* Phones: category and account as tinted chips. */}
         <div className="sm:hidden mt-1 flex items-center gap-1.5 min-w-0 overflow-hidden">
           <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md text-[11px] font-medium whitespace-nowrap max-w-[55%] shrink-0"
@@ -542,8 +550,11 @@ function DateGroupHeader({ date, expense, income }: { date: string; expense: num
   const wd = new Date(date + 'T00:00:00').toLocaleDateString(lang, { weekday: 'short' })
   const net = income - expense
   return (
-    <div className="flex items-center justify-between px-4 py-2 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
-      <span className="text-xs font-semibold text-[var(--color-text-tertiary)]">{fmtDateDMY(date)} ({wd})</span>
+    // Brand-tinted so the day breaks stand out from both the white rows and the grey page.
+    <div className="flex items-center justify-between px-4 py-2 bg-[color-mix(in_srgb,var(--color-brand-500)_9%,var(--color-surface-default))] border-y border-[color-mix(in_srgb,var(--color-brand-500)_18%,var(--color-surface-default))]">
+      <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--color-brand-700)]">
+        <CalendarDays className="w-3.5 h-3.5" />{fmtDateDMY(date)} ({wd})
+      </span>
       <div className="flex items-center gap-3">
         {income > 0 && <span className="text-xs font-tabular text-[var(--color-text-gain)]">+{format(income)}</span>}
         {expense > 0 && <span className="text-xs font-tabular text-[var(--color-text-loss)]">−{format(expense)}</span>}
@@ -658,6 +669,8 @@ function TransactionsContent() {
         grps.push(g)
       }
       g.txns.push(tx)
+      // Waiting for confirmation: listed, but not counted (same as the totals above).
+      if (tx.status === 'pending') continue
       if (tx.transactionType === 'income') g.income += tx.baseAmount
       else if (tx.transactionType === 'expense') g.expense += tx.baseAmount
     }
@@ -689,7 +702,7 @@ function TransactionsContent() {
 
   // Header trash: delete every transaction shown for the selected period.
   async function deleteAllInPeriod() {
-    if (!ledgerId || !confirm(t.transactions.deleteConfirm)) return
+    if (!ledgerId || !(await confirmDialog({ danger: true, message: t.transactions.deleteConfirm, note: t.confirm.notifyOthers }))) return
     try {
       const rows = await fetchRange(ledgerId, range.start, range.end)
       const n = await bulkDelete(rows.map((r) => r.id))

@@ -22,6 +22,7 @@ import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, toLocalISODate } from '@/lib/utils'
 import { SheetGrip } from '@/components/ui/sheet-grip'
 import { useSwipeToClose } from '@/hooks/useSwipeToClose'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 const COLORS = ['#10b981', '#3b82f6', '#6366f1', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b']
 
@@ -131,7 +132,7 @@ export default function AccountsPage() {
   const groups = accountTypes.map((at) => ({ at, items: active.filter((a) => a.accountTypeCode === at.code) })).filter((g) => g.items.length)
 
   async function del(a: Account) {
-    if (!confirm(`${t.accounts.delete}: ${a.name}?`)) return
+    if (!(await confirmDialog({ danger: true, message: `${t.accounts.delete}: ${a.name}?` }))) return
     try { await remove(a.id) } catch (e: any) { toast.error(e.message === 'ACCOUNT_HAS_TRANSACTIONS' ? t.accounts.deleteBlocked : e.message) }
   }
 

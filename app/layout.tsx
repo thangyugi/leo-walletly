@@ -6,6 +6,7 @@ import { AuthProvider } from '@/components/auth/auth-provider'
 import { CurrencyInitializer } from '@/features/currency/components/CurrencyInitializer'
 import { Toaster } from 'sonner'
 import { PwaProvider } from '@/features/pwa/components/pwa-provider'
+import { ConfirmHost } from '@/components/ui/confirm-dialog'
 import { PWA, INSTALL_PROMPT_CAPTURE } from '@/features/pwa/config'
 
 const geistSans = Geist({ variable: '--font-geist-sans', subsets: ['latin'] })
@@ -44,6 +45,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <AppShell>{children}</AppShell>
         </AuthProvider>
         <PwaProvider />
+        <ConfirmHost />
         <Toaster position="bottom-right" richColors closeButton />
       </body>
     </html>

@@ -311,6 +311,7 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .select(SELECT)
       .eq('ledger_id', ledgerId)
       .is('deleted_at', null)
+      .neq('status', 'void')
       .or(`description.ilike.%${clean}%,merchant_name.ilike.%${clean}%`)
       .order('transaction_date', { ascending: false })
       .limit(limit)

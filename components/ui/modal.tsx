@@ -14,9 +14,11 @@ interface ModalProps {
   isNested?: boolean
   /** Data-entry forms: full-screen page on phones (see form-dialog.ts). */
   fullScreenOnPhone?: boolean
+  /** Extra classes for the backdrop layer (e.g. a higher z-index). */
+  overlayClassName?: string
 }
 
-export function Modal({ isOpen, onClose, children, className, noPadding, isNested, fullScreenOnPhone }: ModalProps) {
+export function Modal({ isOpen, onClose, children, className, noPadding, isNested, fullScreenOnPhone, overlayClassName }: ModalProps) {
   const [mounted, setMounted] = React.useState(false)
   useEscapeLayer(onClose, isOpen)
 
@@ -37,7 +39,8 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
       // Phones: a sheet from the bottom edge; larger screens: a centred dialog.
       "fixed inset-0 z-[9999] flex sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300",
       fullScreenOnPhone ? "items-stretch pt-[max(12px,env(safe-area-inset-top))] sm:pt-4" : "items-end",
-      isNested ? "bg-black/40" : "bg-black/60 backdrop-blur-sm"
+      isNested ? "bg-black/40" : "bg-black/60 backdrop-blur-sm",
+      overlayClassName
     )}>
       <div 
         className="absolute inset-0" 

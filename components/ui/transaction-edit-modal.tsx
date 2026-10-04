@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils'
 import type { Transaction, TransactionType } from '@/types/domain'
 import { SheetGrip } from '@/components/ui/sheet-grip'
 import { useSwipeToClose } from '@/hooks/useSwipeToClose'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
 
 interface Props {
   /** Omit to create a new transaction. onSaved gets null after a delete. */
@@ -145,7 +146,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   }
 
   async function handleDelete() {
-    if (!txn || !confirm(t.txform.deleteConfirm)) return
+    if (!txn || !(await confirmDialog({ danger: true, message: t.txform.deleteConfirm, note: t.confirm.notifyOthers }))) return
     try {
       await remove(txn.id)
       toast.success(t.txform.deleted, {

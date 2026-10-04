@@ -428,6 +428,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.verified', 'common', null, false),
   ('common.workspace', 'common', null, false),
   ('common.yes', 'common', null, false),
+  ('confirm.deleteTitle', 'confirm', null, false),
+  ('confirm.notifyOthers', 'confirm', null, false),
+  ('confirm.title', 'confirm', null, false),
+  ('confirm.undo', 'confirm', null, false),
   ('dashboard.accounts', 'dashboard', null, true),
   ('dashboard.addAccount', 'dashboard', null, true),
   ('dashboard.addTransaction', 'dashboard', null, true),
@@ -806,14 +810,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('merge.warning', 'merge', 'name', false),
   ('mobnav.accounts', 'mobnav', null, false),
   ('mobnav.add', 'mobnav', null, false),
-  ('mobnav.addTitle', 'mobnav', null, false),
-  ('mobnav.addTx', 'mobnav', null, false),
-  ('mobnav.addTxSub', 'mobnav', null, false),
-  ('mobnav.analytics', 'mobnav', null, false),
-  ('mobnav.calendar', 'mobnav', null, false)
+  ('mobnav.addTitle', 'mobnav', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('mobnav.addTx', 'mobnav', null, false),
+  ('mobnav.addTxSub', 'mobnav', null, false),
+  ('mobnav.analytics', 'mobnav', null, false),
+  ('mobnav.calendar', 'mobnav', null, false),
   ('mobnav.categories', 'mobnav', null, false),
   ('mobnav.dashboard', 'mobnav', null, false),
   ('mobnav.import', 'mobnav', null, false),
@@ -972,6 +976,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('recurring.dayOfMonth', 'recurring', null, true),
   ('recurring.dayOfWeek', 'recurring', null, true),
   ('recurring.deleteConfirm', 'recurring', null, true),
+  ('recurring.deleteMsg', 'recurring', null, true),
+  ('recurring.deleteTitle', 'recurring', 'name', true),
+  ('recurring.deleteWithTx', 'recurring', 'count', true),
+  ('recurring.deletedRule', 'recurring', null, true),
+  ('recurring.deletedTx', 'recurring', 'count', true),
   ('recurring.edit', 'recurring', null, true),
   ('recurring.endDate', 'recurring', null, true),
   ('recurring.every', 'recurring', null, true),
@@ -986,6 +995,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('recurring.noData', 'recurring', null, true),
   ('recurring.notes', 'recurring', null, true),
   ('recurring.paused', 'recurring', null, true),
+  ('recurring.pendingBadge', 'recurring', null, true),
   ('recurring.pendingTitle', 'recurring', null, true),
   ('recurring.skip', 'recurring', null, true),
   ('recurring.startDate', 'recurring', null, true),
@@ -1203,7 +1213,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.title', 'transactions', null, true),
   ('transactions.total', 'transactions', null, true),
   ('transactions.transfer', 'transactions', null, true),
-  ('transactions.transferBadge', 'transactions', null, true),
+  ('transactions.transferBadge', 'transactions', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('transactions.txnExpense', 'transactions', null, true),
   ('transactions.txnIncome', 'transactions', null, true),
   ('transactions.txnNet', 'transactions', null, true),
@@ -1213,10 +1226,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.typeIncome', 'transactions', null, true),
   ('transactions.typeTransfer', 'transactions', null, true),
   ('transactions.uncategorized', 'transactions', null, true),
-  ('txform.account', 'txform', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('txform.account', 'txform', null, false),
   ('txform.addTitle', 'txform', null, false),
   ('txform.amount', 'txform', null, false),
   ('txform.category', 'txform', null, false),
@@ -1687,6 +1697,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'ja', '認証済み'),
   ('common.workspace', 'ja', 'ワークスペース'),
   ('common.yes', 'ja', 'はい'),
+  ('confirm.deleteTitle', 'ja', '削除しますか？'),
+  ('confirm.notifyOthers', 'ja', 'この取引を見られるメンバーに通知されます。'),
+  ('confirm.title', 'ja', '確認'),
+  ('confirm.undo', 'ja', 'この操作は元に戻せません。'),
   ('dashboard.accounts', 'ja', 'アカウント'),
   ('dashboard.addAccount', 'ja', '口座を追加'),
   ('dashboard.addTransaction', 'ja', '取引を追加'),
@@ -2065,14 +2079,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'ja', '元に戻せません。「{{name}}」の取引・キーワード・サブカテゴリは統合先に移動し、「{{name}}」は削除されます。'),
   ('mobnav.accounts', 'ja', '口座'),
   ('mobnav.add', 'ja', '追加'),
-  ('mobnav.addTitle', 'ja', '何を追加しますか？'),
-  ('mobnav.addTx', 'ja', '取引を入力'),
-  ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
-  ('mobnav.analytics', 'ja', '分析'),
-  ('mobnav.calendar', 'ja', 'カレンダー')
+  ('mobnav.addTitle', 'ja', '何を追加しますか？')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'ja', '取引を入力'),
+  ('mobnav.addTxSub', 'ja', '金額・カテゴリを手入力'),
+  ('mobnav.analytics', 'ja', '分析'),
+  ('mobnav.calendar', 'ja', 'カレンダー'),
   ('mobnav.categories', 'ja', 'カテゴリ'),
   ('mobnav.dashboard', 'ja', 'ホーム'),
   ('mobnav.import', 'ja', '取込'),
@@ -2231,6 +2245,11 @@ insert into public.translations (key, language_code, value) values
   ('recurring.dayOfMonth', 'ja', '毎月の日'),
   ('recurring.dayOfWeek', 'ja', '曜日'),
   ('recurring.deleteConfirm', 'ja', 'この定期支出を削除しますか？作成済みの取引は残ります。'),
+  ('recurring.deleteMsg', 'ja', '今後この定期取引から取引は作成されません。確認待ちの取引も削除されます。'),
+  ('recurring.deleteTitle', 'ja', '定期取引「{{name}}」を削除しますか？'),
+  ('recurring.deleteWithTx', 'ja', '作成済みの取引 {{count}} 件も削除する'),
+  ('recurring.deletedRule', 'ja', '定期取引を削除しました'),
+  ('recurring.deletedTx', 'ja', '定期取引と取引 {{count}} 件を削除しました'),
   ('recurring.edit', 'ja', '定期支出を編集'),
   ('recurring.endDate', 'ja', '終了日（任意）'),
   ('recurring.every', 'ja', '間隔'),
@@ -2245,6 +2264,7 @@ insert into public.translations (key, language_code, value) values
   ('recurring.noData', 'ja', '定期支出が登録されていません'),
   ('recurring.notes', 'ja', 'メモ'),
   ('recurring.paused', 'ja', '停止中'),
+  ('recurring.pendingBadge', 'ja', '確認待ち'),
   ('recurring.pendingTitle', 'ja', '確認待ち'),
   ('recurring.skip', 'ja', 'スキップ'),
   ('recurring.startDate', 'ja', '開始日'),
@@ -2462,7 +2482,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.title', 'ja', '取引履歴'),
   ('transactions.total', 'ja', '全'),
   ('transactions.transfer', 'ja', '振替'),
-  ('transactions.transferBadge', 'ja', '振替（内部移動）'),
+  ('transactions.transferBadge', 'ja', '振替（内部移動）')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('transactions.txnExpense', 'ja', '出金合計'),
   ('transactions.txnIncome', 'ja', '入金合計'),
   ('transactions.txnNet', 'ja', '純計'),
@@ -2472,10 +2495,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'ja', '収入'),
   ('transactions.typeTransfer', 'ja', '振替'),
   ('transactions.uncategorized', 'ja', '未分類'),
-  ('txform.account', 'ja', '口座')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.account', 'ja', '口座'),
   ('txform.addTitle', 'ja', '取引を追加'),
   ('txform.amount', 'ja', '金額'),
   ('txform.category', 'ja', 'カテゴリ'),
@@ -2946,6 +2966,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'vi', 'Đã xác minh'),
   ('common.workspace', 'vi', 'không gian'),
   ('common.yes', 'vi', 'Có'),
+  ('confirm.deleteTitle', 'vi', 'Xác nhận xoá'),
+  ('confirm.notifyOthers', 'vi', 'Những người cùng xem giao dịch này sẽ nhận được thông báo.'),
+  ('confirm.title', 'vi', 'Xác nhận'),
+  ('confirm.undo', 'vi', 'Thao tác này không thể hoàn tác.'),
   ('dashboard.accounts', 'vi', 'Tài khoản'),
   ('dashboard.addAccount', 'vi', 'Thêm tài khoản'),
   ('dashboard.addTransaction', 'vi', 'Thêm giao dịch'),
@@ -3324,14 +3348,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'vi', 'Không thể hoàn tác. Giao dịch, từ khoá và danh mục con của "{{name}}" sẽ chuyển sang danh mục đích, sau đó "{{name}}" bị xoá.'),
   ('mobnav.accounts', 'vi', 'Tài khoản'),
   ('mobnav.add', 'vi', 'Thêm mới'),
-  ('mobnav.addTitle', 'vi', 'Bạn muốn thêm gì?'),
-  ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
-  ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
-  ('mobnav.analytics', 'vi', 'Phân tích'),
-  ('mobnav.calendar', 'vi', 'Lịch')
+  ('mobnav.addTitle', 'vi', 'Bạn muốn thêm gì?')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'vi', 'Nhập giao dịch'),
+  ('mobnav.addTxSub', 'vi', 'Tự nhập số tiền và danh mục'),
+  ('mobnav.analytics', 'vi', 'Phân tích'),
+  ('mobnav.calendar', 'vi', 'Lịch'),
   ('mobnav.categories', 'vi', 'Danh mục'),
   ('mobnav.dashboard', 'vi', 'Tổng quan'),
   ('mobnav.import', 'vi', 'Nhập'),
@@ -3490,6 +3514,11 @@ insert into public.translations (key, language_code, value) values
   ('recurring.dayOfMonth', 'vi', 'Ngày trong tháng'),
   ('recurring.dayOfWeek', 'vi', 'Thứ trong tuần'),
   ('recurring.deleteConfirm', 'vi', 'Xoá mục định kỳ này? Các giao dịch đã tạo vẫn giữ lại.'),
+  ('recurring.deleteMsg', 'vi', 'Từ nay sẽ không tạo giao dịch mới từ khoản này. Các giao dịch đang chờ xác nhận cũng bị xoá.'),
+  ('recurring.deleteTitle', 'vi', 'Xoá khoản định kỳ "{{name}}"?'),
+  ('recurring.deleteWithTx', 'vi', 'Xoá luôn {{count}} giao dịch đã tạo từ khoản này'),
+  ('recurring.deletedRule', 'vi', 'Đã xoá khoản định kỳ'),
+  ('recurring.deletedTx', 'vi', 'Đã xoá khoản định kỳ và {{count}} giao dịch'),
   ('recurring.edit', 'vi', 'Sửa định kỳ'),
   ('recurring.endDate', 'vi', 'Ngày kết thúc (tuỳ chọn)'),
   ('recurring.every', 'vi', 'Mỗi'),
@@ -3504,6 +3533,7 @@ insert into public.translations (key, language_code, value) values
   ('recurring.noData', 'vi', 'Chưa có khoản định kỳ nào'),
   ('recurring.notes', 'vi', 'Ghi chú'),
   ('recurring.paused', 'vi', 'Tạm dừng'),
+  ('recurring.pendingBadge', 'vi', 'Chờ xác nhận'),
   ('recurring.pendingTitle', 'vi', 'Chờ xác nhận'),
   ('recurring.skip', 'vi', 'Bỏ qua'),
   ('recurring.startDate', 'vi', 'Ngày bắt đầu'),
@@ -3721,7 +3751,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.title', 'vi', 'Lịch sử giao dịch'),
   ('transactions.total', 'vi', 'Tổng'),
   ('transactions.transfer', 'vi', 'Chuyển khoản'),
-  ('transactions.transferBadge', 'vi', 'Nội bộ (không tính vào chi tiêu)'),
+  ('transactions.transferBadge', 'vi', 'Nội bộ (không tính vào chi tiêu)')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('transactions.txnExpense', 'vi', 'Tổng chi'),
   ('transactions.txnIncome', 'vi', 'Tổng thu'),
   ('transactions.txnNet', 'vi', 'Cân đối'),
@@ -3731,10 +3764,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'vi', 'Thu nhập'),
   ('transactions.typeTransfer', 'vi', 'Chuyển khoản'),
   ('transactions.uncategorized', 'vi', 'Chưa phân loại'),
-  ('txform.account', 'vi', 'Tài khoản')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.account', 'vi', 'Tài khoản'),
   ('txform.addTitle', 'vi', 'Thêm giao dịch'),
   ('txform.amount', 'vi', 'Số tiền'),
   ('txform.category', 'vi', 'Danh mục'),
@@ -4205,6 +4235,10 @@ insert into public.translations (key, language_code, value) values
   ('common.verified', 'en', 'Verified'),
   ('common.workspace', 'en', 'workspace'),
   ('common.yes', 'en', 'Yes'),
+  ('confirm.deleteTitle', 'en', 'Delete?'),
+  ('confirm.notifyOthers', 'en', 'People who can see this transaction will be notified.'),
+  ('confirm.title', 'en', 'Are you sure?'),
+  ('confirm.undo', 'en', 'This can''t be undone.'),
   ('dashboard.accounts', 'en', 'Accounts'),
   ('dashboard.addAccount', 'en', 'Add account'),
   ('dashboard.addTransaction', 'en', 'Add Transaction'),
@@ -4583,14 +4617,14 @@ insert into public.translations (key, language_code, value) values
   ('merge.warning', 'en', 'This cannot be undone. Transactions, keywords and sub-categories of "{{name}}" move to the target, then "{{name}}" is deleted.'),
   ('mobnav.accounts', 'en', 'Accounts'),
   ('mobnav.add', 'en', 'Add'),
-  ('mobnav.addTitle', 'en', 'What would you like to add?'),
-  ('mobnav.addTx', 'en', 'Enter a transaction'),
-  ('mobnav.addTxSub', 'en', 'Type the amount and category'),
-  ('mobnav.analytics', 'en', 'Insights'),
-  ('mobnav.calendar', 'en', 'Calendar')
+  ('mobnav.addTitle', 'en', 'What would you like to add?')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('mobnav.addTx', 'en', 'Enter a transaction'),
+  ('mobnav.addTxSub', 'en', 'Type the amount and category'),
+  ('mobnav.analytics', 'en', 'Insights'),
+  ('mobnav.calendar', 'en', 'Calendar'),
   ('mobnav.categories', 'en', 'Categories'),
   ('mobnav.dashboard', 'en', 'Home'),
   ('mobnav.import', 'en', 'Import'),
@@ -4749,6 +4783,11 @@ insert into public.translations (key, language_code, value) values
   ('recurring.dayOfMonth', 'en', 'Day of month'),
   ('recurring.dayOfWeek', 'en', 'Day of week'),
   ('recurring.deleteConfirm', 'en', 'Delete this rule? Transactions already created are kept.'),
+  ('recurring.deleteMsg', 'en', 'No new transactions will be created from it. Ones waiting for confirmation are removed too.'),
+  ('recurring.deleteTitle', 'en', 'Delete recurring "{{name}}"?'),
+  ('recurring.deleteWithTx', 'en', 'Also delete the {{count}} transactions it created'),
+  ('recurring.deletedRule', 'en', 'Recurring rule deleted'),
+  ('recurring.deletedTx', 'en', 'Deleted the rule and {{count}} transactions'),
   ('recurring.edit', 'en', 'Edit recurring'),
   ('recurring.endDate', 'en', 'End date (optional)'),
   ('recurring.every', 'en', 'Every'),
@@ -4763,6 +4802,7 @@ insert into public.translations (key, language_code, value) values
   ('recurring.noData', 'en', 'No recurring expenses yet'),
   ('recurring.notes', 'en', 'Notes'),
   ('recurring.paused', 'en', 'Paused'),
+  ('recurring.pendingBadge', 'en', 'Pending'),
   ('recurring.pendingTitle', 'en', 'Waiting for confirmation'),
   ('recurring.skip', 'en', 'Skip'),
   ('recurring.startDate', 'en', 'Start date'),
@@ -4980,7 +5020,10 @@ insert into public.translations (key, language_code, value) values
   ('transactions.title', 'en', 'Transaction History'),
   ('transactions.total', 'en', 'Total'),
   ('transactions.transfer', 'en', 'Transfer'),
-  ('transactions.transferBadge', 'en', 'Internal transfer (excluded from totals)'),
+  ('transactions.transferBadge', 'en', 'Internal transfer (excluded from totals)')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('transactions.txnExpense', 'en', 'Total Expense'),
   ('transactions.txnIncome', 'en', 'Total Income'),
   ('transactions.txnNet', 'en', 'Net'),
@@ -4990,10 +5033,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.typeIncome', 'en', 'Income'),
   ('transactions.typeTransfer', 'en', 'Transfers'),
   ('transactions.uncategorized', 'en', 'Uncategorized'),
-  ('txform.account', 'en', 'Account')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.account', 'en', 'Account'),
   ('txform.addTitle', 'en', 'Add transaction'),
   ('txform.amount', 'en', 'Amount'),
   ('txform.category', 'en', 'Category'),

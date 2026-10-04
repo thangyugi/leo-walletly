@@ -726,7 +726,7 @@ export function CategoriesBentoPage() {
   const budgetLeft = kpi ? kpi.total_budget - kpi.total_expense : 0
 
   const showBentoTabs = activeTab === 'all' || activeTab === 'active'
-  // Phones: rows grouped by money direction (+ categories others shared with you), biggest first.
+  // Phones: categories others shared with you first, then rows grouped by money direction, biggest first.
   const phoneSections = (() => {
     const q = search.trim().toLowerCase()
     const match = (c: Category) => !q || c.name.toLowerCase().includes(q) || c.keywords.some((kw) => kw.toLowerCase().includes(q)) || (!c.is_mine && c.owner_name.toLowerCase().includes(q))
@@ -744,7 +744,7 @@ export function CategoriesBentoPage() {
     const out: Section[] = kinds.map((k) => ({ ...k, rows: own.filter((c) => c.type === k.key).map(row).sort(byAmount) })).filter((x) => x.rows.length)
     if (showBentoTabs && sharedWithMe.length) {
       const rows = sharedWithMe.filter(match).map(row).sort(byAmount)
-      if (rows.length) out.push({ key: 'shared', label: t.catui.sharedWithMe, tone: 'shared', rows })
+      if (rows.length) out.unshift({ key: 'shared', label: t.catui.sharedWithMe, tone: 'shared', rows })
     }
     return out
   })()
@@ -837,6 +837,24 @@ export function CategoriesBentoPage() {
         <PhoneCategoryList sections={phoneSections} pendingTotal={pending.total} pendingAmount={pendingAmount}
           archivedCount={showBento ? archivedCategories.length : 0} onShowArchived={() => setActiveTab('archived')} />
 
+        {/* Shared with you comes first. */}
+        {showBento && sharedWithMe.length > 0 && (
+          <section aria-labelledby="shared-with-me" className="max-sm:hidden space-y-2.5">
+            <div className="flex items-end gap-2 flex-wrap">
+              <h2 id="shared-with-me" className="text-[14px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)] inline-flex items-center gap-1.5">
+                <Users className="w-4 h-4 text-[var(--color-text-tertiary)]" />{t.catui.sharedWithMe}
+                <span className="font-mono text-[10px] rounded px-[5px] py-px bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{sharedWithMe.length}</span>
+              </h2>
+              <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.catui.sharedWithMeSub}</p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+              {sharedWithMe
+                .filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.owner_name.toLowerCase().includes(search.trim().toLowerCase()))
+                .map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
+            </div>
+          </section>
+        )}
+
         <div className="max-sm:hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {showBento ? (
             <>
@@ -858,22 +876,6 @@ export function CategoriesBentoPage() {
           )}
         </div>
 
-        {showBento && sharedWithMe.length > 0 && (
-          <section aria-labelledby="shared-with-me" className="max-sm:hidden space-y-2.5">
-            <div className="flex items-end gap-2 flex-wrap">
-              <h2 id="shared-with-me" className="text-[14px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)] inline-flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-[var(--color-text-tertiary)]" />{t.catui.sharedWithMe}
-                <span className="font-mono text-[10px] rounded px-[5px] py-px bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]">{sharedWithMe.length}</span>
-              </h2>
-              <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.catui.sharedWithMeSub}</p>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              {sharedWithMe
-                .filter((c) => !search.trim() || c.name.toLowerCase().includes(search.trim().toLowerCase()) || c.owner_name.toLowerCase().includes(search.trim().toLowerCase()))
-                .map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
-            </div>
-          </section>
-        )}
 
         <div
           className="max-sm:hidden flex items-center gap-3.5 p-[14px_18px] rounded-[14px] border border-[var(--color-brand-100)] shadow-[var(--shadow-card)] flex-wrap"
