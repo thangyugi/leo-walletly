@@ -79,7 +79,7 @@
      ---------------------------------------------------------- */
 
   /* Background layers */
-  --color-bg-base:      #f9fafb;
+  --color-bg-base:      #eaecf0; /* same grey as the More sheet (canvas) */
   --color-bg-elevated:  #ffffff;
   --color-bg-overlay:   #ffffff;
   --color-bg-sunken:    #f3f4f6;
