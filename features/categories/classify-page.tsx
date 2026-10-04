@@ -152,13 +152,16 @@ export function ClassifyPage() {
     <div className="space-y-4 animate-fade-in pb-24">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/categories" aria-label={t.common.back} className="w-9 h-9 rounded-lg border border-[var(--color-border-default)] flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><ArrowLeft className="w-4 h-4" /></Link>
-        <div>
+        <div className="min-w-0 max-sm:flex-1">
           <h1 className="text-[18px] font-semibold text-[var(--color-text-primary)]">{t.classify.title}</h1>
           <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.classify.subtitle}</p>
         </div>
-        <span className="flex-1" />
-        <DateNavigator value={picker} onChange={setPicker} lang={lang} />
-        <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}>{t.classify.runRules}</Button>
+        <span className="flex-1 max-sm:hidden" />
+        <DateNavigator value={picker} onChange={setPicker} lang={lang} className="max-sm:order-last" />
+        <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}
+          aria-label={t.classify.runRules} title={t.classify.runRules} className="max-sm:w-10 max-sm:h-10 max-sm:px-0 max-sm:rounded-xl">
+          <span className="max-sm:hidden">{t.classify.runRules}</span>
+        </Button>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -178,12 +181,12 @@ export function ClassifyPage() {
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
           <input type="search" aria-label={t.transactions.search} value={search} onChange={(e) => setSearch(e.target.value)} placeholder={t.transactions.search}
-            className="w-full h-9 pl-9 pr-3 text-sm rounded-lg border bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-focus)]" />
+            className="w-full h-9 max-sm:h-10 max-sm:rounded-xl max-sm:text-[15px] pl-9 pr-3 text-sm rounded-lg border bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] focus:outline-none focus:border-[var(--color-border-focus)]" />
         </div>
-        <div className="inline-flex rounded-lg border border-[var(--color-border-default)] p-0.5 bg-[var(--color-surface-default)]" role="radiogroup">
+        <div className="inline-flex max-sm:flex max-sm:w-full rounded-lg max-sm:rounded-xl border border-[var(--color-border-default)] p-0.5 bg-[var(--color-surface-default)]" role="radiogroup">
           {([['date', t.classify.sortRecent], ['amount', t.classify.sortAmount], ['count', t.classify.sortCount]] as const).map(([v, l]) => (
             <button key={v} role="radio" aria-checked={sortBy === v} onClick={() => setSortBy(v)}
-              className={cn('px-3 h-8 rounded-md text-xs font-medium', sortBy === v ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>{l}</button>
+              className={cn('px-3 h-8 max-sm:h-9 max-sm:flex-1 rounded-md max-sm:rounded-[10px] text-xs max-sm:text-[13px] font-medium', sortBy === v ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>{l}</button>
           ))}
         </div>
       </div>

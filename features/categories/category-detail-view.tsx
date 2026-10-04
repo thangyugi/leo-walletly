@@ -224,7 +224,7 @@ function TabBar({ tabs, active, onChange, picker, onPickerChange }: {
           </button>
         ))}
       </div>
-      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)]">
+      <div className="flex items-center gap-2 shrink-0 py-[5px] px-4 max-sm:w-full lg:ml-auto max-lg:py-2 max-lg:border-b max-lg:border-[var(--color-border-subtle)]">
         <DateNavigator value={picker} onChange={onPickerChange} lang={lang} align="end" />
       </div>
     </div>

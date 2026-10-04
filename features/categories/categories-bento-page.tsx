@@ -646,14 +646,15 @@ export function CategoriesBentoPage() {
     <FmtCtx.Provider value={{ fmt, sym, currency, budgetFactor }}>
       <div className="space-y-4 animate-fade-in">
 
-        <div className="flex items-center gap-3 flex-wrap">
-          <div>
+        {/* Phones: title + round "+" on one row, then full-width period and search. */}
+        <div className="flex items-center gap-3 flex-wrap max-sm:gap-2.5">
+          <div className="min-w-0 max-sm:flex-1 max-sm:order-1">
             <h1 className="text-[18px] font-semibold tracking-[-0.025em] text-[var(--color-text-primary)]">{t.catui.title}</h1>
             <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">{ledger?.name ?? '—'} · {currency}</p>
           </div>
-          <span className="flex-1" />
-          <DateNavigator value={picker} onChange={setPicker} lang={lang} />
-          <div className="relative">
+          <span className="flex-1 max-sm:hidden" />
+          <DateNavigator value={picker} onChange={setPicker} lang={lang} className="max-sm:order-3" />
+          <div className="relative max-sm:order-4 max-sm:w-full">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
             <label htmlFor="cat-search" className="sr-only">{t.catui.search}</label>
             <input
@@ -662,12 +663,13 @@ export function CategoriesBentoPage() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder={t.catui.search}
-              className="pl-8 pr-3 h-9 w-52 rounded-lg border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
+              className="pl-8 pr-3 h-9 w-52 max-sm:w-full max-sm:h-10 max-sm:rounded-xl max-sm:text-[15px] rounded-lg border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)] transition-colors"
             />
           </div>
           {can('category.create') && (
-            <button onClick={() => setIsFormOpen(true)} className="inline-flex items-center gap-2 h-9 px-4 rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
-              <Plus className="w-3.5 h-3.5" />{t.catui.create}
+            <button onClick={() => setIsFormOpen(true)} aria-label={t.catui.create} title={t.catui.create}
+              className="max-sm:order-2 inline-flex items-center justify-center gap-2 h-9 px-4 max-sm:w-10 max-sm:h-10 max-sm:px-0 max-sm:rounded-full max-sm:shadow-[0_4px_12px_rgba(16,185,129,0.35)] rounded-lg bg-[var(--color-interactive-primary)] text-white text-sm font-medium hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
+              <Plus className="w-3.5 h-3.5 max-sm:w-[18px] max-sm:h-[18px]" /><span className="max-sm:hidden">{t.catui.create}</span>
             </button>
           )}
         </div>
@@ -689,7 +691,7 @@ export function CategoriesBentoPage() {
         </section>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="inline-flex max-w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5" role="tablist">
+          <div className="inline-flex max-w-full max-sm:w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5" role="tablist">
             {filterTabs.map((tab) => (
               <button
                 key={tab.value}

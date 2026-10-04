@@ -414,13 +414,14 @@ export function DateRangePicker({
 // DateNavigator — ◀ | label | ▶ trigger
 // ------------------------------------------------------------------
 export function DateNavigator({
-  value, onChange, lang = 'en', align = 'center',
+  value, onChange, lang = 'en', align = 'center', className,
 }: {
   value: PickerValue
   onChange: (v: PickerValue) => void
   lang?: Lang
   /** 'end' opens the popup leftwards from the right edge (for pickers near the page's right side). */
   align?: 'center' | 'end'
+  className?: string
 }) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLButtonElement>(null)
@@ -453,11 +454,12 @@ export function DateNavigator({
   const label = buildLabel(value.start, value.end, value.mode, lang)
 
   return (
-    <div className="relative min-w-0">
-      <div className="flex items-center gap-0.5">
+    // Phones: a full-width segmented bar (‹ | period | ›) on its own row.
+    <div className={cn('relative min-w-0 max-sm:basis-full max-sm:w-full', className)}>
+      <div className="flex items-center gap-0.5 max-sm:gap-1.5">
         <button
           onClick={() => navigate(-1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] border border-transparent hover:border-[var(--color-border-default)] transition-all"
+          className="w-8 h-8 max-sm:w-10 max-sm:h-10 max-sm:shrink-0 flex items-center justify-center rounded-lg max-sm:rounded-xl hover:bg-[var(--color-bg-sunken)] border border-transparent max-sm:border-[var(--color-border-default)] max-sm:bg-[var(--color-surface-default)] hover:border-[var(--color-border-default)] transition-all"
           aria-label="Previous"
         >
           <ChevronLeft className="w-4 h-4 text-[var(--color-text-tertiary)]" />
@@ -469,7 +471,7 @@ export function DateNavigator({
           aria-haspopup="dialog"
           aria-expanded={open}
           className={cn(
-            'h-9 sm:h-8 px-3 flex items-center gap-1.5 rounded-lg border transition-all min-w-[168px] sm:min-w-[200px] justify-center',
+            'h-10 sm:h-8 px-3 flex items-center gap-1.5 rounded-xl sm:rounded-lg border transition-all max-sm:flex-1 max-sm:min-w-0 sm:min-w-[200px] justify-center',
             open
               ? 'bg-[var(--color-status-gain-bg)] border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]'
               : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-primary)] hover:border-[var(--color-border-strong)]'
@@ -481,7 +483,7 @@ export function DateNavigator({
 
         <button
           onClick={() => navigate(1)}
-          className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] border border-transparent hover:border-[var(--color-border-default)] transition-all"
+          className="w-8 h-8 max-sm:w-10 max-sm:h-10 max-sm:shrink-0 flex items-center justify-center rounded-lg max-sm:rounded-xl hover:bg-[var(--color-bg-sunken)] border border-transparent max-sm:border-[var(--color-border-default)] max-sm:bg-[var(--color-surface-default)] hover:border-[var(--color-border-default)] transition-all"
           aria-label="Next"
         >
           <ChevronRight className="w-4 h-4 text-[var(--color-text-tertiary)]" />
