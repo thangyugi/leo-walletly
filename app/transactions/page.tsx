@@ -32,7 +32,6 @@ import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 import { SummaryPanel } from '@/components/summary/summary-panel'
-import { usePeriodSeries } from '@/hooks/usePeriodSeries'
 import { prevPeriod } from '@/lib/periods'
 
 // Columns: checkbox | icon | 内容 | 日付 | ユーザー | カテゴリ | アカウント | 金額
@@ -594,8 +593,6 @@ function TransactionsContent() {
   useEffect(() => { if (params.get('new') === '1') router.replace('/transactions') }, [params, router])
 
   const ledgerId = ledger?.id
-  const loadSummary = useMemo(() => (ledgerId ? (r: { start: string; end: string }) => summarize(ledgerId, r.start, r.end) : null), [ledgerId, summarize])
-  const series = usePeriodSeries(loadSummary, picker, [revision])
   const range = useMemo(() => ({ start: filters.dateFrom || picker.start, end: filters.dateTo || picker.end }), [filters.dateFrom, filters.dateTo, picker.start, picker.end])
 
   useEffect(() => {
@@ -741,7 +738,6 @@ function TransactionsContent() {
       <SummaryPanel
         vs={trendVsLabel}
         lead={{ tone: 'balance', label: t.dashboard.netPeriod, value: format(totals.net), change: { value: pct(totals.net, prevTotals.net), better: 'up' } }}
-        series={series?.map((x) => x.net)}
         items={[
           { tone: 'income', label: t.dashboard.inflow, value: `+${format(totals.income)}`, change: { value: pct(totals.income, prevTotals.income), better: 'up' } },
           { tone: 'expense', label: t.dashboard.outflow, value: `−${format(totals.expense)}`, change: { value: pct(totals.expense, prevTotals.expense), better: 'down' } },

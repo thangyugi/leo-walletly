@@ -11,6 +11,9 @@ import { useMasterStore } from '@/features/master/store'
 import { useUserManagementStore } from '@/features/user-management/store'
 import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { effectiveBudget } from './budget'
+
+const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{\{(\w+)\}\}/g, (_, k) => String(v[k] ?? ''))
 import { Popover } from '@/components/ui/popover'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
 import type { Category, CategoryType } from './types'
@@ -252,6 +255,15 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     setKeywordInput('')
   }
 
+  // Live budget context: the parent's allocation and this category's own children.
+  const budgetNow = Number(formData.budget_limit) || 0
+  const parentCat = formData.parent_id ? categories.find((c) => c.id === formData.parent_id) : undefined
+  const parentUsed = parentCat ? categories.filter((c) => c.parent_id === parentCat.id && c.id !== initialData?.id && c.is_active)
+    .reduce((sum, c) => sum + effectiveBudget(c, categories), 0) + budgetNow : 0
+  const childrenBudget = initialData?.id ? categories.filter((c) => c.parent_id === initialData.id && c.is_active)
+    .reduce((sum, c) => sum + effectiveBudget(c, categories), 0) : 0
+  const fmtN = (n: number) => n.toLocaleString()
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErrorMsg(null)
@@ -268,8 +280,8 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     if (parentId && budget > 0) {
       const parent = categories.find((c) => c.id === parentId)
       if (parent && parent.budget_limit > 0) {
-        const siblings = categories.filter((c) => c.parent_id === parentId && c.id !== initialData?.id)
-        const total = siblings.reduce((sum, c) => sum + (c.budget_limit || 0), 0) + budget
+        const siblings = categories.filter((c) => c.parent_id === parentId && c.id !== initialData?.id && c.is_active)
+        const total = siblings.reduce((sum, c) => sum + effectiveBudget(c, categories), 0) + budget
         if (total > parent.budget_limit) {
           return setErrorMsg(t.catform.budgetOver
             .replace('{{total}}', total.toLocaleString())
@@ -277,6 +289,11 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
             .replace('{{limit}}', parent.budget_limit.toLocaleString()))
         }
       }
+    }
+
+    // A parent's own budget can't be smaller than what its sub-categories already have.
+    if (initialData?.id && budget > 0 && childrenBudget > budget) {
+      return setErrorMsg(fill(t.budget.belowChildren, { limit: budget.toLocaleString(), total: childrenBudget.toLocaleString() }))
     }
 
     setIsSaving(true)
@@ -469,6 +486,18 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <NumberInput label={t.catform.budget} currency={ledger?.currency_code ?? 'JPY'} value={formData.budget_limit} onChange={(val) => setFormData({ ...formData, budget_limit: val })} placeholder="0" />
             <NumberInput label={t.catform.warning} value={formData.warning_threshold} onChange={(val) => setFormData({ ...formData, warning_threshold: Math.min(100, Math.max(1, val)) })} placeholder="80" />
+            {parentCat && parentCat.budget_limit > 0 && (
+              <p className={cn('sm:col-span-2 -mt-1 text-[12px] px-3 py-2 rounded-lg', parentUsed > parentCat.budget_limit ? 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] font-medium' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>
+                {fill(t.budget.formParent, { parent: parentCat.name, used: fmtN(parentUsed), limit: fmtN(parentCat.budget_limit), free: fmtN(parentCat.budget_limit - parentUsed) })}
+              </p>
+            )}
+            {childrenBudget > 0 && (
+              <p className={cn('sm:col-span-2 -mt-1 text-[12px] px-3 py-2 rounded-lg', budgetNow > 0 && childrenBudget > budgetNow ? 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] font-medium' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>
+                {budgetNow > 0 && childrenBudget > budgetNow
+                  ? fill(t.budget.belowChildren, { limit: fmtN(budgetNow), total: fmtN(childrenBudget) })
+                  : fill(t.budget.formChildren, { total: fmtN(childrenBudget) })}
+              </p>
+            )}
           </div>
         )}
 

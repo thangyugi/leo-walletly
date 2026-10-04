@@ -8,6 +8,7 @@ import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
 import { loadPeriodStats, useCategoryStore } from './store'
+import { effectiveBudget } from './budget'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { useTransactionsStore } from '@/stores/transactions'
@@ -83,10 +84,11 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
 
 /* ─── FeaturedCard ─────────────────────────────────────────────────────────── */
 function FeaturedCard({ category, subCategories, expense }: { category: Category; subCategories: Category[]; expense: number }) {
+  const allCats = useCategoryStore((st) => st.categories)
   const { t } = useTranslation()
   const kindLabel = useKindLabel()
   const { fmt, sym, currency, budgetFactor } = React.useContext(FmtCtx)
-  const budget = (category.budget_limit || 0) * budgetFactor
+  const budget = effectiveBudget(category, allCats) * budgetFactor
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const remaining = budget - expense
   const displaySubs = subCategories.slice(0, 3)
@@ -235,10 +237,11 @@ function DarkStatCard({ variant, classified, total, pendingCount, autoPct, topCa
 
 /* ─── CategoryCard ─────────────────────────────────────────────────────────── */
 function CategoryCard({ category, expense, txCount }: { category: Category; expense: number; txCount: number }) {
+  const allCats = useCategoryStore((st) => st.categories)
   const { t } = useTranslation()
   const kindLabel = useKindLabel()
   const { fmt, sym, budgetFactor } = React.useContext(FmtCtx)
-  const budget = (category.budget_limit || 0) * budgetFactor
+  const budget = effectiveBudget(category, allCats) * budgetFactor
   const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
   const barClass = pct > 100 ? 'over' : pct > 80 ? 'warn' : 'ok'
   const kind = kindLabel(category.kind_code)
@@ -526,6 +529,7 @@ function PhoneCategoryList({ sections, pendingTotal, pendingAmount, archivedCoun
   archivedCount: number
   onShowArchived?: () => void
 }) {
+  const allCats = useCategoryStore((st) => st.categories)
   const { t } = useTranslation()
   const { fmt, sym, budgetFactor } = React.useContext(FmtCtx)
   const dot = { loss: 'bg-[var(--color-text-loss)]', gain: 'bg-[var(--color-text-gain)]', info: 'bg-[var(--color-brand-600)]', shared: 'bg-[var(--color-info-500)]' }
@@ -556,7 +560,7 @@ function PhoneCategoryList({ sections, pendingTotal, pendingAmount, archivedCoun
             </div>
             <div className="rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[var(--shadow-card)] overflow-hidden divide-y divide-[var(--color-border-subtle)]">
               {sec.rows.map(({ category: c, amount, tx, subs }) => {
-                const budget = (c.budget_limit || 0) * budgetFactor
+                const budget = effectiveBudget(c, allCats) * budgetFactor
                 const pct = budget > 0 ? Math.round((amount / budget) * 100) : total > 0 ? Math.round((amount / total) * 100) : 0
                 const over = budget > 0 && pct > 100
                 return (
@@ -640,11 +644,11 @@ export function CategoriesBentoPage() {
     void fetchUncategorized(ledgerId, 200, range).then(setPending)
   }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats, fetchUncategorized])
 
-  // Summary panel: the same KPIs for the last 6 periods (bars + "vs previous").
+  // Summary panel: the same KPIs for the previous period ("vs previous").
   const loadKpi = React.useMemo(() => (ledgerId && categories.length
     ? async (r: { start: string; end: string }) => (await loadPeriodStats(ledgerId, r, categories)).kpi
     : null), [ledgerId, categories])
-  const kpiSeries = usePeriodSeries(loadKpi, picker, [revision])
+  const kpiSeries = usePeriodSeries(loadKpi, picker, [revision], 2)
   const prevKpi = kpiSeries && kpiSeries.length > 1 ? kpiSeries[kpiSeries.length - 2] : null
 
   const statBy = React.useMemo(() => new Map(stats.map((s) => [s.id, s])), [stats])
@@ -779,7 +783,6 @@ export function CategoriesBentoPage() {
           loading={statsLoading && !kpi}
           lead={{ tone: 'expense', label: t.catui.kpiSpend, value: kpi ? `${fmt(kpi.total_expense)} ${sym}` : '—',
             change: { value: kpi && prevKpi ? pctChange(kpi.total_expense, prevKpi.total_expense) : null, better: 'down' } }}
-          series={kpiSeries?.map((k) => k.total_expense)}
           items={[
             kpi && kpi.total_budget > 0
               ? { tone: 'budget', label: t.catui.kpiBudgetLeft, value: `${fmt(budgetLeft)} ${sym}`,
