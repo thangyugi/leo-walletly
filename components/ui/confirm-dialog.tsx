@@ -16,10 +16,12 @@ export interface ConfirmOptions {
   confirmLabel?: string
   /** Red confirm button + "can't be undone". */
   danger?: boolean
+  /** A checkbox under the message (e.g. "also delete the 12 transactions"). */
+  option?: { label: React.ReactNode; defaultChecked?: boolean }
 }
 
-type Pending = ConfirmOptions & { resolve: (ok: boolean) => void }
-const useConfirmStore = create<{ pending: Pending | null }>(() => ({ pending: null }))
+type Pending = ConfirmOptions & { resolve: (ok: boolean, checked: boolean) => void }
+const useConfirmStore = create<{ pending: Pending | null; checked: boolean }>(() => ({ pending: null, checked: false }))
 
 /**
  * The app's confirmation (instead of the browser's `confirm()`): a centred
@@ -28,8 +30,16 @@ const useConfirmStore = create<{ pending: Pending | null }>(() => ({ pending: nu
 export function confirmDialog(options: ConfirmOptions | string): Promise<boolean> {
   const o = typeof options === 'string' ? { message: options } : options
   return new Promise((resolve) => {
-    useConfirmStore.getState().pending?.resolve(false)
-    useConfirmStore.setState({ pending: { ...o, resolve } })
+    useConfirmStore.getState().pending?.resolve(false, false)
+    useConfirmStore.setState({ pending: { ...o, resolve: (ok) => resolve(ok) }, checked: false })
+  })
+}
+
+/** Like `confirmDialog` with an `option` checkbox: null when cancelled, else whether it was ticked. */
+export function confirmWithOption(options: ConfirmOptions & { option: NonNullable<ConfirmOptions['option']> }): Promise<{ checked: boolean } | null> {
+  return new Promise((resolve) => {
+    useConfirmStore.getState().pending?.resolve(false, false)
+    useConfirmStore.setState({ pending: { ...options, resolve: (ok, checked) => resolve(ok ? { checked } : null) }, checked: !!options.option.defaultChecked })
   })
 }
 
@@ -38,8 +48,10 @@ export function ConfirmHost() {
   const { t } = useTranslation()
   const pending = useConfirmStore((s) => s.pending)
   const confirmRef = React.useRef<HTMLButtonElement>(null)
+  const checked = useConfirmStore((s) => s.checked)
+  const setChecked = (v: boolean) => useConfirmStore.setState({ checked: v })
   const close = (ok: boolean) => {
-    pending?.resolve(ok)
+    pending?.resolve(ok, checked)
     useConfirmStore.setState({ pending: null })
   }
   React.useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
@@ -62,6 +74,13 @@ export function ConfirmHost() {
             {pending.note && <p className="mt-1 text-[12.5px] text-[var(--color-text-tertiary)]">{pending.note}</p>}
           </div>
         </div>
+        {pending.option && (
+          <label className="mt-4 flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--color-bg-sunken)] cursor-pointer select-none">
+            <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)}
+              className="mt-0.5 w-4 h-4 shrink-0 accent-[#d92d20]" />
+            <span className="text-[13.5px] text-[var(--color-text-primary)] leading-snug">{pending.option.label}</span>
+          </label>
+        )}
         <div className="mt-5 flex gap-2 max-sm:flex-col-reverse sm:justify-end">
           <button type="button" onClick={() => close(false)}
             className="h-11 sm:h-9 px-4 rounded-xl sm:rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[14px] sm:text-sm font-medium text-[var(--color-text-primary)] hover:bg-[var(--color-bg-sunken)]">

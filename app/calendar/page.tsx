@@ -37,8 +37,9 @@ export default function CalendarPage() {
     monthTxns.forEach((tx) => {
       const date = tx.transactionDate.split('T')[0]
       if (!m[date]) m[date] = { expense: 0, income: 0, count: 0 }
-      if (tx.transactionType === 'expense') m[date].expense += tx.baseAmount
-      else if (tx.transactionType === 'income') m[date].income  += tx.baseAmount
+      // Waiting for confirmation: not money yet.
+      if (tx.status !== 'pending' && tx.transactionType === 'expense') m[date].expense += tx.baseAmount
+      else if (tx.status !== 'pending' && tx.transactionType === 'income') m[date].income  += tx.baseAmount
       m[date].count++
     })
     return m
@@ -62,8 +63,8 @@ export default function CalendarPage() {
   function nextMonth() { if (month === 11) { setYear((y) => y + 1); setMonth(0) } else setMonth((m) => m + 1) }
 
   const monthSummary = useMemo(() => ({
-    expense: monthTxns.reduce((s, t) => t.transactionType === 'expense' ? s + t.baseAmount : s, 0),
-    income:  monthTxns.reduce((s, t) => t.transactionType === 'income' ? s + t.baseAmount : s, 0),
+    expense: monthTxns.reduce((s, t) => t.status !== 'pending' && t.transactionType === 'expense' ? s + t.baseAmount : s, 0),
+    income:  monthTxns.reduce((s, t) => t.status !== 'pending' && t.transactionType === 'income' ? s + t.baseAmount : s, 0),
   }), [monthTxns])
 
   const monthLabel = formatMonthLocale(year, month + 1, lang)

@@ -1,6 +1,6 @@
 'use client'
 
-import { ArrowLeftRight, AlertCircle } from 'lucide-react'
+import { ArrowLeftRight, AlertCircle, Clock3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { formatDate } from '@/lib/utils'
 import { getAmountColor } from '@/lib/money'
@@ -53,7 +53,14 @@ export function TransactionRow({ txn, category, accountName, onClick, selected, 
       </div>
 
       <div className="flex-1 min-w-0">
-        <p className={cn('font-medium text-[var(--color-text-primary)] truncate', compact ? 'text-xs' : 'text-sm')}>{txn.description}</p>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <p className={cn('font-medium text-[var(--color-text-primary)] truncate', compact ? 'text-xs' : 'text-sm')}>{txn.description}</p>
+          {txn.status === 'pending' && (
+            <span className="shrink-0 inline-flex items-center gap-1 h-[18px] px-1.5 rounded-md text-[10.5px] font-semibold bg-[#fffaeb] text-[#b54708] ring-1 ring-inset ring-[#fedf89]" title={t.recurring.pendingBadge}>
+              <Clock3 className="w-3 h-3" />{t.recurring.pendingBadge}
+            </span>
+          )}
+        </div>
         <div className="flex items-center gap-2 mt-0.5 min-w-0">
           <span className="text-xs text-[var(--color-text-quaternary)] shrink-0">{formatDate(txn.transactionDate)}</span>
           {!compact && (

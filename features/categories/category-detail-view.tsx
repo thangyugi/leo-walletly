@@ -326,7 +326,7 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
   return (
     <>
     <BudgetBreakdownModal open={breakdown} onClose={() => setBreakdown(false)} category={category} categories={all} txns={txns} factor={factor} />
-    <SummaryPanel embedded className="border-t border-[var(--color-border-subtle)]"
+    <SummaryPanel embedded
       vs={vsPrevLabel(picker, t)}
       lead={{ tone: isIncome ? 'income' : 'expense', label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total),
         change: { value: prev != null ? pctChange(total, prev) : null, better: isIncome ? 'up' : 'down' } }}

@@ -16,7 +16,6 @@ import { Tooltip } from '@/components/ui/tooltip'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
 import { useRecurringStore, type Frequency, type RecurringInput, type RecurringRule } from '@/stores/recurring'
-import { useTransactionsStore } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -24,7 +23,7 @@ import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, formatDate, toLocalISODate } from '@/lib/utils'
 import { SheetGrip } from '@/components/ui/sheet-grip'
 import { useSwipeToClose } from '@/hooks/useSwipeToClose'
-import { confirmDialog } from '@/components/ui/confirm-dialog'
+import { confirmDialog, confirmWithOption } from '@/components/ui/confirm-dialog'
 
 /** Rough monthly cost of a rule, for the header total. */
 function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'intervalCount'>) {
@@ -136,7 +135,7 @@ export default function RecurringPage() {
   const { format } = useMoney()
   const { ledger, accounts, categories } = useLedgerData()
   const can = useLedgerStore((s) => s.can)
-  const { rules, pending, load, update, remove, confirmPending, skipPending } = useRecurringStore()
+  const { rules, pending, load, update, remove, countTransactions, confirmPending, skipPending } = useRecurringStore()
   const [editing, setEditing] = useState<RecurringRule | 'new' | null>(null)
 
   useEffect(() => { if (ledger) void load(ledger.id) }, [ledger, load])
@@ -144,7 +143,23 @@ export default function RecurringPage() {
   const monthlyTotal = useMemo(() => rules.filter((r) => r.isActive && r.transactionType === 'expense').reduce((s, r) => s + monthlyEquivalent(r), 0), [rules])
   const catName = (id: string | null) => categories.find((c) => c.id === id)?.name
   const accName = (id: string) => accounts.find((a) => a.id === id)?.name
-  const bump = () => useTransactionsStore.setState((s) => ({ revision: s.revision + 1 }))
+  async function onDelete(r: RecurringRule) {
+    try {
+      const count = await countTransactions(r.id)
+      const fill = (x: string) => x.replace('{{name}}', r.name).replace('{{count}}', String(count))
+      const base = { danger: true, title: fill(t.recurring.deleteTitle), message: t.recurring.deleteMsg }
+      // With nothing posted yet there is nothing to choose.
+      const res = count > 0
+        ? await confirmWithOption({ ...base, option: { label: fill(t.recurring.deleteWithTx) } })
+        : (await confirmDialog(base)) ? { checked: false } : null
+      if (!res) return
+      const n = await remove(r.id, res.checked)
+      toast.success(res.checked ? t.recurring.deletedTx.replace('{{count}}', String(n)) : t.recurring.deletedRule)
+    } catch (e) {
+      toast.error((e as Error).message)
+    }
+  }
+
 
   return (
     <div className="animate-fade-in space-y-5">
@@ -171,8 +186,8 @@ export default function RecurringPage() {
                 <span className="text-xs text-[var(--color-text-quaternary)] w-20">{formatDate(p.date)}</span>
                 <span className="flex-1 text-sm text-[var(--color-text-primary)] truncate">{p.description}</span>
                 <span className="font-tabular text-sm">{format(p.amount)}</span>
-                <Button size="sm" icon={<Check />} onClick={async () => { await confirmPending(p.id); bump() }}>{t.recurring.confirm}</Button>
-                <Button size="sm" variant="ghost" icon={<SkipForward />} onClick={async () => { await skipPending(p.id); bump() }}>{t.recurring.skip}</Button>
+                <Button size="sm" icon={<Check />} onClick={() => void confirmPending(p.id)}>{t.recurring.confirm}</Button>
+                <Button size="sm" variant="ghost" icon={<SkipForward />} onClick={() => void skipPending(p.id)}>{t.recurring.skip}</Button>
               </div>
             ))}
           </div>
@@ -223,7 +238,7 @@ export default function RecurringPage() {
                     </Tooltip>
                     {can('recurring.delete') && (
                       <Tooltip text={t.recurring.tipDelete}>
-                        <button type="button" aria-label={t.common.delete} onClick={async () => { if (await confirmDialog({ danger: true, message: t.recurring.deleteConfirm })) void remove(r.id) }} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
+                        <button type="button" aria-label={t.common.delete} onClick={() => void onDelete(r)} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]"><Trash2 className="w-3.5 h-3.5" /></button>
                       </Tooltip>
                     )}
                   </div>
@@ -234,7 +249,7 @@ export default function RecurringPage() {
         )}
       </Card>
 
-      {editing && <RecurringForm initial={editing === 'new' ? undefined : editing} onClose={() => { setEditing(null); bump() }} />}
+      {editing && <RecurringForm initial={editing === 'new' ? undefined : editing} onClose={() => setEditing(null)} />}
     </div>
   )
 }
