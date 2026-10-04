@@ -9,6 +9,7 @@ import { useI18nStore } from '@/features/i18n/store'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
+import { AppSelect } from '@/components/ui/app-select'
 
 // Lists every user-editable UI text (translation_keys.is_user_editable) for the
 // current language with where its value comes from: default / this ledger / only me.
@@ -44,10 +45,10 @@ export default function DisplayTextsPage() {
           <input type="search" aria-label={t.transactions.search} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t.transactions.search}
             className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-sm" />
         </div>
-        <select aria-label={t.texts.screen} className={cn(selectClass, 'w-48')} value={ns} onChange={(e) => setNs(e.target.value)}>
+        <AppSelect aria-label={t.texts.screen} className={cn(selectClass, 'w-48')} value={ns} onChange={(e) => setNs(e.target.value)}>
           <option value="">{t.texts.screen}: {t.common.all}</option>
           {namespaces.map((n) => <option key={n} value={n}>{n}</option>)}
-        </select>
+        </AppSelect>
       </div>
 
       <div className="card-base divide-y divide-[var(--color-border-subtle)]">

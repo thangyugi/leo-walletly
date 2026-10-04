@@ -8,6 +8,7 @@ import { SettingsService, type AuditEntry } from '@/features/settings/services'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
+import { AppSelect } from '@/components/ui/app-select'
 
 const ENTITY_TYPES = ['transactions', 'categories', 'financial_accounts', 'budgets', 'ledger_members', 'ledgers', 'recurring_rules']
 
@@ -34,10 +35,10 @@ export default function AuditLogPage() {
   return (
     <div className="animate-fade-in max-w-4xl">
       <PageTitle title={t.auditx.title} subtitle={`${current?.name} · ${t.auditx.subtitle}`} />
-      <select aria-label={t.auditx.allTypes} className={cn(selectClass, 'max-w-xs mb-4')} value={entityType} onChange={(e) => setEntityType(e.target.value)}>
+      <AppSelect aria-label={t.auditx.allTypes} className={cn(selectClass, 'max-w-xs mb-4')} value={entityType} onChange={(e) => setEntityType(e.target.value)}>
         <option value="">{t.auditx.allTypes}</option>
         {ENTITY_TYPES.map((e) => <option key={e} value={e}>{e}</option>)}
-      </select>
+      </AppSelect>
       {!rows ? <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div> : rows.length === 0 ? (
         <div className="card-base p-10 text-center text-sm text-[var(--color-text-tertiary)]"><History className="w-6 h-6 mx-auto mb-2" />{t.auditx.empty}</div>
       ) : (

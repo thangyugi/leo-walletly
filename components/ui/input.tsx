@@ -1,4 +1,5 @@
 import * as React from 'react'
+import { AppSelect, type AppSelectProps } from './app-select'
 import { cn } from '@/lib/utils'
 
 export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
@@ -66,14 +67,16 @@ export const Input = React.forwardRef<HTMLInputElement, InputProps>(
 )
 Input.displayName = 'Input'
 
-export interface SelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+export interface SelectProps extends AppSelectProps {
   label?: string
   error?: string
 }
 
-export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
+/** Labelled select using the app's picker (popover / phone sheet), not the browser's menu. */
+export const Select = React.forwardRef<HTMLButtonElement, SelectProps>(
   ({ className, label, error, id, children, ...props }, ref) => {
-    const selectId = id ?? React.useId()
+    const autoId = React.useId()
+    const selectId = id ?? autoId
     return (
       <div className="flex flex-col gap-1.5">
         {label && (
@@ -81,21 +84,22 @@ export const Select = React.forwardRef<HTMLSelectElement, SelectProps>(
             {label}
           </label>
         )}
-        <select
+        <AppSelect
           ref={ref}
           id={selectId}
+          aria-label={props['aria-label'] ?? label}
           className={cn(
             'h-9 w-full rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)]',
             'px-3 text-sm text-[var(--color-text-primary)]',
             'focus:outline-none focus:border-[var(--color-border-focus)] focus:ring-3 focus:ring-[var(--color-brand-100)]',
-            'hover:border-[var(--color-border-strong)] cursor-pointer',
+            'hover:border-[var(--color-border-strong)]',
             error && 'border-[var(--color-border-error)]',
             className
           )}
           {...props}
         >
           {children}
-        </select>
+        </AppSelect>
         {error && <p className="text-xs text-[var(--color-text-loss)]">{error}</p>}
       </div>
     )

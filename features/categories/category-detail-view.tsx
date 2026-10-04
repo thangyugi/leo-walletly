@@ -30,6 +30,7 @@ import type { PickerValue } from '@/components/ui/date-range-picker'
 import type { Category, CategoryMember, MemberBalance } from './types'
 import type { Transaction } from '@/types/domain'
 import type { Account } from '@/features/accounts/store'
+import { AppSelect } from '@/components/ui/app-select'
 
 // Layout follows the original "Group detail" design: breadcrumbs, a hero card
 // (cover + tab bar + five stats) and section cards per tab.
@@ -627,12 +628,12 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
         {ruleForm && (
           <div className="flex items-center gap-2 px-[18px] py-3 flex-wrap border-t border-[var(--color-border-subtle)]">
             <span className="text-[11px] font-semibold text-[var(--color-text-tertiary)]">{t.catdetail.ruleWhen}</span>
-            <select aria-label={t.catdetail.fieldDescription} value={ruleForm.field} onChange={(e) => setRuleForm({ ...ruleForm, field: e.target.value })} className={selectCls}>
+            <AppSelect aria-label={t.catdetail.fieldDescription} value={ruleForm.field} onChange={(e) => setRuleForm({ ...ruleForm, field: e.target.value })} className={selectCls}>
               {Object.entries(fieldLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
-            <select aria-label={t.catdetail.opContains} value={ruleForm.op} onChange={(e) => setRuleForm({ ...ruleForm, op: e.target.value })} className={selectCls}>
+            </AppSelect>
+            <AppSelect aria-label={t.catdetail.opContains} value={ruleForm.op} onChange={(e) => setRuleForm({ ...ruleForm, op: e.target.value })} className={selectCls}>
               {Object.entries(opLabel).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
-            </select>
+            </AppSelect>
             <input aria-label={t.catdetail.ruleValue} placeholder={t.catdetail.ruleValue} value={ruleForm.value} autoFocus
               onChange={(e) => setRuleForm({ ...ruleForm, value: e.target.value })} onKeyDown={(e) => e.key === 'Enter' && void addRule()}
               className="h-8 px-2 rounded-[7px] border border-[var(--color-border-default)] bg-white text-xs w-40" />

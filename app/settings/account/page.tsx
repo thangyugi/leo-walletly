@@ -7,6 +7,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { NAV_ITEMS } from '@/components/layout/nav'
 import { cn } from '@/lib/utils'
+import { AppSelect } from '@/components/ui/app-select'
 
 export default function AccountSettingsPage() {
   const { t, tk } = useTranslation()
@@ -36,15 +37,15 @@ export default function AccountSettingsPage() {
           <Toggle label={t.settings.account.hiddenBalances} checked={preferences.hide_balances} onChange={(v) => save({ hide_balances: v })} />
         </SettingRow>
         <SettingRow label={t.settings.account.startPage}>
-          <select aria-label={t.settings.account.startPage} className={selectClass} value={preferences.start_page} onChange={(e) => save({ start_page: e.target.value })}>
+          <AppSelect aria-label={t.settings.account.startPage} className={selectClass} value={preferences.start_page} onChange={(e) => save({ start_page: e.target.value })}>
             {NAV_ITEMS.filter((n) => n.group !== 'system').map((n) => <option key={n.href} value={n.href}>{tk(n.labelKey)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.defaultLedger}>
-          <select aria-label={t.prefs.defaultLedger} className={selectClass} value={preferences.default_ledger_id ?? ''} onChange={(e) => save({ default_ledger_id: e.target.value || null })}>
+          <AppSelect aria-label={t.prefs.defaultLedger} className={selectClass} value={preferences.default_ledger_id ?? ''} onChange={(e) => save({ default_ledger_id: e.target.value || null })}>
             <option value="">{t.prefs.lastUsed}</option>
             {ledgers.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
       </div>
     </div>
