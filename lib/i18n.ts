@@ -1311,6 +1311,23 @@ const ja = {
     archived: 'アーカイブしました',
     restored: '再開しました',
   },
+  pwa: {
+    updateReady: '新しいバージョンがあります。',
+    updateAction: '更新',
+    offline: 'オフラインです。データが最新でない可能性があり、変更は保存できません。',
+    backOnline: 'オンラインに戻りました。',
+    install: 'アプリをインストール',
+    installSub: 'ホーム画面からすぐ開ける全画面アプリ',
+    installed: 'インストールしました',
+    iosTitle: 'iPhone / iPad にインストール',
+    iosStep1: 'Safari の下部にある共有ボタン（四角と矢印）を押します。',
+    iosStep2: '「ホーム画面に追加」を選びます。',
+    iosStep3: '「追加」を押すと、ホーム画面に Walletly が表示されます。',
+    iosNote: 'Safari で開いている場合のみ追加できます。',
+    offlineTitle: 'インターネットに接続されていません',
+    offlineBody: 'Walletly はデータの読み込みと保存にネットワークを使います。Wi-Fi またはモバイルデータを確認してから、もう一度お試しください。',
+    retry: '再試行',
+  },
 }
 
 const vi: typeof ja = {
@@ -2618,6 +2635,23 @@ const vi: typeof ja = {
     archived: 'Đã lưu trữ danh mục',
     restored: 'Đã bật lại danh mục',
   },
+  pwa: {
+    updateReady: 'Đã có phiên bản mới của Walletly.',
+    updateAction: 'Cập nhật',
+    offline: 'Bạn đang ngoại tuyến — số liệu có thể chưa mới nhất và chưa lưu được thay đổi.',
+    backOnline: 'Đã kết nối mạng trở lại.',
+    install: 'Cài đặt ứng dụng',
+    installSub: 'Mở nhanh từ màn hình chính, hiển thị toàn màn hình',
+    installed: 'Đã cài đặt ứng dụng',
+    iosTitle: 'Cài Walletly lên iPhone / iPad',
+    iosStep1: 'Bấm nút Chia sẻ (ô vuông có mũi tên lên) ở thanh dưới của Safari.',
+    iosStep2: 'Chọn "Thêm vào MH chính".',
+    iosStep3: 'Bấm "Thêm" — biểu tượng Walletly sẽ xuất hiện trên màn hình chính.',
+    iosNote: 'Chỉ thêm được khi đang mở bằng Safari.',
+    offlineTitle: 'Không có kết nối mạng',
+    offlineBody: 'Walletly cần mạng để tải và lưu số liệu. Hãy kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.',
+    retry: 'Thử lại',
+  },
 }
 
 const en: typeof ja = {
@@ -3924,6 +3958,23 @@ const en: typeof ja = {
     deleted: 'Category deleted',
     archived: 'Category archived',
     restored: 'Category restored',
+  },
+  pwa: {
+    updateReady: 'A new version of Walletly is available.',
+    updateAction: 'Update',
+    offline: 'You are offline — figures may be out of date and changes cannot be saved.',
+    backOnline: 'Back online.',
+    install: 'Install the app',
+    installSub: 'Opens from your home screen, full screen',
+    installed: 'App installed',
+    iosTitle: 'Install Walletly on iPhone / iPad',
+    iosStep1: 'Tap the Share button (square with an arrow) in Safari.',
+    iosStep2: 'Choose "Add to Home Screen".',
+    iosStep3: 'Tap "Add" — Walletly appears on your home screen.',
+    iosNote: 'Only available when opened in Safari.',
+    offlineTitle: 'No internet connection',
+    offlineBody: 'Walletly needs the network to load and save your figures. Check Wi-Fi or mobile data and try again.',
+    retry: 'Try again',
   },
 }
 

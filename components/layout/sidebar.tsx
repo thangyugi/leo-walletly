@@ -11,6 +11,7 @@ import { useMasterStore } from '@/features/master/store'
 import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
 import { EditableText } from '@/components/i18n/editable-text'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath, type NavGroup } from './nav'
+import { InstallAppButton } from '@/features/pwa/components/install-app-button'
 import type { Lang } from '@/lib/i18n'
 
 // Shown before the DB language list has loaded (and if it cannot be reached).
@@ -141,6 +142,7 @@ export function Sidebar() {
         </Link>
         <LedgerSwitcher variant="rail" />
         <RailNav />
+        <InstallAppButton variant="rail" />
         <div className="w-full px-2 py-2 border-t border-[var(--color-sidebar-border)]">
           <LanguagePicker vertical />
         </div>
@@ -161,6 +163,7 @@ export function Sidebar() {
         <NavList />
       </nav>
 
+      <InstallAppButton variant="sidebar" />
       <div className="px-2.5 py-3 border-t border-[var(--color-sidebar-border)]">
         <p className="flex items-center gap-1.5 px-2 mb-2 text-[10px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">
           <Globe className="w-3 h-3" />
