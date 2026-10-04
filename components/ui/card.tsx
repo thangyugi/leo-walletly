@@ -13,7 +13,8 @@ export function Card({ className, interactive, padding = 'md', children, ...prop
       className={cn(
         'bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-xl',
         'shadow-[var(--shadow-card)]',
-        padding === 'none' && 'p-0',
+        // Edge-to-edge content (table headers, footers) follows the rounded corners.
+        padding === 'none' && 'p-0 overflow-hidden',
         padding === 'sm'   && 'p-4',
         padding === 'md'   && 'p-5',
         padding === 'lg'   && 'p-6',

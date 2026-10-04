@@ -81,7 +81,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
                 onClick={() => setIsEditing(true)}
-                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap rounded-xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-all"
+                className="flex items-center gap-2 px-4 py-2 whitespace-nowrap rounded-xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-sm font-semibold hover:bg-[var(--color-border-subtle)] transition-all"
               >
                 <Edit3 className="w-4 h-4" />
                 {t.settings.profile.editBtn}
@@ -196,7 +196,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
           <ProfileField label="Giới tính" error={errors.gender?.message} isEditing={isEditing}>
             <AppSelect aria-label="Giới tính" value={watch('gender') ?? ''} disabled={!isEditing}
               onChange={(e) => setValue('gender', e.target.value as ProfileFormValues['gender'], { shouldDirty: true, shouldValidate: true })}
-              className={cn("disabled:opacity-100 disabled:cursor-default", "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm appearance-none", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
+              className={cn("disabled:opacity-100 disabled:cursor-default [&:disabled>svg]:hidden", "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm appearance-none", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             >
               <option value="">Chọn giới tính...</option>
               <option value="male">Nam</option>
