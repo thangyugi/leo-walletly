@@ -27,7 +27,6 @@ import { cn, toLocalISODate, formatDate } from '@/lib/utils'
 import type { Transaction } from '@/types/domain'
 import type { Translations } from '@/lib/i18n'
 import { SummaryPanel } from '@/components/summary/summary-panel'
-import { usePeriodSeries } from '@/hooks/usePeriodSeries'
 import { prevPeriod } from '@/lib/periods'
 
 // ------------------------------------------------------------------
@@ -294,8 +293,6 @@ export default function DashboardPage() {
   const [viewing, setViewing] = useState<Transaction | null>(null)
 
   const ledgerId = ledger?.id
-  const loadSummary = useMemo(() => (ledgerId ? (r: { start: string; end: string }) => summarize(ledgerId, r.start, r.end) : null), [ledgerId, summarize])
-  const series = usePeriodSeries(loadSummary, picker, [revision])
 
   useEffect(() => {
     if (!ledgerId) return
@@ -357,9 +354,7 @@ export default function DashboardPage() {
       {/* Summary: lead = net for the period; bars = the last 6 periods. */}
       <SummaryPanel
         vs={trendVsLabel}
-        loading={!series}
         lead={{ tone: 'balance', label: t.dashboard.totalBalance, value: format(stats.net), change: { value: trendPct(stats.net, prevStats.net), better: 'up' } }}
-        series={series?.map((x) => x.net)}
         items={[
           { tone: 'income', label: t.dashboard.inflow, value: format(stats.income), change: { value: trendPct(stats.income, prevStats.income), better: 'up' } },
           { tone: 'expense', label: t.dashboard.outflow, value: format(stats.expense), change: { value: trendPct(stats.expense, prevStats.expense), better: 'down' } },

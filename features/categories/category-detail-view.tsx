@@ -296,7 +296,7 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
   txns: Transaction[]
   split: ReturnType<typeof periodSplit>
   userId: string | null
-  /** This category's total for the last periods (oldest first). */
+  /** This category's total for the previous and current period. */
   series: number[] | null
 }) {
   const { t } = useTranslation()
@@ -321,7 +321,6 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
       vs={vsPrevLabel(picker, t)}
       lead={{ tone: isIncome ? 'income' : 'expense', label: isIncome ? t.catdetail.statIncome : t.catdetail.statTotal, value: format(total),
         change: { value: prev != null ? pctChange(total, prev) : null, better: isIncome ? 'up' : 'down' } }}
-      series={series}
       items={[
         budget > 0
           ? { tone: 'budget', label: t.catui.budget, value: format(budget),
@@ -530,9 +529,9 @@ function LinkedAccountsSection({ txns, accounts, selected, onSelect }: {
 // ── Keywords + rules ─────────────────────────────────────────
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
-    <button role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
-      className={cn('relative w-8 h-4 rounded-full transition-colors shrink-0', on ? 'bg-[var(--color-interactive-primary)]' : 'bg-[var(--color-border-strong)]')}>
-      <span className={cn('absolute top-0.5 w-3 h-3 rounded-full bg-white shadow-xs transition-transform', on ? 'translate-x-4' : 'translate-x-0.5')} />
+    <button type="button" role="switch" aria-checked={on} aria-label={label} onClick={() => onChange(!on)}
+      className={cn('relative inline-flex items-center w-9 h-5 p-0.5 rounded-full transition-colors shrink-0', on ? 'bg-[var(--color-interactive-primary)]' : 'bg-[var(--color-border-strong)]')}>
+      <span className={cn('block w-4 h-4 rounded-full bg-white shadow-sm transition-transform', on ? 'translate-x-4' : 'translate-x-0')} />
     </button>
   )
 }
@@ -614,11 +613,19 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
       <div className="divide-y divide-[var(--color-border-subtle)]">
         {sections.map((c, si) => (
           <div key={c.id} className="px-[18px] py-4">
-            <h5 className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-3">
-              {si === 0 ? fill(t.catdetail.kwForGroup, { name: c.name }) : fill(t.catdetail.kwForSub, { name: c.name })}
-              <span className="font-mono text-[9px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)]">{c.keywords.length}</span>
-              <span className="normal-case tracking-normal font-normal text-[11px] text-[var(--color-text-tertiary)]">{si === 0 ? t.catdetail.kwForGroupHint : t.catdetail.kwForSubHint}</span>
-            </h5>
+            <div className="flex items-start gap-2.5 mb-3">
+              <span className="w-8 h-8 rounded-[9px] flex items-center justify-center shrink-0" style={{ background: c.color + '22', color: c.color }}>
+                <CategoryIcon name={c.emoji} className="w-4 h-4" />
+              </span>
+              <div className="min-w-0 flex-1">
+                <h5 className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[13px] font-semibold text-[var(--color-text-primary)] truncate">{c.name}</span>
+                  {si > 0 && <span className="shrink-0 text-[10px] font-medium px-1.5 py-px rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]">{t.catdetail.tabSub}</span>}
+                  <span className="shrink-0 font-mono text-[10px] font-semibold px-1.5 py-px rounded-md" style={{ background: c.color + '1a', color: c.color }}>{c.keywords.length}</span>
+                </h5>
+                <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5 leading-snug">{(si === 0 ? t.catdetail.kwForGroupHint : t.catdetail.kwForSubHint).replace(/^·\s*/, '')}</p>
+              </div>
+            </div>
             <div className="flex flex-wrap gap-2">
               {c.keywords.map((kw) => {
                 const n = hits(kw)
@@ -656,28 +663,31 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
       </div>
 
       <div className="bg-[var(--color-bg-canvas)] border-t border-[var(--color-border-subtle)]">
-        <div className="flex items-center gap-2 px-[18px] py-3 text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
-          <Clock className="w-3 h-3" /> {t.catdetail.rulesTitle}
-          <span className="flex-1" />
-          <span className="normal-case font-normal tracking-normal text-[var(--color-text-quaternary)]">{t.catdetail.rulesHint}</span>
+        <div className="flex items-start gap-2 px-[18px] pt-3 pb-2">
+          <Clock className="w-3.5 h-3.5 mt-px shrink-0 text-[var(--color-text-tertiary)]" />
+          <div className="min-w-0 flex-1 sm:flex sm:items-center sm:gap-2">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)] whitespace-nowrap">{t.catdetail.rulesTitle}</p>
+            <p className="text-[11px] text-[var(--color-text-quaternary)] sm:ml-auto">{t.catdetail.rulesHint}</p>
+          </div>
         </div>
         <div className="divide-y divide-[var(--color-border-subtle)]">
-          {rules.length === 0 && <p className="px-[18px] pb-3 text-[12px] text-[var(--color-text-quaternary)]">{t.catdetail.noRules}</p>}
+          {rules.length === 0 && <p className="mx-[18px] mb-3 px-3 py-2.5 rounded-lg bg-[var(--color-surface-default)] border border-dashed border-[var(--color-border-default)] text-[12px] text-[var(--color-text-quaternary)]">{t.catdetail.noRules}</p>}
           {rules.map((r) => {
             const target = sections.find((c) => c.id === r.category_id)
             return (
-              <div key={r.id} className="flex items-center gap-3 px-[18px] py-3 flex-wrap">
+              <div key={r.id} className="flex items-center gap-x-3 gap-y-2 px-[18px] py-3 flex-wrap">
                 <div className="flex items-center gap-1.5 flex-wrap text-[11px] flex-1 min-w-0">
                   <span className="font-semibold text-[var(--color-text-tertiary)]">{t.catdetail.ruleWhen}</span>
                   <span className="font-mono text-[11px] bg-white border border-[var(--color-border-default)] px-1.5 py-0.5 rounded-[5px]">{fieldLabel[r.match_field] ?? r.match_field}</span>
                   <span className="text-[var(--color-text-tertiary)]">{opLabel[r.match_type] ?? r.match_type}</span>
                   <span className="font-medium px-2 py-0.5 rounded-lg text-[11px] bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">{r.pattern}</span>
                 </div>
-                <span className="text-[var(--color-text-quaternary)] shrink-0">→</span>
-                <div className="flex items-center gap-1.5 text-[11px] shrink-0">
+                <span className="text-[var(--color-text-quaternary)] shrink-0 max-sm:hidden">→</span>
+                <div className="flex items-center gap-1.5 text-[11px] shrink-0 max-sm:w-full">
+                  <span className="sm:hidden text-[var(--color-text-quaternary)]">→</span>
                   {target && <span className="w-5 h-5 rounded-[5px] flex items-center justify-center" style={{ background: target.color + '22', color: target.color }}><CategoryIcon name={target.emoji} className="w-3 h-3" /></span>}
                   <span className="font-medium text-[var(--color-text-primary)]">{target?.name ?? '—'}</span>
-                  {canEdit && <Toggle on={r.is_active} onChange={(v) => void toggleRule(r, v)} label={`${r.pattern} → ${target?.name ?? ''}`} />}
+                  {canEdit && <span className="ml-auto sm:ml-2 flex items-center"><Toggle on={r.is_active} onChange={(v) => void toggleRule(r, v)} label={`${r.pattern} → ${target?.name ?? ''}`} /></span>}
                 </div>
               </div>
             )
@@ -703,13 +713,13 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
           </div>
         )}
         {canEdit && (
-          <div className="flex items-center gap-2 px-[18px] py-[10px]">
-            <button onClick={() => setRuleForm({ field: 'description', op: 'contains', value: '', target: category.id })} className={btnOutline}>
+          <div className="flex items-center gap-2 px-[18px] py-[10px] max-sm:flex-col max-sm:items-stretch">
+            <button onClick={() => setRuleForm({ field: 'description', op: 'contains', value: '', target: category.id })} className={cn(btnOutline, 'whitespace-nowrap max-sm:justify-center max-sm:h-9')}>
               <Plus className="w-3 h-3" /> {t.catdetail.addRule}
             </button>
             <button onClick={async () => toast.success(fill(t.catui.applied, { count: await applyRules(uncategorized.map((x) => x.id)) }))}
               disabled={uncategorized.length === 0}
-              className="inline-flex items-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors disabled:opacity-50">
+              className="inline-flex items-center justify-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors disabled:opacity-50">
               {fill(t.catdetail.testRules, { count: uncategorized.length })}
             </button>
           </div>
@@ -1077,7 +1087,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   }, [category, categories])
 
   const monthTx = useRangeTransactions(picker.start, picker.end)
-  // This category (with its sub-categories) for the last 6 periods: bars + "vs previous".
+  // This category (with its sub-categories) for the previous and the current period.
   const ledgerIdForSeries = categories[0]?.ledger_id
   const isIncomeCat = category?.type === 'income'
   const loadTotal = React.useMemo(() => (ledgerIdForSeries
@@ -1085,7 +1095,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         .filter((x) => ids.has(x.id)).reduce((a, x) => a + (isIncomeCat ? x.income : x.expense), 0)
     : null), [ledgerIdForSeries, categories, ids, isIncomeCat])
   const seriesRevision = useTransactionsStore((s) => s.revision)
-  const totalSeries = usePeriodSeries(loadTotal, picker, [seriesRevision])
+  const totalSeries = usePeriodSeries(loadTotal, picker, [seriesRevision], 2)
   const txns = React.useMemo(() => monthTx.filter((x) => x.categoryId && ids.has(x.categoryId)).sort((a, b) => b.transactionDate.localeCompare(a.transactionDate)), [monthTx, ids])
   const uncategorized = React.useMemo(() => monthTx.filter((x) => !x.categoryId && x.transactionType !== 'transfer'), [monthTx])
   const settlement = useSettlement(category ?? ({ id: categoryId } as Category))

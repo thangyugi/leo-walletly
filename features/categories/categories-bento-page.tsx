@@ -640,11 +640,11 @@ export function CategoriesBentoPage() {
     void fetchUncategorized(ledgerId, 200, range).then(setPending)
   }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats, fetchUncategorized])
 
-  // Summary panel: the same KPIs for the last 6 periods (bars + "vs previous").
+  // Summary panel: the same KPIs for the previous period ("vs previous").
   const loadKpi = React.useMemo(() => (ledgerId && categories.length
     ? async (r: { start: string; end: string }) => (await loadPeriodStats(ledgerId, r, categories)).kpi
     : null), [ledgerId, categories])
-  const kpiSeries = usePeriodSeries(loadKpi, picker, [revision])
+  const kpiSeries = usePeriodSeries(loadKpi, picker, [revision], 2)
   const prevKpi = kpiSeries && kpiSeries.length > 1 ? kpiSeries[kpiSeries.length - 2] : null
 
   const statBy = React.useMemo(() => new Map(stats.map((s) => [s.id, s])), [stats])
@@ -779,7 +779,6 @@ export function CategoriesBentoPage() {
           loading={statsLoading && !kpi}
           lead={{ tone: 'expense', label: t.catui.kpiSpend, value: kpi ? `${fmt(kpi.total_expense)} ${sym}` : '—',
             change: { value: kpi && prevKpi ? pctChange(kpi.total_expense, prevKpi.total_expense) : null, better: 'down' } }}
-          series={kpiSeries?.map((k) => k.total_expense)}
           items={[
             kpi && kpi.total_budget > 0
               ? { tone: 'budget', label: t.catui.kpiBudgetLeft, value: `${fmt(budgetLeft)} ${sym}`,
