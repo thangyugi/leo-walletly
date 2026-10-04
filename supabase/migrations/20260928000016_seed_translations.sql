@@ -79,14 +79,21 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('auditx.subtitle', 'auditx', null, false),
   ('auditx.system', 'auditx', null, false),
   ('auditx.title', 'auditx', null, false),
+  ('bulk.account', 'bulk', null, false),
   ('bulk.addTag', 'bulk', null, false),
+  ('bulk.category', 'bulk', null, false),
   ('bulk.changeAccount', 'bulk', null, false),
   ('bulk.changeCategory', 'bulk', null, false),
   ('bulk.choose', 'bulk', null, false),
+  ('bulk.clearAll', 'bulk', null, false),
   ('bulk.delete', 'bulk', null, false),
   ('bulk.deleteConfirm', 'bulk', 'count', false),
   ('bulk.done', 'bulk', 'count', false),
+  ('bulk.finish', 'bulk', null, false),
+  ('bulk.hint', 'bulk', null, false),
   ('bulk.reconcile', 'bulk', null, false),
+  ('bulk.select', 'bulk', null, false),
+  ('bulk.selectAll', 'bulk', null, false),
   ('bulk.selected', 'bulk', 'count', false),
   ('calendar.clickDay', 'calendar', null, true),
   ('calendar.days.0', 'calendar', null, true),
@@ -400,17 +407,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.unknown', 'common', null, false),
   ('common.update', 'common', null, false),
   ('common.verified', 'common', null, false),
-  ('common.workspace', 'common', null, false),
+  ('common.workspace', 'common', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('common.yes', 'common', null, false),
   ('dashboard.accounts', 'dashboard', null, true),
   ('dashboard.addAccount', 'dashboard', null, true),
   ('dashboard.addTransaction', 'dashboard', null, true),
   ('dashboard.avgDaily', 'dashboard', null, true),
   ('dashboard.balance', 'dashboard', null, true),
-  ('dashboard.budgets', 'dashboard', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('dashboard.budgets', 'dashboard', null, true),
   ('dashboard.cashFlow', 'dashboard', null, true),
   ('dashboard.days30Ago', 'dashboard', null, true),
   ('dashboard.deposits', 'dashboard', null, true),
@@ -803,17 +810,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('mobnav.transactions', 'mobnav', null, false),
   ('mobnav.users', 'mobnav', null, false),
   ('nav.accounts', 'nav', null, true),
-  ('nav.analytics', 'nav', null, true),
+  ('nav.analytics', 'nav', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('nav.calendar', 'nav', null, true),
   ('nav.dashboard', 'nav', null, true),
   ('nav.groups', 'nav', null, true),
   ('nav.import', 'nav', null, true),
   ('nav.ledger', 'nav', null, true),
   ('nav.recurring', 'nav', null, true),
-  ('nav.report', 'nav', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('nav.report', 'nav', null, true),
   ('nav.scan', 'nav', null, true),
   ('nav.transactions', 'nav', null, true),
   ('nav.users', 'nav', null, true),
@@ -1206,17 +1213,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.rawData', 'txform', null, false),
   ('txform.receipt', 'txform', null, false),
   ('txform.receiptImage', 'txform', null, false),
-  ('txform.receiptItems', 'txform', null, false),
+  ('txform.receiptItems', 'txform', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('txform.receiptSiblings', 'txform', null, false),
   ('txform.reconciled', 'txform', null, false),
   ('txform.save', 'txform', null, false),
   ('txform.saved', 'txform', null, false),
   ('txform.source', 'txform', null, false),
   ('txform.sourceBankSync', 'txform', null, false),
-  ('txform.sourceImport', 'txform', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('txform.sourceImport', 'txform', null, false),
   ('txform.sourceManual', 'txform', null, false),
   ('txform.sourceRecurring', 'txform', null, false),
   ('txform.sourceScan', 'txform', null, false),
@@ -1308,14 +1315,21 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'ja', 'この元帳で誰がいつ何を変更したか'),
   ('auditx.system', 'ja', 'システム'),
   ('auditx.title', 'ja', 'アクティビティログ'),
+  ('bulk.account', 'ja', '口座'),
   ('bulk.addTag', 'ja', 'タグ追加'),
+  ('bulk.category', 'ja', 'カテゴリ'),
   ('bulk.changeAccount', 'ja', '口座変更'),
   ('bulk.changeCategory', 'ja', 'カテゴリ変更'),
   ('bulk.choose', 'ja', '選択してください'),
+  ('bulk.clearAll', 'ja', '選択解除'),
   ('bulk.delete', 'ja', '削除'),
   ('bulk.deleteConfirm', 'ja', '{{count}} 件の取引を削除しますか？'),
   ('bulk.done', 'ja', '{{count}} 件を更新しました'),
+  ('bulk.finish', 'ja', '完了'),
+  ('bulk.hint', 'ja', '取引をタップして選択'),
   ('bulk.reconcile', 'ja', '照合済みにする'),
+  ('bulk.select', 'ja', '選択'),
+  ('bulk.selectAll', 'ja', 'すべて選択'),
   ('bulk.selected', 'ja', '{{count}} 件選択済み'),
   ('calendar.clickDay', 'ja', '日をクリックして取引を確認'),
   ('calendar.days.0', 'ja', '日'),
@@ -1629,17 +1643,17 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'ja', '不明'),
   ('common.update', 'ja', '更新'),
   ('common.verified', 'ja', '認証済み'),
-  ('common.workspace', 'ja', 'ワークスペース'),
+  ('common.workspace', 'ja', 'ワークスペース')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.yes', 'ja', 'はい'),
   ('dashboard.accounts', 'ja', 'アカウント'),
   ('dashboard.addAccount', 'ja', '口座を追加'),
   ('dashboard.addTransaction', 'ja', '取引を追加'),
   ('dashboard.avgDaily', 'ja', '1日あたりの平均支出'),
   ('dashboard.balance', 'ja', '収支バランス'),
-  ('dashboard.budgets', 'ja', '予算')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.budgets', 'ja', '予算'),
   ('dashboard.cashFlow', 'ja', 'キャッシュフロー'),
   ('dashboard.days30Ago', 'ja', '30日前'),
   ('dashboard.deposits', 'ja', '件の入金'),
@@ -2032,17 +2046,17 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'ja', '明細'),
   ('mobnav.users', 'ja', 'メンバー'),
   ('nav.accounts', 'ja', '口座管理'),
-  ('nav.analytics', 'ja', '分析'),
+  ('nav.analytics', 'ja', '分析')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('nav.calendar', 'ja', 'カレンダー'),
   ('nav.dashboard', 'ja', 'ダッシュボード'),
   ('nav.groups', 'ja', 'カテゴリ管理'),
   ('nav.import', 'ja', 'インポート'),
   ('nav.ledger', 'ja', '元帳設定'),
   ('nav.recurring', 'ja', '定期支出'),
-  ('nav.report', 'ja', '月次レポート')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.report', 'ja', '月次レポート'),
   ('nav.scan', 'ja', 'レシート読取'),
   ('nav.transactions', 'ja', '明細一覧'),
   ('nav.users', 'ja', 'ユーザー管理'),
@@ -2435,17 +2449,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.rawData', 'ja', '元データ'),
   ('txform.receipt', 'ja', 'レシート'),
   ('txform.receiptImage', 'ja', 'レシート画像を見る'),
-  ('txform.receiptItems', 'ja', 'レシートの明細'),
+  ('txform.receiptItems', 'ja', 'レシートの明細')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.receiptSiblings', 'ja', '同じレシートの他の取引'),
   ('txform.reconciled', 'ja', '照合済み'),
   ('txform.save', 'ja', '保存'),
   ('txform.saved', 'ja', '取引を保存しました'),
   ('txform.source', 'ja', '登録元'),
   ('txform.sourceBankSync', 'ja', '銀行連携'),
-  ('txform.sourceImport', 'ja', 'インポート')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.sourceImport', 'ja', 'インポート'),
   ('txform.sourceManual', 'ja', '手入力'),
   ('txform.sourceRecurring', 'ja', '定期'),
   ('txform.sourceScan', 'ja', 'レシート読取'),
@@ -2537,14 +2551,21 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'vi', 'Ai đã thay đổi gì trong sổ này'),
   ('auditx.system', 'vi', 'Hệ thống'),
   ('auditx.title', 'vi', 'Nhật ký hoạt động'),
+  ('bulk.account', 'vi', 'Tài khoản'),
   ('bulk.addTag', 'vi', 'Thêm nhãn'),
+  ('bulk.category', 'vi', 'Danh mục'),
   ('bulk.changeAccount', 'vi', 'Đổi tài khoản'),
   ('bulk.changeCategory', 'vi', 'Đổi danh mục'),
   ('bulk.choose', 'vi', 'Hãy chọn'),
+  ('bulk.clearAll', 'vi', 'Bỏ chọn'),
   ('bulk.delete', 'vi', 'Xoá'),
   ('bulk.deleteConfirm', 'vi', 'Xoá {{count}} giao dịch?'),
   ('bulk.done', 'vi', 'Đã cập nhật {{count}} giao dịch'),
+  ('bulk.finish', 'vi', 'Xong'),
+  ('bulk.hint', 'vi', 'Chạm vào giao dịch để chọn'),
   ('bulk.reconcile', 'vi', 'Đánh dấu đối soát'),
+  ('bulk.select', 'vi', 'Chọn'),
+  ('bulk.selectAll', 'vi', 'Chọn tất cả'),
   ('bulk.selected', 'vi', 'Đã chọn {{count}}'),
   ('calendar.clickDay', 'vi', 'Nhấn vào ngày để xem giao dịch'),
   ('calendar.days.0', 'vi', 'CN'),
@@ -2858,17 +2879,17 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'vi', 'Không rõ'),
   ('common.update', 'vi', 'Cập nhật'),
   ('common.verified', 'vi', 'Đã xác minh'),
-  ('common.workspace', 'vi', 'không gian'),
+  ('common.workspace', 'vi', 'không gian')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.yes', 'vi', 'Có'),
   ('dashboard.accounts', 'vi', 'Tài khoản'),
   ('dashboard.addAccount', 'vi', 'Thêm tài khoản'),
   ('dashboard.addTransaction', 'vi', 'Thêm giao dịch'),
   ('dashboard.avgDaily', 'vi', 'Chi tiêu trung bình ngày'),
   ('dashboard.balance', 'vi', 'Cân đối'),
-  ('dashboard.budgets', 'vi', 'Ngân sách')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.budgets', 'vi', 'Ngân sách'),
   ('dashboard.cashFlow', 'vi', 'Dòng tiền'),
   ('dashboard.days30Ago', 'vi', '30 ngày trước'),
   ('dashboard.deposits', 'vi', 'giao dịch thu'),
@@ -3261,17 +3282,17 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'vi', 'Giao dịch'),
   ('mobnav.users', 'vi', 'Thành viên'),
   ('nav.accounts', 'vi', 'Quản lý tài khoản'),
-  ('nav.analytics', 'vi', 'Phân tích'),
+  ('nav.analytics', 'vi', 'Phân tích')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('nav.calendar', 'vi', 'Lịch'),
   ('nav.dashboard', 'vi', 'Tổng quan'),
   ('nav.groups', 'vi', 'Quản lý danh mục'),
   ('nav.import', 'vi', 'Nhập dữ liệu'),
   ('nav.ledger', 'vi', 'Thiết lập sổ cái'),
   ('nav.recurring', 'vi', 'Định kỳ'),
-  ('nav.report', 'vi', 'Báo cáo tháng')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.report', 'vi', 'Báo cáo tháng'),
   ('nav.scan', 'vi', 'Quét hóa đơn'),
   ('nav.transactions', 'vi', 'Giao dịch'),
   ('nav.users', 'vi', 'Quản lý thành viên'),
@@ -3664,17 +3685,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.rawData', 'vi', 'Dữ liệu gốc'),
   ('txform.receipt', 'vi', 'Hoá đơn'),
   ('txform.receiptImage', 'vi', 'Xem ảnh hoá đơn'),
-  ('txform.receiptItems', 'vi', 'Các món trong hoá đơn'),
+  ('txform.receiptItems', 'vi', 'Các món trong hoá đơn')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.receiptSiblings', 'vi', 'Giao dịch khác cùng hoá đơn'),
   ('txform.reconciled', 'vi', 'Đã đối soát'),
   ('txform.save', 'vi', 'Lưu'),
   ('txform.saved', 'vi', 'Đã lưu giao dịch'),
   ('txform.source', 'vi', 'Nguồn'),
   ('txform.sourceBankSync', 'vi', 'Đồng bộ ngân hàng'),
-  ('txform.sourceImport', 'vi', 'Nhập file')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.sourceImport', 'vi', 'Nhập file'),
   ('txform.sourceManual', 'vi', 'Nhập tay'),
   ('txform.sourceRecurring', 'vi', 'Định kỳ'),
   ('txform.sourceScan', 'vi', 'Quét hoá đơn'),
@@ -3766,14 +3787,21 @@ insert into public.translations (key, language_code, value) values
   ('auditx.subtitle', 'en', 'Who changed what in this ledger'),
   ('auditx.system', 'en', 'System'),
   ('auditx.title', 'en', 'Activity log'),
+  ('bulk.account', 'en', 'Account'),
   ('bulk.addTag', 'en', 'Add tag'),
+  ('bulk.category', 'en', 'Category'),
   ('bulk.changeAccount', 'en', 'Change account'),
   ('bulk.changeCategory', 'en', 'Change category'),
   ('bulk.choose', 'en', 'Choose'),
+  ('bulk.clearAll', 'en', 'Deselect all'),
   ('bulk.delete', 'en', 'Delete'),
   ('bulk.deleteConfirm', 'en', 'Delete {{count}} transactions?'),
   ('bulk.done', 'en', 'Updated {{count}} transactions'),
+  ('bulk.finish', 'en', 'Done'),
+  ('bulk.hint', 'en', 'Tap transactions to select them'),
   ('bulk.reconcile', 'en', 'Mark reconciled'),
+  ('bulk.select', 'en', 'Select'),
+  ('bulk.selectAll', 'en', 'Select all'),
   ('bulk.selected', 'en', '{{count}} selected'),
   ('calendar.clickDay', 'en', 'Click a day to see transactions'),
   ('calendar.days.0', 'en', 'Sun'),
@@ -4087,17 +4115,17 @@ insert into public.translations (key, language_code, value) values
   ('common.unknown', 'en', 'Unknown'),
   ('common.update', 'en', 'Update'),
   ('common.verified', 'en', 'Verified'),
-  ('common.workspace', 'en', 'workspace'),
+  ('common.workspace', 'en', 'workspace')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('common.yes', 'en', 'Yes'),
   ('dashboard.accounts', 'en', 'Accounts'),
   ('dashboard.addAccount', 'en', 'Add account'),
   ('dashboard.addTransaction', 'en', 'Add Transaction'),
   ('dashboard.avgDaily', 'en', 'Avg. daily expense'),
   ('dashboard.balance', 'en', 'Balance'),
-  ('dashboard.budgets', 'en', 'Budgets')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('dashboard.budgets', 'en', 'Budgets'),
   ('dashboard.cashFlow', 'en', 'Cash Flow'),
   ('dashboard.days30Ago', 'en', '30 days ago'),
   ('dashboard.deposits', 'en', 'deposits'),
@@ -4490,17 +4518,17 @@ insert into public.translations (key, language_code, value) values
   ('mobnav.transactions', 'en', 'Activity'),
   ('mobnav.users', 'en', 'Members'),
   ('nav.accounts', 'en', 'Accounts'),
-  ('nav.analytics', 'en', 'Analytics'),
+  ('nav.analytics', 'en', 'Analytics')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('nav.calendar', 'en', 'Calendar'),
   ('nav.dashboard', 'en', 'Dashboard'),
   ('nav.groups', 'en', 'Categories'),
   ('nav.import', 'en', 'Import'),
   ('nav.ledger', 'en', 'Ledger Settings'),
   ('nav.recurring', 'en', 'Recurring'),
-  ('nav.report', 'en', 'Monthly Report')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('nav.report', 'en', 'Monthly Report'),
   ('nav.scan', 'en', 'Scan Receipt'),
   ('nav.transactions', 'en', 'Transactions'),
   ('nav.users', 'en', 'User Management'),
@@ -4893,17 +4921,17 @@ insert into public.translations (key, language_code, value) values
   ('txform.rawData', 'en', 'Original data'),
   ('txform.receipt', 'en', 'Receipt'),
   ('txform.receiptImage', 'en', 'View receipt image'),
-  ('txform.receiptItems', 'en', 'Receipt items'),
+  ('txform.receiptItems', 'en', 'Receipt items')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.receiptSiblings', 'en', 'Other transactions on this receipt'),
   ('txform.reconciled', 'en', 'Reconciled'),
   ('txform.save', 'en', 'Save'),
   ('txform.saved', 'en', 'Transaction saved'),
   ('txform.source', 'en', 'Source'),
   ('txform.sourceBankSync', 'en', 'Bank sync'),
-  ('txform.sourceImport', 'en', 'Import')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.sourceImport', 'en', 'Import'),
   ('txform.sourceManual', 'en', 'Manual'),
   ('txform.sourceRecurring', 'en', 'Recurring'),
   ('txform.sourceScan', 'en', 'Receipt scan'),

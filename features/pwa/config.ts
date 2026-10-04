@@ -9,7 +9,7 @@ export const PWA = {
   /** Brand green (--color-interactive-primary). */
   brandColor: '#059669',
   /** Window / splash background (--color-bg-base). */
-  backgroundColor: '#f9fafb',
+  backgroundColor: '#eaecf0',
   /** Browser UI colour: matches the top bar (--color-sidebar-bg) in each theme. */
   themeColor: { light: '#fafafa', dark: '#111417' },
   /** Built by app/serwist/[path]/route.ts from app/sw.ts. */

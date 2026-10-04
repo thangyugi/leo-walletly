@@ -14,6 +14,9 @@ import { cn } from '@/lib/utils'
 import { Popover } from '@/components/ui/popover'
 import { PRESET_ICONS, CategoryIcon } from './category-icon'
 import type { Category, CategoryType } from './types'
+import { AppSelect } from '@/components/ui/app-select'
+import { SheetGrip } from '@/components/ui/sheet-grip'
+import { useSwipeToClose } from '@/hooks/useSwipeToClose'
 
 interface CategoryFormProps {
   onClose:      () => void
@@ -214,6 +217,7 @@ export function ParentTreeDropdown({
 // ─── Main form ───────────────────────────────────────────────────────────────
 
 export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
+  const { sheetRef, grab } = useSwipeToClose<HTMLFormElement>(onClose)
   const { t, tk } = useTranslation()
   const kinds = useMasterStore((s) => s.categoryKinds)
   const ledger = useLedgerStore((s) => s.current)
@@ -334,8 +338,9 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
   ]
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-none sm:rounded-[24px] shadow-xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] pt-[env(safe-area-inset-top)] sm:pt-0">
-      <div className="flex items-center justify-between px-6 sm:px-8 py-5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
+    <form ref={sheetRef} onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-t-[22px] sm:rounded-[24px] shadow-xl overflow-hidden flex flex-col h-full sm:h-auto sm:max-h-[90vh]">
+      <div {...grab} className="relative flex items-center justify-between px-6 sm:px-8 pt-7 pb-5 sm:py-5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
+        <SheetGrip />
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">{isEdit ? t.catform.editTitle : t.catform.createTitle}</h2>
           <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{t.catform.subtitle}</p>
@@ -369,10 +374,10 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
           </div>
           <div>
             <label htmlFor="cat-kind" className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">{t.catui.kind}</label>
-            <select id="cat-kind" value={formData.kind_code} onChange={(e) => setFormData({ ...formData, kind_code: e.target.value })}
+            <AppSelect id="cat-kind" aria-label={t.catui.kind} value={formData.kind_code} onChange={(e) => setFormData({ ...formData, kind_code: e.target.value })}
               className="w-full h-12 px-4 rounded-xl border text-sm font-medium bg-[var(--color-surface-default)] text-[var(--color-text-primary)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none">
               {kinds.map((k) => <option key={k.code} value={k.code}>{tk(k.name_key)}</option>)}
-            </select>
+            </AppSelect>
           </div>
           <div>
             <Input label={t.catform.description} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />

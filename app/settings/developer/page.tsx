@@ -10,6 +10,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { supabase } from '@/lib/supabase'
 import { formatDate } from '@/lib/utils'
+import { AppSelect } from '@/components/ui/app-select'
 
 type TokenRow = { id: string; name: string; token_prefix: string; access_level: string; last_used_at: string | null; expires_at: string | null; revoked_at: string | null; created_at: string }
 
@@ -51,9 +52,9 @@ export default function DeveloperPage() {
         <p className="text-xs text-[var(--color-text-tertiary)]">{t.dev.tokensSub}</p>
         <div className="card-base p-4 flex gap-2 items-end flex-wrap">
           <div className="flex-1 min-w-[180px]"><Input label={t.dev.tokenName} value={name} onChange={(e) => setName(e.target.value)} /></div>
-          <select aria-label={t.dev.scopes} className={`${selectClass} w-28`} value={level} onChange={(e) => setLevel(e.target.value as 'read' | 'write')}>
+          <AppSelect aria-label={t.dev.scopes} className={`${selectClass} w-28`} value={level} onChange={(e) => setLevel(e.target.value as 'read' | 'write')}>
             <option value="read">read</option><option value="write">write</option>
-          </select>
+          </AppSelect>
           <Button icon={<Plus />} disabled={!name.trim()} onClick={create}>{t.dev.create}</Button>
         </div>
         {created && (

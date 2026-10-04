@@ -5,6 +5,7 @@ import { Crown, Trash2 } from 'lucide-react'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '../ledger-store'
 import type { Member, Role } from '../types'
+import { AppSelect } from '@/components/ui/app-select'
 
 interface MemberTableProps {
   members: Member[]
@@ -65,7 +66,7 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
                 </td>
                 <td className="px-3 sm:px-4 py-3">
                   {editable ? (
-                    <select
+                    <AppSelect
                       aria-label={t.members.role}
                       value={m.role_code}
                       onChange={(e) => onRoleChange(m.id, e.target.value)}
@@ -74,7 +75,7 @@ export function MemberTable({ members, roles, canManage, maxRank, onRoleChange, 
                       {roles.filter((r) => r.is_assignable && r.rank <= maxRank).map((r) => (
                         <option key={r.code} value={r.code}>{tk(r.name_key)}</option>
                       ))}
-                    </select>
+                    </AppSelect>
                   ) : (
                     <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] border border-[var(--color-border-default)]">
                       {memberIsOwner && <Crown className="w-3 h-3 text-[var(--color-text-warning)]" />}

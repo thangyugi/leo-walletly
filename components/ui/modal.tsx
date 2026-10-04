@@ -36,7 +36,7 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
     <div className={cn(
       // Phones: a sheet from the bottom edge; larger screens: a centred dialog.
       "fixed inset-0 z-[9999] flex sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300",
-      fullScreenOnPhone ? "items-stretch" : "items-end",
+      fullScreenOnPhone ? "items-stretch pt-[max(12px,env(safe-area-inset-top))] sm:pt-4" : "items-end",
       isNested ? "bg-black/40" : "bg-black/60 backdrop-blur-sm"
     )}>
       <div 
@@ -46,9 +46,10 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
       <div
         role="dialog"
         aria-modal="true"
+        data-sheet={fullScreenOnPhone ? '' : undefined}
         className={cn(
           'relative w-full max-w-xl overflow-y-auto bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] sm:rounded-2xl shadow-2xl animate-sheet-up sm:animate-none',
-          fullScreenOnPhone ? 'h-[100dvh] sm:h-auto sm:max-h-[92vh] rounded-none' : 'max-h-[92dvh] rounded-t-[22px] rounded-b-none',
+          fullScreenOnPhone ? 'h-full sm:h-auto sm:max-h-[92vh] rounded-t-[22px] rounded-b-none' : 'max-h-[92dvh] rounded-t-[22px] rounded-b-none',
           className
         )}
       >

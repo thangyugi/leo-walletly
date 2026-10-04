@@ -13,6 +13,7 @@ import { MemberService } from '@/features/user-management/services'
 import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { supabase } from '@/lib/supabase'
+import { AppSelect } from '@/components/ui/app-select'
 
 export default function LedgerSettingsPage() {
   const { t, tk, lang } = useTranslation()
@@ -76,35 +77,35 @@ export default function LedgerSettingsPage() {
       <fieldset disabled={!editable} className="card-base px-5">
         <SettingRow label={t.ledger_settings.nameLabel}><Input aria-label={t.ledger_settings.nameLabel} value={form.name} onChange={(e) => set('name', e.target.value)} /></SettingRow>
         <SettingRow label={t.ledgerx.type}>
-          <select aria-label={t.ledgerx.type} className={selectClass} value={form.ledger_type_code} onChange={(e) => set('ledger_type_code', e.target.value)}>
+          <AppSelect aria-label={t.ledgerx.type} className={selectClass} value={form.ledger_type_code} onChange={(e) => set('ledger_type_code', e.target.value)}>
             {ledgerTypes.map((lt) => <option key={lt.code} value={lt.code}>{tk(lt.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledger_settings.currencyLabel} hint={t.ledgerx.currencyWarn}>
-          <select aria-label={t.ledger_settings.currencyLabel} className={selectClass} value={form.currency_code} onChange={(e) => set('currency_code', e.target.value)}>
+          <AppSelect aria-label={t.ledger_settings.currencyLabel} className={selectClass} value={form.currency_code} onChange={(e) => set('currency_code', e.target.value)}>
             {currencies.map((c) => <option key={c.code} value={c.code}>{c.code} · {tk(c.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledger_settings.timezoneLabel}>
-          <select aria-label={t.ledger_settings.timezoneLabel} className={selectClass} value={form.timezone_code} onChange={(e) => set('timezone_code', e.target.value)}>
+          <AppSelect aria-label={t.ledger_settings.timezoneLabel} className={selectClass} value={form.timezone_code} onChange={(e) => set('timezone_code', e.target.value)}>
             {timeZones.map((z) => <option key={z.code} value={z.code}>{tk(z.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledgerx.country}>
-          <select aria-label={t.ledgerx.country} className={selectClass} value={form.country_code ?? ''} onChange={(e) => set('country_code', e.target.value || null)}>
+          <AppSelect aria-label={t.ledgerx.country} className={selectClass} value={form.country_code ?? ''} onChange={(e) => set('country_code', e.target.value || null)}>
             <option value="">—</option>
             {countries.map((c) => <option key={c.code} value={c.code}>{tk(c.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledger_settings.localeLabel}>
-          <select aria-label={t.ledger_settings.localeLabel} className={selectClass} value={form.locale} onChange={(e) => set('locale', e.target.value)}>
+          <AppSelect aria-label={t.ledger_settings.localeLabel} className={selectClass} value={form.locale} onChange={(e) => set('locale', e.target.value)}>
             {[...new Set([...languages.map((l) => l.locale), form.locale])].map((l) => <option key={l} value={l}>{l}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledgerx.fiscalStart}>
-          <select aria-label={t.ledgerx.fiscalStart} className={selectClass} value={form.fiscal_year_start_month} onChange={(e) => set('fiscal_year_start_month', Number(e.target.value))}>
+          <AppSelect aria-label={t.ledgerx.fiscalStart} className={selectClass} value={form.fiscal_year_start_month} onChange={(e) => set('fiscal_year_start_month', Number(e.target.value))}>
             {months.map((m) => <option key={m.v} value={m.v}>{m.label}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.ledger_settings.systemId}>
           <button type="button" onClick={() => { void navigator.clipboard.writeText(current.id); toast.success(t.ledger_settings.copied) }}
@@ -127,10 +128,10 @@ export default function LedgerSettingsPage() {
               <p className="text-xs text-[var(--color-text-tertiary)]">{t.ledger_settings.transferSub}</p>
               {others.length === 0 ? <p className="text-xs text-[var(--color-text-quaternary)]">{t.ledgerx.noOtherMembers}</p> : (
                 <div className="flex gap-2">
-                  <select aria-label={t.ledgerx.transferTo} className={selectClass} value={newOwner} onChange={(e) => setNewOwner(e.target.value)}>
+                  <AppSelect aria-label={t.ledgerx.transferTo} className={selectClass} value={newOwner} onChange={(e) => setNewOwner(e.target.value)}>
                     <option value="">{t.ledgerx.transferTo}</option>
                     {others.map((m) => <option key={m.user_id} value={m.user_id}>{m.user?.display_name} ({m.user?.email})</option>)}
-                  </select>
+                  </AppSelect>
                   <Button variant="outline" disabled={!newOwner} onClick={transfer}>{t.members.transferOwnership}</Button>
                 </div>
               )}

@@ -39,6 +39,9 @@ interface PickerProps {
   className?: string
   /** Search box on top; on by default for longer lists. */
   searchable?: boolean
+  /** Phones: show only the open list sheet (no trigger button); `onDismiss` runs when it closes without a pick. */
+  sheetOnly?: boolean
+  onDismiss?: () => void
 }
 
 /**
@@ -47,7 +50,7 @@ interface PickerProps {
  * Keyboard: ↑ ↓ to move, Enter to pick, Esc to close, typing filters.
  */
 export function Picker({
-  value, onChange, options, label, placeholder, size = 'md', disabled, className, searchable, ...rest
+  value, onChange, options, label, placeholder, size = 'md', disabled, className, searchable, sheetOnly, onDismiss, ...rest
 }: PickerProps) {
   const { t } = useTranslation()
   const phone = useIsPhone()
@@ -178,6 +181,14 @@ export function Picker({
   )
 
   const h = size === 'sm' ? 'h-8 text-xs px-2.5' : 'h-9 text-sm px-3'
+
+  if (sheetOnly) {
+    return (
+      <BottomSheet title={label ?? rest['aria-label'] ?? placeholder} onClose={() => onDismiss?.()}>
+        <div ref={menuRef} onKeyDown={onKey}>{body(true)}</div>
+      </BottomSheet>
+    )
+  }
 
   return (
     <div className={cn('flex flex-col gap-1.5 min-w-0', className)}>

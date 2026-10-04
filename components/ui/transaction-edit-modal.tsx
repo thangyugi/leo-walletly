@@ -19,6 +19,8 @@ import { useCategoryStore } from '@/features/categories/store'
 import { getCurrencyPrecision } from '@/lib/money'
 import { cn } from '@/lib/utils'
 import type { Transaction, TransactionType } from '@/types/domain'
+import { SheetGrip } from '@/components/ui/sheet-grip'
+import { useSwipeToClose } from '@/hooks/useSwipeToClose'
 
 interface Props {
   /** Omit to create a new transaction. onSaved gets null after a delete. */
@@ -35,6 +37,9 @@ const todayIso = () => {
 
 export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props) {
   useEscapeLayer(onClose)
+  const { sheetRef, grab } = useSwipeToClose<HTMLDivElement>(onClose)
+  // Phones: no keyboard until the person taps a field (it would cover half the form).
+  const [wideScreen] = useState(() => typeof window !== 'undefined' && window.matchMedia('(min-width: 640px)').matches)
   const { t, lang } = useTranslation()
   const { ledger, accounts, categories, tags, members } = useLedgerData()
   const userId = useLedgerStore((s) => s.userId)
@@ -162,8 +167,9 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   const modal = (
     <div className={FORM_OVERLAY}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="tx-modal-title" className={FORM_PANEL}>
-        <div className={FORM_HEADER}>
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-labelledby="tx-modal-title" className={FORM_PANEL}>
+        <div className={FORM_HEADER} {...grab}>
+          <SheetGrip />
           <h2 id="tx-modal-title" className="font-semibold text-[var(--color-text-primary)]">{txn ? t.txform.editTitle : t.txform.addTitle}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-bg-sunken)]">
             <X className="w-4 h-4" />
@@ -183,7 +189,7 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
 
           <div>
             <label htmlFor="tx-amount" className="text-xs font-medium text-[var(--color-text-secondary)]">{t.txform.amount} ({currency})</label>
-            <AmountInput id="tx-amount" autoFocus value={amount} onChange={setAmount} currency={currency}
+            <AmountInput id="tx-amount" autoFocus={wideScreen} value={amount} onChange={setAmount} currency={currency}
               className={cn('mt-1.5 w-full h-14 px-4 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-2xl font-semibold font-tabular focus:outline-none focus:border-[var(--color-border-focus)]',
                 type === 'expense' ? 'text-[var(--color-text-loss)]' : type === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')} />
           </div>

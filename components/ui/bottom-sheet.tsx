@@ -6,6 +6,7 @@ import { X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useEscapeLayer } from '@/hooks/useEscapeLayer'
+import { useSwipeToClose } from '@/hooks/useSwipeToClose'
 
 /**
  * Phone replacement for popovers and dropdowns: a sheet from the bottom edge,
@@ -22,7 +23,7 @@ export function BottomSheet({ title, onClose, children, className, bodyClassName
   footer?: React.ReactNode
 }) {
   const { t } = useTranslation()
-  const ref = React.useRef<HTMLDivElement>(null)
+  const { sheetRef: ref, grab } = useSwipeToClose<HTMLDivElement>(onClose)
   useEscapeLayer(onClose)
 
   React.useEffect(() => {
@@ -30,13 +31,15 @@ export function BottomSheet({ title, onClose, children, className, bodyClassName
     document.body.style.overflow = 'hidden'
     ref.current?.focus()
     return () => { document.body.style.overflow = prev }
-  }, [])
+  }, [ref])
 
   return createPortal(
     <div className="fixed inset-0 z-[10000]" data-bottom-sheet>
       <div className="absolute inset-0 bg-black/35 animate-fade-in" onClick={onClose} />
       <div ref={ref} tabIndex={-1} role="dialog" aria-modal="true" aria-label={typeof title === 'string' ? title : undefined}
         className={cn('absolute inset-x-0 bottom-0 max-h-[88dvh] flex flex-col rounded-t-[22px] bg-[var(--color-bg-surface)] shadow-2xl animate-sheet-up focus:outline-none', className)}>
+        {/* Handle + title: drag down to close. */}
+        <div {...grab} className="shrink-0">
         <div className="flex justify-center pt-2 shrink-0"><span className="w-10 h-1.5 rounded-full bg-[var(--color-border-strong)]" /></div>
         {title !== undefined && (
           <div className="flex items-center gap-2 pl-5 pr-2 pt-1 pb-1 shrink-0">
@@ -46,6 +49,7 @@ export function BottomSheet({ title, onClose, children, className, bodyClassName
             </button>
           </div>
         )}
+        </div>
         <div className={cn('flex-1 min-h-0 overflow-y-auto overscroll-contain', !footer && 'pb-[max(16px,env(safe-area-inset-bottom))]', bodyClassName)}>{children}</div>
         {footer && <div className="shrink-0 px-4 pt-3 pb-[max(12px,env(safe-area-inset-bottom))] border-t border-[var(--color-border-subtle)]">{footer}</div>}
       </div>

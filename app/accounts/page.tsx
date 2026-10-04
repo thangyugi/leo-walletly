@@ -20,11 +20,14 @@ import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, toLocalISODate } from '@/lib/utils'
+import { SheetGrip } from '@/components/ui/sheet-grip'
+import { useSwipeToClose } from '@/hooks/useSwipeToClose'
 
 const COLORS = ['#10b981', '#3b82f6', '#6366f1', '#f59e0b', '#ef4444', '#ec4899', '#14b8a6', '#64748b']
 
 function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => void }) {
   useEscapeLayer(onClose)
+  const { sheetRef, grab } = useSwipeToClose<HTMLDivElement>(onClose)
   const { t, tk } = useTranslation()
   const { ledger } = useLedgerData()
   const { accountTypes, providers, currencies } = useMasterStore()
@@ -56,9 +59,10 @@ function AccountForm({ initial, onClose }: { initial?: Account; onClose: () => v
   return createPortal(
     <div className={FORM_OVERLAY}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label={initial ? t.accounts.edit : t.accounts.add}
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={initial ? t.accounts.edit : t.accounts.add}
         className={cn(FORM_PANEL, 'pb-[env(safe-area-inset-bottom)]')}>
-        <div className={FORM_HEADER}>
+        <div className={FORM_HEADER} {...grab}>
+          <SheetGrip />
           <h2 className="text-sm font-semibold">{initial ? t.accounts.edit : t.accounts.add}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><X className="w-4 h-4" /></button>
         </div>

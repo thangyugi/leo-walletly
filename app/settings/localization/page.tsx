@@ -8,6 +8,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { useTranslation } from '@/hooks/useTranslation'
 import { formatMoney } from '@/lib/money'
 import type { Lang } from '@/lib/i18n'
+import { AppSelect } from '@/components/ui/app-select'
 
 const DATE_FORMATS = ['yyyy/MM/dd', 'yyyy-MM-dd', 'dd/MM/yyyy', 'MM/dd/yyyy']
 
@@ -35,35 +36,35 @@ export default function LocalizationSettingsPage() {
       <PageTitle title={t.localization.title} subtitle={t.localization.subtitle} />
       <div className="card-base px-5 mb-6">
         <SettingRow label={t.prefs.language} hint={t.localization.displayLanguageSub}>
-          <select aria-label={t.prefs.language} className={selectClass} value={preferences.language_code}
+          <AppSelect aria-label={t.prefs.language} className={selectClass} value={preferences.language_code}
             onChange={async (e) => { const code = e.target.value; setLang(code as Lang, { persistRemote: false }); await save({ language_code: code }) }}>
             {languages.filter((l) => l.is_active).map((l) => <option key={l.code} value={l.code}>{l.native_name}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.locale} hint={t.localization.regionalFormatSub}>
-          <select aria-label={t.prefs.locale} className={selectClass} value={preferences.locale} onChange={(e) => save({ locale: e.target.value })}>
+          <AppSelect aria-label={t.prefs.locale} className={selectClass} value={preferences.locale} onChange={(e) => save({ locale: e.target.value })}>
             {locales.map((l) => <option key={l} value={l}>{l} — {(1234567.89).toLocaleString(l)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.timezone} hint={t.localization.timezoneSub}>
-          <select aria-label={t.prefs.timezone} className={selectClass} value={preferences.timezone_code} onChange={(e) => save({ timezone_code: e.target.value })}>
+          <AppSelect aria-label={t.prefs.timezone} className={selectClass} value={preferences.timezone_code} onChange={(e) => save({ timezone_code: e.target.value })}>
             {timeZones.map((z) => <option key={z.code} value={z.code}>{tk(z.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.currency}>
-          <select aria-label={t.prefs.currency} className={selectClass} value={preferences.default_currency_code} onChange={(e) => save({ default_currency_code: e.target.value })}>
+          <AppSelect aria-label={t.prefs.currency} className={selectClass} value={preferences.default_currency_code} onChange={(e) => save({ default_currency_code: e.target.value })}>
             {currencies.map((c) => <option key={c.code} value={c.code}>{c.code} · {tk(c.name_key)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.dateFormat}>
-          <select aria-label={t.prefs.dateFormat} className={selectClass} value={preferences.date_format} onChange={(e) => save({ date_format: e.target.value })}>
+          <AppSelect aria-label={t.prefs.dateFormat} className={selectClass} value={preferences.date_format} onChange={(e) => save({ date_format: e.target.value })}>
             {DATE_FORMATS.map((f) => <option key={f} value={f}>{sampleDate(f)}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
         <SettingRow label={t.prefs.weekStart}>
-          <select aria-label={t.prefs.weekStart} className={selectClass} value={preferences.week_starts_on} onChange={(e) => save({ week_starts_on: Number(e.target.value) })}>
+          <AppSelect aria-label={t.prefs.weekStart} className={selectClass} value={preferences.week_starts_on} onChange={(e) => save({ week_starts_on: Number(e.target.value) })}>
             {weekdays.map((w) => <option key={w.i} value={w.i}>{w.label}</option>)}
-          </select>
+          </AppSelect>
         </SettingRow>
       </div>
       <div className="card-base p-5 text-sm text-[var(--color-text-secondary)]">

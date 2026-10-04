@@ -22,6 +22,7 @@ import { supabase } from '@/lib/supabase'
 import { cn, formatDate, toLocalISODate } from '@/lib/utils'
 import type { ImportResult, PaymentProvider, ParsedImportRow } from '@/types'
 import type { Tables } from '@/types/supabase'
+import { AppSelect } from '@/components/ui/app-select'
 
 type PageStep = 'setup' | 'review'
 /** ruleCategoryId: what the ledger's own rules give the row (the preview's default). */
@@ -101,15 +102,16 @@ function ColSelect({ label, value, headers, onChange }: { label: string; value: 
   return (
     <div className="flex flex-col gap-1">
       <label htmlFor={id} className="text-xs font-semibold text-[var(--color-text-tertiary)]">{label}</label>
-      <select
+      <AppSelect
         id={id}
+        aria-label={label}
         value={value ?? ''}
         onChange={(e) => onChange(e.target.value)}
         className="h-9 px-2 text-xs border border-[var(--color-border-default)] rounded-lg bg-[var(--color-surface-default)] focus:outline-none focus:ring-2 focus:ring-[var(--color-brand-100)]"
       >
         <option value="">—</option>
         {headers.map((h) => <option key={h} value={h}>{h}</option>)}
-      </select>
+      </AppSelect>
     </div>
   )
 }

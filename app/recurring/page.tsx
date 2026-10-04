@@ -22,6 +22,8 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { cn, formatDate, toLocalISODate } from '@/lib/utils'
+import { SheetGrip } from '@/components/ui/sheet-grip'
+import { useSwipeToClose } from '@/hooks/useSwipeToClose'
 
 /** Rough monthly cost of a rule, for the header total. */
 function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'intervalCount'>) {
@@ -31,6 +33,7 @@ function monthlyEquivalent(r: Pick<RecurringRule, 'amount' | 'frequency' | 'inte
 
 function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose: () => void }) {
   useEscapeLayer(onClose)
+  const { sheetRef, grab } = useSwipeToClose<HTMLDivElement>(onClose)
   const { t, lang } = useTranslation()
   const { ledger, accounts, categories } = useLedgerData()
   const { create, update } = useRecurringStore()
@@ -68,9 +71,10 @@ function RecurringForm({ initial, onClose }: { initial?: RecurringRule; onClose:
   return createPortal(
     <div className={FORM_OVERLAY}>
       <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-label={initial ? t.recurring.edit : t.recurring.add}
+      <div ref={sheetRef} role="dialog" aria-modal="true" aria-label={initial ? t.recurring.edit : t.recurring.add}
         className={cn(FORM_PANEL, 'pb-[env(safe-area-inset-bottom)]')}>
-        <div className={FORM_HEADER}>
+        <div className={FORM_HEADER} {...grab}>
+          <SheetGrip />
           <h2 className="text-sm font-semibold text-[var(--color-text-primary)]">{initial ? t.recurring.edit : t.recurring.add}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-[var(--color-bg-sunken)]"><X className="w-4 h-4" /></button>
         </div>

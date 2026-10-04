@@ -6,8 +6,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Search, Filter, Trash2, Upload, X, ArrowUpDown,
   ArrowUp, ArrowDown, ChevronDown, ChevronLeft, ChevronRight,
-  CheckSquare, Square, Minus, Plus,
+  CheckSquare, Square, Minus, Plus, Check, ListChecks, Shapes, Wallet,
 } from 'lucide-react'
+import { CategoryIcon } from '@/features/categories/category-icon'
 import { toast } from 'sonner'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -321,11 +322,91 @@ function BulkBar({ ids, total, onDone }: { ids: string[]; total: number; onDone:
 }
 
 // ------------------------------------------------------------------
+// Phone selection bar: pinned above the tab bar while selecting
+// ------------------------------------------------------------------
+function PhoneBulkBar({ ids, pageIds, onSelectAll, onClearAll, onDone }: {
+  ids: string[]
+  pageIds: string[]
+  onSelectAll: () => void
+  onClearAll: () => void
+  onDone: () => void
+}) {
+  const { t } = useTranslation()
+  const { format } = useMoney()
+  const { accounts, categories } = useLedgerData()
+  const { bulkUpdate, bulkDelete, items } = useTransactionsStore()
+  const can = useLedgerStore((s) => s.can)
+  const [action, setAction] = useState<'account' | 'category' | null>(null)
+  const count = ids.length
+  const all = pageIds.length > 0 && pageIds.every((id) => ids.includes(id))
+  const sum = items.filter((x) => ids.includes(x.id))
+    .reduce((s, x) => s + (x.transactionType === 'expense' ? -x.baseAmount : x.transactionType === 'income' ? x.baseAmount : 0), 0)
+
+  async function run(fn: () => Promise<number>) {
+    try {
+      const n = await fn()
+      toast.success(t.bulk.done.replace('{{count}}', String(n)))
+      setAction(null)
+      onDone()
+    } catch (e) {
+      toast.error((e as Error).message)
+    }
+  }
+  const onPick = (v: string) => { if (v) void run(() => bulkUpdate(ids, action === 'account' ? { accountId: v } : { categoryId: v })) }
+  const act = 'flex-1 flex flex-col items-center justify-center gap-1 h-14 rounded-xl text-[11px] font-medium transition-colors disabled:opacity-35'
+
+  return (
+    <div role="toolbar" aria-label={t.bulk.selected.replace('{{count}}', String(count))}
+      className="sm:hidden fixed inset-x-3 z-[160] bottom-[calc(76px+env(safe-area-inset-bottom))] rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[0_12px_32px_rgba(17,24,39,0.18)] animate-sheet-up">
+      <div className="flex items-center gap-2 pl-4 pr-1.5 pt-2.5">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{count > 0 ? t.bulk.selected.replace('{{count}}', String(count)) : t.bulk.hint}</p>
+          {count > 0 && <p className={cn('text-[11px] font-tabular', sum >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>{sum >= 0 ? '+' : '−'}{format(Math.abs(sum))}</p>}
+        </div>
+        <button type="button" onClick={all ? onClearAll : onSelectAll}
+          className="h-9 px-3 rounded-lg text-[13px] font-medium text-[var(--color-interactive-primary)] hover:bg-[var(--color-status-gain-bg)]">
+          {all ? t.bulk.clearAll : t.bulk.selectAll}
+        </button>
+        <button type="button" onClick={onDone}
+          className="h-9 px-3 rounded-lg text-[13px] font-semibold text-[var(--color-text-primary)] bg-[var(--color-bg-sunken)]">
+          {t.bulk.finish}
+        </button>
+      </div>
+      <div className="flex gap-1 p-1.5">
+        <button type="button" disabled={!count} onClick={() => setAction('category')} className={cn(act, 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')}>
+          <Shapes className="w-5 h-5" />{t.bulk.category}
+        </button>
+        <button type="button" disabled={!count} onClick={() => setAction('account')} className={cn(act, 'text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')}>
+          <Wallet className="w-5 h-5" />{t.bulk.account}
+        </button>
+        {can('transaction.delete') && (
+          <button type="button" disabled={!count}
+            onClick={() => { if (confirm(t.bulk.deleteConfirm.replace('{{count}}', String(count)))) void run(() => bulkDelete(ids)) }}
+            className={cn(act, 'text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]')}>
+            <Trash2 className="w-5 h-5" />{t.common.delete}
+          </button>
+        )}
+      </div>
+      {action === 'category' && (
+        <CategoryPicker sheetOnly aria-label={t.bulk.changeCategory} categories={categories.filter((c) => c.is_active)} value="" onChange={onPick} onDismiss={() => setAction(null)} />
+      )}
+      {action === 'account' && (
+        <AccountPicker sheetOnly aria-label={t.bulk.changeAccount} accounts={accounts.filter((a) => !a.isArchived)} value="" onChange={onPick} onDismiss={() => setAction(null)} />
+      )}
+    </div>
+  )
+}
+
+// ------------------------------------------------------------------
 // Table row
 // ------------------------------------------------------------------
-function TxnTableRow({ txn, checked, onCheck, onView, showDate }: {
+function TxnTableRow({ txn, checked, onCheck, onView, showDate, selecting, onLongPress }: {
   /** Rows aren't grouped by day (other sort): say the date on narrow screens. */
   showDate?: boolean
+  /** Phone selection mode: a tap toggles the row instead of opening it. */
+  selecting?: boolean
+  /** Phones: press and hold a row to start selecting. */
+  onLongPress?: (id: string) => void
   txn: Transaction
   checked: boolean
   onCheck: (id: string) => void
@@ -344,15 +425,36 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate }: {
   const accColor = acc?.color ?? '#6b7280'
   const catLabel = cat?.name ?? (txn.transactionType === 'transfer' ? t.transactions.typeTransfer : t.txform.uncategorized)
   const dateLabel = showDate ? fmtDateDMY(txn.transactionDate) : null
+  const catColor = cat?.color ?? '#9ca3af'
+
+  // Press-and-hold (touch) starts selection; the click that follows is swallowed.
+  const hold = useRef<{ timer: number; x: number; y: number; fired: boolean } | null>(null)
+  const cancelHold = () => { if (hold.current) window.clearTimeout(hold.current.timer) }
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType !== 'touch' || !onLongPress) return
+    const h = { x: e.clientX, y: e.clientY, fired: false, timer: 0 }
+    h.timer = window.setTimeout(() => { h.fired = true; navigator.vibrate?.(10); onLongPress(txn.id) }, 450)
+    hold.current = h
+  }
+  const onPointerMove = (e: React.PointerEvent) => {
+    const h = hold.current
+    if (h && Math.hypot(e.clientX - h.x, e.clientY - h.y) > 8) cancelHold()
+  }
 
   return (
     <div
       className={cn(
         ROW_GRID,
-        'items-center gap-3 px-4 py-3 transition-colors group cursor-pointer',
+        'items-center gap-3 px-4 py-3 transition-colors group cursor-pointer select-none sm:select-auto',
         checked ? 'bg-[var(--color-status-info-bg)]' : 'hover:bg-[var(--color-bg-sunken)]',
       )}
-      onClick={() => onView(txn)}
+      onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={cancelHold} onPointerCancel={cancelHold}
+      onContextMenu={(e) => { if (onLongPress) e.preventDefault() }}
+      onClick={() => {
+        if (hold.current?.fired) { hold.current = null; return }
+        if (selecting) onCheck(txn.id)
+        else onView(txn)
+      }}
     >
       <button
         type="button"
@@ -366,18 +468,42 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate }: {
           : <Square className="w-4 h-4 text-[var(--color-text-quaternary)] group-hover:text-[var(--color-text-tertiary)] transition-colors" />}
       </button>
 
+      {selecting ? (
+        <span role="checkbox" aria-checked={checked} aria-label={txn.description}
+          className={cn('w-8 h-8 flex items-center justify-center shrink-0')}>
+          <span className={cn('w-6 h-6 rounded-full border-2 flex items-center justify-center transition-colors',
+            checked ? 'bg-[var(--color-interactive-primary)] border-[var(--color-interactive-primary)] text-white' : 'border-[var(--color-border-strong)] bg-[var(--color-surface-default)]')}>
+            {checked && <Check className="w-3.5 h-3.5" strokeWidth={3} />}
+          </span>
+        </span>
+      ) : (
       <div
         className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0 text-[11px] font-bold select-none"
         style={{ background: `color-mix(in srgb, ${accentHex} 12%, transparent)`, color: accentHex }}
       >
         {getInitials(txn.description || '??')}
       </div>
+      )}
 
       <div className="min-w-0">
         <p className="text-sm font-medium text-[var(--color-text-primary)] truncate">{txn.description}</p>
-        <p className="xl:hidden mt-0.5 text-xs text-[var(--color-text-tertiary)] truncate">
-          <span className="sm:hidden">{[catLabel, acc?.name, dateLabel].filter(Boolean).join(' · ')}</span>
-          <span className="hidden sm:inline">{[acc?.name, dateLabel].filter(Boolean).join(' · ')}</span>
+        {/* Phones: category and account as tinted chips. */}
+        <div className="sm:hidden mt-1 flex items-center gap-1.5 min-w-0 overflow-hidden">
+          <span className="inline-flex items-center gap-1 h-5 px-1.5 rounded-md text-[11px] font-medium whitespace-nowrap max-w-[55%] shrink-0"
+            style={{ background: `color-mix(in srgb, ${catColor} 14%, transparent)`, color: cat ? `color-mix(in srgb, ${catColor} 75%, #111827)` : 'var(--color-text-tertiary)' }}>
+            {cat && <CategoryIcon name={cat.emoji} className="w-3 h-3 shrink-0" />}
+            <span className="truncate">{catLabel}</span>
+          </span>
+          {acc && (
+            <span className="inline-flex items-center h-5 px-1.5 rounded-md text-[11px] font-medium whitespace-nowrap truncate min-w-0"
+              style={{ background: `color-mix(in srgb, ${accColor} 12%, transparent)`, color: `color-mix(in srgb, ${accColor} 80%, #111827)` }}>
+              <span className="truncate">{acc.name}</span>
+            </span>
+          )}
+          {dateLabel && <span className="text-[11px] text-[var(--color-text-quaternary)] whitespace-nowrap">{dateLabel}</span>}
+        </div>
+        <p className="hidden sm:block xl:hidden mt-0.5 text-xs text-[var(--color-text-tertiary)] truncate">
+          {[acc?.name, dateLabel].filter(Boolean).join(' · ')}
         </p>
       </div>
 
@@ -399,7 +525,8 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate }: {
 
       <div className="hidden sm:block">
         {cat ? (
-          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)] whitespace-nowrap">
+          <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-md whitespace-nowrap"
+            style={{ background: `color-mix(in srgb, ${catColor} 14%, transparent)`, color: `color-mix(in srgb, ${catColor} 75%, #111827)` }}>
             {cat.name}
           </span>
         ) : (
@@ -476,6 +603,10 @@ function TransactionsContent() {
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)
   const [detailTxn, setDetailTxn] = useState<Transaction | null>(null)
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  // Phones: selection mode (rows show a check circle; a tap toggles).
+  const [selecting, setSelecting] = useState(false)
+  const phone = useIsPhone()
+  const stopSelecting = () => { setSelecting(false); setSelected(new Set()) }
   // Home-screen shortcut "Add transaction": /transactions?new=1
   const [adding, setAdding] = useState(() => params.get('new') === '1')
   useEffect(() => { if (params.get('new') === '1') router.replace('/transactions') }, [params, router])
@@ -638,9 +769,23 @@ function TransactionsContent() {
         />
       </div>
 
-      <FilterBar sort={<SortDropdown value={sortOption} onChange={setSortOption} iconOnly className="sm:hidden" />} />
+      <FilterBar sort={<>
+        <SortDropdown value={sortOption} onChange={setSortOption} iconOnly className="sm:hidden" />
+        {total > 0 && (
+          <button type="button" onClick={() => (selecting ? stopSelecting() : setSelecting(true))} aria-pressed={selecting}
+            aria-label={t.bulk.select} title={t.bulk.select}
+            className={cn('sm:hidden w-10 h-10 shrink-0 flex items-center justify-center rounded-xl border transition-colors',
+              selecting ? 'bg-[var(--color-interactive-primary)] border-[var(--color-interactive-primary)] text-white' : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-secondary)]')}>
+            <ListChecks className="w-4 h-4" />
+          </button>
+        )}
+      </>} />
 
-      {selected.size > 0 && <BulkBar ids={[...selected]} total={total} onDone={() => setSelected(new Set())} />}
+      {selected.size > 0 && !phone && <BulkBar ids={[...selected]} total={total} onDone={() => setSelected(new Set())} />}
+      {phone && selecting && (
+        <PhoneBulkBar ids={[...selected]} pageIds={allPageIds}
+          onSelectAll={() => setSelected(new Set(allPageIds))} onClearAll={() => setSelected(new Set())} onDone={stopSelecting} />
+      )}
 
       <Card padding="none">
         {!loading && items.length === 0 ? (
@@ -675,7 +820,8 @@ function TransactionsContent() {
                     <DateGroupHeader date={group.date} income={group.income} expense={group.expense} />
                     <div className="divide-y divide-[var(--color-border-subtle)]">
                       {group.txns.map((txn) => (
-                        <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate} />
+                        <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate}
+                          selecting={phone && selecting} onLongPress={phone ? (id) => { setSelecting(true); toggleOne(id) } : undefined} />
                       ))}
                     </div>
                   </div>
@@ -683,7 +829,8 @@ function TransactionsContent() {
               ) : (
                 <div className="divide-y divide-[var(--color-border-subtle)]">
                   {items.map((txn) => (
-                    <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate} />
+                    <TxnTableRow key={txn.id} txn={txn} checked={selected.has(txn.id)} onCheck={toggleOne} onView={(tx) => { setDetailTxn(tx); setEditingTxn(null) }} showDate={!groupedByDate}
+                          selecting={phone && selecting} onLongPress={phone ? (id) => { setSelecting(true); toggleOne(id) } : undefined} />
                   ))}
                 </div>
               )}
@@ -750,6 +897,8 @@ function TransactionsContent() {
           </div>
         </nav>
       )}
+      {/* Room for the selection bar so the last rows can scroll above it. */}
+      {phone && selecting && <div aria-hidden className="h-24" />}
 
       {detailTxn && !editingTxn && (
         <TransactionDetailPanel key={detailTxn.id} txn={detailTxn} onOpenTransaction={(id) => void getById(id).then((tx) => { if (tx) setDetailTxn(tx) })} onClose={closeDetail} onEdit={() => { setEditingTxn(detailTxn); setDetailTxn(null) }} />

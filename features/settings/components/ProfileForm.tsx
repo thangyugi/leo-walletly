@@ -2,6 +2,7 @@
 import { useState } from 'react'
 
 import { useForm } from 'react-hook-form'
+import { AppSelect } from '@/components/ui/app-select'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Edit3, Save, Loader2, ShieldAlert } from 'lucide-react'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -34,7 +35,7 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
   const [isSaving, setIsSaving] = useState(false)
   const [showWarning, setShowWarning] = useState(false)
 
-  const { register, handleSubmit, formState: { errors, isDirty }, reset } = useForm<ProfileFormValues>({
+  const { register, handleSubmit, formState: { errors, isDirty }, reset, watch, setValue } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
     defaultValues: initialData as any,
   })
@@ -193,15 +194,16 @@ export function ProfileForm({ initialData, onSave, onAvatarUpload, onAvatarDelet
           </ProfileField>
 
           <ProfileField label="Giới tính" error={errors.gender?.message} isEditing={isEditing}>
-            <select {...register('gender')} disabled={!isEditing}
-              className={cn("w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm appearance-none", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
+            <AppSelect aria-label="Giới tính" value={watch('gender') ?? ''} disabled={!isEditing}
+              onChange={(e) => setValue('gender', e.target.value as ProfileFormValues['gender'], { shouldDirty: true, shouldValidate: true })}
+              className={cn("disabled:opacity-100 disabled:cursor-default", "w-full h-11 px-4 rounded-xl border transition-all outline-none text-sm appearance-none", isEditing ? "bg-[var(--color-bg-elevated)] border-[var(--color-border-default)] focus:ring-2 focus:ring-[var(--color-interactive-primary)]" : "bg-transparent border-transparent px-0 font-semibold text-[var(--color-text-primary)]")}
             >
               <option value="">Chọn giới tính...</option>
               <option value="male">Nam</option>
               <option value="female">Nữ</option>
               <option value="other">Khác</option>
               <option value="prefer_not_to_say">Không muốn tiết lộ</option>
-            </select>
+            </AppSelect>
           </ProfileField>
 
           <ProfileField label="Ngày sinh" error={errors.birthDate?.message} isEditing={isEditing}>
