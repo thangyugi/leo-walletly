@@ -25,6 +25,8 @@ export interface PickerOption {
   hint?: string
   /** Section heading shown above the first option of each group. */
   group?: string
+  /** Colour dot before the group heading (money out / in / moved). */
+  groupTone?: 'loss' | 'gain' | 'info'
 }
 
 interface PickerProps {
@@ -151,6 +153,8 @@ export function Picker({
           <React.Fragment key={o.value || '__none'}>
           {heading && (
             <div role="presentation" className={cn(big ? 'px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]' : 'px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
+              {o.groupTone && <span className={cn('inline-block w-2 h-2 rounded-full mr-1.5 align-middle -mt-px',
+                o.groupTone === 'loss' ? 'bg-[var(--color-text-loss)]' : o.groupTone === 'gain' ? 'bg-[var(--color-text-gain)]' : 'bg-[var(--color-brand-600)]')} />}
               {heading}
             </div>
           )}
@@ -264,15 +268,29 @@ export function CategoryPicker({
   const byId = new Map(categories.map((c) => [c.id, c]))
   const mine = categories.filter((c) => c.is_mine !== false)
   const shared = categories.filter((c) => c.is_mine === false)
-  const tree = (list: Category[], group?: string): PickerOption[] => categoryTreeOptions(list).map((o) => {
+  // Sections by money direction (spending / income / transfers), then yours vs shared with you.
+  const kinds = [
+    { type: 'expense', label: t.transactions.typeExpense, tone: 'loss' as const },
+    { type: 'income', label: t.transactions.typeIncome, tone: 'gain' as const },
+    { type: 'transfer', label: t.transactions.typeTransfer, tone: 'info' as const },
+  ]
+  const tree = (list: Category[], group: string, groupTone: PickerOption['groupTone']): PickerOption[] => categoryTreeOptions(list).map((o) => {
     const depth = (o.name.match(/^(— )+/)?.[0].length ?? 0) / 2
     const c = byId.get(o.id)!
-    return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} />, group, hint: c.is_mine === false ? c.owner_name : undefined }
+    return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} />, group, groupTone, hint: c.is_mine === false ? c.owner_name : undefined }
+  })
+  const sections = kinds.flatMap(({ type, label, tone }) => {
+    const m = mine.filter((c) => c.type === type)
+    const sh = shared.filter((c) => c.type === type)
+    return [
+      ...tree(m, sh.length ? `${label} · ${t.catui.groupMine}` : label, tone),
+      ...tree(sh, `${label} · ${t.catui.sharedWithMe}`, tone),
+    ]
   })
   const options: PickerOption[] = [
     ...extra,
     ...(noneLabel !== undefined ? [{ value: '', label: noneLabel }] : []),
-    ...(shared.length ? [...tree(mine, t.catui.groupMine), ...tree(shared, t.catui.sharedWithMe)] : tree(mine)),
+    ...sections,
   ]
   return <Picker value={value} onChange={onChange} options={options} {...rest} />
 }
