@@ -57,10 +57,10 @@ export function SessionList() {
           const Icon = s.device_type === 'mobile' ? Smartphone : s.device_type === 'tablet' ? Tablet : Laptop
           const isCurrent = !!current && s.auth_session_id === current
           return (
-            <div key={s.id} className="flex items-center gap-3 px-4 py-3">
-              <div className="w-9 h-9 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center"><Icon className="w-4 h-4 text-[var(--color-text-tertiary)]" /></div>
+            <div key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
+              <div className="w-9 h-9 shrink-0 rounded-lg bg-[var(--color-bg-sunken)] flex items-center justify-center"><Icon className="w-4 h-4 text-[var(--color-text-tertiary)]" /></div>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-[var(--color-text-primary)] flex items-center gap-2">
+                <p className="text-sm font-medium text-[var(--color-text-primary)] flex flex-wrap items-center gap-x-2 gap-y-1">
                   {s.device_name ?? `${s.browser ?? ''} · ${s.os ?? ''}`}
                   {isCurrent && <span className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-status-gain-bg)] text-[var(--color-text-gain)]">{t.sessions.current}</span>}
                   {s.is_trusted && <ShieldCheck className="w-3.5 h-3.5 text-[var(--color-text-gain)]" aria-label={t.sessions.trusted} />}
@@ -70,8 +70,11 @@ export function SessionList() {
                   {[s.browser, s.os].filter(Boolean).join(' · ')} · {[s.city, s.country_code].filter(Boolean).join(', ') || t.sessions.unknownLocation}{s.ip_address ? ` · ${s.ip_address}` : ''} · {timeAgo(s.last_active_at, lang)}
                 </p>
               </div>
-              <Button size="sm" variant="ghost" onClick={async () => { await SettingsService.setTrusted(s.id, !s.is_trusted); await load() }}>{s.is_trusted ? t.sessions.untrust : t.sessions.trust}</Button>
-              {!isCurrent && <Button size="sm" variant="outline" onClick={() => revoke(s.id)}>{t.settings.security.revokeSession}</Button>}
+              {/* Phones: the actions get their own line under the device. */}
+              <div className="flex items-center gap-2 max-sm:w-full max-sm:pl-12">
+                <Button size="sm" variant="ghost" onClick={async () => { await SettingsService.setTrusted(s.id, !s.is_trusted); await load() }}>{s.is_trusted ? t.sessions.untrust : t.sessions.trust}</Button>
+                {!isCurrent && <Button size="sm" variant="outline" onClick={() => revoke(s.id)}>{t.settings.security.revokeSession}</Button>}
+              </div>
             </div>
           )
         })}

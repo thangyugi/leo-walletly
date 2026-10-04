@@ -36,9 +36,10 @@ export function PwaProvider() {
       })
     })
 
-    void sw.register()
+    // Registration can be refused (private mode, blocked by policy): the app works without it.
+    sw.register().catch((e) => console.warn('Service worker not registered:', e))
     // Look for a new version when the app comes back to the foreground.
-    const check = () => { if (document.visibilityState === 'visible') void sw.update() }
+    const check = () => { if (document.visibilityState === 'visible') sw.update().catch(() => {}) }
     document.addEventListener('visibilitychange', check)
     return () => document.removeEventListener('visibilitychange', check)
   }, [])

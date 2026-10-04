@@ -1190,7 +1190,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         )}
       </div>
 
-      <Modal isOpen={!!form} onClose={() => setForm(null)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding isNested={isNested}>
+      <Modal isOpen={!!form} onClose={() => setForm(null)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding fullScreenOnPhone isNested={isNested}>
         {form && <CategoryForm onClose={() => setForm(null)} initialData={form.initial} />}
       </Modal>
       <MergeCategoryModal isOpen={mergeOpen} onClose={() => setMergeOpen(false)} sourceCategory={category} categories={categories}

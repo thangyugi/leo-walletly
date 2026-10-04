@@ -12,9 +12,11 @@ interface ModalProps {
   className?: string
   noPadding?: boolean
   isNested?: boolean
+  /** Data-entry forms: full-screen page on phones (see form-dialog.ts). */
+  fullScreenOnPhone?: boolean
 }
 
-export function Modal({ isOpen, onClose, children, className, noPadding, isNested }: ModalProps) {
+export function Modal({ isOpen, onClose, children, className, noPadding, isNested, fullScreenOnPhone }: ModalProps) {
   const [mounted, setMounted] = React.useState(false)
   useEscapeLayer(onClose, isOpen)
 
@@ -33,7 +35,8 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
   const modalContent = (
     <div className={cn(
       // Phones: a sheet from the bottom edge; larger screens: a centred dialog.
-      "fixed inset-0 z-[9999] flex items-end sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300",
+      "fixed inset-0 z-[9999] flex sm:items-center justify-center p-0 sm:p-4 animate-in fade-in duration-300",
+      fullScreenOnPhone ? "items-stretch" : "items-end",
       isNested ? "bg-black/40" : "bg-black/60 backdrop-blur-sm"
     )}>
       <div 
@@ -44,7 +47,8 @@ export function Modal({ isOpen, onClose, children, className, noPadding, isNeste
         role="dialog"
         aria-modal="true"
         className={cn(
-          'relative w-full max-w-xl max-h-[92dvh] overflow-y-auto bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-t-[22px] rounded-b-none sm:rounded-2xl shadow-2xl animate-sheet-up sm:animate-none',
+          'relative w-full max-w-xl overflow-y-auto bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] sm:rounded-2xl shadow-2xl animate-sheet-up sm:animate-none',
+          fullScreenOnPhone ? 'h-[100dvh] sm:h-auto sm:max-h-[92vh] rounded-none' : 'max-h-[92dvh] rounded-t-[22px] rounded-b-none',
           className
         )}
       >

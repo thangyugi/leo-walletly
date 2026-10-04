@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { FORM_OVERLAY, FORM_PANEL, FORM_HEADER } from '@/components/ui/form-dialog'
 import { useEscapeLayer } from '@/hooks/useEscapeLayer'
 import { X, Trash2, Save } from 'lucide-react'
 import { toast } from 'sonner'
@@ -159,18 +160,17 @@ export function TransactionEditModal({ txn, defaults, onClose, onSaved }: Props)
   ]
 
   const modal = (
-    <div className="fixed inset-0 z-[9100] flex items-end sm:items-center justify-center p-0 sm:p-4">
+    <div className={FORM_OVERLAY}>
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="tx-modal-title"
-        className="relative bg-[var(--color-bg-surface)] rounded-t-[22px] sm:rounded-2xl w-full sm:max-w-lg max-h-[92dvh] overflow-y-auto overscroll-contain animate-sheet-up sm:animate-none shadow-2xl border border-[var(--color-border-default)]">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--color-border-subtle)] sticky top-0 bg-[var(--color-bg-surface)] z-10">
+      <div role="dialog" aria-modal="true" aria-labelledby="tx-modal-title" className={FORM_PANEL}>
+        <div className={FORM_HEADER}>
           <h2 id="tx-modal-title" className="font-semibold text-[var(--color-text-primary)]">{txn ? t.txform.editTitle : t.txform.addTitle}</h2>
           <button onClick={onClose} aria-label={t.common.close} className="w-9 h-9 rounded-full flex items-center justify-center hover:bg-[var(--color-bg-sunken)]">
             <X className="w-4 h-4" />
           </button>
         </div>
 
-        <div className="p-5 space-y-4">
+        <div className="flex-1 p-5 space-y-4">
           <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[var(--color-bg-sunken)]" role="tablist">
             {typeTabs.map((tab) => (
               <button key={tab.value} role="tab" aria-selected={type === tab.value} onClick={() => { setType(tab.value); setCategoryId('') }}

@@ -609,3 +609,18 @@ body {
 @media (max-width: 767.98px) {
   input:not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea { font-size: 16px; }
 }
+
+/* App splash (components/app-splash.tsx) */
+@keyframes splash-bar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+@keyframes splash-breathe {
+  0%, 100% { transform: scale(1); }
+  50%      { transform: scale(1.04); }
+}
+.animate-splash-bar     { animation: splash-bar 1.1s cubic-bezier(.4, 0, .2, 1) infinite; }
+.animate-splash-breathe { animation: splash-breathe 2.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .animate-splash-bar, .animate-splash-breathe { animation: none; }
+}

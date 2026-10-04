@@ -42,7 +42,7 @@ export function MobileHeader({ onSearchOpen }: { onSearchOpen?: () => void }) {
         {unread > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--color-interactive-primary)] border-[1.5px] border-[var(--color-sidebar-bg)]" />}
       </Link>
       <Link
-        href="/settings/profile"
+        href="/settings"
         aria-label={displayName}
         className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
       >

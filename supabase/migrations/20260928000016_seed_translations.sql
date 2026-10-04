@@ -1092,6 +1092,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.sidebar.privacy', 'settings', null, false),
   ('settings.sidebar.profile', 'settings', null, false),
   ('settings.sidebar.security', 'settings', null, false),
+  ('settingsHub.back', 'settingsHub', null, false),
+  ('settingsHub.editProfile', 'settingsHub', null, false),
+  ('settingsHub.sectionAccount', 'settingsHub', null, false),
+  ('settingsHub.sectionAdvanced', 'settingsHub', null, false),
+  ('settingsHub.sectionLedger', 'settingsHub', null, false),
+  ('settingsHub.sectionPreferences', 'settingsHub', null, false),
+  ('settingsHub.subtitle', 'settingsHub', null, false),
+  ('settingsHub.title', 'settingsHub', null, false),
   ('settingsNav.developer', 'settingsNav', null, false),
   ('settingsNav.languages', 'settingsNav', null, false),
   ('settingsNav.ledger', 'settingsNav', null, false),
@@ -1205,7 +1213,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.saved', 'txform', null, false),
   ('txform.source', 'txform', null, false),
   ('txform.sourceBankSync', 'txform', null, false),
-  ('txform.sourceImport', 'txform', null, false),
+  ('txform.sourceImport', 'txform', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('txform.sourceManual', 'txform', null, false),
   ('txform.sourceRecurring', 'txform', null, false),
   ('txform.sourceScan', 'txform', null, false),
@@ -1213,10 +1224,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.splitEqual', 'txform', null, false),
   ('txform.tags', 'txform', null, false),
   ('txform.tagsPlaceholder', 'txform', null, false),
-  ('txform.time', 'txform', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('txform.time', 'txform', null, false),
   ('txform.toAccount', 'txform', null, false),
   ('txform.uncategorized', 'txform', null, false),
   ('workspace_settings.department', 'workspace_settings', null, false),
@@ -2313,6 +2321,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.privacy', 'ja', 'プライバシーとデータ'),
   ('settings.sidebar.profile', 'ja', 'プロフィール'),
   ('settings.sidebar.security', 'ja', 'セキュリティ'),
+  ('settingsHub.back', 'ja', '戻る'),
+  ('settingsHub.editProfile', 'ja', 'プロフィールを編集'),
+  ('settingsHub.sectionAccount', 'ja', 'マイアカウント'),
+  ('settingsHub.sectionAdvanced', 'ja', 'データと詳細設定'),
+  ('settingsHub.sectionLedger', 'ja', '開いている元帳'),
+  ('settingsHub.sectionPreferences', 'ja', '表示と通知'),
+  ('settingsHub.subtitle', 'ja', 'アカウント、表示、開いている元帳の設定'),
+  ('settingsHub.title', 'ja', '個人設定'),
   ('settingsNav.developer', 'ja', '開発者ツール'),
   ('settingsNav.languages', 'ja', '言語'),
   ('settingsNav.ledger', 'ja', '元帳設定'),
@@ -2426,7 +2442,10 @@ insert into public.translations (key, language_code, value) values
   ('txform.saved', 'ja', '取引を保存しました'),
   ('txform.source', 'ja', '登録元'),
   ('txform.sourceBankSync', 'ja', '銀行連携'),
-  ('txform.sourceImport', 'ja', 'インポート'),
+  ('txform.sourceImport', 'ja', 'インポート')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.sourceManual', 'ja', '手入力'),
   ('txform.sourceRecurring', 'ja', '定期'),
   ('txform.sourceScan', 'ja', 'レシート読取'),
@@ -2434,10 +2453,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.splitEqual', 'ja', '均等に分ける'),
   ('txform.tags', 'ja', 'タグ'),
   ('txform.tagsPlaceholder', 'ja', '入力してEnter'),
-  ('txform.time', 'ja', '時刻')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.time', 'ja', '時刻'),
   ('txform.toAccount', 'ja', '振替先'),
   ('txform.uncategorized', 'ja', '未分類'),
   ('workspace_settings.department', 'ja', '所属部門'),
@@ -3534,6 +3550,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.privacy', 'vi', 'Quyền riêng tư'),
   ('settings.sidebar.profile', 'vi', 'Hồ sơ cá nhân'),
   ('settings.sidebar.security', 'vi', 'Bảo mật'),
+  ('settingsHub.back', 'vi', 'Quay lại'),
+  ('settingsHub.editProfile', 'vi', 'Sửa hồ sơ cá nhân'),
+  ('settingsHub.sectionAccount', 'vi', 'Tài khoản của tôi'),
+  ('settingsHub.sectionAdvanced', 'vi', 'Dữ liệu & nâng cao'),
+  ('settingsHub.sectionLedger', 'vi', 'Sổ cái đang mở'),
+  ('settingsHub.sectionPreferences', 'vi', 'Tuỳ chỉnh'),
+  ('settingsHub.subtitle', 'vi', 'Tài khoản, hiển thị và sổ cái đang mở'),
+  ('settingsHub.title', 'vi', 'Thiết lập cá nhân'),
   ('settingsNav.developer', 'vi', 'Công cụ nhà phát triển'),
   ('settingsNav.languages', 'vi', 'Ngôn ngữ'),
   ('settingsNav.ledger', 'vi', 'Cài đặt sổ'),
@@ -3647,7 +3671,10 @@ insert into public.translations (key, language_code, value) values
   ('txform.saved', 'vi', 'Đã lưu giao dịch'),
   ('txform.source', 'vi', 'Nguồn'),
   ('txform.sourceBankSync', 'vi', 'Đồng bộ ngân hàng'),
-  ('txform.sourceImport', 'vi', 'Nhập file'),
+  ('txform.sourceImport', 'vi', 'Nhập file')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.sourceManual', 'vi', 'Nhập tay'),
   ('txform.sourceRecurring', 'vi', 'Định kỳ'),
   ('txform.sourceScan', 'vi', 'Quét hoá đơn'),
@@ -3655,10 +3682,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.splitEqual', 'vi', 'Chia đều'),
   ('txform.tags', 'vi', 'Nhãn'),
   ('txform.tagsPlaceholder', 'vi', 'Gõ rồi nhấn Enter'),
-  ('txform.time', 'vi', 'Giờ')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.time', 'vi', 'Giờ'),
   ('txform.toAccount', 'vi', 'Tài khoản nhận'),
   ('txform.uncategorized', 'vi', 'Chưa phân loại'),
   ('workspace_settings.department', 'vi', 'Phòng ban'),
@@ -4755,6 +4779,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.privacy', 'en', 'Privacy & Data'),
   ('settings.sidebar.profile', 'en', 'Profile'),
   ('settings.sidebar.security', 'en', 'Security'),
+  ('settingsHub.back', 'en', 'Back'),
+  ('settingsHub.editProfile', 'en', 'Edit profile'),
+  ('settingsHub.sectionAccount', 'en', 'My account'),
+  ('settingsHub.sectionAdvanced', 'en', 'Data & advanced'),
+  ('settingsHub.sectionLedger', 'en', 'Open ledger'),
+  ('settingsHub.sectionPreferences', 'en', 'Preferences'),
+  ('settingsHub.subtitle', 'en', 'Your account, display and the open ledger'),
+  ('settingsHub.title', 'en', 'Personal settings'),
   ('settingsNav.developer', 'en', 'Developer tools'),
   ('settingsNav.languages', 'en', 'Languages'),
   ('settingsNav.ledger', 'en', 'Ledger settings'),
@@ -4868,7 +4900,10 @@ insert into public.translations (key, language_code, value) values
   ('txform.saved', 'en', 'Transaction saved'),
   ('txform.source', 'en', 'Source'),
   ('txform.sourceBankSync', 'en', 'Bank sync'),
-  ('txform.sourceImport', 'en', 'Import'),
+  ('txform.sourceImport', 'en', 'Import')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('txform.sourceManual', 'en', 'Manual'),
   ('txform.sourceRecurring', 'en', 'Recurring'),
   ('txform.sourceScan', 'en', 'Receipt scan'),
@@ -4876,10 +4911,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.splitEqual', 'en', 'Split equally'),
   ('txform.tags', 'en', 'Tags'),
   ('txform.tagsPlaceholder', 'en', 'Type and press Enter'),
-  ('txform.time', 'en', 'Time')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('txform.time', 'en', 'Time'),
   ('txform.toAccount', 'en', 'To account'),
   ('txform.uncategorized', 'en', 'Uncategorized'),
   ('workspace_settings.department', 'en', 'Department'),

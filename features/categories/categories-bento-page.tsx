@@ -767,7 +767,7 @@ export function CategoriesBentoPage() {
           </Link>
         </div>
 
-        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding>
+        <Modal isOpen={isFormOpen} onClose={() => setIsFormOpen(false)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding fullScreenOnPhone>
           <CategoryForm onClose={() => setIsFormOpen(false)} />
         </Modal>
         <Modal isOpen={learnOpen} onClose={() => setLearnOpen(false)} className="max-w-md">

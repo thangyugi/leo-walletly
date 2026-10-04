@@ -1328,6 +1328,16 @@ const ja = {
     offlineBody: 'Walletly はデータの読み込みと保存にネットワークを使います。Wi-Fi またはモバイルデータを確認してから、もう一度お試しください。',
     retry: '再試行',
   },
+  settingsHub: {
+    title: '個人設定',
+    subtitle: 'アカウント、表示、開いている元帳の設定',
+    sectionAccount: 'マイアカウント',
+    sectionPreferences: '表示と通知',
+    sectionLedger: '開いている元帳',
+    sectionAdvanced: 'データと詳細設定',
+    editProfile: 'プロフィールを編集',
+    back: '戻る',
+  },
 }
 
 const vi: typeof ja = {
@@ -2652,6 +2662,16 @@ const vi: typeof ja = {
     offlineBody: 'Walletly cần mạng để tải và lưu số liệu. Hãy kiểm tra Wi-Fi hoặc dữ liệu di động rồi thử lại.',
     retry: 'Thử lại',
   },
+  settingsHub: {
+    title: 'Thiết lập cá nhân',
+    subtitle: 'Tài khoản, hiển thị và sổ cái đang mở',
+    sectionAccount: 'Tài khoản của tôi',
+    sectionPreferences: 'Tuỳ chỉnh',
+    sectionLedger: 'Sổ cái đang mở',
+    sectionAdvanced: 'Dữ liệu & nâng cao',
+    editProfile: 'Sửa hồ sơ cá nhân',
+    back: 'Quay lại',
+  },
 }
 
 const en: typeof ja = {
@@ -3975,6 +3995,16 @@ const en: typeof ja = {
     offlineTitle: 'No internet connection',
     offlineBody: 'Walletly needs the network to load and save your figures. Check Wi-Fi or mobile data and try again.',
     retry: 'Try again',
+  },
+  settingsHub: {
+    title: 'Personal settings',
+    subtitle: 'Your account, display and the open ledger',
+    sectionAccount: 'My account',
+    sectionPreferences: 'Preferences',
+    sectionLedger: 'Open ledger',
+    sectionAdvanced: 'Data & advanced',
+    editProfile: 'Edit profile',
+    back: 'Back',
   },
 }
 

@@ -2,9 +2,10 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { ChevronRight, Bell, Code2, LogOut, User, Building2, ArrowRight } from 'lucide-react'
+import { ChevronRight, Bell, LogOut, UserCog, Building2, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useAuthStore } from '@/stores/auth'
+import { useSignOut } from '@/hooks/useSignOut'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useNotificationsStore } from '@/features/notifications/store'
@@ -14,7 +15,8 @@ import { NAV_ITEMS, isActivePath } from './nav'
 
 const EXTRA_TITLES: Record<string, string> = {
   '/notifications': 'notifications.title',
-  '/profile': 'settings.sidebar.profile',
+  '/settings': 'settingsHub.title',
+  '/settings/profile': 'settings.sidebar.profile',
   '/settings/account': 'settings.sidebar.account',
   '/settings/security': 'settings.sidebar.security',
   '/settings/notifications': 'settings.sidebar.notifications',
@@ -42,8 +44,9 @@ function useClickOutside(ref: React.RefObject<HTMLElement | null>, handler: () =
 export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
   const pathname = usePathname()
   const router = useRouter()
-  const { user, signOut } = useAuthStore()
-  const { t } = useTranslation()
+  const user = useAuthStore((s) => s.user)
+  const signOut = useSignOut()
+  const { t, tk } = useTranslation()
   const current = useLedgerStore((s) => s.current)
   const profile = useLedgerStore((s) => s.profile)
   const { items, markRead, markAllRead } = useNotificationsStore()
@@ -160,12 +163,11 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
                 <p className="text-[11px] text-[var(--color-text-quaternary)] truncate">{user?.email}</p>
               </div>
               <div className="py-1">
-                <MenuLink href="/settings/profile" icon={User} label={t.settings.sidebar.profile} onClick={() => setShowUserMenu(false)} />
-                <MenuLink href="/settings/developer" icon={Code2} label={t.common.developerTools} badge={t.placeholders.devTitle} onClick={() => setShowUserMenu(false)} />
+                <MenuLink href="/settings" icon={UserCog} label={tk('settingsHub.title')} onClick={() => setShowUserMenu(false)} />
               </div>
               <div className="border-t border-[var(--color-border-subtle)] py-1">
                 <button
-                  onClick={async () => { await signOut(); useLedgerStore.getState().reset(); router.replace('/login') }}
+                  onClick={() => { setShowUserMenu(false); void signOut() }}
                   className="flex items-center gap-2.5 w-full px-4 py-2 text-sm text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)] transition-colors text-left"
                 >
                   <LogOut className="w-4 h-4 shrink-0" />

@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import { SettingsHub } from '@/features/settings/components/SettingsHub'
 
 export default function SettingsPage() {
-  redirect('/settings/profile')
+  return <SettingsHub />
 }

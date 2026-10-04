@@ -334,7 +334,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
   ]
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-t-[22px] sm:rounded-[24px] shadow-xl overflow-hidden flex flex-col max-h-[92dvh] sm:max-h-[90vh]">
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto bg-[var(--color-surface-default)] rounded-none sm:rounded-[24px] shadow-xl overflow-hidden flex flex-col h-[100dvh] sm:h-auto sm:max-h-[90vh] pt-[env(safe-area-inset-top)] sm:pt-0">
       <div className="flex items-center justify-between px-6 sm:px-8 py-5 bg-[var(--color-bg-sunken)] border-b border-[var(--color-border-default)]">
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">{isEdit ? t.catform.editTitle : t.catform.createTitle}</h2>

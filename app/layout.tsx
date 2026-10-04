@@ -24,6 +24,8 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover', // lets the layout use env(safe-area-inset-*) on notched phones
+  // Android: the on-screen keyboard shrinks the layout, so 100dvh = the visible area.
+  interactiveWidget: 'resizes-content',
   themeColor: [
     { media: '(prefers-color-scheme: light)', color: PWA.themeColor.light },
     { media: '(prefers-color-scheme: dark)', color: PWA.themeColor.dark },

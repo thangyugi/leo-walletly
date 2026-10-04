@@ -3,10 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import { LayoutDashboard, ArrowDownUp, FolderTree, Menu, Plus, PenLine, ScanLine, Upload, ChevronRight, LogOut } from 'lucide-react'
+import { LayoutDashboard, ArrowDownUp, FolderTree, Menu, Plus, PenLine, ScanLine, Upload, ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
-import { useAuthStore } from '@/stores/auth'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath } from './nav'
@@ -36,7 +35,6 @@ export function MobileTabBar() {
   const router = useRouter()
   const { t, tk } = useTranslation()
   const can = useLedgerStore((s) => s.can)
-  const signOut = useAuthStore((s) => s.signOut)
   const [sheet, setSheet] = useState<null | 'add' | 'more'>(null)
   const [adding, setAdding] = useState(false)
   const close = () => setSheet(null)
@@ -45,7 +43,9 @@ export function MobileTabBar() {
   const [lastPath, setLastPath] = useState(pathname)
   if (lastPath !== pathname) { setLastPath(pathname); setSheet(null) }
 
-  const moreActive = !TABS.some((tab) => isActivePath(pathname, tab.href)) && pathname !== '/'
+  // Personal settings belong to the avatar (top right), not to "More".
+  const personal = pathname.startsWith('/settings') && pathname !== '/settings/ledger'
+  const moreActive = !TABS.some((tab) => isActivePath(pathname, tab.href)) && pathname !== '/' && !personal
   const tabClass = (on: boolean) => cn(
     'flex flex-col items-center justify-center gap-[3px] h-[52px] rounded-xl text-[10.5px] font-semibold tracking-[-0.01em]',
     on ? 'text-[var(--color-sidebar-item-active-text)]' : 'text-[var(--color-text-tertiary)]',
@@ -139,11 +139,6 @@ export function MobileTabBar() {
             <h3 className="mb-1.5 ml-1 text-[11px] font-semibold uppercase tracking-widest text-[var(--color-text-quaternary)]">{t.common.language}</h3>
             <div className="p-1 rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)]"><LanguagePicker /></div>
           </section>
-          <button type="button"
-            onClick={async () => { close(); await signOut(); useLedgerStore.getState().reset(); router.replace('/login') }}
-            className="mt-4 mb-2 w-full h-12 rounded-2xl border border-[var(--color-status-loss-bg)] bg-[var(--color-surface-default)] text-sm font-semibold text-[var(--color-text-loss)] flex items-center justify-center gap-2">
-            <LogOut className="w-4 h-4" />{t.common.signOut}
-          </button>
         </Sheet>
       )}
 
