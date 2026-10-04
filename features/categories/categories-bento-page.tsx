@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users, TrendingUp } from 'lucide-react'
+import { Plus, ArrowUpRight, Sun, ChevronUp, ChevronDown, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users, TrendingUp, ChevronRight, Archive } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
@@ -510,6 +510,95 @@ function ArchiveStrip({ archivedCategories, onShowAll }: { archivedCategories: C
   )
 }
 
+/* ─── Phones: compact grouped list ─────────────────────────────────────────── */
+/**
+ * Phones: the bento cards are tall (one screen per three categories), so the
+ * list is rows instead: grouped by money direction, biggest first, each row
+ * with its share (or budget use) as a thin bar. Tap opens the category.
+ */
+function PhoneCategoryList({ sections, pendingTotal, pendingAmount, archivedCount, onShowArchived }: {
+  sections: { key: string; label: string; tone: 'loss' | 'gain' | 'info' | 'shared'; rows: { category: Category; amount: number; tx: number; subs: number }[] }[]
+  pendingTotal: number
+  pendingAmount: number
+  archivedCount: number
+  onShowArchived?: () => void
+}) {
+  const { t } = useTranslation()
+  const { fmt, sym, budgetFactor } = React.useContext(FmtCtx)
+  const dot = { loss: 'bg-[var(--color-text-loss)]', gain: 'bg-[var(--color-text-gain)]', info: 'bg-[var(--color-brand-600)]', shared: 'bg-[var(--color-info-500)]' }
+  return (
+    <div className="sm:hidden space-y-4">
+      {pendingTotal > 0 && (
+        <Link href="/categories/classify"
+          className="flex items-center gap-3 p-3 pr-2 rounded-2xl border border-[var(--color-warning-100)] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)]"
+          style={{ background: 'linear-gradient(90deg, var(--color-warning-50) 0%, var(--color-surface-default) 70%)' }}>
+          <span className="w-10 h-10 rounded-xl bg-[var(--color-warning-100)] text-[var(--color-warning-700)] flex items-center justify-center shrink-0"><Inbox className="w-5 h-5" /></span>
+          <span className="flex-1 min-w-0">
+            <span className="block text-[14px] font-semibold text-[var(--color-text-primary)] truncate">{fill(t.catui.pendingCount, { count: pendingTotal })}</span>
+            <span className="block text-[12px] text-[var(--color-text-tertiary)] truncate font-tabular">−{fmt(pendingAmount)} {sym}</span>
+          </span>
+          <span className="shrink-0 h-9 px-3 rounded-xl bg-[var(--color-interactive-primary)] text-white text-[13px] font-semibold inline-flex items-center">{t.catui.classifyNow}</span>
+        </Link>
+      )}
+      {sections.map((sec) => {
+        const total = sec.rows.reduce((a, r) => a + r.amount, 0)
+        return (
+          <section key={sec.key} aria-label={sec.label}>
+            <div className="flex items-center justify-between px-1 mb-1.5">
+              <h2 className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.08em] text-[var(--color-text-tertiary)]">
+                <span className={cn('w-2 h-2 rounded-full', dot[sec.tone])} />{sec.label}
+                <span className="font-sans normal-case tracking-normal font-medium text-[var(--color-text-quaternary)]">· {sec.rows.length}</span>
+              </h2>
+              <span className="text-[12px] font-semibold font-tabular text-[var(--color-text-secondary)]">{fmt(total)} {sym}</span>
+            </div>
+            <div className="rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[var(--shadow-card)] overflow-hidden divide-y divide-[var(--color-border-subtle)]">
+              {sec.rows.map(({ category: c, amount, tx, subs }) => {
+                const budget = (c.budget_limit || 0) * budgetFactor
+                const pct = budget > 0 ? Math.round((amount / budget) * 100) : total > 0 ? Math.round((amount / total) * 100) : 0
+                const over = budget > 0 && pct > 100
+                return (
+                  <Link key={c.id} href={categoryHref(c)} className="flex items-center gap-3 px-3.5 py-3 active:bg-[var(--color-bg-sunken)]">
+                    <span className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: `${c.color}22`, color: c.color }}>
+                      <CategoryIcon name={c.emoji} className="w-5 h-5" />
+                    </span>
+                    <span className="flex-1 min-w-0">
+                      <span className="flex items-center gap-1.5 min-w-0">
+                        <span className="text-[15px] font-semibold text-[var(--color-text-primary)] truncate">{c.name}</span>
+                        {c.access !== 'private' && <Users className={cn('w-3.5 h-3.5 shrink-0', c.access === 'shared' ? 'text-[var(--color-brand-600)]' : 'text-[var(--color-info-500)]')} aria-label={t.catui.shared} />}
+                      </span>
+                      <span className="block text-[12px] text-[var(--color-text-tertiary)] truncate">
+                        {[fill(t.catui.txCount, { count: tx }), subs > 0 ? `${subs} ${t.catdetail.tabSub.toLowerCase()}` : null, !c.is_mine ? fill(t.catui.ownerBadge, { name: c.owner_name }) : null].filter(Boolean).join(' · ')}
+                      </span>
+                      <span className="mt-1.5 block h-1 rounded-full bg-[var(--color-bg-sunken)] overflow-hidden">
+                        <span className="block h-full rounded-full" style={{ width: `${Math.min(100, pct)}%`, background: over ? 'var(--color-text-loss)' : c.color }} />
+                      </span>
+                    </span>
+                    <span className="shrink-0 w-[84px] text-right">
+                      <span className={cn('block text-[15px] font-semibold font-tabular', over ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-primary)]')}>{fmt(amount)}<span className="text-[11px] font-medium text-[var(--color-text-tertiary)]"> {sym}</span></span>
+                      <span className={cn('block text-[11px] font-tabular', over ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-quaternary)]')}>{budget > 0 ? fill(t.catui.budgetPct, { pct }) : `${pct}%`}</span>
+                    </span>
+                    <ChevronRight className="w-4 h-4 shrink-0 text-[var(--color-text-quaternary)]" />
+                  </Link>
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
+      {sections.length === 0 && <p className="py-10 text-center text-sm text-[var(--color-text-tertiary)]">{t.common.empty}</p>}
+      {archivedCount > 0 && onShowArchived && (
+        <button type="button" onClick={onShowArchived}
+          className="w-full flex items-center gap-3 px-3.5 h-12 rounded-2xl bg-[var(--color-surface-default)] border border-[var(--color-border-default)] text-[14px] text-[var(--color-text-secondary)]">
+          <Archive className="w-4 h-4 text-[var(--color-text-quaternary)]" />
+          <span className="flex-1 text-left">{t.catui.archiveTitle}</span>
+          <span className="text-[12px] font-semibold text-[var(--color-text-quaternary)]">{archivedCount}</span>
+          <ChevronRight className="w-4 h-4 text-[var(--color-text-quaternary)]" />
+        </button>
+      )}
+    </div>
+  )
+}
+
 /* ─── Main CategoriesBentoPage ─────────────────────────────────────────────── */
 type Tab = 'all' | 'active' | 'shared' | 'private' | 'recurring' | 'archived'
 
@@ -634,6 +723,31 @@ export function CategoriesBentoPage() {
     { label: t.catui.kpiUnreconciled, value: kpi ? String(kpi.pending_reconcile) : '—', unit: kpi ? t.catui.txUnit : '', sub: kpi && kpi.pending_reconcile > 0 ? t.catui.kpiUnreconciledSub : t.catui.kpiAllReconciled, subLoss: false },
   ]
 
+  const showBentoTabs = activeTab === 'all' || activeTab === 'active'
+  // Phones: rows grouped by money direction (+ categories others shared with you), biggest first.
+  const phoneSections = (() => {
+    const q = search.trim().toLowerCase()
+    const match = (c: Category) => !q || c.name.toLowerCase().includes(q) || c.keywords.some((kw) => kw.toLowerCase().includes(q)) || (!c.is_mine && c.owner_name.toLowerCase().includes(q))
+    // Income categories show what came in; the rest what went out.
+    const incomeOf = (c: Category) => [c.id, ...categories.filter((x) => x.parent_id === c.id).map((x) => x.id)].reduce((a, id) => a + (statBy.get(id)?.income ?? 0), 0)
+    const row = (c: Category) => ({ category: c, amount: c.type === 'income' ? incomeOf(c) : rolled(c).expense, tx: rolled(c).tx, subs: categories.filter((x) => x.parent_id === c.id && x.is_active).length })
+    const byAmount = (a: { amount: number; tx: number }, b: { amount: number; tx: number }) => b.amount - a.amount || b.tx - a.tx
+    const own = rootCategories.filter(match)
+    const kinds = [
+      { key: 'expense', label: t.transactions.typeExpense, tone: 'loss' as const },
+      { key: 'income', label: t.transactions.typeIncome, tone: 'gain' as const },
+      { key: 'transfer', label: t.transactions.typeTransfer, tone: 'info' as const },
+    ]
+    type Section = { key: string; label: string; tone: 'loss' | 'gain' | 'info' | 'shared'; rows: ReturnType<typeof row>[] }
+    const out: Section[] = kinds.map((k) => ({ ...k, rows: own.filter((c) => c.type === k.key).map(row).sort(byAmount) })).filter((x) => x.rows.length)
+    if (showBentoTabs && sharedWithMe.length) {
+      const rows = sharedWithMe.filter(match).map(row).sort(byAmount)
+      if (rows.length) out.push({ key: 'shared', label: t.catui.sharedWithMe, tone: 'shared', rows })
+    }
+    return out
+  })()
+  const pendingAmount = pending.items.filter((x) => x.transactionType === 'expense').reduce((a, x) => a + x.baseAmount, 0)
+
   if (isLoading && categories.length === 0) {
     return <div className="flex items-center justify-center min-h-[400px]"><Loader2 className="animate-spin w-8 h-8 text-[var(--color-text-quaternary)]" /></div>
   }
@@ -714,7 +828,10 @@ export function CategoriesBentoPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+        <PhoneCategoryList sections={phoneSections} pendingTotal={pending.total} pendingAmount={pendingAmount}
+          archivedCount={showBento ? archivedCategories.length : 0} onShowArchived={() => setActiveTab('archived')} />
+
+        <div className="max-sm:hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {showBento ? (
             <>
               {featuredCategory && !search && (
@@ -736,7 +853,7 @@ export function CategoriesBentoPage() {
         </div>
 
         {showBento && sharedWithMe.length > 0 && (
-          <section aria-labelledby="shared-with-me" className="space-y-2.5">
+          <section aria-labelledby="shared-with-me" className="max-sm:hidden space-y-2.5">
             <div className="flex items-end gap-2 flex-wrap">
               <h2 id="shared-with-me" className="text-[14px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)] inline-flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[var(--color-text-tertiary)]" />{t.catui.sharedWithMe}
@@ -753,7 +870,7 @@ export function CategoriesBentoPage() {
         )}
 
         <div
-          className="flex items-center gap-3.5 p-[14px_18px] rounded-[14px] border border-[var(--color-brand-100)] shadow-[var(--shadow-card)] flex-wrap"
+          className="max-sm:hidden flex items-center gap-3.5 p-[14px_18px] rounded-[14px] border border-[var(--color-brand-100)] shadow-[var(--shadow-card)] flex-wrap"
           style={{ background: 'linear-gradient(180deg,var(--color-brand-25) 0%,var(--color-surface-default) 100%)' }}
         >
           <div className="w-9 h-9 rounded-[10px] bg-[var(--color-brand-100)] text-[var(--color-brand-700)] flex items-center justify-center shrink-0">
