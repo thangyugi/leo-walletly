@@ -691,7 +691,8 @@ export function CategoriesBentoPage() {
         </section>
 
         <div className="flex items-center gap-2.5 flex-wrap">
-          <div className="inline-flex max-w-full max-sm:w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5" role="tablist">
+          {/* Phones: separate pill buttons (bigger targets, like the detail page tabs). */}
+          <div className="inline-flex max-w-full max-sm:w-full overflow-x-auto no-scrollbar bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[9px] p-0.5 shadow-xs gap-0.5 max-sm:bg-transparent max-sm:border-0 max-sm:p-0 max-sm:shadow-none max-sm:gap-1.5" role="tablist">
             {filterTabs.map((tab) => (
               <button
                 key={tab.value}
@@ -700,11 +701,12 @@ export function CategoriesBentoPage() {
                 onClick={() => setActiveTab(tab.value)}
                 className={cn(
                   'text-xs font-medium px-[11px] py-[5px] rounded-[6px] inline-flex items-center gap-[5px] cursor-pointer tracking-[-0.005em] transition-colors whitespace-nowrap',
-                  activeTab === tab.value ? 'bg-[#111827] text-white' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)]',
+                  'max-sm:shrink-0 max-sm:h-9 max-sm:py-0 max-sm:pl-3.5 max-sm:pr-1.5 max-sm:text-[13px] max-sm:gap-1.5 max-sm:rounded-full max-sm:border',
+                  activeTab === tab.value ? 'bg-[#111827] text-white max-sm:border-[#111827]' : 'text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] max-sm:bg-[var(--color-surface-default)] max-sm:border-[var(--color-border-default)] max-sm:text-[var(--color-text-secondary)]',
                 )}
               >
                 {tab.label}
-                <span className={cn('font-mono text-[9px] rounded px-[5px] py-px', activeTab === tab.value ? 'bg-white/[0.16] text-white/[0.85]' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]')}>
+                <span className={cn('font-mono text-[9px] rounded px-[5px] py-px max-sm:font-sans max-sm:font-semibold max-sm:text-[11px] max-sm:rounded-full max-sm:min-w-[22px] max-sm:h-[22px] max-sm:inline-flex max-sm:items-center max-sm:justify-center max-sm:px-1.5 max-sm:py-0', activeTab === tab.value ? 'bg-white/[0.16] text-white/[0.85] max-sm:bg-white/20 max-sm:text-white' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] max-sm:text-[var(--color-text-tertiary)]')}>
                   {tabCounts[tab.value]}
                 </span>
               </button>
