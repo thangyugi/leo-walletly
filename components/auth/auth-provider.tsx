@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -9,6 +9,15 @@ import { useMasterStore } from '@/features/master/store'
 import { useI18nStore } from '@/features/i18n/store'
 import { useNotificationsStore } from '@/features/notifications/store'
 import { supabase } from '@/lib/supabase'
+import { AppSplash } from '@/components/app-splash'
+
+// The language saved in this browser is only known once the persisted settings
+// store has hydrated (the server renders with the default language).
+const subscribeHydration = (cb: () => void) => useSettingsStore.persist.onFinishHydration(cb)
+const isHydrated = () => useSettingsStore.persist.hasHydrated()
+
+/** Longest wait for the UI texts of the language before showing the built-in copy. */
+const TEXTS_TIMEOUT_MS = 2500
 
 const PUBLIC_PATHS = ['/login', '/join', '/reset-password', '/offline']
 
@@ -121,17 +130,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [authReady, ledgerReady, user, ledgers.length, pathname, isPublic, router, preferences?.start_page, ledgerError, ledgerLoading])
 
-  const booting = !authReady || (user && !ledgerReady)
-  if (booting && !isPublic) {
-    return (
-      <div className="h-screen w-full flex items-center justify-center bg-[var(--color-bg-base)]">
-        <div className="animate-pulse flex flex-col items-center gap-4">
-          <div className="w-12 h-12 bg-[var(--color-brand-200)] rounded-2xl" />
-          <div className="h-4 w-24 bg-[var(--color-brand-100)] rounded" />
-        </div>
-      </div>
-    )
-  }
+  // Launch screen: the app appears once it can draw in the right language with
+  // the user's data — never the default language first, then a switch.
+  const hydrated = useSyncExternalStore(subscribeHydration, isHydrated, () => false)
+  const textsLoadedFor = useI18nStore((s) => s.loadedKey)
+  const [textsTimedOut, setTextsTimedOut] = useState(false)
+  useEffect(() => {
+    if (!hydrated) return
+    const id = setTimeout(() => setTextsTimedOut(true), TEXTS_TIMEOUT_MS)
+    return () => clearTimeout(id)
+  }, [hydrated])
+  useEffect(() => { if (hydrated) document.documentElement.lang = lang }, [hydrated, lang])
 
-  return <>{children}</>
+  const textsReady = textsTimedOut || textsLoadedFor?.startsWith(`${lang}:`) ||
+    (typeof navigator !== 'undefined' && !navigator.onLine)
+  const ready = hydrated && (pathname === '/offline' || (authReady && (!user || ledgerReady) && textsReady))
+  const [booted, setBooted] = useState(false)
+  if (ready && !booted) setBooted(true)
+
+  return (
+    <>
+      {booted && children}
+      <AppSplash visible={!booted} />
+    </>
+  )
 }

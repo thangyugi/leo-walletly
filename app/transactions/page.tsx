@@ -77,7 +77,7 @@ const AVATAR_COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#
 // ------------------------------------------------------------------
 // Sort dropdown
 // ------------------------------------------------------------------
-function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: SortOption) => void }) {
+function SortDropdown({ value, onChange, iconOnly, className }: { value: SortOption; onChange: (v: SortOption) => void; iconOnly?: boolean; className?: string }) {
   const { t } = useTranslation()
   const SORT_OPTIONS: { value: SortOption; label: string; icon?: React.ElementType }[] = [
     { value: 'dateDesc',   label: t.transactions.sortLatest,     icon: ArrowDown },
@@ -93,14 +93,25 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
   const current = SORT_OPTIONS.find((o) => o.value === value)
 
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
+      {iconOnly ? (
+        // Phones: a square icon button beside search; a dot marks a non-default order.
+        <button ref={ref} type="button" onClick={() => setOpen((v) => !v)} aria-haspopup="listbox" aria-expanded={open}
+          aria-label={`${t.transactions.sortBy}: ${current?.label ?? t.transactions.date}`}
+          className={cn('relative w-10 h-10 flex items-center justify-center rounded-xl border bg-[var(--color-surface-default)] transition-colors',
+            open || value !== 'dateDesc' ? 'border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]' : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)]')}>
+          <ArrowUpDown className="w-4 h-4" />
+          {value !== 'dateDesc' && <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[var(--color-interactive-primary)]" />}
+        </button>
+      ) : (
       <Button ref={ref} variant="outline" size="sm" onClick={() => setOpen((v) => !v)} className="gap-1.5" aria-haspopup="listbox" aria-expanded={open}>
         <ArrowUpDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
         <span className="hidden sm:inline text-[var(--color-text-tertiary)]">{t.transactions.sortBy}:</span>
         <span className="font-medium text-[var(--color-text-primary)]">{current?.label ?? t.transactions.date}</span>
         <ChevronDown className={cn('w-3 h-3 text-[var(--color-text-quaternary)] transition-transform', open && 'rotate-180')} />
       </Button>
-      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={216} align="start" title={t.transactions.sortBy}>
+      )}
+      <Popover anchorRef={ref} open={open} onClose={() => setOpen(false)} width={216} align={iconOnly ? 'end' : 'start'} title={t.transactions.sortBy}>
         <div role="listbox" className="py-1">
           {SORT_OPTIONS.map((opt) => (
             <button
@@ -129,7 +140,7 @@ function SortDropdown({ value, onChange }: { value: SortOption; onChange: (v: So
 // ------------------------------------------------------------------
 // Filter Bar (applied server-side by fetchPage)
 // ------------------------------------------------------------------
-function FilterBar() {
+function FilterBar({ sort }: { sort?: React.ReactNode }) {
   const { filters, setFilters, resetFilters } = useTransactionsStore()
   const { accounts, categories, members } = useLedgerData()
   const { t } = useTranslation()
@@ -170,7 +181,7 @@ function FilterBar() {
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <div className="flex-1 relative">
+        <div className="flex-1 min-w-0 relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-quaternary)] pointer-events-none" />
           <label htmlFor="txn-search" className="sr-only">{t.transactions.search}</label>
           <input
@@ -180,7 +191,7 @@ function FilterBar() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className={cn(
-              'w-full h-9 pl-9 pr-3 text-sm rounded-lg border',
+              'w-full h-10 sm:h-9 pl-9 pr-3 text-[15px] sm:text-sm rounded-xl sm:rounded-lg border',
               'bg-[var(--color-surface-default)] text-[var(--color-text-primary)]',
               'placeholder:text-[var(--color-text-placeholder)]',
               'border-[var(--color-border-default)] hover:border-[var(--color-border-strong)]',
@@ -188,13 +199,14 @@ function FilterBar() {
             )}
           />
         </div>
+        {sort}
         <Button
           variant={expanded ? 'secondary' : 'outline'}
           size="sm"
           icon={<Filter />}
           onClick={() => setExpanded((v) => !v)}
           aria-expanded={expanded}
-          className={cn(hasActive && !expanded && 'border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]')}
+          className={cn('max-sm:h-10 max-sm:rounded-xl', hasActive && !expanded && 'border-[var(--color-interactive-primary)] text-[var(--color-interactive-primary)]')}
         >
           {t.transactions.filter}
           {activeCount > 0 && (
@@ -204,7 +216,7 @@ function FilterBar() {
           )}
         </Button>
         {hasActive && (
-          <Button variant="ghost" size="sm" icon={<X />} onClick={() => { setSearch(''); resetFilters() }}>{t.transactions.clear}</Button>
+          <Button variant="ghost" size="sm" icon={<X />} onClick={() => { setSearch(''); resetFilters() }} className="max-sm:hidden">{t.transactions.clear}</Button>
         )}
       </div>
       {expanded && !phone && (
@@ -585,7 +597,7 @@ function TransactionsContent() {
         actions={
           <>
             <DateNavigator value={picker} onChange={setPicker} lang={lang} />
-            <SortDropdown value={sortOption} onChange={setSortOption} />
+            <SortDropdown value={sortOption} onChange={setSortOption} className="max-sm:hidden" />
             {can('transaction.create') && (
               <Button variant="outline" size="sm" icon={<Plus />} onClick={() => setAdding(true)} className="max-md:hidden">{t.dashboard.addTransaction}</Button>
             )}
@@ -597,11 +609,17 @@ function TransactionsContent() {
                 variant="ghost" size="sm" icon={<Trash2 />}
                 aria-label={t.transactions.deleteAll}
                 onClick={deleteAllInPeriod}
-                className="text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]"
+                className="max-sm:hidden text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]"
               />
             )}
           </>
         }
+        titleAction={total > 0 && can('transaction.delete') ? (
+          <button type="button" aria-label={t.transactions.deleteAll} title={t.transactions.deleteAll} onClick={deleteAllInPeriod}
+            className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        ) : undefined}
       />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
@@ -620,7 +638,7 @@ function TransactionsContent() {
         />
       </div>
 
-      <FilterBar />
+      <FilterBar sort={<SortDropdown value={sortOption} onChange={setSortOption} iconOnly className="sm:hidden" />} />
 
       {selected.size > 0 && <BulkBar ids={[...selected]} total={total} onDone={() => setSelected(new Set())} />}
 

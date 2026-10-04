@@ -5,13 +5,16 @@ export interface PageHeaderProps {
   title: string
   subtitle?: string
   actions?: ReactNode
+  /** Phones only: a compact control shown beside the title (e.g. an icon button). */
+  titleAction?: ReactNode
   className?: string
 }
 
-export function PageHeader({ title, subtitle, actions, className }: PageHeaderProps) {
+export function PageHeader({ title, subtitle, actions, titleAction, className }: PageHeaderProps) {
   return (
     <header className={cn('flex flex-col xl:flex-row xl:items-end justify-between gap-3', className)}>
-      <div>
+      <div className="flex items-start justify-between gap-3">
+       <div className="min-w-0">
         <h1 className="text-[var(--font-size-xl)] font-semibold text-[var(--color-text-primary)] tracking-tight leading-snug"
             style={{ fontSize: '1.1875rem' }}>
           {title}
@@ -19,6 +22,8 @@ export function PageHeader({ title, subtitle, actions, className }: PageHeaderPr
         {subtitle && (
           <p className="mt-1 text-sm text-[var(--color-text-tertiary)] leading-normal">{subtitle}</p>
         )}
+       </div>
+       {titleAction && <div className="sm:hidden shrink-0">{titleAction}</div>}
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2 xl:shrink-0 pb-0.5">{actions}</div>}
     </header>
