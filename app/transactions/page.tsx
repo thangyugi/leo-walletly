@@ -21,7 +21,7 @@ import { TransactionDetailPanel } from '@/components/transactions/transaction-de
 import { Popover } from '@/components/ui/popover'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { useIsPhone } from '@/hooks/useMediaQuery'
-import { DateNavigator, defaultPickerValue, monthPickerValue } from '@/components/ui/date-range-picker'
+import { DateNavigator, defaultPickerValue, monthPickerValue, pickerFromParams } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { useTransactionsStore, type SortOption, type PeriodSummary } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
@@ -589,7 +589,8 @@ function TransactionsContent() {
     setSortOption, setPage, fetchPage, fetchRange, summarize, getById, bulkDelete,
   } = useTransactionsStore()
 
-  const [picker, setPicker] = useState<PickerValue>(() => defaultPickerValue(lang))
+  // Opened from another page on a period (?from=&to=&mode=, e.g. the overview's quarter).
+  const [picker, setPicker] = useState<PickerValue>(() => pickerFromParams(params, lang) ?? defaultPickerValue(lang))
   const [totals, setTotals] = useState<PeriodSummary>(EMPTY)
   const [prevTotals, setPrevTotals] = useState<PeriodSummary>(EMPTY)
   const [editingTxn, setEditingTxn] = useState<Transaction | null>(null)

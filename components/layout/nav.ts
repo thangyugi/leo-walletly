@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, Users, RefreshCw,
-  FileText, ScanLine, Upload, Settings, Wallet,
+  FileText, ScanLine, Upload, Settings, Wallet, GitPullRequestArrow,
 } from 'lucide-react'
 
 export type NavGroup = 'main' | 'manage' | 'tools' | 'system'
@@ -25,6 +25,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/categories', labelKey: 'nav.groups', icon: FolderTree, group: 'manage', shortKey: 'mobnav.categories' },
   { href: '/accounts', labelKey: 'nav.accounts', icon: Wallet, group: 'manage', shortKey: 'mobnav.accounts' },
   { href: '/users', labelKey: 'nav.users', icon: Users, group: 'manage', shortKey: 'mobnav.users' },
+  { href: '/approvals', labelKey: 'approvals.title', icon: GitPullRequestArrow, group: 'manage', shortKey: 'approvals.title' },
   { href: '/recurring', labelKey: 'nav.recurring', icon: RefreshCw, group: 'manage', shortKey: 'mobnav.recurring' },
   { href: '/monthly-report', labelKey: 'nav.report', icon: FileText, group: 'manage', shortKey: 'mobnav.report' },
   { href: '/scan', labelKey: 'nav.scan', icon: ScanLine, group: 'tools', shortKey: 'mobnav.scan' },
@@ -38,6 +39,9 @@ export const NAV_GROUP_LABEL_KEY: Record<NavGroup, string | null> = {
   tools: 'common.tools',
   system: 'common.system',
 }
+
+/** Proposals waiting for the signed-in user's approval (badge on "Approvals"). */
+export const BADGE_HREF = '/approvals'
 
 export function isActivePath(pathname: string, href: string) {
   return pathname === href || (href !== '/' && pathname.startsWith(href))

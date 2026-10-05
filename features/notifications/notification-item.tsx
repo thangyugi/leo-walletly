@@ -2,6 +2,7 @@
 
 import {
   AlertTriangle, AlertOctagon, CheckCircle2, FileText, Zap, RefreshCw, Clock, UserPlus, Users, ShieldAlert, Bell,
+  Pencil, Trash2, GitPullRequestArrow, XCircle,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -11,6 +12,7 @@ import type { AppNotification } from './store'
 
 const ICONS: Record<string, LucideIcon> = {
   AlertTriangle, AlertOctagon, CheckCircle2, FileText, Zap, RefreshCw, Clock, UserPlus, Users, ShieldAlert, Bell,
+  Pencil, Trash2, GitPullRequestArrow, XCircle,
 }
 
 const SEVERITY: Record<string, { bg: string; fg: string }> = {

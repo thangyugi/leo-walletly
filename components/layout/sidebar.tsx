@@ -11,6 +11,7 @@ import { useMasterStore } from '@/features/master/store'
 import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
 import { EditableText } from '@/components/i18n/editable-text'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath, type NavGroup } from './nav'
+import { NavBadge } from './nav-badge'
 import { InstallAppButton } from '@/features/pwa/components/install-app-button'
 import type { Lang } from '@/lib/i18n'
 
@@ -85,6 +86,7 @@ export function NavList({ onNavigate }: { onNavigate?: () => void }) {
                     strokeWidth={active ? 2 : 1.75}
                   />
                   <EditableText k={labelKey} />
+                  <NavBadge href={href} className="ml-auto" />
                 </Link>
               )
             })}
@@ -120,7 +122,10 @@ function RailNav() {
                     : 'text-[var(--color-text-tertiary)] hover:bg-[var(--color-sidebar-item-hover)] hover:text-[var(--color-text-secondary)]',
                 )}
               >
-                <Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2.1 : 1.75} />
+                <span className="relative">
+                  <Icon className="w-5 h-5 shrink-0" strokeWidth={active ? 2.1 : 1.75} />
+                  <NavBadge href={href} dot className="absolute -top-0.5 -right-1" />
+                </span>
                 <span className="text-[10px] font-semibold leading-tight text-center line-clamp-2">{tk(shortKey)}</span>
               </Link>
             )

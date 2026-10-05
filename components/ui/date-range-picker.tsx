@@ -62,6 +62,29 @@ export function monthPickerValue(isoDate: string, lang: Lang): PickerValue {
   return { start, end, mode: 'month', label: buildLabel(start, end, 'month', lang) }
 }
 
+/** The quarter containing `isoDate` (default: today) as a PickerValue (quarter mode). */
+export function quarterPickerValue(lang: Lang, isoDate?: string): PickerValue {
+  const d = isoDate ? new Date(isoDate + 'T00:00:00') : new Date()
+  const q = Math.floor(d.getMonth() / 3)
+  const start = firstOfMonth(d.getFullYear(), q * 3)
+  const end = lastOfMonth(d.getFullYear(), q * 3 + 2)
+  return { start, end, mode: 'quarter', label: buildLabel(start, end, 'quarter', lang) }
+}
+
+/** A period passed in the URL (?from=&to=&mode=), or null when absent / malformed. */
+export function pickerFromParams(params: { get: (k: string) => string | null }, lang: Lang): PickerValue | null {
+  const from = params.get('from'), to = params.get('to'), mode = params.get('mode') as DatePickerMode | null
+  const iso = /^\d{4}-\d{2}-\d{2}$/
+  if (!from || !to || !iso.test(from) || !iso.test(to) || from > to) return null
+  const m: DatePickerMode = mode && ['day', 'month', 'quarter', 'year'].includes(mode) ? mode : 'day'
+  return { start: from, end: to, mode: m, label: buildLabel(from, to, m, lang) }
+}
+
+/** ?from=&to=&mode= for a period (to open another page on the same period). */
+export function pickerQuery(p: Pick<PickerValue, 'start' | 'end' | 'mode'>) {
+  return `from=${p.start}&to=${p.end}&mode=${p.mode}`
+}
+
 /** Today's date as a PickerValue in month mode */
 export function defaultPickerValue(lang: Lang): PickerValue {
   const now = new Date()

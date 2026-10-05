@@ -89,9 +89,10 @@ interface TransactionsState {
   fetchPage: (ledgerId: string, range: { start: string; end: string }) => Promise<void>
 
   fetchRange: (ledgerId: string, start: string, end: string, limit?: number) => Promise<Transaction[]>
-  fetchRecent: (ledgerId: string, limit?: number) => Promise<Transaction[]>
+  /** Newest first; within `range` when given. */
+  fetchRecent: (ledgerId: string, limit?: number, range?: { start: string; end: string }) => Promise<Transaction[]>
   /** Number of live (not deleted, not void) transactions in the ledger. */
-  countAll: (ledgerId: string) => Promise<number>
+  countAll: (ledgerId: string, range?: { start: string; end: string }) => Promise<number>
   /** Income/expense rows with no category (newest first) for the classify screens. */
   fetchUncategorized: (ledgerId: string, limit?: number, range?: { start: string; end: string }) => Promise<{ items: Transaction[]; total: number }>
   /** Date of the account's most recent transaction (either side of a transfer), or null. */
@@ -246,13 +247,15 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     return rows.map(mapTransaction)
   },
 
-  fetchRecent: async (ledgerId, limit = 8) => {
-    const { data, error } = await supabase
+  fetchRecent: async (ledgerId, limit = 8, range) => {
+    let q = supabase
       .from('transactions')
       .select(SELECT)
       .eq('ledger_id', ledgerId)
       .is('deleted_at', null)
       .neq('status', 'void')
+    if (range) q = q.gte('transaction_date', range.start).lte('transaction_date', range.end)
+    const { data, error } = await q
       .order('transaction_date', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(limit)
@@ -260,13 +263,15 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
     return (data ?? []).map(mapTransaction)
   },
 
-  countAll: async (ledgerId) => {
-    const { count, error } = await supabase
+  countAll: async (ledgerId, range) => {
+    let q = supabase
       .from('transactions')
       .select('id', { count: 'exact', head: true })
       .eq('ledger_id', ledgerId)
       .is('deleted_at', null)
       .neq('status', 'void')
+    if (range) q = q.gte('transaction_date', range.start).lte('transaction_date', range.end)
+    const { count, error } = await q
     fail(error)
     return count ?? 0
   },

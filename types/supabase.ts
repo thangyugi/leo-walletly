@@ -525,6 +525,129 @@ export type Database = {
           },
         ]
       }
+      category_change_request_fields: {
+        Row: {
+          request_id: string
+          field_name: string
+          old_value: string | null
+          new_value: string | null
+        }
+        Insert: {
+          request_id: string
+          field_name: string
+          old_value?: string | null
+          new_value?: string | null
+        }
+        Update: {
+          request_id?: string
+          field_name?: string
+          old_value?: string | null
+          new_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_change_request_fields_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "category_change_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      category_change_requests: {
+        Row: {
+          id: string
+          ledger_id: string
+          owner_id: string
+          category_id: string
+          rule_id: string | null
+          action: string
+          status: string
+          note: string | null
+          requested_by: string
+          created_at: string
+          reviewed_by: string | null
+          reviewed_at: string | null
+          review_note: string | null
+          result_id: string | null
+        }
+        Insert: {
+          id?: string
+          ledger_id: string
+          owner_id: string
+          category_id: string
+          rule_id?: string | null
+          action: string
+          status?: string
+          note?: string | null
+          requested_by?: string
+          created_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
+          result_id?: string | null
+        }
+        Update: {
+          id?: string
+          ledger_id?: string
+          owner_id?: string
+          category_id?: string
+          rule_id?: string | null
+          action?: string
+          status?: string
+          note?: string | null
+          requested_by?: string
+          created_at?: string
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          review_note?: string | null
+          result_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "category_change_requests_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_change_requests_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "ledgers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_change_requests_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_change_requests_requested_by_fkey"
+            columns: ["requested_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_change_requests_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "category_change_requests_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "category_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       category_kinds: {
         Row: {
           code: string
@@ -2401,6 +2524,47 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent: string | null
+          created_at: string
+          last_used_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id?: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          user_agent?: string | null
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          user_agent?: string | null
+          created_at?: string
+          last_used_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       recurring_rules: {
         Row: {
           id: string
@@ -3744,6 +3908,12 @@ export type Database = {
             owner_id: string
           }[]
       }
+      apply_category_change: {
+        Args: {
+          p_request: string
+        }
+        Returns: boolean
+      }
       apply_category_rules: {
         Args: {
           p_ledger_id: string
@@ -3796,9 +3966,51 @@ export type Database = {
         }
         Returns: boolean
       }
+      cancel_category_change: {
+        Args: {
+          p_request: string
+        }
+        Returns: undefined
+      }
       category_audience: {
         Args: {
           p_category: string
+        }
+        Returns: string
+      }
+      category_budget: {
+        Args: {
+          p_category: string
+        }
+        Returns: number
+      }
+      category_history: {
+        Args: {
+          p_category: string
+          p_limit?: number | null
+          p_before?: string | null
+        }
+        Returns: {
+            at: string
+            actor_id: string
+            actor_name: string
+            source: string
+            action: string
+            entity_type: string
+            entity_id: string
+            entity_label: string
+            category_id: string
+            request_status: string
+            reviewer_name: string
+            field_names: string[]
+            old_values: string[]
+            new_values: string[]
+          }[]
+      }
+      category_label: {
+        Args: {
+          p_category: string
+          p_user: string
         }
         Returns: string
       }
@@ -3814,6 +4026,21 @@ export type Database = {
             income: number
             tx_count: number
           }[]
+      }
+      ccr_detail: {
+        Args: {
+          p_request: string
+          p_user: string
+        }
+        Returns: string
+      }
+      ccr_field: {
+        Args: {
+          p_names: string[]
+          p_values: string[]
+          p_name: string
+        }
+        Returns: string
       }
       check_import_duplicates: {
         Args: {
@@ -4019,6 +4246,24 @@ export type Database = {
             rule_id: string
           }[]
       }
+      propose_category_change: {
+        Args: {
+          p_category: string
+          p_action: string
+          p_names?: string[] | null
+          p_values?: string[] | null
+          p_rule?: string | null
+          p_note?: string | null
+        }
+        Returns: string
+      }
+      push_forget: {
+        Args: {
+          p_secret: string
+          p_endpoints: string[]
+        }
+        Returns: number
+      }
       record_session: {
         Args: {
           p_device_name: string
@@ -4055,6 +4300,16 @@ export type Database = {
         }
         Returns: undefined
       }
+      render_notification: {
+        Args: {
+          p_notification: string
+        }
+        Returns: {
+            title: string
+            body: string
+            url: string
+          }[]
+      }
       reset_translation_override: {
         Args: {
           p_key: string
@@ -4063,6 +4318,14 @@ export type Database = {
           p_ledger_id?: string | null
         }
         Returns: undefined
+      }
+      review_category_change: {
+        Args: {
+          p_request: string
+          p_approve: boolean
+          p_note?: string | null
+        }
+        Returns: string
       }
       revoke_invitation: {
         Args: {
@@ -4143,6 +4406,13 @@ export type Database = {
         }
         Returns: string
       }
+      tr_for: {
+        Args: {
+          p_key: string
+          p_user: string
+        }
+        Returns: string
+      }
       transfer_ledger_ownership: {
         Args: {
           p_ledger_id: string
@@ -4163,6 +4433,12 @@ export type Database = {
           p_role_code: string
         }
         Returns: undefined
+      }
+      user_label: {
+        Args: {
+          p_user: string
+        }
+        Returns: string
       }
     }
     Enums: {
