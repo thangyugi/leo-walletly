@@ -18,10 +18,12 @@ export interface ConfirmOptions {
   danger?: boolean
   /** A checkbox under the message (e.g. "also delete the 12 transactions"). */
   option?: { label: React.ReactNode; defaultChecked?: boolean }
+  /** A free-text box under the message (e.g. a reason). */
+  input?: { label: string; placeholder?: string }
 }
 
-type Pending = ConfirmOptions & { resolve: (ok: boolean, checked: boolean) => void }
-const useConfirmStore = create<{ pending: Pending | null; checked: boolean }>(() => ({ pending: null, checked: false }))
+type Pending = ConfirmOptions & { resolve: (ok: boolean, checked: boolean, text: string) => void }
+const useConfirmStore = create<{ pending: Pending | null; checked: boolean; text: string }>(() => ({ pending: null, checked: false, text: '' }))
 
 /**
  * The app's confirmation (instead of the browser's `confirm()`): a centred
@@ -30,16 +32,24 @@ const useConfirmStore = create<{ pending: Pending | null; checked: boolean }>(()
 export function confirmDialog(options: ConfirmOptions | string): Promise<boolean> {
   const o = typeof options === 'string' ? { message: options } : options
   return new Promise((resolve) => {
-    useConfirmStore.getState().pending?.resolve(false, false)
-    useConfirmStore.setState({ pending: { ...o, resolve: (ok) => resolve(ok) }, checked: false })
+    useConfirmStore.getState().pending?.resolve(false, false, '')
+    useConfirmStore.setState({ pending: { ...o, resolve: (ok) => resolve(ok) }, checked: false, text: '' })
   })
 }
 
 /** Like `confirmDialog` with an `option` checkbox: null when cancelled, else whether it was ticked. */
 export function confirmWithOption(options: ConfirmOptions & { option: NonNullable<ConfirmOptions['option']> }): Promise<{ checked: boolean } | null> {
   return new Promise((resolve) => {
-    useConfirmStore.getState().pending?.resolve(false, false)
-    useConfirmStore.setState({ pending: { ...options, resolve: (ok, checked) => resolve(ok ? { checked } : null) }, checked: !!options.option.defaultChecked })
+    useConfirmStore.getState().pending?.resolve(false, false, '')
+    useConfirmStore.setState({ pending: { ...options, resolve: (ok, checked) => resolve(ok ? { checked } : null) }, checked: !!options.option.defaultChecked, text: '' })
+  })
+}
+
+/** Like `confirmDialog` with a text box: null when cancelled, else the (trimmed) text. */
+export function confirmWithInput(options: ConfirmOptions & { input: NonNullable<ConfirmOptions['input']> }): Promise<{ text: string } | null> {
+  return new Promise((resolve) => {
+    useConfirmStore.getState().pending?.resolve(false, false, '')
+    useConfirmStore.setState({ pending: { ...options, resolve: (ok, _c, text) => resolve(ok ? { text: text.trim() } : null) }, checked: false, text: '' })
   })
 }
 
@@ -50,8 +60,9 @@ export function ConfirmHost() {
   const confirmRef = React.useRef<HTMLButtonElement>(null)
   const checked = useConfirmStore((s) => s.checked)
   const setChecked = (v: boolean) => useConfirmStore.setState({ checked: v })
+  const text = useConfirmStore((s) => s.text)
   const close = (ok: boolean) => {
-    pending?.resolve(ok, checked)
+    pending?.resolve(ok, checked, text)
     useConfirmStore.setState({ pending: null })
   }
   React.useEffect(() => { if (pending) requestAnimationFrame(() => confirmRef.current?.focus()) }, [pending])
@@ -74,6 +85,14 @@ export function ConfirmHost() {
             {pending.note && <p className="mt-1 text-[12.5px] text-[var(--color-text-tertiary)]">{pending.note}</p>}
           </div>
         </div>
+        {pending.input && (
+          <label className="mt-4 block">
+            <span className="text-[12.5px] font-medium text-[var(--color-text-secondary)]">{pending.input.label}</span>
+            <textarea value={text} onChange={(e) => useConfirmStore.setState({ text: e.target.value })} rows={2} maxLength={500}
+              placeholder={pending.input.placeholder}
+              className="mt-1.5 w-full px-3 py-2 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[14px] text-[var(--color-text-primary)] placeholder:text-[var(--color-text-placeholder)] outline-none focus:border-[var(--color-interactive-primary)] focus:ring-3 focus:ring-[var(--color-brand-100)] resize-none" />
+          </label>
+        )}
         {pending.option && (
           <label className="mt-4 flex items-start gap-2.5 px-3 py-2.5 rounded-xl bg-[var(--color-bg-sunken)] cursor-pointer select-none">
             <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)}

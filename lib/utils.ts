@@ -144,3 +144,13 @@ export function toLocalISODate(d?: Date): string {
   }
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
+
+/** Two-letter initials for an avatar ("Leo Thang" → "LT", "leo2" → "LE"). */
+export function getInitials(text: string): string {
+  const words = text.trim().split(/\s+/).filter(Boolean)
+  if (words.length >= 2) return (words[0][0] + words[1][0]).toUpperCase()
+  return text.trim().slice(0, 2).toUpperCase()
+}
+
+/** Avatar colours, by a person's position in the member list. */
+export const AVATAR_COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#14b8a6']

@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { toast } from 'sonner'
 import { ArrowLeft, Check, CheckCheck, Loader2, Search, Zap, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -41,13 +42,16 @@ export function ClassifyPage() {
   const { t, lang } = useTranslation()
   const { format } = useMoney()
   const { ledger, categories } = useLedgerData()
-  const { fetchRange, bulkUpdate, revision } = useTransactionsStore()
+  const { fetchRange, fetchUncategorized, bulkUpdate, revision } = useTransactionsStore()
   const { addKeyword, applyRules } = useCategoryStore()
 
   // Same period as Categories (opened from its "view all" on that period).
   const storedPicker = useCategoryStore((s) => s.picker)
   const setPicker = useCategoryStore((s) => s.setPicker)
   const picker = storedPicker ?? defaultPickerValue(lang)
+  // ?scope=all (from the overview): everything still unclassified, whatever its date.
+  const params = useSearchParams()
+  const [allTime, setAllTime] = React.useState(() => params.get('scope') === 'all')
   const [pending, setPending] = React.useState<Transaction[]>([])
   const [loading, setLoading] = React.useState(true)
   const [search, setSearch] = React.useState('')
@@ -63,11 +67,14 @@ export function ClassifyPage() {
   React.useEffect(() => {
     if (!ledgerId) return
     setLoading(true)
-    void fetchRange(ledgerId, picker.start, picker.end).then((rows) => {
+    const load = allTime
+      ? fetchUncategorized(ledgerId, 5000).then((r) => r.items)
+      : fetchRange(ledgerId, picker.start, picker.end)
+    void load.then((rows) => {
       setPending(rows.filter((x) => !x.categoryId && x.transactionType !== 'transfer'))
       setLoading(false)
     })
-  }, [ledgerId, picker.start, picker.end, fetchRange, revision])
+  }, [ledgerId, allTime, picker.start, picker.end, fetchRange, fetchUncategorized, revision])
 
   const suggest = React.useCallback((label: string, type: string) => {
     const hay = label.toLowerCase()
@@ -157,7 +164,13 @@ export function ClassifyPage() {
           <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.classify.subtitle}</p>
         </div>
         <span className="flex-1 max-sm:hidden" />
-        <DateNavigator value={picker} onChange={setPicker} lang={lang} className="max-sm:order-last" />
+        <div className="inline-flex p-0.5 rounded-lg bg-[var(--color-bg-sunken)] border border-[var(--color-border-default)] max-sm:order-last" role="radiogroup" aria-label={t.classify.scope}>
+          {([[true, t.classify.allTime], [false, t.classify.byPeriod]] as const).map(([v, l]) => (
+            <button key={l} type="button" role="radio" aria-checked={allTime === v} onClick={() => setAllTime(v)}
+              className={cn('h-8 px-3 rounded-md text-[12.5px] font-medium whitespace-nowrap', allTime === v ? 'bg-[var(--color-surface-default)] shadow-sm text-[var(--color-text-primary)]' : 'text-[var(--color-text-tertiary)]')}>{l}</button>
+          ))}
+        </div>
+        {!allTime && <DateNavigator value={picker} onChange={setPicker} lang={lang} className="max-sm:order-last" />}
         <Button variant="outline" size="sm" icon={<Zap />} onClick={rerunRules} disabled={pending.length === 0}
           aria-label={t.classify.runRules} title={t.classify.runRules} className="max-sm:w-10 max-sm:h-10 max-sm:px-0 max-sm:rounded-xl">
           <span className="max-sm:hidden">{t.classify.runRules}</span>

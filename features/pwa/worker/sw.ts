@@ -53,3 +53,30 @@ const serwist = new Serwist({
 })
 
 serwist.addEventListeners()
+
+// Web push: the server (app/api/push/send) sends { title, body, url, tag }.
+// Shown even when no tab is open; tapping it focuses an open tab or opens one.
+self.addEventListener('push', (event) => {
+  let data: { title?: string; body?: string; url?: string; tag?: string } = {}
+  try { data = event.data?.json() ?? {} } catch { data = { body: event.data?.text() } }
+  event.waitUntil(self.registration.showNotification(data.title || 'Leo Walletly', {
+    body: data.body,
+    tag: data.tag,
+    icon: '/pwa-icons/icon-192.png',
+    data: { url: data.url || '/notifications' },
+  }))
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+  const url = new URL((event.notification.data as { url?: string } | null)?.url || '/', self.location.origin).href
+  event.waitUntil((async () => {
+    const tabs = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+    const same = tabs.find((c) => new URL(c.url).origin === self.location.origin) as WindowClient | undefined
+    if (same) {
+      await same.focus()
+      return same.navigate(url)
+    }
+    return self.clients.openWindow(url)
+  })())
+})

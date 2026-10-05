@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Upload, ArrowRight,
   Inbox, Sparkles, CreditCard, Plus, Users,
-  UserPlus,
+  UserPlus, Shapes,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -13,7 +13,7 @@ import {
 import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
-import { DateNavigator, buildLabel, defaultPickerValue } from '@/components/ui/date-range-picker'
+import { DateNavigator, buildLabel, quarterPickerValue, pickerQuery } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
@@ -126,6 +126,46 @@ function UsersPanel() {
 // ------------------------------------------------------------------
 // Accounts panel (v_account_balances)
 // ------------------------------------------------------------------
+/** Everything still without a category (all time): a few of them + a way to classify all. */
+function UnclassifiedCard({ data, onOpen }: { data: { items: Transaction[]; total: number; amount: number }; onOpen: (t: Transaction) => void }) {
+  const { t } = useTranslation()
+  const { format } = useMoney()
+  return (
+    <div className="rounded-[14px] border border-[#fedf89] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] overflow-hidden">
+      <div className="flex items-start gap-3 px-4 pt-4 pb-3 bg-[linear-gradient(180deg,#fffaeb,var(--color-surface-default))]">
+        <span className="w-9 h-9 rounded-[10px] bg-[#fef0c7] text-[#b54708] flex items-center justify-center shrink-0"><Shapes className="w-[18px] h-[18px]" /></span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">{t.dashboard.unclassTitle}</p>
+          <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.dashboard.unclassSub.replace('{{count}}', String(data.total))}</p>
+        </div>
+        <span className="shrink-0 text-right">
+          <span className="block text-[15px] font-bold font-tabular text-[#b54708]">{data.total}</span>
+          {data.amount > 0 && <span className="block text-[10.5px] font-tabular text-[var(--color-text-tertiary)]">−{format(data.amount)}</span>}
+        </span>
+      </div>
+      <ul className="divide-y divide-[var(--color-border-subtle)] border-t border-[var(--color-border-subtle)]">
+        {data.items.map((x) => (
+          <li key={x.id}>
+            <button type="button" onClick={() => onOpen(x)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--color-bg-sunken)]">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[13px] font-medium text-[var(--color-text-primary)] truncate">{x.description}</span>
+                <span className="block text-[11px] text-[var(--color-text-quaternary)] font-tabular">{x.transactionDate}</span>
+              </span>
+              <span className={cn('text-[13px] font-semibold font-tabular shrink-0', x.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
+                {x.transactionType === 'income' ? '+' : '−'}{format(x.baseAmount)}
+              </span>
+            </button>
+          </li>
+        ))}
+      </ul>
+      <Link href="/categories/classify?scope=all"
+        className="flex items-center justify-center gap-1.5 h-11 border-t border-[var(--color-border-subtle)] text-[13px] font-semibold text-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)]">
+        {t.dashboard.unclassCta}<ArrowRight className="w-3.5 h-3.5" />
+      </Link>
+    </div>
+  )
+}
+
 function AccountsPanel() {
   const { t } = useTranslation()
   const { format } = useMoney()
@@ -278,10 +318,12 @@ export default function DashboardPage() {
   const { t, lang } = useTranslation()
   const { format } = useMoney()
   const { ledger, accounts } = useLedgerData()
-  const { summarize, monthly, fetchRecent, countAll, revision } = useTransactionsStore()
+  const { summarize, monthly, fetchRecent, countAll, fetchUncategorized, revision } = useTransactionsStore()
   const can = useLedgerStore((s) => s.can)
 
-  const [picker, setPicker] = useState<PickerValue>(() => defaultPickerValue(lang))
+  // The overview looks at a quarter by default (everything below follows it).
+  const [picker, setPicker] = useState<PickerValue>(() => quarterPickerValue(lang))
+  const [unclassified, setUnclassified] = useState<{ items: Transaction[]; total: number; amount: number } | null>(null)
   const [stats, setStats] = useState<PeriodSummary>(EMPTY)
   const [prevStats, setPrevStats] = useState<PeriodSummary>(EMPTY)
   const [last30, setLast30] = useState<PeriodSummary>(EMPTY)
@@ -303,13 +345,17 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (!ledgerId) return
-    const now = new Date()
-    const months = Array.from({ length: 6 }, (_, i) => new Date(now.getFullYear(), now.getMonth() - (5 - i), 1))
+    // Cash flow: the period's months (at least the 3 months up to its end).
+    const endD = new Date(picker.end + 'T00:00:00')
+    const startD = new Date(picker.start + 'T00:00:00')
+    const span = Math.max(3, (endD.getFullYear() - startD.getFullYear()) * 12 + endD.getMonth() - startD.getMonth() + 1)
+    const months = Array.from({ length: span }, (_, i) => new Date(endD.getFullYear(), endD.getMonth() - (span - 1 - i), 1))
     const d30 = new Date(); d30.setDate(d30.getDate() - 30)
+    const range = { start: picker.start, end: picker.end }
     void Promise.all([
-      fetchRecent(ledgerId, 8),
-      countAll(ledgerId),
-      monthly(ledgerId, toLocalISODate(months[0]), toLocalISODate(months[5])),
+      fetchRecent(ledgerId, 8, range),
+      countAll(ledgerId, range),
+      monthly(ledgerId, toLocalISODate(months[0]), toLocalISODate(months[months.length - 1])),
       summarize(ledgerId, toLocalISODate(d30), toLocalISODate()),
     ]).then(([rec, count, mon, l30]) => {
       setRecent(rec)
@@ -322,7 +368,17 @@ export default function DashboardPage() {
       }))
       setLoaded(true)
     })
-  }, [ledgerId, fetchRecent, countAll, monthly, summarize, revision, lang])
+  }, [ledgerId, picker.start, picker.end, fetchRecent, countAll, monthly, summarize, revision, lang])
+
+  // Waiting to be classified, from the very first transaction until today.
+  useEffect(() => {
+    if (!ledgerId) return
+    void fetchUncategorized(ledgerId, 2000).then(({ items, total }) => setUnclassified({
+      items: items.slice(0, 4), total,
+      amount: items.filter((x) => x.transactionType === 'expense').reduce((a, x) => a + x.baseAmount, 0),
+    }))
+  }, [ledgerId, fetchUncategorized, revision])
+  const txHref = `/transactions?${pickerQuery(picker)}`
 
   // 予備 / Reserve = balance of all accounts counted in net worth; trend vs 30 days ago.
   const reserve = useMemo(
@@ -330,7 +386,7 @@ export default function DashboardPage() {
     [accounts],
   )
   const reserve30dAgo = reserve - last30.net
-  const hasData = !loaded || total > 0
+  const hasData = !loaded || total > 0 || stats.count > 0 || (unclassified?.total ?? 0) > 0
   const trendVsLabel = getTrendVsLabel(picker, t)
 
   return (
@@ -387,14 +443,14 @@ export default function DashboardPage() {
                 <div>
                   <CardTitle>
                     {t.dashboard.recentTxn}
-                    <span className="ml-2 text-[var(--color-text-quaternary)] font-normal text-sm">
-                      · {total} {t.dashboard.total}
+                    <span className="block sm:inline sm:ml-2 text-[var(--color-text-quaternary)] font-normal text-xs sm:text-sm">
+                      <span className="max-sm:hidden">· </span>{buildLabel(picker.start, picker.end, picker.mode, lang)} · {total} {t.dashboard.total}
                     </span>
                   </CardTitle>
                 </div>
                 <Link
-                  href="/transactions"
-                  className="flex items-center gap-1 text-xs font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors group"
+                  href={txHref}
+                  className="flex items-center gap-1 text-xs font-medium whitespace-nowrap text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors group"
                 >
                   {t.dashboard.viewAll}
                   <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
@@ -414,11 +470,14 @@ export default function DashboardPage() {
                 {recent.map((txn) => (
                   <RecentTxnRow key={txn.id} txn={txn} onClick={() => setViewing(txn)} />
                 ))}
+                {loaded && recent.length === 0 && (
+                  <p className="px-4 py-8 text-center text-[13px] text-[var(--color-text-tertiary)]">{t.dashboard.noTxPeriod}</p>
+                )}
               </div>
 
               {total > 8 && (
                 <div className="px-4 py-3 border-t border-[var(--color-border-subtle)]">
-                  <Link href="/transactions">
+                  <Link href={txHref}>
                     <Button variant="ghost" size="sm" iconRight={<ArrowRight />} className="w-full justify-center text-[var(--color-text-tertiary)]">
                       {t.dashboard.viewAllCount.replace('{{count}}', String(total))}
                     </Button>
@@ -430,6 +489,7 @@ export default function DashboardPage() {
 
           {/* Right sidebar */}
           <div className="space-y-4">
+            {unclassified && unclassified.total > 0 && <UnclassifiedCard data={unclassified} onOpen={setViewing} />}
             <UsersPanel />
             <AccountsPanel />
 

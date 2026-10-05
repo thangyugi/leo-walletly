@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 import {
   ArrowRight, ChevronRight, Clock, GitMerge, Loader2, Pencil, Plus, Trash2, X,
-  Archive, ArchiveRestore, Lock, LogOut,
+  Archive, ArchiveRestore, Lock, LogOut, GitPullRequestArrow, Clock3,
 } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
@@ -36,11 +36,31 @@ import type { Category, CategoryMember, MemberBalance } from './types'
 import type { Transaction } from '@/types/domain'
 import type { Account } from '@/features/accounts/store'
 import { AppSelect } from '@/components/ui/app-select'
+import { confirmDialog } from '@/components/ui/confirm-dialog'
+import { useApprovalsStore, type ChangeRequest } from '@/features/approvals/store'
+import { usePropose, type Proposal } from '@/features/approvals/use-propose'
+import { CategoryHistory } from './category-history'
 
 // Layout follows the original "Group detail" design: breadcrumbs, a hero card
 // (cover + tab bar + five stats) and section cards per tab.
 
-type DetailTab = 'overview' | 'subgroups' | 'keywords' | 'transactions' | 'balances' | 'members' | 'settings'
+type DetailTab = 'overview' | 'subgroups' | 'keywords' | 'transactions' | 'balances' | 'members' | 'history' | 'settings'
+
+/**
+ * Someone else's shared category: edits become proposals for its owner.
+ * `pending`: open proposals in this branch that involve the viewer.
+ */
+type ProposeCtx = { on: boolean; owner: string; pending: ChangeRequest[]; send: (list: Proposal[]) => Promise<number> }
+const ProposeContext = React.createContext<ProposeCtx>({ on: false, owner: '', pending: [], send: async () => 0 })
+
+/** Small amber "waiting for approval" tag. */
+function PendingTag({ label, className }: { label: string; className?: string }) {
+  return (
+    <span className={cn('inline-flex items-center gap-1 h-[18px] px-1.5 rounded-md text-[10px] font-semibold bg-[#fffaeb] text-[#b54708] ring-1 ring-inset ring-[#fedf89] whitespace-nowrap', className)}>
+      <Clock3 className="w-2.5 h-2.5" />{label}
+    </span>
+  )
+}
 type Rule = { id: string; category_id: string; match_field: string; match_type: string; pattern: string; is_active: boolean }
 
 const MAX_DEPTH = 4
@@ -116,10 +136,11 @@ const sectionHead = 'flex items-center gap-2 px-[18px] py-[14px] border-b border
 const btnOutline = 'inline-flex items-center gap-1 text-xs font-medium px-[10px] py-[5px] rounded-[7px] border border-[var(--color-border-default)] bg-white hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer'
 
 // ── Hero cover ───────────────────────────────────────────────
-function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }: {
+function HeroCover({ category, memberNames, canEdit, canMerge = canEdit, onEdit, onMerge, onDelete }: {
   category: Category
   memberNames: string[]
   canEdit: boolean
+  canMerge?: boolean
   onEdit: () => void
   onMerge: () => void
   onDelete?: () => void
@@ -154,10 +175,12 @@ function HeroCover({ category, memberNames, canEdit, onEdit, onMerge, onDelete }
               className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 hover:bg-white/35 backdrop-blur-sm transition-colors cursor-pointer text-white">
               <Pencil className="w-3.5 h-3.5" />
             </button>
-            <button onClick={onMerge} title={t.catdetail.mergeTitle} aria-label={t.catdetail.mergeTitle}
-              className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 hover:bg-[var(--color-interactive-primary)] backdrop-blur-sm transition-colors cursor-pointer text-white">
-              <GitMerge className="w-3.5 h-3.5" />
-            </button>
+            {canMerge && (
+              <button onClick={onMerge} title={t.catdetail.mergeTitle} aria-label={t.catdetail.mergeTitle}
+                className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-white/20 hover:bg-[var(--color-interactive-primary)] backdrop-blur-sm transition-colors cursor-pointer text-white">
+                <GitMerge className="w-3.5 h-3.5" />
+              </button>
+            )}
           </>
         )}
         {onDelete && (
@@ -349,7 +372,8 @@ function StatsStrip({ category, txns, split, userId, series, picker }: {
 }
 
 // ── Sub-groups ───────────────────────────────────────────────
-function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEdit, onDelete }: {
+function SubGroupsSection({ parentId, subs, all, txns, depth, canEdit, onAdd, onOpen, onEdit, onDelete }: {
+  parentId: string
   subs: Category[]
   all: Category[]
   txns: Transaction[]
@@ -362,6 +386,9 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
 }) {
   const { t } = useTranslation()
   const { format } = useMoney()
+  const proposal = React.useContext(ProposeContext)
+  const ghosts = proposal.pending.filter((r) => r.action === 'subcategory.create' && r.categoryId === parentId)
+  const pendingOn = (id: string) => proposal.pending.filter((r) => r.categoryId === id && (r.action === 'category.update' || r.action === 'category.delete' || r.action === 'budget.set'))
   const [sort, setSort] = React.useState<'spend' | 'name'>('spend')
   const factor = useCategoryStore((s) => (s.picker ? budgetFactor(s.picker.start, s.picker.end) : 1))
   const total = txns.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
@@ -421,6 +448,9 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
               <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate flex-1">{sg.name}</span>
               <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] group-hover:hidden">{count}</span>
             </div>
+            {pendingOn(sg.id).length > 0 && (
+              <PendingTag className="mb-1.5" label={pendingOn(sg.id).some((r) => r.action === 'category.delete') ? t.approvals.pendingDelete : t.approvals.pendingChip} />
+            )}
             <div className="text-[13px] font-semibold font-tabular tracking-[-0.01em]">
               {format(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-[11px]"> · {pct}%</span>
             </div>
@@ -433,6 +463,20 @@ function SubGroupsSection({ subs, all, txns, depth, canEdit, onAdd, onOpen, onEd
             </div>
           </div>
         ))}
+        {ghosts.map((r) => {
+          const f = (n: string) => r.fields.find((x) => x.name === n)?.new ?? null
+          const color = f('color') ?? '#98a2b3'
+          return (
+            <div key={r.id} className="p-3 border border-dashed border-[#fedf89] bg-[#fffcf5] rounded-[10px]">
+              <div className="flex items-center gap-1.5 mb-2">
+                <span className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0 opacity-70" style={{ background: color + '22', color }}><CategoryIcon name={f('icon') ?? 'Folder'} className="w-3.5 h-3.5" /></span>
+                <span className="text-xs font-semibold text-[var(--color-text-secondary)] truncate flex-1">{f('name')}</span>
+              </div>
+              <PendingTag label={t.approvals.pendingChip} />
+              <div className="mt-1.5 text-[10px] text-[var(--color-text-tertiary)] font-tabular">{fill(t.catdetail.budgetShort, { amount: f('budget') ? format(Number(f('budget'))) : '—' })}</div>
+            </div>
+          )
+        })}
         {canAdd && (
           <button onClick={onAdd} className="p-3 border-2 border-dashed border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)] transition-all cursor-pointer flex flex-col items-center justify-center gap-1.5 min-h-[80px]">
             <Plus className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
@@ -537,6 +581,42 @@ function LinkedAccountsSection({ txns, accounts, selected, onSelect }: {
   )
 }
 
+// ── Proposals strip ──────────────────────────────────────────
+/**
+ * Someone else's category: whose it is and that changes go to them for approval
+ * (+ your open proposals). Your shared category: proposals waiting for you.
+ */
+function ProposalBanner({ proposing, ownerName, mine, pending, me }: {
+  proposing: boolean; ownerName: string; mine: boolean; pending: ChangeRequest[]; me: string | null
+}) {
+  const { t } = useTranslation()
+  const sent = pending.filter((r) => r.requestedBy === me).length
+  const toReview = mine ? pending.filter((r) => r.ownerId === me).length : 0
+  if (!proposing && toReview === 0) return null
+  if (toReview > 0) {
+    return (
+      <Link href="/approvals?tab=inbox" className="flex items-center gap-3 px-4 py-3 rounded-[12px] bg-[#fffaeb] border border-[#fedf89] text-[#93370d] hover:bg-[#fef0c7] transition-colors">
+        <span className="w-8 h-8 rounded-full bg-[#fef0c7] flex items-center justify-center shrink-0"><GitPullRequestArrow className="w-4 h-4" /></span>
+        <span className="flex-1 min-w-0 text-[13px] font-semibold">{fill(t.approvals.pendingOwner, { count: toReview })}</span>
+        <span className="shrink-0 inline-flex items-center gap-1 text-[12.5px] font-semibold">{t.approvals.review}<ChevronRight className="w-3.5 h-3.5" /></span>
+      </Link>
+    )
+  }
+  return (
+    <div className="flex items-start gap-3 px-4 py-3 rounded-[12px] bg-[var(--color-surface-default)] border border-[var(--color-border-default)] shadow-[var(--shadow-card)]">
+      <span className="w-8 h-8 rounded-full bg-[var(--color-status-info-bg)] text-[var(--color-text-info)] flex items-center justify-center shrink-0"><GitPullRequestArrow className="w-4 h-4" /></span>
+      <div className="flex-1 min-w-0">
+        <p className="text-[12.5px] text-[var(--color-text-secondary)] leading-snug">{fill(t.approvals.proposeBanner, { owner: ownerName })}</p>
+        {sent > 0 && (
+          <Link href="/approvals?tab=sent" className="mt-1.5 inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-[#b54708] hover:underline">
+            <Clock3 className="w-3.5 h-3.5" />{fill(t.approvals.pendingMine, { count: sent })}<ChevronRight className="w-3.5 h-3.5" />
+          </Link>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ── Keywords + rules ─────────────────────────────────────────
 function Toggle({ on, onChange, label }: { on: boolean; onChange: (v: boolean) => void; label: string }) {
   return (
@@ -556,6 +636,7 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
 }) {
   const { t } = useTranslation()
   const { updateCategory, applyRules, fetchCategories } = useCategoryStore()
+  const proposal = React.useContext(ProposeContext)
   const [inputs, setInputs] = React.useState<Record<string, string>>({})
   const [rules, setRules] = React.useState<Rule[]>([])
   const [ruleForm, setRuleForm] = React.useState<null | { field: string; op: string; value: string; target: string }>(null)
@@ -579,14 +660,24 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
     .filter(([d, n]) => n >= 2 && d && !known.has(d)).sort((a, b) => b[1] - a[1]).slice(0, 2).map(([d]) => d)
 
   async function save(c: Category, keywords: string[]) {
+    if (proposal.on) {
+      const list: Proposal[] = [
+        ...keywords.filter((k) => !c.keywords.includes(k)).map((k): Proposal => [c.id, 'keyword.add', { pattern: k }]),
+        ...c.keywords.filter((k) => !keywords.includes(k)).map((k): Proposal => [c.id, 'keyword.remove', { pattern: k }]),
+      ]
+      return void (await proposal.send(list))
+    }
     try { await updateCategory(c.id, { keywords }); loadRules() } catch (e) { toast.error((e as Error).message) }
   }
   function add(c: Category, raw: string) {
     const k = raw.trim().toLowerCase()
     setInputs((s) => ({ ...s, [c.id]: '' }))
-    if (k && !c.keywords.includes(k)) void save(c, [...c.keywords, k]).then(() => toast.success(t.catui.keywordAdded))
+    if (k && !c.keywords.includes(k)) void save(c, [...c.keywords, k]).then(() => { if (!proposal.on) toast.success(t.catui.keywordAdded) })
   }
+  const kwPending = (c: Category) => proposal.pending.filter((r) => r.categoryId === c.id && (r.action === 'keyword.add' || r.action === 'keyword.remove'))
+  const rulePending = (id: string) => proposal.pending.some((r) => r.ruleId === id)
   async function toggleRule(r: Rule, on: boolean) {
+    if (proposal.on) return void (await proposal.send([[r.category_id, 'rule.toggle', { is_active: on }, { ruleId: r.id }]]))
     setRules((rs) => rs.map((x) => (x.id === r.id ? { ...x, is_active: on } : x)))
     const { error } = await supabase.from('category_rules').update({ is_active: on }).eq('id', r.id)
     if (error) { toast.error(error.message); return loadRules() }
@@ -594,6 +685,11 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
   }
   async function addRule() {
     if (!ruleForm || !ruleForm.value.trim()) return
+    if (proposal.on) {
+      const sent = await proposal.send([[ruleForm.target, 'rule.create', { match_field: ruleForm.field, match_type: ruleForm.op, pattern: ruleForm.value.trim() }]])
+      if (sent) setRuleForm(null)
+      return
+    }
     const { error } = await supabase.from('category_rules').insert({
       ledger_id: category.ledger_id, category_id: ruleForm.target, match_field: ruleForm.field, match_type: ruleForm.op, pattern: ruleForm.value.trim(),
     })
@@ -613,7 +709,7 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
         <h3 className="text-[13px] font-semibold text-[var(--color-text-primary)]">{t.catdetail.kwTitle}</h3>
         <span className="text-[12px] text-[var(--color-text-tertiary)]">{t.catdetail.kwHint}</span>
         <span className="flex-1" />
-        {canEdit && (
+        {canEdit && !proposal.on && (
           <Link href="/categories/classify" className={btnOutline + ' text-[var(--color-text-primary)]'}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4v16h16v-7M18 2l4 4-10 10H8v-4z" /></svg>
             {t.catdetail.advancedRules}
@@ -648,6 +744,16 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
                       <button onClick={() => void save(c, c.keywords.filter((x) => x !== kw))} aria-label={`${t.common.delete} ${kw}`}
                         className="text-[var(--color-text-quaternary)] hover:text-[var(--color-text-loss)] transition-colors ml-0.5"><X className="w-3 h-3" /></button>
                     )}
+                  </span>
+                )
+              })}
+              {kwPending(c).map((r) => {
+                const add = r.action === 'keyword.add'
+                const kw = r.fields.find((x) => x.name === 'pattern')?.[add ? 'new' : 'old']
+                return (
+                  <span key={r.id} title={t.approvals.pendingChip}
+                    className={cn('inline-flex items-center gap-1.5 text-[12px] font-medium px-2.5 py-1 rounded-lg border border-dashed border-[#fedf89] bg-[#fffcf5] text-[#93370d]', !add && 'line-through')}>
+                    <Clock3 className="w-3 h-3 no-underline" />{add ? '+' : '−'} {kw}
                   </span>
                 )
               })}
@@ -698,12 +804,30 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
                   <span className="sm:hidden text-[var(--color-text-quaternary)]">→</span>
                   {target && <span className="w-5 h-5 rounded-[5px] flex items-center justify-center" style={{ background: target.color + '22', color: target.color }}><CategoryIcon name={target.emoji} className="w-3 h-3" /></span>}
                   <span className="font-medium text-[var(--color-text-primary)]">{target?.name ?? '—'}</span>
-                  {canEdit && <span className="ml-auto sm:ml-2 flex items-center"><Toggle on={r.is_active} onChange={(v) => void toggleRule(r, v)} label={`${r.pattern} → ${target?.name ?? ''}`} /></span>}
+                  {rulePending(r.id) && <PendingTag label={t.approvals.pendingChip} className="ml-auto sm:ml-2" />}
+                  {canEdit && <span className={cn('flex items-center', rulePending(r.id) ? 'ml-2' : 'ml-auto sm:ml-2')}><Toggle on={r.is_active} onChange={(v) => void toggleRule(r, v)} label={`${r.pattern} → ${target?.name ?? ''}`} /></span>}
                 </div>
               </div>
             )
           })}
         </div>
+        {proposal.pending.filter((r) => r.action === 'rule.create').map((r) => {
+          const f = (n: string) => r.fields.find((x) => x.name === n)?.new ?? ''
+          const target = sections.find((c) => c.id === r.categoryId)
+          return (
+            <div key={r.id} className="flex items-center gap-x-3 gap-y-2 px-[18px] py-3 flex-wrap bg-[#fffcf5] border-t border-dashed border-[#fedf89]">
+              <div className="flex items-center gap-1.5 flex-wrap text-[11px] flex-1 min-w-0">
+                <span className="font-semibold text-[var(--color-text-tertiary)]">{t.catdetail.ruleWhen}</span>
+                <span className="font-mono text-[11px] bg-white border border-[var(--color-border-default)] px-1.5 py-0.5 rounded-[5px]">{fieldLabel[f('match_field')] ?? f('match_field')}</span>
+                <span className="text-[var(--color-text-tertiary)]">{opLabel[f('match_type')] ?? f('match_type')}</span>
+                <span className="font-medium px-2 py-0.5 rounded-lg text-[11px] bg-[var(--color-brand-50)] text-[var(--color-brand-700)] border border-[var(--color-brand-100)]">{f('pattern')}</span>
+                <span className="text-[var(--color-text-quaternary)]">→</span>
+                <span className="font-medium text-[var(--color-text-primary)]">{target?.name ?? '—'}</span>
+              </div>
+              <PendingTag label={t.approvals.pendingChip} />
+            </div>
+          )
+        })}
         {ruleForm && (
           <div className="flex items-center gap-2 px-[18px] py-3 flex-wrap border-t border-[var(--color-border-subtle)]">
             <span className="text-[11px] font-semibold text-[var(--color-text-tertiary)]">{t.catdetail.ruleWhen}</span>
@@ -729,7 +853,7 @@ function KeywordManagerSection({ category, subs, txns, uncategorized, canEdit }:
               <Plus className="w-3 h-3" /> {t.catdetail.addRule}
             </button>
             <button onClick={async () => toast.success(fill(t.catui.applied, { count: await applyRules(uncategorized.map((x) => x.id)) }))}
-              disabled={uncategorized.length === 0}
+              disabled={uncategorized.length === 0} hidden={proposal.on}
               className="inline-flex items-center justify-center gap-1.5 text-xs font-medium px-[10px] py-[5px] rounded-[7px] text-[var(--color-text-tertiary)] hover:bg-[var(--color-bg-sunken)] transition-colors disabled:opacity-50">
               {fill(t.catdetail.testRules, { count: uncategorized.length })}
             </button>
@@ -1086,6 +1210,11 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const category = categories.find((c) => c.id === categoryId)
   const subs = React.useMemo(() => categories.filter((c) => c.parent_id === categoryId), [categories, categoryId])
   const ids = React.useMemo(() => descendantIds(categoryId, categories), [categoryId, categories])
+  // Open proposals in this branch that involve the viewer (sent by them / for them to decide).
+  const approvalItems = useApprovalsStore((s) => s.items)
+  const branchPending = React.useMemo(() => approvalItems.filter((r) => r.status === 'pending' && ids.has(r.categoryId)
+    && (r.requestedBy === userId || r.ownerId === userId)), [approvalItems, ids, userId])
+  const sendProposals = usePropose()
   const ancestors = React.useMemo(() => {
     const list: Category[] = []
     let cur = category
@@ -1123,11 +1252,17 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     )
   }
 
-  // Only the owner edits a category, its sub-categories, keywords and who it is shared with.
+  // The owner edits a category, its sub-categories, keywords and who it is shared with.
+  // People it is shared with may propose budget / sub-category / keyword / rule
+  // changes; nothing changes until the owner approves.
   const mine = category.is_mine
   const canEdit = mine && can('category.update')
   const canCreate = mine && can('category.create')
   const canDelete = mine && can('category.delete')
+  const proposing = !mine && category.access === 'shared_with_me' && can('category.update')
+  // The category shared with you (its parent isn't visible): only its budget and keywords.
+  const sharedTop = !category.parent_id || !categories.some((c) => c.id === category.parent_id)
+  const ownerName = category.owner_name
   // Shared: ticked members plus anyone who has paid into it. Private: just the owner.
   const memberNames = category.is_shared
     ? [...new Set([...settlement.catMembers.map((m) => m.user_id), ...settlement.balances.map((b) => b.user_id)])].map(nameOf)
@@ -1141,6 +1276,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     { value: 'transactions', label: t.catui.tabTransactions, count: txns.length },
     { value: 'balances', label: t.catui.tabBalances },
     { value: 'members', label: t.catui.tabMembers, count: category.is_shared ? settlement.catMembers.length : undefined },
+    { value: 'history', label: t.approvals.tabHistory },
     ...(canEdit || !mine ? [{ value: 'settings' as DetailTab, label: t.catui.tabSettings }] : []),
   ]
   // A subgroup opens as its own page (/categories/[slug]) with its own breadcrumb.
@@ -1156,12 +1292,16 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
     } catch (e) { toast.error((e as Error).message) } finally { setDeleting(null) }
   }
 
+  async function proposeDelete(c: Category) {
+    if (!(await confirmDialog({ danger: true, title: fill(t.approvals.proposeDeleteTitle, { name: c.name }), message: fill(t.approvals.proposeDeleteMsg, { owner: ownerName }), confirmLabel: t.approvals.proposeSubmit }))) return
+    await sendProposals([[c.id, 'category.delete']], ownerName)
+  }
   const subSection = (
-    <SubGroupsSection subs={subs} all={categories} txns={txns} depth={ancestors.length + 1} canEdit={canEdit && canCreate}
+    <SubGroupsSection parentId={category.id} subs={subs} all={categories} txns={txns} depth={ancestors.length + 1} canEdit={(canEdit && canCreate) || proposing}
       onAdd={() => setForm({ initial: { parent_id: category.id, type: category.type, kind_code: category.kind_code, color: category.color } })}
-      onOpen={openSub} onEdit={(c) => setForm({ initial: c })} onDelete={(c) => setDeleting(c)} />
+      onOpen={openSub} onEdit={(c) => setForm({ initial: c })} onDelete={(c) => (proposing ? void proposeDelete(c) : setDeleting(c))} />
   )
-  const keywordSection = <KeywordManagerSection category={category} subs={subs} txns={txns} uncategorized={uncategorized} canEdit={canEdit} />
+  const keywordSection = <KeywordManagerSection category={category} subs={subs} txns={txns} uncategorized={uncategorized} canEdit={canEdit || proposing} />
   // Keep the two columns about the same height: with few recent rows the shared
   // side (spend / settle / balances) is the taller one, so accounts go left.
   const accountsLeft = category.is_shared && Math.min(txns.length, 8) < 6
@@ -1179,7 +1319,10 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const balancesSection = <BalancesSection settlement={settlement} nameOf={nameOf} />
   const memberSpendSection = <MemberSpendSection category={category} split={split} nameOf={nameOf} />
 
+  const proposeCtx: ProposeCtx = { on: proposing, owner: ownerName, pending: branchPending, send: (list) => sendProposals(list, ownerName) }
+
   return (
+    <ProposeContext.Provider value={proposeCtx}>
     <div className={cn('animate-fade-in flex flex-col w-full', isNested ? 'max-h-[85vh] h-[80vh] overflow-hidden' : 'pb-10')}>
       <div className={cn('flex flex-col gap-4 pb-4 w-full shrink-0', isNested ? 'bg-[var(--color-bg-canvas)] pt-4 px-3 sm:px-5 md:px-6' : 'pt-2')}>
         <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1206,7 +1349,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
         </div>
 
         <div className="bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] shadow-[var(--shadow-card)] overflow-hidden">
-          <HeroCover category={category} memberNames={memberNames} canEdit={canEdit}
+          <HeroCover category={category} memberNames={memberNames} canEdit={canEdit || proposing} canMerge={canEdit}
             onEdit={() => setForm({ initial: category })} onMerge={() => setMergeOpen(true)}
             onDelete={canDelete && !category.is_system ? () => setDeleting(category) : undefined} />
           <StatsStrip category={category} txns={txns} split={split} userId={userId} series={totalSeries} picker={picker} />
@@ -1216,6 +1359,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
 
       <div className={cn('space-y-4 max-sm:min-h-[calc(100dvh-160px)]', isNested && 'overflow-y-auto flex-1 px-3 pb-3 sm:px-5 sm:pb-5 md:px-6 md:pb-6')}>
         <PhoneTabs tabs={tabs} active={tab} onChange={setTab} nested={isNested} />
+        <ProposalBanner proposing={proposing} ownerName={ownerName} mine={mine} pending={branchPending} me={userId} />
         {tab === 'overview' && (
           <>
             {/* Two independent columns (no row pairing), so a short card never leaves a hole
@@ -1248,6 +1392,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
             ? <div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><MembersPicker category={category} settlement={settlement} readOnly={!canEdit} /><div className="flex flex-col gap-4">{memberSpendSection}{balancesSection}</div></div>
             : <div className={cn(card, 'p-6 text-sm text-[var(--color-text-tertiary)]')}>{t.catdetail.sharedOff}</div>
         )}
+        {tab === 'history' && <CategoryHistory category={category} categories={categories} />}
         {tab === 'settings' && !mine && (
           <div className={cn(card, 'divide-y divide-[var(--color-border-subtle)]')}>
             <div className="flex items-start gap-3 px-4 py-3 text-sm text-[var(--color-text-secondary)]">
@@ -1282,7 +1427,8 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
       </div>
 
       <Modal isOpen={!!form} onClose={() => setForm(null)} className="!bg-transparent !border-0 !shadow-none max-w-3xl" noPadding fullScreenOnPhone isNested={isNested}>
-        {form && <CategoryForm onClose={() => setForm(null)} initialData={form.initial} />}
+        {form && <CategoryForm onClose={() => setForm(null)} initialData={form.initial}
+          propose={proposing ? { ownerName, root: form.initial.id === category.id && sharedTop } : undefined} />}
       </Modal>
       <MergeCategoryModal isOpen={mergeOpen} onClose={() => setMergeOpen(false)} sourceCategory={category} categories={categories}
         onSuccess={(targetId: string) => {
@@ -1319,6 +1465,7 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
       </Modal>
       <TransactionViewer txn={editingTx} onClose={() => setEditingTx(null)} />
     </div>
+    </ProposeContext.Provider>
   )
 }
 

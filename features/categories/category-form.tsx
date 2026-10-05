@@ -1,7 +1,8 @@
 'use client'
 
 import * as React from 'react'
-import { useCategoryStore, getCategoryDepth, getSubtreeHeight } from './store'
+import { useCategoryStore, getCategoryDepth, getSubtreeHeight, slugifyName } from './store'
+import { usePropose, type Proposal } from '@/features/approvals/use-propose'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { NumberInput } from '@/components/ui/number-input'
@@ -9,7 +10,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { useUserManagementStore } from '@/features/user-management/store'
-import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle } from 'lucide-react'
+import { X, Save, Plus, Tag as TagIcon, Check, ChevronDown, ChevronRight, AlertCircle, Send, GitPullRequestArrow } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { effectiveBudget } from './budget'
 
@@ -25,6 +26,12 @@ interface CategoryFormProps {
   onClose:      () => void
   /** Existing category to edit, or defaults (e.g. parent_id) for a new one. */
   initialData?: Partial<Category>
+  /**
+   * Someone else's (shared) category: the changes are sent to its owner as
+   * proposals. `root`: the category that was shared itself (only its budget
+   * and keywords can be proposed).
+   */
+  propose?: { ownerName: string; root: boolean }
 }
 
 // ─── Extended color palette (32 colors covering full spectrum) ──────────────
@@ -219,12 +226,17 @@ export function ParentTreeDropdown({
 
 // ─── Main form ───────────────────────────────────────────────────────────────
 
-export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
+export function CategoryForm({ onClose, initialData, propose }: CategoryFormProps) {
   const { sheetRef, grab } = useSwipeToClose<HTMLFormElement>(onClose)
   const { t, tk } = useTranslation()
   const kinds = useMasterStore((s) => s.categoryKinds)
   const ledger = useLedgerStore((s) => s.current)
   const { categories, createCategory, updateCategory, shareWith } = useCategoryStore()
+  const sendProposals = usePropose()
+  const [note, setNote] = React.useState('')
+  // What a proposal may touch: the shared category itself only budget and keywords.
+  const lockLook = !!propose?.root
+  const lockStructure = !!propose
   const members = useUserManagementStore((s) => s.members)
   const me = useLedgerStore((s) => s.userId)
   const others = members.filter((m) => m.user_id !== me)
@@ -234,7 +246,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     name:              initialData?.name ?? '',
     type:              (initialData?.type ?? parentDefault?.type ?? 'expense') as CategoryType,
     kind_code:         initialData?.kind_code ?? parentDefault?.kind_code ?? 'cost_center',
-    parent_id:         parentDefault?.is_mine === false ? '' : initialData?.parent_id ?? '',
+    parent_id:         parentDefault?.is_mine === false && !propose ? '' : initialData?.parent_id ?? '',
     color:             initialData?.color ?? parentDefault?.color ?? PRESET_COLORS[14],
     emoji:             initialData?.emoji ?? parentDefault?.emoji ?? PRESET_ICONS[0],
     description:       initialData?.description ?? '',
@@ -273,7 +285,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     const pending = keywordInput.trim().toLowerCase()
     const keywords = pending && !formData.keywords.includes(pending) ? [...formData.keywords, pending] : formData.keywords
     const parentId = formData.parent_id || null
-    if (parentId && categories.find((c) => c.id === parentId)?.is_mine === false) return setErrorMsg(t.catform.errorNotOwner)
+    if (!propose && parentId && categories.find((c) => c.id === parentId)?.is_mine === false) return setErrorMsg(t.catform.errorNotOwner)
     const budget = Number(formData.budget_limit) || 0
 
     // Children's budgets should fit inside the parent's budget.
@@ -294,6 +306,35 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
     // A parent's own budget can't be smaller than what its sub-categories already have.
     if (initialData?.id && budget > 0 && childrenBudget > budget) {
       return setErrorMsg(fill(t.budget.belowChildren, { limit: budget.toLocaleString(), total: childrenBudget.toLocaleString() }))
+    }
+
+    if (propose) {
+      // Each change becomes its own proposal for the owner to approve.
+      const list: Proposal[] = []
+      const o = { note: note.trim() || undefined }
+      if (!isEdit) {
+        list.push([parentId!, 'subcategory.create', { name: formData.name.trim(), icon: formData.emoji, color: formData.color, budget: budget || undefined, slug: slugifyName(formData.name) }, o])
+      } else {
+        const id = initialData!.id!
+        if (!propose.root) {
+          const diff: Record<string, string> = {}
+          if (formData.name.trim() !== (initialData!.name ?? '')) diff.name = formData.name.trim()
+          if (formData.emoji !== initialData!.emoji) diff.icon = formData.emoji
+          if (formData.color !== initialData!.color) diff.color = formData.color
+          if ((formData.description || '') !== (initialData!.description ?? '')) diff.description = formData.description
+          if (Object.keys(diff).length) list.push([id, 'category.update', diff, o])
+        }
+        if (budget !== (initialData!.budget_limit ?? 0)) list.push([id, 'budget.set', { amount: budget }, o])
+        const had = initialData!.keywords ?? []
+        for (const k of keywords.filter((k) => !had.includes(k))) list.push([id, 'keyword.add', { pattern: k }, o])
+        for (const k of had.filter((k) => !keywords.includes(k))) list.push([id, 'keyword.remove', { pattern: k }, o])
+      }
+      if (!list.length) return setErrorMsg(t.approvals.errNoChange)
+      setIsSaving(true)
+      const sent = await sendProposals(list, propose.ownerName)
+      setIsSaving(false)
+      if (sent) onClose()
+      return
     }
 
     setIsSaving(true)
@@ -360,7 +401,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
         <SheetGrip />
         <div>
           <h2 className="text-xl font-bold tracking-tight text-[var(--color-text-primary)]">{isEdit ? t.catform.editTitle : t.catform.createTitle}</h2>
-          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{t.catform.subtitle}</p>
+          <p className="text-sm text-[var(--color-text-tertiary)] mt-1">{propose ? fill(t.approvals.proposeFormHint, { owner: propose.ownerName }) : t.catform.subtitle}</p>
         </div>
         <button type="button" onClick={onClose} aria-label={t.common.close} className="w-10 h-10 flex items-center justify-center rounded-full hover:bg-[var(--color-border-default)]">
           <X className="w-5 h-5 text-[var(--color-text-secondary)]" />
@@ -368,12 +409,18 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
       </div>
 
       <div className="px-6 sm:px-8 py-6 space-y-7 overflow-y-auto flex-1">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        {propose && (
+          <div className="flex items-start gap-2.5 px-3.5 py-3 rounded-xl bg-[#fffaeb] border border-[#fedf89] text-[13px] text-[#93370d] leading-snug">
+            <GitPullRequestArrow className="w-4 h-4 mt-px shrink-0" />
+            <span>{fill(propose.root ? t.approvals.proposeLocked : t.approvals.proposeBanner, { owner: propose.ownerName })}</span>
+          </div>
+        )}
+        <div className={cn('grid grid-cols-1 md:grid-cols-2 gap-5', lockLook && 'hidden')}>
           <div className="md:col-span-2">
             <Input label={t.catform.name} value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               placeholder={t.catform.namePlaceholder} required className="h-12 text-base" />
           </div>
-          <div>
+          <div className={cn(lockStructure && 'hidden')}>
             <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-1.5">{t.catform.type}</p>
             <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-[var(--color-bg-sunken)]" role="radiogroup" aria-label={t.catform.type}>
               {types.map((ty) => (
@@ -385,23 +432,23 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
               ))}
             </div>
           </div>
-          <div>
+          <div className={cn(lockStructure && 'hidden')}>
             <p className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider mb-1.5">{t.catform.parent}</p>
             <ParentTreeDropdown value={formData.parent_id} onChange={(id) => setFormData({ ...formData, parent_id: id })} options={parentOptions} allCategories={categories} />
           </div>
-          <div>
+          <div className={cn(lockStructure && 'hidden')}>
             <label htmlFor="cat-kind" className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider block mb-1.5">{t.catui.kind}</label>
             <AppSelect id="cat-kind" aria-label={t.catui.kind} value={formData.kind_code} onChange={(e) => setFormData({ ...formData, kind_code: e.target.value })}
               className="w-full h-12 px-4 rounded-xl border text-sm font-medium bg-[var(--color-surface-default)] text-[var(--color-text-primary)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none">
               {kinds.map((k) => <option key={k.code} value={k.code}>{tk(k.name_key)}</option>)}
             </AppSelect>
           </div>
-          <div>
+          <div className={cn(propose && !isEdit && 'hidden')}>
             <Input label={t.catform.description} value={formData.description} onChange={(e) => setFormData({ ...formData, description: e.target.value })} />
           </div>
         </div>
 
-        {others.length > 0 && (
+        {others.length > 0 && !propose && (
         <div className="space-y-2.5">
         <div className="flex items-center gap-3 select-none">
           <button type="button" role="switch" aria-checked={formData.is_shared} aria-label={t.catform.shared}
@@ -446,7 +493,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
         </div>
         )}
 
-        <div className="p-5 rounded-2xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-5">
+        <div className={cn('p-5 rounded-2xl bg-[var(--color-bg-sunken)] border border-[var(--color-border-subtle)] space-y-5', lockLook && 'hidden')}>
           <h3 className="text-sm font-semibold text-[var(--color-text-secondary)]">{t.catform.look}</h3>
           <div>
             <p className="text-xs font-medium text-[var(--color-text-tertiary)] mb-2">{t.catform.icon}</p>
@@ -485,7 +532,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
         {formData.type === 'expense' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <NumberInput label={t.catform.budget} currency={ledger?.currency_code ?? 'JPY'} value={formData.budget_limit} onChange={(val) => setFormData({ ...formData, budget_limit: val })} placeholder="0" />
-            <NumberInput label={t.catform.warning} value={formData.warning_threshold} onChange={(val) => setFormData({ ...formData, warning_threshold: Math.min(100, Math.max(1, val)) })} placeholder="80" />
+            {!propose && <NumberInput label={t.catform.warning} value={formData.warning_threshold} onChange={(val) => setFormData({ ...formData, warning_threshold: Math.min(100, Math.max(1, val)) })} placeholder="80" />}
             {parentCat && parentCat.budget_limit > 0 && (
               <p className={cn('sm:col-span-2 -mt-1 text-[12px] px-3 py-2 rounded-lg', parentUsed > parentCat.budget_limit ? 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] font-medium' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>
                 {fill(t.budget.formParent, { parent: parentCat.name, used: fmtN(parentUsed), limit: fmtN(parentCat.budget_limit), free: fmtN(parentCat.budget_limit - parentUsed) })}
@@ -501,7 +548,7 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
           </div>
         )}
 
-        <div className="space-y-3">
+        <div className={cn('space-y-3', propose && !isEdit && 'hidden')}>
           <label htmlFor="cat-kw" className="text-sm font-semibold text-[var(--color-text-secondary)] flex items-center gap-2"><TagIcon className="w-4 h-4" />{t.catform.keywords}</label>
           <p className="text-xs text-[var(--color-text-quaternary)] -mt-1">{t.catform.keywordsHint}</p>
           <div className="flex gap-2.5">
@@ -524,6 +571,16 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
         </div>
       </div>
 
+      {propose && (
+        <div className="px-6 sm:px-8 pb-4">
+          <label className="block">
+            <span className="text-xs font-semibold text-[var(--color-text-tertiary)] uppercase tracking-wider">{t.approvals.note}</span>
+            <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={2} maxLength={500}
+              placeholder={fill(t.approvals.proposeFormHint, { owner: propose.ownerName })}
+              className="mt-1.5 w-full px-4 py-2.5 rounded-xl border text-sm bg-[var(--color-surface-default)] text-[var(--color-text-primary)] border-[var(--color-border-default)] focus:border-[var(--color-border-focus)] focus:outline-none resize-none" />
+          </label>
+        </div>
+      )}
       {errorMsg && (
         <div role="alert" className="mx-6 mb-3 bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)] p-3 rounded-lg text-sm flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" /><span className="flex-1">{errorMsg}</span>
@@ -531,8 +588,8 @@ export function CategoryForm({ onClose, initialData }: CategoryFormProps) {
       )}
       <div className="flex items-center justify-end gap-3 px-6 sm:px-8 pt-4 pb-[max(16px,env(safe-area-inset-bottom))] sm:pb-4 border-t border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]">
         <Button type="button" variant="secondary" onClick={onClose} className="h-11 px-6 rounded-xl">{t.common.cancel}</Button>
-        <Button type="submit" icon={<Save className="w-4 h-4" />} loading={isSaving} className="h-11 px-8 rounded-xl font-semibold">
-          {isEdit ? t.catform.save : t.catform.create}
+        <Button type="submit" icon={propose ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />} loading={isSaving} className="h-11 px-8 rounded-xl font-semibold">
+          {propose ? t.approvals.proposeSubmit : isEdit ? t.catform.save : t.catform.create}
         </Button>
       </div>
     </form>

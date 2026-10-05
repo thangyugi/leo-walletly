@@ -9,6 +9,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { NAV_ITEMS, NAV_GROUP_LABEL_KEY, isActivePath } from './nav'
+import { NavBadge } from './nav-badge'
 import { LanguagePicker } from './sidebar'
 import { BottomSheet } from '@/components/ui/bottom-sheet'
 import { InstallAppButton } from '@/features/pwa/components/install-app-button'
@@ -85,7 +86,10 @@ export function MobileTabBar() {
         </div>
         {tabLink(TABS[2])}
         <button type="button" onClick={() => setSheet('more')} aria-expanded={sheet === 'more'} className={tabClass(moreActive || sheet === 'more')}>
-          <Menu className="w-[22px] h-[22px]" strokeWidth={moreActive ? 2.2 : 1.8} />
+          <span className="relative">
+            <Menu className="w-[22px] h-[22px]" strokeWidth={moreActive ? 2.2 : 1.8} />
+            <NavBadge href="/approvals" dot className="absolute -top-0.5 -right-1" />
+          </span>
           {tk('mobnav.more')}
         </button>
       </nav>
@@ -128,6 +132,7 @@ export function MobileTabBar() {
                     className="flex items-center gap-3 min-h-[52px] px-4 text-[14.5px] font-medium text-[var(--color-text-primary)]">
                     <Icon className="w-[18px] h-[18px] text-[var(--color-text-tertiary)]" />
                     <span className="flex-1">{tk(labelKey)}</span>
+                    <NavBadge href={href} />
                     <ChevronRight className="w-4 h-4 text-[var(--color-text-quaternary)]" />
                   </Link>
                 ))}

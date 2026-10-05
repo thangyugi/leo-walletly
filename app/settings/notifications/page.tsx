@@ -1,5 +1,6 @@
 'use client'
 
+import { PushCard } from '@/features/pwa/push-card'
 import { useCallback, useEffect, useState } from 'react'
 import { Loader2, Lock } from 'lucide-react'
 import { toast } from 'sonner'
@@ -33,6 +34,7 @@ export default function NotificationSettingsPage() {
   return (
     <div className="animate-fade-in max-w-3xl">
       <PageTitle title={t.notifications.title} subtitle={t.notifications.deliverySub} />
+      <PushCard className="mb-4" />
       {!settings ? <div className="flex justify-center py-10"><Loader2 className="w-6 h-6 animate-spin" /></div> : (
         <div className="card-base overflow-x-auto">
           <table className="w-full text-sm">

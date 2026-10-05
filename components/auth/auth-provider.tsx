@@ -8,6 +8,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { useI18nStore } from '@/features/i18n/store'
 import { useNotificationsStore } from '@/features/notifications/store'
+import { useLiveNotifications } from '@/features/notifications/live'
 import { supabase } from '@/lib/supabase'
 import { AppSplash } from '@/components/app-splash'
 
@@ -99,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .then(({ error }) => { if (error) console.warn('record_session failed:', error.message) })
     }
   }, [user, ledgerReady, loadMaster, loadNotifications])
+
+  useLiveNotifications(user && ledgerReady ? user.id : null, current?.id)
 
   // Theme from user_preferences (light / dark / system).
   useEffect(() => {
