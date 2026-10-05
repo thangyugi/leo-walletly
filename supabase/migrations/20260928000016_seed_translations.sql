@@ -727,6 +727,9 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.colDesc', 'import', null, true),
   ('import.colMapping', 'import', null, true),
   ('import.colMappingHint', 'import', null, true),
+  ('import.copied', 'import', null, true),
+  ('import.copy', 'import', null, true),
+  ('import.detectedAs', 'import', 'provider', true),
   ('import.dropFile', 'import', null, true),
   ('import.duplicatesSkipped', 'import', 'count', true),
   ('import.errorNoTxns', 'import', null, true),
@@ -737,6 +740,19 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.importing', 'import', null, true),
   ('import.noAccount', 'import', null, true),
   ('import.parsing', 'import', null, true),
+  ('import.pdfNoRowsSub', 'import', null, true),
+  ('import.pdfNoRowsTitle', 'import', 'provider', true),
+  ('import.pdfOpen', 'import', null, true),
+  ('import.pdfPasswordSub', 'import', null, true),
+  ('import.pdfPasswordTitle', 'import', null, true),
+  ('import.pdfPasswordWrong', 'import', null, true),
+  ('import.pdfPreview', 'import', 'count', true),
+  ('import.pdfReadSub', 'import', null, true),
+  ('import.pdfReadTitle', 'import', null, true),
+  ('import.pdfUnknownSub', 'import', null, true),
+  ('import.pdfUnknownTitle', 'import', null, true),
+  ('import.pdfUnsupportedSub', 'import', 'provider', true),
+  ('import.pdfUnsupportedTitle', 'import', 'provider', true),
   ('import.provider', 'import', null, true),
   ('import.reParse', 'import', null, true),
   ('import.regionJapan', 'import', null, true),
@@ -751,9 +767,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.stepReview', 'import', null, true),
   ('import.stepSetup', 'import', null, true),
   ('import.subtitle', 'import', null, true),
+  ('import.supported', 'import', null, true),
+  ('import.supportedCsv', 'import', null, true),
   ('import.supportedFormats', 'import', null, true),
+  ('import.supportedPdf', 'import', null, true),
   ('import.targetAccount', 'import', null, true),
   ('import.title', 'import', null, true),
+  ('import.tryAnother', 'import', null, true),
   ('import.warnings', 'import', null, true),
   ('join.accept', 'join', null, false),
   ('join.backHome', 'join', null, false),
@@ -790,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('ledger_settings.copyId', 'ledger_settings', null, false),
   ('ledger_settings.currencyLabel', 'ledger_settings', null, false),
   ('ledger_settings.dangerSub', 'ledger_settings', null, false),
-  ('ledger_settings.dangerTitle', 'ledger_settings', null, false),
+  ('ledger_settings.dangerTitle', 'ledger_settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('ledger_settings.deleteBtn', 'ledger_settings', null, false),
   ('ledger_settings.deleteDesc', 'ledger_settings', null, false),
   ('ledger_settings.deleteTitle', 'ledger_settings', null, false),
@@ -810,10 +833,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('ledger_settings.subtitle', 'ledger_settings', null, false),
   ('ledger_settings.systemId', 'ledger_settings', null, false),
   ('ledger_settings.timezoneLabel', 'ledger_settings', null, false),
-  ('ledger_settings.title', 'ledger_settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('ledger_settings.title', 'ledger_settings', null, false),
   ('ledger_settings.transferLabel', 'ledger_settings', null, false),
   ('ledger_settings.transferSub', 'ledger_settings', null, false),
   ('ledger_settings.warningDesc', 'ledger_settings', null, false),
@@ -1193,7 +1213,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('scan.title', 'scan', null, true),
   ('scan.uploadPrompt', 'scan', null, true),
   ('sessions.current', 'sessions', null, false),
-  ('sessions.deleteConfirm', 'sessions', null, false),
+  ('sessions.deleteConfirm', 'sessions', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('sessions.newPassword', 'sessions', null, false),
   ('sessions.none', 'sessions', null, false),
   ('sessions.passwordUpdated', 'sessions', null, false),
@@ -1213,10 +1236,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.account.hiddenBalancesSub', 'settings', null, false),
   ('settings.account.privacyTitle', 'settings', null, false),
   ('settings.account.regionalTitle', 'settings', null, false),
-  ('settings.account.startPage', 'settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.account.startPage', 'settings', null, false),
   ('settings.account.subtitle', 'settings', null, false),
   ('settings.account.title', 'settings', null, false),
   ('settings.common.dataSecurity', 'settings', null, false),
@@ -2161,6 +2181,9 @@ insert into public.translations (key, language_code, value) values
   ('import.colDesc', 'ja', '内容列'),
   ('import.colMapping', 'ja', '列のマッピング'),
   ('import.colMappingHint', 'ja', 'インポート前に列を確認・調整してください'),
+  ('import.copied', 'ja', 'コピーしました'),
+  ('import.copy', 'ja', 'コピー'),
+  ('import.detectedAs', 'ja', '判別結果：{{provider}}'),
   ('import.dropFile', 'ja', 'ここにCSVまたはPDFをドロップ'),
   ('import.duplicatesSkipped', 'ja', '重複 {{count}} 件をスキップ'),
   ('import.errorNoTxns', 'ja', '取引が見つかりませんでした'),
@@ -2171,6 +2194,19 @@ insert into public.translations (key, language_code, value) values
   ('import.importing', 'ja', 'インポート中…'),
   ('import.noAccount', 'ja', '先に口座を作成してください'),
   ('import.parsing', 'ja', '解析中...'),
+  ('import.pdfNoRowsSub', 'ja', 'このファイルのレイアウトは想定と異なります。下の読み取りテキストを送っていただければ対応します。'),
+  ('import.pdfNoRowsTitle', 'ja', '{{provider}} の明細と判別しましたが、取引を読み取れませんでした'),
+  ('import.pdfOpen', 'ja', '開く'),
+  ('import.pdfPasswordSub', 'ja', 'ファイルを開くパスワードを入力してください（保存されません）。'),
+  ('import.pdfPasswordTitle', 'ja', 'パスワード付きのPDFです'),
+  ('import.pdfPasswordWrong', 'ja', 'パスワードが違います。もう一度お試しください。'),
+  ('import.pdfPreview', 'ja', '読み取ったテキスト（先頭 {{count}} 行）'),
+  ('import.pdfReadSub', 'ja', '画像（スキャン）のPDFか、壊れている可能性があります。カード会社・銀行のサイトから元のPDFかCSVをダウンロードしてください。'),
+  ('import.pdfReadTitle', 'ja', 'PDFの文字を読み取れませんでした'),
+  ('import.pdfUnknownSub', 'ja', '対応していない明細の形式です。CSVで書き出せる場合はCSVを取り込んでください。'),
+  ('import.pdfUnknownTitle', 'ja', 'このPDFの種類を判別できませんでした'),
+  ('import.pdfUnsupportedSub', 'ja', '{{provider}} のサイトからCSVで書き出して取り込んでください。'),
+  ('import.pdfUnsupportedTitle', 'ja', '{{provider}} のPDFにはまだ対応していません'),
   ('import.provider', 'ja', 'データ形式'),
   ('import.reParse', 'ja', '再解析'),
   ('import.regionJapan', 'ja', '日本'),
@@ -2185,9 +2221,13 @@ insert into public.translations (key, language_code, value) values
   ('import.stepReview', 'ja', '確認・インポート'),
   ('import.stepSetup', 'ja', 'ソース選択・アップロード'),
   ('import.subtitle', 'ja', 'CSVまたはPDFファイルから取引をインポートします'),
+  ('import.supported', 'ja', '対応している形式'),
+  ('import.supportedCsv', 'ja', 'CSV：楽天カード・楽天ペイ・PayPay・PayPayカード・三井住友・三菱UFJ・VCB・MB Bank、その他は列を指定'),
   ('import.supportedFormats', 'ja', 'CSV, PDF に対応'),
+  ('import.supportedPdf', 'ja', 'PDF：楽天カード（ゴールド・プレミアム含む）の明細、PayPayの取引履歴'),
   ('import.targetAccount', 'ja', '取り込み先の口座'),
   ('import.title', 'ja', 'データインポート'),
+  ('import.tryAnother', 'ja', '別のファイルを選ぶ'),
   ('import.warnings', 'ja', '件の警告'),
   ('join.accept', 'ja', '参加する'),
   ('join.backHome', 'ja', 'ホームに戻る'),
@@ -2224,7 +2264,10 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.copyId', 'ja', 'IDをコピー'),
   ('ledger_settings.currencyLabel', 'ja', '基本通貨'),
   ('ledger_settings.dangerSub', 'ja', 'ワークスペース全体に影響する操作です'),
-  ('ledger_settings.dangerTitle', 'ja', '危険な操作'),
+  ('ledger_settings.dangerTitle', 'ja', '危険な操作')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ledger_settings.deleteBtn', 'ja', '永久に削除 →'),
   ('ledger_settings.deleteDesc', 'ja', 'この元帳と関連するすべての財務データを永久に削除します。この操作は取り消せません。'),
   ('ledger_settings.deleteTitle', 'ja', '元帳を削除'),
@@ -2244,10 +2287,7 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.subtitle', 'ja', '財務の基本設定と階層構造を管理します'),
   ('ledger_settings.systemId', 'ja', 'システムID'),
   ('ledger_settings.timezoneLabel', 'ja', 'タイムゾーン'),
-  ('ledger_settings.title', 'ja', '元帳設定')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ledger_settings.title', 'ja', '元帳設定'),
   ('ledger_settings.transferLabel', 'ja', '所有権を譲渡'),
   ('ledger_settings.transferSub', 'ja', 'この財務スペースの所有権を別のユーザーに委譲します'),
   ('ledger_settings.warningDesc', 'ja', '基本通貨や会計設定を変更すると、プラットフォーム全体のすべての履歴データと計算に影響します。続行してもよろしいですか？'),
@@ -2627,7 +2667,10 @@ insert into public.translations (key, language_code, value) values
   ('scan.title', 'ja', 'レシート読取'),
   ('scan.uploadPrompt', 'ja', 'レシート画像をアップロード'),
   ('sessions.current', 'ja', 'このデバイス'),
-  ('sessions.deleteConfirm', 'ja', 'アカウントを完全に削除しますか？'),
+  ('sessions.deleteConfirm', 'ja', 'アカウントを完全に削除しますか？')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('sessions.newPassword', 'ja', '新しいパスワード'),
   ('sessions.none', 'ja', 'セッションはありません'),
   ('sessions.passwordUpdated', 'ja', 'パスワードを更新しました'),
@@ -2647,10 +2690,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.hiddenBalancesSub', 'ja', 'ダッシュボードで金額をマスクします'),
   ('settings.account.privacyTitle', 'ja', 'プライバシーと可視性'),
   ('settings.account.regionalTitle', 'ja', '地域のデフォルト設定'),
-  ('settings.account.startPage', 'ja', '開始ページ')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.startPage', 'ja', '開始ページ'),
   ('settings.account.subtitle', 'ja', '好みの表示方法やデフォルト設定を管理します'),
   ('settings.account.title', 'ja', 'アカウント設定'),
   ('settings.common.dataSecurity', 'ja', 'データとセキュリティ'),
@@ -3595,6 +3635,9 @@ insert into public.translations (key, language_code, value) values
   ('import.colDesc', 'vi', 'Cột nội dung'),
   ('import.colMapping', 'vi', 'Khớp cột dữ liệu'),
   ('import.colMappingHint', 'vi', 'Kiểm tra và điều chỉnh các cột trước khi nhập'),
+  ('import.copied', 'vi', 'Đã sao chép'),
+  ('import.copy', 'vi', 'Sao chép'),
+  ('import.detectedAs', 'vi', 'Nhận dạng: {{provider}}'),
   ('import.dropFile', 'vi', 'Thả file CSV hoặc PDF vào đây'),
   ('import.duplicatesSkipped', 'vi', 'Bỏ qua {{count}} giao dịch trùng'),
   ('import.errorNoTxns', 'vi', 'Không tìm thấy giao dịch nào'),
@@ -3605,6 +3648,19 @@ insert into public.translations (key, language_code, value) values
   ('import.importing', 'vi', 'Đang nhập…'),
   ('import.noAccount', 'vi', 'Hãy tạo tài khoản trước'),
   ('import.parsing', 'vi', 'Đang xử lý...'),
+  ('import.pdfNoRowsSub', 'vi', 'Bố cục file này khác mẫu app đang hỗ trợ. Hãy gửi phần chữ đọc được bên dưới (hoặc chính file) để bổ sung.'),
+  ('import.pdfNoRowsTitle', 'vi', 'Nhận ra {{provider}} nhưng không đọc được giao dịch nào'),
+  ('import.pdfOpen', 'vi', 'Mở file'),
+  ('import.pdfPasswordSub', 'vi', 'Nhập mật khẩu để mở file (mật khẩu không được lưu lại).'),
+  ('import.pdfPasswordTitle', 'vi', 'File PDF có mật khẩu'),
+  ('import.pdfPasswordWrong', 'vi', 'Sai mật khẩu, hãy thử lại.'),
+  ('import.pdfPreview', 'vi', 'Chữ đọc được từ file ({{count}} dòng đầu)'),
+  ('import.pdfReadSub', 'vi', 'File có thể là ảnh chụp / scan hoặc bị hỏng. Hãy tải lại file PDF gốc (hoặc CSV) từ trang của thẻ / ngân hàng.'),
+  ('import.pdfReadTitle', 'vi', 'Không đọc được chữ trong file PDF'),
+  ('import.pdfUnknownSub', 'vi', 'Đây chưa phải loại sao kê app đọc được. Nếu trang thẻ / ngân hàng cho xuất CSV, hãy nhập file CSV.'),
+  ('import.pdfUnknownTitle', 'vi', 'Chưa nhận ra loại file PDF này'),
+  ('import.pdfUnsupportedSub', 'vi', 'Hãy xuất file CSV từ trang của {{provider}} rồi nhập file đó.'),
+  ('import.pdfUnsupportedTitle', 'vi', '{{provider}} dạng PDF chưa được hỗ trợ'),
   ('import.provider', 'vi', 'Định dạng'),
   ('import.reParse', 'vi', 'Phân tích lại'),
   ('import.regionJapan', 'vi', 'Nhật Bản'),
@@ -3619,9 +3675,13 @@ insert into public.translations (key, language_code, value) values
   ('import.stepReview', 'vi', 'Kiểm tra & Nhập'),
   ('import.stepSetup', 'vi', 'Chọn nguồn & Tải file'),
   ('import.subtitle', 'vi', 'Nhập giao dịch từ file CSV hoặc PDF'),
+  ('import.supported', 'vi', 'Định dạng hỗ trợ'),
+  ('import.supportedCsv', 'vi', 'CSV: Thẻ Rakuten, Rakuten Pay, PayPay, PayPay Card, SMBC, MUFG, VCB, MB Bank; loại khác chọn cột thủ công'),
   ('import.supportedFormats', 'vi', 'Hỗ trợ định dạng CSV, PDF'),
+  ('import.supportedPdf', 'vi', 'PDF: sao kê Thẻ Rakuten (cả Gold, Premium), lịch sử giao dịch PayPay'),
   ('import.targetAccount', 'vi', 'Tài khoản đích'),
   ('import.title', 'vi', 'Nhập dữ liệu'),
+  ('import.tryAnother', 'vi', 'Chọn file khác'),
   ('import.warnings', 'vi', 'cảnh báo'),
   ('join.accept', 'vi', 'Tham gia'),
   ('join.backHome', 'vi', 'Quay lại trang chủ'),
@@ -3658,7 +3718,10 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.copyId', 'vi', 'Sao chép ID'),
   ('ledger_settings.currencyLabel', 'vi', 'Tiền tệ gốc'),
   ('ledger_settings.dangerSub', 'vi', 'Các hành động nhạy cảm ảnh hưởng đến toàn bộ không gian làm việc'),
-  ('ledger_settings.dangerTitle', 'vi', 'Khu vực nguy hiểm'),
+  ('ledger_settings.dangerTitle', 'vi', 'Khu vực nguy hiểm')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ledger_settings.deleteBtn', 'vi', 'Xóa vĩnh viễn →'),
   ('ledger_settings.deleteDesc', 'vi', 'Xóa vĩnh viễn sổ cái này và tất cả dữ liệu tài chính liên quan. Hành động này KHÔNG THỂ hoàn tác.'),
   ('ledger_settings.deleteTitle', 'vi', 'Xóa Sổ cái'),
@@ -3678,10 +3741,7 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.subtitle', 'vi', 'Quản lý các thiết lập tài chính cốt lõi và tùy chọn tổ chức'),
   ('ledger_settings.systemId', 'vi', 'ID Hệ thống'),
   ('ledger_settings.timezoneLabel', 'vi', 'Múi giờ'),
-  ('ledger_settings.title', 'vi', 'Cấu hình Sổ cái')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ledger_settings.title', 'vi', 'Cấu hình Sổ cái'),
   ('ledger_settings.transferLabel', 'vi', 'Chuyển nhượng sở hữu'),
   ('ledger_settings.transferSub', 'vi', 'Chuyển quyền sở hữu không gian tài chính này cho người dùng khác'),
   ('ledger_settings.warningDesc', 'vi', 'Thay đổi tiền tệ gốc hoặc thiết lập tài chính sẽ ảnh hưởng đến cách hiển thị và tính toán dữ liệu lịch sử trên toàn bộ nền tảng. Bạn có chắc chắn muốn tiếp tục?'),
@@ -4061,7 +4121,10 @@ insert into public.translations (key, language_code, value) values
   ('scan.title', 'vi', 'Quét hóa đơn'),
   ('scan.uploadPrompt', 'vi', 'Tải ảnh hóa đơn lên'),
   ('sessions.current', 'vi', 'Thiết bị này'),
-  ('sessions.deleteConfirm', 'vi', 'Xoá vĩnh viễn tài khoản?'),
+  ('sessions.deleteConfirm', 'vi', 'Xoá vĩnh viễn tài khoản?')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('sessions.newPassword', 'vi', 'Mật khẩu mới'),
   ('sessions.none', 'vi', 'Không có phiên'),
   ('sessions.passwordUpdated', 'vi', 'Đã đổi mật khẩu'),
@@ -4081,10 +4144,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.hiddenBalancesSub', 'vi', 'Mặc định ẩn các số dư nhạy cảm trên dashboard'),
   ('settings.account.privacyTitle', 'vi', 'Quyền riêng tư & Hiển thị'),
   ('settings.account.regionalTitle', 'vi', 'Mặc định vùng'),
-  ('settings.account.startPage', 'vi', 'Trang bắt đầu')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.startPage', 'vi', 'Trang bắt đầu'),
   ('settings.account.subtitle', 'vi', 'Quản lý tùy chọn hiển thị và thiết lập mặc định'),
   ('settings.account.title', 'vi', 'Tài khoản'),
   ('settings.common.dataSecurity', 'vi', 'Dữ liệu & Bảo mật'),
@@ -5029,6 +5089,9 @@ insert into public.translations (key, language_code, value) values
   ('import.colDesc', 'en', 'Description column'),
   ('import.colMapping', 'en', 'Column Mapping'),
   ('import.colMappingHint', 'en', 'Review and adjust columns before importing'),
+  ('import.copied', 'en', 'Copied'),
+  ('import.copy', 'en', 'Copy'),
+  ('import.detectedAs', 'en', 'Recognised as: {{provider}}'),
   ('import.dropFile', 'en', 'Drop CSV or PDF here'),
   ('import.duplicatesSkipped', 'en', '{{count}} duplicates skipped'),
   ('import.errorNoTxns', 'en', 'No transactions found'),
@@ -5039,6 +5102,19 @@ insert into public.translations (key, language_code, value) values
   ('import.importing', 'en', 'Importing…'),
   ('import.noAccount', 'en', 'Create an account first'),
   ('import.parsing', 'en', 'Parsing...'),
+  ('import.pdfNoRowsSub', 'en', 'This layout differs from the supported one. Send the text below (or the file) so it can be added.'),
+  ('import.pdfNoRowsTitle', 'en', 'Recognised as {{provider}} but no transactions were read'),
+  ('import.pdfOpen', 'en', 'Open'),
+  ('import.pdfPasswordSub', 'en', 'Enter the password to open it (it is not stored).'),
+  ('import.pdfPasswordTitle', 'en', 'This PDF is password-protected'),
+  ('import.pdfPasswordWrong', 'en', 'Wrong password, try again.'),
+  ('import.pdfPreview', 'en', 'Text read from the file (first {{count}} lines)'),
+  ('import.pdfReadSub', 'en', 'It may be a scan/photo or damaged. Download the original PDF (or CSV) from the card or bank site.'),
+  ('import.pdfReadTitle', 'en', 'Could not read the text in this PDF'),
+  ('import.pdfUnknownSub', 'en', 'This statement layout is not supported yet. If the site can export CSV, import that instead.'),
+  ('import.pdfUnknownTitle', 'en', 'This PDF was not recognised'),
+  ('import.pdfUnsupportedSub', 'en', 'Export a CSV from {{provider}} and import that.'),
+  ('import.pdfUnsupportedTitle', 'en', '{{provider}} PDFs are not supported yet'),
   ('import.provider', 'en', 'Format'),
   ('import.reParse', 'en', 'Re-parse'),
   ('import.regionJapan', 'en', 'Japan'),
@@ -5053,9 +5129,13 @@ insert into public.translations (key, language_code, value) values
   ('import.stepReview', 'en', 'Review & Import'),
   ('import.stepSetup', 'en', 'Choose Source & Upload'),
   ('import.subtitle', 'en', 'Import transactions from CSV or PDF files'),
+  ('import.supported', 'en', 'Supported files'),
+  ('import.supportedCsv', 'en', 'CSV: Rakuten Card, Rakuten Pay, PayPay, PayPay Card, SMBC, MUFG, VCB, MB Bank; others by picking columns'),
   ('import.supportedFormats', 'en', 'Supports CSV, PDF'),
+  ('import.supportedPdf', 'en', 'PDF: Rakuten Card statements (incl. Gold, Premium), PayPay history'),
   ('import.targetAccount', 'en', 'Import into account'),
   ('import.title', 'en', 'Import Data'),
+  ('import.tryAnother', 'en', 'Choose another file'),
   ('import.warnings', 'en', 'warnings'),
   ('join.accept', 'en', 'Join'),
   ('join.backHome', 'en', 'Back to Home'),
@@ -5092,7 +5172,10 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.copyId', 'en', 'Copy ID'),
   ('ledger_settings.currencyLabel', 'en', 'Base Currency'),
   ('ledger_settings.dangerSub', 'en', 'Sensitive actions that affect the entire workspace'),
-  ('ledger_settings.dangerTitle', 'en', 'Danger Zone'),
+  ('ledger_settings.dangerTitle', 'en', 'Danger Zone')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ledger_settings.deleteBtn', 'en', 'Delete Permanently →'),
   ('ledger_settings.deleteDesc', 'en', 'Permanently remove this ledger and all associated financial data. This action is IRREVERSIBLE.'),
   ('ledger_settings.deleteTitle', 'en', 'Delete Ledger'),
@@ -5112,10 +5195,7 @@ insert into public.translations (key, language_code, value) values
   ('ledger_settings.subtitle', 'en', 'Manage core financial settings and organizational preferences'),
   ('ledger_settings.systemId', 'en', 'System ID'),
   ('ledger_settings.timezoneLabel', 'en', 'Timezone'),
-  ('ledger_settings.title', 'en', 'Ledger Configuration')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ledger_settings.title', 'en', 'Ledger Configuration'),
   ('ledger_settings.transferLabel', 'en', 'Transfer Ownership'),
   ('ledger_settings.transferSub', 'en', 'Transfer ownership of this financial space to another user'),
   ('ledger_settings.warningDesc', 'en', 'Changing the base currency or fiscal settings will affect how all historical data is displayed and calculated across the entire platform. Are you sure you want to proceed?'),
@@ -5495,7 +5575,10 @@ insert into public.translations (key, language_code, value) values
   ('scan.title', 'en', 'Scan Receipt'),
   ('scan.uploadPrompt', 'en', 'Upload receipt image'),
   ('sessions.current', 'en', 'This device'),
-  ('sessions.deleteConfirm', 'en', 'Permanently delete your account?'),
+  ('sessions.deleteConfirm', 'en', 'Permanently delete your account?')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('sessions.newPassword', 'en', 'New password'),
   ('sessions.none', 'en', 'No sessions'),
   ('sessions.passwordUpdated', 'en', 'Password updated'),
@@ -5515,10 +5598,7 @@ insert into public.translations (key, language_code, value) values
   ('settings.account.hiddenBalancesSub', 'en', 'Mask sensitive amounts on the dashboard'),
   ('settings.account.privacyTitle', 'en', 'Privacy & Visibility'),
   ('settings.account.regionalTitle', 'en', 'Regional Defaults'),
-  ('settings.account.startPage', 'en', 'Start Page')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.account.startPage', 'en', 'Start Page'),
   ('settings.account.subtitle', 'en', 'Manage your preferences and default views'),
   ('settings.account.title', 'en', 'Account Settings'),
   ('settings.common.dataSecurity', 'en', 'Data & Security'),

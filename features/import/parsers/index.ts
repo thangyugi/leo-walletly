@@ -3,8 +3,9 @@ import { parseRakutenPayCSV, decodeShiftJIS } from './rakuten_pay'
 import { parsePayPayCSV } from './paypay'
 import { parsePayPayCardCSV } from './paypay_card'
 import { parseRakutenCardCSV } from './rakuten_card'
-import { parseRakutenCardPDF } from './rakuten_card_pdf'
-import { parsePayPayPDF } from './paypay_pdf'
+import { parseRakutenCardPages } from './rakuten_card_pdf'
+import { parsePayPayPages } from './paypay_pdf'
+import { extractPdfText, pdfPlainText, detectPdfKind, flatLines, PdfPasswordError } from './pdf-utils'
 import { parseSMBCCSV } from './smbc'
 import { parseMUFGCSV } from './mufg'
 import { parseVCBCSV } from './vcb'
@@ -76,38 +77,47 @@ function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
     })
 }
 
+/**
+ * A PDF: read its text once, recognise the statement by its own words
+ * (楽天カード… / PayPay), parse it with that parser. When nothing comes out,
+ * say why (password, unknown kind, recognised but no rows) and show the first
+ * lines read, so a new layout can be supported quickly.
+ */
+async function parsePdf(file: File, password?: string): Promise<ImportResult> {
+  const base = { success: false, rows: [] as ParsedImportRow[], fileName: file.name, provider: 'generic_csv' as PaymentProvider }
+  let pages
+  try {
+    pages = await extractPdfText(file, password)
+  } catch (e) {
+    if (e instanceof PdfPasswordError) return { ...base, errors: [], errorCode: e.wrongPassword ? 'pdf_password_wrong' : 'pdf_password' }
+    return { ...base, errors: [e instanceof Error ? e.message : String(e)], errorCode: 'pdf_read' }
+  }
+  const text = pdfPlainText(pages)
+  const preview = flatLines(pages).map((l) => l.text).filter((l) => l.trim()).slice(0, 25)
+  const kind = detectPdfKind(text)
+
+  if (kind === 'paypay_card') return { ...base, errors: [], errorCode: 'pdf_unsupported', detected: 'paypay_card', preview }
+  // Only a recognised statement is parsed: guessing would file the rows under the wrong card.
+  if (kind) {
+    const res = kind === 'rakuten_card' ? parseRakutenCardPages(pages) : parsePayPayPages(pages)
+    if (res.transactions.length > 0) {
+      return { success: true, rows: toRows(res.transactions), errors: res.errors, fileName: file.name, provider: kind, detected: kind }
+    }
+  }
+  if (!text.trim()) return { ...base, errors: [], errorCode: 'pdf_read', preview }
+  return { ...base, errors: [], errorCode: kind ? 'pdf_no_rows' : 'pdf_unknown', detected: kind, preview }
+}
+
 export async function parseFile(
   file: File,
   provider: PaymentProvider,
-  genericMapping?: Partial<ColumnMapping>
+  genericMapping?: Partial<ColumnMapping>,
+  pdfPassword?: string,
 ): Promise<ImportResult> {
   const format = detectFormat(file)
 
   try {
-    if (format === 'pdf') {
-      try {
-        const rakutenRes = await parseRakutenCardPDF(file)
-        if (rakutenRes.transactions.length > 0) {
-          return { success: true, rows: toRows(rakutenRes.transactions), errors: rakutenRes.errors, fileName: file.name, provider: 'rakuten_card' }
-        }
-      } catch (e) {
-        // ignore and try next
-      }
-      
-      try {
-        const paypayRes = await parsePayPayPDF(file)
-        if (paypayRes.transactions.length > 0) {
-          return { success: true, rows: toRows(paypayRes.transactions), errors: paypayRes.errors, fileName: file.name, provider: 'paypay' }
-        }
-      } catch (e) {
-        // ignore
-      }
-
-      return {
-        success: false, rows: [], fileName: file.name, provider: 'generic_csv',
-        errors: ['PDFの解析に失敗しました。対応しているのは楽天カードとPayPayの利用明細のみです。'],
-      }
-    }
+    if (format === 'pdf') return await parsePdf(file, pdfPassword)
 
     const text = await readFileText(file)
 
