@@ -46,7 +46,7 @@ export function useNotificationText() {
   }
 }
 
-export function NotificationItem({ n, compact, onClick }: { n: AppNotification; compact?: boolean; onClick?: () => void }) {
+export function NotificationItem({ n, compact, onClick, kindLabel }: { n: AppNotification; compact?: boolean; onClick?: () => void; kindLabel?: string }) {
   const { lang } = useTranslation()
   const text = useNotificationText()(n)
   const Icon = text.icon
@@ -62,7 +62,10 @@ export function NotificationItem({ n, compact, onClick }: { n: AppNotification; 
       <div className="flex-1 min-w-0">
         <p className={cn('font-semibold text-[var(--color-text-primary)] line-clamp-1', compact ? 'text-xs' : 'text-sm')}>{text.title}</p>
         <p className={cn('text-[var(--color-text-tertiary)] mt-0.5 line-clamp-2', compact ? 'text-[11px]' : 'text-xs')}>{text.body}</p>
-        <p className="text-[10px] text-[var(--color-text-quaternary)] mt-1">{timeAgo(n.createdAt, lang)}</p>
+        <p className="text-[10px] text-[var(--color-text-quaternary)] mt-1 flex items-center gap-1.5 flex-wrap">
+          {kindLabel && <span className="inline-flex items-center h-[18px] px-1.5 rounded-md bg-[var(--color-bg-sunken)] text-[10.5px] font-medium text-[var(--color-text-tertiary)]">{kindLabel}</span>}
+          {timeAgo(n.createdAt, lang)}
+        </p>
       </div>
       {!n.readAt && <span className="w-2 h-2 mt-1.5 rounded-full bg-[var(--color-interactive-primary)] shrink-0" aria-hidden />}
     </button>

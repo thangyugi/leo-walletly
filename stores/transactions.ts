@@ -2,6 +2,7 @@
 
 import { create } from 'zustand'
 import { supabase } from '@/lib/supabase'
+import { useI18nStore } from '@/features/i18n/store'
 import { mapTransaction as mapRow, type Transaction, type TransactionType } from '@/types/domain'
 import { useAccountsStore } from '@/features/accounts/store'
 
@@ -112,7 +113,15 @@ interface TransactionsState {
 }
 
 function fail(error: { message: string } | null) {
-  if (error) throw new Error(error.message)
+  if (!error) return
+  // Database refusals in words people understand (the raw text stays in the console).
+  const text = (k: string) => useI18nStore.getState().texts[k]?.value
+  if (error.message.includes('CATEGORY_NOT_ACCESSIBLE')) throw new Error(text('txform.errorCategoryAccess') ?? error.message)
+  if (error.message.includes('row-level security')) {
+    console.warn(error.message)
+    throw new Error(text('txform.errorNoPermission') ?? error.message)
+  }
+  throw new Error(error.message)
 }
 
 function toRow(ledgerId: string, input: Partial<TransactionInput>): Partial<TablesInsert<'transactions'>> {

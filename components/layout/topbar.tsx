@@ -130,7 +130,8 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
                     onClick={() => {
                       void markRead(n.id)
                       setShowNotif(false)
-                      if (n.actionUrl) router.push(n.actionUrl)
+                      // Transaction changes open their details (old → new); the rest go where they point.
+                      router.push(n.typeCode.startsWith('transaction') || !n.actionUrl ? `/notifications?id=${n.id}` : n.actionUrl)
                     }}
                   />
                 ))}

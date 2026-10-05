@@ -4222,6 +4222,12 @@ export type Database = {
         }
         Returns: string
       }
+      notification_detail: {
+        Args: {
+          p_notification: string
+        }
+        Returns: Json
+      }
       owns_account: {
         Args: {
           p_account: string

@@ -636,7 +636,14 @@ function TransactionsContent() {
   // Deep link from the command palette / notifications: /transactions?tx=<id>
   const txParam = params.get('tx')
   useEffect(() => {
-    if (txParam) void getById(txParam).then((tx) => { if (tx) setDetailTxn(tx) })
+    if (!txParam) return
+    void getById(txParam).then((tx) => {
+      if (!tx) return
+      // Show it where it is: its month (unless a period came with the link).
+      if (!params.get('from') && (tx.transactionDate < picker.start || tx.transactionDate > picker.end)) setPicker(monthPickerValue(tx.transactionDate, lang))
+      setDetailTxn(tx)
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txParam, getById])
 
   // Keep the open detail panel in sync after an edit.
