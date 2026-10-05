@@ -29,11 +29,13 @@ export interface PdfPage {
 
 let pdfjsLib: typeof import('pdfjs-dist') | null = null
 
+// The "legacy" build carries polyfills: the modern one needs Promise.try /
+// Promise.withResolvers (Safari 18.2+, Chrome 128+) and fails on older phones.
 async function getPdfjs() {
   if (pdfjsLib) return pdfjsLib
-  const lib = await import('pdfjs-dist')
+  const lib = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as typeof import('pdfjs-dist')
   lib.GlobalWorkerOptions.workerSrc = new URL(
-    'pdfjs-dist/build/pdf.worker.min.mjs',
+    'pdfjs-dist/legacy/build/pdf.worker.min.mjs',
     import.meta.url
   ).href
   pdfjsLib = lib

@@ -8,6 +8,8 @@ export interface AppNotification {
   typeCode: string
   ledgerId: string | null
   actionUrl: string | null
+  entityType: string | null
+  entityId: string | null
   readAt: string | null
   createdAt: string
   params: Record<string, string>
@@ -31,10 +33,10 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
     set({ loading: true })
     const { data } = await supabase
       .from('notifications')
-      .select('id, type_code, ledger_id, action_url, read_at, created_at, notification_params(name, value)')
+      .select('id, type_code, ledger_id, action_url, entity_type, entity_id, read_at, created_at, notification_params(name, value)')
       .is('archived_at', null)
       .order('created_at', { ascending: false })
-      .limit(100)
+      .limit(300)
     set({
       loading: false,
       items: (data ?? []).map((n) => ({
@@ -42,6 +44,8 @@ export const useNotificationsStore = create<NotificationsState>((set, get) => ({
         typeCode: n.type_code,
         ledgerId: n.ledger_id,
         actionUrl: n.action_url,
+        entityType: n.entity_type,
+        entityId: n.entity_id,
         readAt: n.read_at,
         createdAt: n.created_at,
         params: Object.fromEntries((n.notification_params ?? []).map((p) => [p.name, p.value])),
