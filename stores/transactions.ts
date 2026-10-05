@@ -116,6 +116,7 @@ function fail(error: { message: string } | null) {
   if (!error) return
   // Database refusals in words people understand (the raw text stays in the console).
   const text = (k: string) => useI18nStore.getState().texts[k]?.value
+  if (error.message.includes('CATEGORY_READ_ONLY')) throw new Error(text('txform.errorCategoryReadOnly') ?? error.message)
   if (error.message.includes('CATEGORY_NOT_ACCESSIBLE')) throw new Error(text('txform.errorCategoryAccess') ?? error.message)
   if (error.message.includes('row-level security')) {
     console.warn(error.message)

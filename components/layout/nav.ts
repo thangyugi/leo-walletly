@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react'
 import {
-  LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, Users, RefreshCw,
+  LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, BookUser, RefreshCw,
   FileText, ScanLine, Upload, Settings, Wallet, GitPullRequestArrow,
 } from 'lucide-react'
 
@@ -24,7 +24,7 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/analytics', labelKey: 'nav.analytics', icon: BarChart3, group: 'main', shortKey: 'mobnav.analytics' },
   { href: '/categories', labelKey: 'nav.groups', icon: FolderTree, group: 'manage', shortKey: 'mobnav.categories' },
   { href: '/accounts', labelKey: 'nav.accounts', icon: Wallet, group: 'manage', shortKey: 'mobnav.accounts' },
-  { href: '/users', labelKey: 'nav.users', icon: Users, group: 'manage', shortKey: 'mobnav.users' },
+  { href: '/ledger', labelKey: 'lm.title', icon: BookUser, group: 'manage', shortKey: 'lm.short' },
   { href: '/approvals', labelKey: 'approvals.title', icon: GitPullRequestArrow, group: 'manage', shortKey: 'approvals.title' },
   { href: '/recurring', labelKey: 'nav.recurring', icon: RefreshCw, group: 'manage', shortKey: 'mobnav.recurring' },
   { href: '/monthly-report', labelKey: 'nav.report', icon: FileText, group: 'manage', shortKey: 'mobnav.report' },

@@ -41,8 +41,11 @@ export interface CreateLedgerParams {
   countryCode?: string | null
 }
 
-async function loadPermissions(roleCode: string | null): Promise<Set<string>> {
-  if (!roleCode) return new Set()
+async function loadPermissions(ledgerId: string | null, roleCode: string | null): Promise<Set<string>> {
+  if (!ledgerId || !roleCode) return new Set()
+  // The role's permissions plus anything given or withheld for this member alone.
+  const mine = await supabase.rpc('my_permissions', { p_ledger_id: ledgerId })
+  if (!mine.error) return new Set((mine.data ?? []) as string[])
   const { data } = await supabase.from('role_permissions').select('permission_code').eq('role_code', roleCode)
   return new Set((data ?? []).map((r) => r.permission_code))
 }
@@ -112,7 +115,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
         preferences: prefs,
         ledgers,
         current,
-        permissions: await loadPermissions(current?.role_code ?? null),
+        permissions: await loadPermissions(current?.id ?? null, current?.role_code ?? null),
         initialized: true,
         loading: false,
       })
@@ -135,7 +138,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
     const target = get().ledgers.find((l) => l.id === ledgerId)
     if (!target) return
     useSettingsStore.getState().setTimeZone(target.timezone_code ?? '')
-    set({ current: target, permissions: await loadPermissions(target.role_code) })
+    set({ current: target, permissions: await loadPermissions(target.id, target.role_code) })
     const userId = get().userId
     if (userId) {
       await supabase.from('user_preferences').update({ default_ledger_id: ledgerId }).eq('user_id', userId)

@@ -4,6 +4,10 @@
 
 export type CategoryType = 'expense' | 'income' | 'transfer'
 
+/** What someone a category is shared with may do: see · file their transactions · propose changes · change it directly. */
+export type AccessLevel = 'view' | 'write' | 'propose' | 'manage'
+export const ACCESS_LEVELS: AccessLevel[] = ['view', 'write', 'propose', 'manage']
+
 export interface Category {
   id: string
   ledger_id: string
@@ -16,6 +20,10 @@ export interface Category {
   is_mine: boolean
   /** People other than the owner this category is shared with directly. */
   member_ids: string[]
+  /** Direct shares on this category (owner included): level and split weight per user. */
+  shares: Record<string, { level: AccessLevel; ratio: number | null }>
+  /** The signed-in user's level here ('owner' for their own, null if not shared with them). */
+  my_level: AccessLevel | 'owner' | null
   /** Everyone besides the owner who can see it, including through a shared parent. */
   audience_ids: string[]
   /** Shared through this ancestor rather than on its own (null otherwise). */

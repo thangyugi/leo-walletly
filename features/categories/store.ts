@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 import { useI18nStore } from '@/features/i18n/store'
 import { useSettingsStore } from '@/stores/settings'
 import { useAuthStore } from '@/stores/auth'
-import type { Category, CategoryBalance, CategoryMember, CategoryTreeNode, CategoryType, MemberBalance } from './types'
+import type { Category, CategoryBalance, CategoryMember, CategoryTreeNode, CategoryType, MemberBalance, AccessLevel } from './types'
 import type { TablesUpdate } from '@/types/supabase'
 
 // Categories for schema v2.1. The Category shape the screens use is composed
@@ -302,7 +302,7 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
         supabase.from('budgets').select('category_id, amount, warning_threshold_pct').eq('ledger_id', ledgerId)
           .eq('period_type', 'monthly').is('period_start', null).is('deleted_at', null),
         supabase.from('category_translations').select('category_id, language_code, name'),
-        supabase.from('category_members').select('category_id, user_id').is('left_at', null),
+        supabase.from('category_members').select('category_id, user_id, access_level, share_ratio').is('left_at', null),
       ])
       // A database without the privacy migration (0027) has no owner_id: load
       // the plain rows and treat every category as the user's own, as before.
@@ -324,9 +324,23 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
       const rows = cats.data ?? []
       const rowById = new Map(rows.map((c) => [c.id, c]))
       const membersBy = new Map<string, string[]>()
+      const sharesBy = new Map<string, Record<string, { level: AccessLevel; ratio: number | null }>>()
       for (const m of shares.data ?? []) {
         const row = rowById.get(m.category_id)
-        if (row && m.user_id !== row.owner_id) membersBy.set(m.category_id, [...(membersBy.get(m.category_id) ?? []), m.user_id])
+        if (!row) continue
+        sharesBy.set(m.category_id, { ...(sharesBy.get(m.category_id) ?? {}), [m.user_id]: { level: (m.access_level ?? 'propose') as AccessLevel, ratio: m.share_ratio != null ? Number(m.share_ratio) : null } })
+        if (m.user_id !== row.owner_id) membersBy.set(m.category_id, [...(membersBy.get(m.category_id) ?? []), m.user_id])
+      }
+      // My level on someone else's category: my share on it or on the nearest shared ancestor.
+      const myLevel = (id: string): AccessLevel | 'owner' | null => {
+        let cur = rowById.get(id)
+        if (cur && (!cur.owner_id || cur.owner_id === me)) return 'owner'
+        while (cur) {
+          const mine = cur.is_shared && me ? sharesBy.get(cur.id)?.[me] : undefined
+          if (mine) return mine.level
+          cur = cur.parent_id ? rowById.get(cur.parent_id) : undefined
+        }
+        return null
       }
       const direct = (id: string) => (rowById.get(id)?.is_shared ? membersBy.get(id) ?? [] : [])
       // Sharing a category shares its whole branch: walk up for inherited shares.
@@ -356,6 +370,8 @@ export const useCategoryStore = create<CategoryState>((set, get) => ({
           owner_name: c.owner?.display_name ?? '—',
           is_mine: !c.owner_id || c.owner_id === me,
           member_ids: own,
+          shares: c.is_shared ? sharesBy.get(c.id) ?? {} : {},
+          my_level: myLevel(c.id),
           audience_ids: audience,
           shared_via: own.length ? null : up.via,
           access: c.owner_id && c.owner_id !== me ? 'shared_with_me' : audience.length ? 'shared' : 'private',
