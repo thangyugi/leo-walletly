@@ -42,18 +42,32 @@ async function getPdfjs() {
   return lib
 }
 
+/** The PDF is protected: ask for its password and call again with it. */
+export class PdfPasswordError extends Error {
+  constructor(public wrongPassword: boolean) { super(wrongPassword ? 'PDF_PASSWORD_WRONG' : 'PDF_PASSWORD') }
+}
+
 /** Extract structured text from a PDF file with CJK Japanese support */
-export async function extractPdfText(file: File): Promise<PdfPage[]> {
+export async function extractPdfText(file: File, password?: string): Promise<PdfPage[]> {
   const pdfjs = await getPdfjs()
   const buffer = await file.arrayBuffer()
 
-  const pdf = await pdfjs.getDocument({
-    data: buffer,
-    // CRITICAL: required for Japanese CJK font encoding
-    cMapUrl: '/cmaps/',
-    cMapPacked: true,
-    useSystemFonts: true,
-  }).promise
+  let pdf
+  try {
+    pdf = await pdfjs.getDocument({
+      data: buffer,
+      password,
+      // CRITICAL: required for Japanese CJK font encoding
+      cMapUrl: '/cmaps/',
+      cMapPacked: true,
+      useSystemFonts: true,
+    }).promise
+  } catch (e) {
+    const err = e as { name?: string; code?: number }
+    // pdf.js: PasswordException code 1 = needs a password, 2 = wrong password.
+    if (err?.name === 'PasswordException') throw new PdfPasswordError(err.code === 2)
+    throw e
+  }
 
   const pages: PdfPage[] = []
 
@@ -66,7 +80,8 @@ export async function extractPdfText(file: File): Promise<PdfPage[]> {
 
     for (const item of content.items) {
       if (!('str' in item) || !('transform' in item)) continue
-      const str = (item as { str: string }).str
+      // Full-width digits / slashes / letters (２０２６／０４) read as their ASCII forms.
+      const str = (item as { str: string }).str.normalize('NFKC')
       if (!str.trim()) continue
       const transform = (item as { transform: number[] }).transform
       rawItems.push({
@@ -166,4 +181,38 @@ export function parseJpAmount(raw: string): number | null {
   const cleaned = raw.replace(/[¥￥,，\s円]/g, '').trim()
   const n = parseFloat(cleaned)
   return isNaN(n) ? null : n
+}
+
+/** The whole text, one line per row (for detecting what the PDF is). */
+export function pdfPlainText(pages: PdfPage[]): string {
+  return flatLines(pages).map((l) => l.text).join('\n')
+}
+
+/**
+ * Which statement is this PDF? Decided by its own words, not its file name.
+ * Card names vary (楽天カード, 楽天ゴールドカード, 楽天プレミアムカード, Rakuten Card…).
+ */
+export type PdfKind = 'rakuten_card' | 'paypay_card' | 'paypay' | null
+export function detectPdfKind(text: string): PdfKind {
+  const t = text.replace(/\s+/g, '')
+  if (/PayPayカード|PayPayCard/i.test(t)) return 'paypay_card'
+  if (/楽天[^\n]{0,12}?カード|RakutenCard|楽天e-?NAVI|楽天カード株式会社/i.test(t)) return 'rakuten_card'
+  if (/PayPay|ペイペイ/i.test(t) && /取引|残高|支払い/.test(t)) return 'paypay'
+  return null
+}
+
+/**
+ * Japanese amount tokens in a piece of text, in order: 1,234 · ¥1,234 · 1234円
+ * · -1,234 · ▲1,234 / △1,234 (Japanese minus). Numbers glued to a unit
+ * that is not money (1回払い, 3月) are skipped.
+ */
+export function amountsIn(text: string): number[] {
+  const out: number[] = []
+  const re = /([-−▲△]?)[¥￥]?\s?(\d{1,3}(?:,\d{3})+|\d+)(円)?(?![\d回月日年件%])/g
+  for (const m of text.matchAll(re)) {
+    const n = parseInt(m[2].replace(/,/g, ''), 10)
+    if (Number.isNaN(n)) continue
+    out.push(m[1] ? -n : n)
+  }
+  return out
 }

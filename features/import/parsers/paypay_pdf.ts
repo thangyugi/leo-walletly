@@ -1,6 +1,6 @@
 import type { LegacyTransaction as Transaction, TransactionType } from '@/types'
 import { generateId } from '@/lib/utils'
-import { extractPdfText, flatLines, parseJpDate, extractYearHint } from './pdf-utils'
+import { extractPdfText, flatLines, parseJpDate, extractYearHint, amountsIn, type PdfPage } from './pdf-utils'
 
 /**
  * PayPay PDF statement parser
@@ -20,20 +20,14 @@ function resolveType(typeStr: string, amount: number): TransactionType {
 
 const TYPE_KEYWORDS = ['支払い', 'チャージ', '送金', '受取', '返金', 'キャンセル', '払戻', 'ポイント']
 
-export async function parsePayPayPDF(file: File): Promise<{
-  transactions: Transaction[]
-  errors: string[]
-}> {
+export async function parsePayPayPDF(file: File): Promise<{ transactions: Transaction[]; errors: string[] }> {
+  return parsePayPayPages(await extractPdfText(file))
+}
+
+/** Rows from already-extracted pages. */
+export function parsePayPayPages(pages: PdfPage[]): { transactions: Transaction[]; errors: string[] } {
   const transactions: Transaction[] = []
   const errors: string[] = []
-
-  let pages
-  try {
-    pages = await extractPdfText(file)
-  } catch (e) {
-    errors.push(`PDF読み込みエラー: ${e instanceof Error ? e.message : String(e)}`)
-    return { transactions, errors }
-  }
 
   const yearHint = extractYearHint(pages)
   const lines = flatLines(pages)
@@ -51,12 +45,10 @@ export async function parsePayPayPDF(file: File): Promise<{
     // Find type keyword
     const typeKw = TYPE_KEYWORDS.find((k) => afterDate.includes(k)) ?? ''
 
-    // Find amounts: rightmost number(s)
-    const numMatches = [...afterDate.matchAll(/\b(\d+)\b/g)]
-    if (numMatches.length === 0) continue
-
-    // Amount is typically the first number, balance the last
-    const rawAmount = parseInt(numMatches[0][1])
+    // Amounts (not times like 12:34 or counts): the first is the amount, the last the balance.
+    const nums = amountsIn(afterDate.replace(/\d{1,2}:\d{2}(:\d{2})?/g, ' '))
+    if (nums.length === 0) continue
+    const rawAmount = Math.abs(nums[0])
     if (isNaN(rawAmount) || rawAmount <= 0) continue
 
     // Description: text before amounts
@@ -79,13 +71,6 @@ export async function parsePayPayPDF(file: File): Promise<{
       provider: 'paypay',
       rawData: { line: text.slice(0, 120) },
     })
-  }
-
-  if (transactions.length === 0) {
-    errors.push('⚠️ 取引が見つかりませんでした。抽出テキスト (先頭10行):')
-    for (const l of lines.slice(0, 10)) {
-      if (l.text.trim()) errors.push(`  › "${l.text.slice(0, 100)}"`)
-    }
   }
 
   return { transactions, errors }

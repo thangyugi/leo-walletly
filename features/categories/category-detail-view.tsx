@@ -1259,7 +1259,9 @@ export function CategoryDetailView({ categoryId, isNested, onClose }: { category
   const canEdit = mine && can('category.update')
   const canCreate = mine && can('category.create')
   const canDelete = mine && can('category.delete')
+  // View / write shares see the category but cannot propose; co-managers' proposals apply at once.
   const proposing = !mine && category.access === 'shared_with_me' && can('category.update')
+    && (category.my_level === 'propose' || category.my_level === 'manage')
   // The category shared with you (its parent isn't visible): only its budget and keywords.
   const sharedTop = !category.parent_id || !categories.some((c) => c.id === category.parent_id)
   const ownerName = category.owner_name

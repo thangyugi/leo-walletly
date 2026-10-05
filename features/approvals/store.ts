@@ -39,6 +39,7 @@ const ERRORS: Record<string, string> = {
   SHARED_ROOT_LOCKED: 'errRootLocked', NO_PERMISSION: 'errNoPermission', NO_ACCESS: 'errNoPermission',
   NOT_OWNER: 'errNoPermission', CATEGORY_NOT_FOUND: 'errGone', RULE_NOT_FOUND: 'errGone', KEYWORD_NOT_FOUND: 'errGone',
   REQUEST_NOT_FOUND: 'errGone', ALREADY_REVIEWED: 'errReviewed',
+  LEVEL_NO_PROPOSE: 'errLevel', CHANGE_NOT_APPLICABLE: 'errGone',
 }
 
 /** Thrown with `code` = the approvals.err* key, so callers can show the text. */

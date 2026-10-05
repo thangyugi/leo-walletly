@@ -872,6 +872,15 @@ export interface ImportResult {
   errors: string[]
   fileName: string
   provider: PaymentProvider
+  /**
+   * Why nothing could be read (shown in the app's language):
+   * pdf_password / pdf_password_wrong / pdf_read / pdf_unknown / pdf_no_rows / pdf_unsupported.
+   */
+  errorCode?: 'pdf_password' | 'pdf_password_wrong' | 'pdf_read' | 'pdf_unknown' | 'pdf_no_rows' | 'pdf_unsupported'
+  /** What the file was recognised as, even when no rows came out. */
+  detected?: PaymentProvider | null
+  /** The first lines of text read from a PDF (to see why it failed). */
+  preview?: string[]
 }
 
 /** @deprecated Use ReceiptLineItem */

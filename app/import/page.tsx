@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState } from 'react'
 import Link from 'next/link'
 import {
+  Lock, FileWarning,
   Upload, CheckCircle2, AlertCircle, X, Sparkles, RefreshCw, Globe, RotateCcw,
   ArrowRight, Check, TrendingDown, TrendingUp, Minus, Copy,
 } from 'lucide-react'
@@ -139,6 +140,9 @@ export default function ImportPage() {
   const [job, setJob] = useState<Tables<'import_jobs'> | null>(null)
   const [importing, setImporting] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
+  // A PDF that could not be read: why (password, unknown kind…), with what was read.
+  const [pdfIssue, setPdfIssue] = useState<ImportResult | null>(null)
+  const [pdfPassword, setPdfPassword] = useState('')
 
   const step: PageStep = result && rows.length > 0 && !job ? 'review' : 'setup'
   const provider = providers.find((p) => p.code === providerCode)
@@ -189,9 +193,9 @@ export default function ImportPage() {
     setRows(base.map((r) => (dupSet.has(r.rowNumber) ? { ...r, duplicate: true, selected: false } : r)))
   }
 
-  async function processFile(f: File, mappingOverride?: Partial<ColumnMapping>, accountOverride?: string) {
+  async function processFile(f: File, mappingOverride?: Partial<ColumnMapping>, accountOverride?: string, password?: string) {
     if (!ledger) return
-    setLoading(true); setError(null); setResult(null); setRows([]); setJob(null); setPreviousJob(null); setFile(f)
+    setLoading(true); setError(null); setResult(null); setRows([]); setJob(null); setPreviousJob(null); setFile(f); setPdfIssue(null)
     try {
       let code: string = 'generic_csv'
       let head = ''
@@ -199,8 +203,11 @@ export default function ImportPage() {
       // so parse it first and take the account from what was recognised.
       let pdfRes: ImportResult | null = null
       if (f.name.toLowerCase().endsWith('.pdf')) {
-        pdfRes = await parseFile(f, 'paypay')
-        code = pdfRes.rows.length > 0 && providers.some((p) => p.code === pdfRes!.provider) ? pdfRes.provider : 'paypay'
+        pdfRes = await parseFile(f, 'paypay', undefined, password)
+        // Nothing read: say why, and don't pick or create an account for it.
+        if (pdfRes.rows.length === 0) { setPdfIssue(pdfRes); return }
+        setPdfPassword('')
+        code = providers.some((p) => p.code === pdfRes!.provider) ? pdfRes.provider : 'generic_csv'
       } else {
         head = await readHead(f)
         const guessed = autoDetectProvider(head.split('\n')[0].split(',').map((h) => h.trim()))
@@ -278,7 +285,7 @@ export default function ImportPage() {
   }
 
   function handleReset() {
-    setFile(null); setResult(null); setRows([]); setError(null); setMapping(null); setUserMapping({})
+    setFile(null); setResult(null); setRows([]); setError(null); setMapping(null); setUserMapping({}); setPdfIssue(null); setPdfPassword('')
     setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
@@ -358,6 +365,12 @@ export default function ImportPage() {
             <Button variant="ghost" size="sm" onClick={saveMapping}>{t.import.saveMapping}</Button>
           </div>
         </div>
+      )}
+
+      {pdfIssue && file && (
+        <PdfIssueCard issue={pdfIssue} providerName={(code) => { const p = providers.find((x) => x.code === code); return p ? tk(p.name_key) : code ?? '' }}
+          password={pdfPassword} onPassword={setPdfPassword} busy={loading}
+          onOpen={() => void processFile(file, undefined, undefined, pdfPassword)} onReset={handleReset} />
       )}
 
       {error && (
@@ -540,6 +553,84 @@ export default function ImportPage() {
               <RotateCcw className="w-3.5 h-3.5" />{t.import.importAnother}
             </Button>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * A PDF that gave no rows: what happened in plain words, what to do next and,
+ * for unknown layouts, the text that was read (to copy and send).
+ */
+function PdfIssueCard({ issue, providerName, password, onPassword, busy, onOpen, onReset }: {
+  issue: ImportResult
+  providerName: (code: string | null | undefined) => string
+  password: string
+  onPassword: (v: string) => void
+  busy: boolean
+  onOpen: () => void
+  onReset: () => void
+}) {
+  const { t } = useTranslation()
+  const [showText, setShowText] = useState(false)
+  const name = providerName(issue.detected)
+  const code = issue.errorCode ?? 'pdf_unknown'
+  const isPassword = code === 'pdf_password' || code === 'pdf_password_wrong'
+  const title = {
+    pdf_password: t.import.pdfPasswordTitle, pdf_password_wrong: t.import.pdfPasswordTitle, pdf_read: t.import.pdfReadTitle,
+    pdf_unknown: t.import.pdfUnknownTitle, pdf_no_rows: t.import.pdfNoRowsTitle.replace('{{provider}}', name),
+    pdf_unsupported: t.import.pdfUnsupportedTitle.replace('{{provider}}', name),
+  }[code]
+  const sub = {
+    pdf_password: t.import.pdfPasswordSub, pdf_password_wrong: t.import.pdfPasswordWrong, pdf_read: t.import.pdfReadSub,
+    pdf_unknown: t.import.pdfUnknownSub, pdf_no_rows: t.import.pdfNoRowsSub,
+    pdf_unsupported: t.import.pdfUnsupportedSub.replace(/\{\{provider\}\}/g, name),
+  }[code]
+  const preview = issue.preview ?? []
+  return (
+    <div role="alert" className="rounded-[14px] border border-[#fedf89] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] overflow-hidden">
+      <div className="flex items-start gap-3 px-4 py-4 bg-[linear-gradient(180deg,#fffaeb,var(--color-surface-default))]">
+        <span className="w-10 h-10 rounded-xl bg-[#fef0c7] text-[#b54708] flex items-center justify-center shrink-0">
+          {isPassword ? <Lock className="w-5 h-5" /> : <FileWarning className="w-5 h-5" />}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="text-[14.5px] font-semibold text-[var(--color-text-primary)]">{title}</p>
+          <p className={cn('text-[13px] mt-0.5 leading-relaxed', code === 'pdf_password_wrong' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-secondary)]')}>{sub}</p>
+          {issue.detected && <p className="text-[12px] text-[var(--color-text-tertiary)] mt-1">{t.import.detectedAs.replace('{{provider}}', name)}</p>}
+        </div>
+      </div>
+      {isPassword && (
+        <form className="flex gap-2 px-4 pb-4" onSubmit={(e) => { e.preventDefault(); if (password) onOpen() }}>
+          <input type="password" autoComplete="off" value={password} onChange={(e) => onPassword(e.target.value)} aria-label={t.import.pdfPasswordTitle}
+            className="flex-1 h-10 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-sm outline-none focus:border-[var(--color-interactive-primary)]" />
+          <Button type="submit" size="sm" disabled={!password || busy} className="h-10">{t.import.pdfOpen}</Button>
+        </form>
+      )}
+      {!isPassword && (
+        <div className="px-4 pb-4 space-y-3">
+          <div className="text-[12.5px] text-[var(--color-text-secondary)]">
+            <p className="font-semibold text-[var(--color-text-primary)] mb-1">{t.import.supported}</p>
+            <ul className="list-disc pl-5 space-y-0.5">
+              <li>{t.import.supportedPdf}</li>
+              <li>{t.import.supportedCsv}</li>
+            </ul>
+          </div>
+          {preview.length > 0 && (
+            <div className="rounded-lg border border-[var(--color-border-default)]">
+              <div className="flex items-center gap-2 px-3 py-2">
+                <button type="button" onClick={() => setShowText((v) => !v)} className="flex-1 text-left text-[12.5px] font-medium text-[var(--color-text-secondary)]">
+                  {showText ? '▾' : '▸'} {t.import.pdfPreview.replace('{{count}}', String(preview.length))}
+                </button>
+                <button type="button" onClick={() => { void navigator.clipboard.writeText(preview.join('\n')).then(() => toast.success(t.import.copied)) }}
+                  className="text-[12px] font-medium text-[var(--color-interactive-primary)] hover:underline">{t.import.copy}</button>
+              </div>
+              {showText && (
+                <pre className="max-h-64 overflow-auto px-3 pb-3 text-[11.5px] leading-relaxed text-[var(--color-text-secondary)] whitespace-pre-wrap break-all font-mono">{preview.join('\n')}</pre>
+              )}
+            </div>
+          )}
+          <Button variant="outline" size="sm" onClick={onReset}>{t.import.tryAnother}</Button>
         </div>
       )}
     </div>

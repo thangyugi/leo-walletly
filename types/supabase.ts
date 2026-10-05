@@ -686,6 +686,7 @@ export type Database = {
           share_ratio: number | null
           joined_at: string
           left_at: string | null
+          access_level: string
         }
         Insert: {
           id?: string
@@ -695,6 +696,7 @@ export type Database = {
           share_ratio?: number | null
           joined_at?: string
           left_at?: string | null
+          access_level?: string
         }
         Update: {
           id?: string
@@ -704,6 +706,7 @@ export type Database = {
           share_ratio?: number | null
           joined_at?: string
           left_at?: string | null
+          access_level?: string
         }
         Relationships: [
           {
@@ -1889,6 +1892,62 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "roles"
             referencedColumns: ["code"]
+          },
+        ]
+      }
+      ledger_member_permissions: {
+        Row: {
+          member_id: string
+          ledger_id: string
+          permission_code: string
+          granted: boolean
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          member_id: string
+          ledger_id: string
+          permission_code: string
+          granted: boolean
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          member_id?: string
+          ledger_id?: string
+          permission_code?: string
+          granted?: boolean
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ledger_member_permissions_ledger_id_fkey"
+            columns: ["ledger_id"]
+            isOneToOne: false
+            referencedRelation: "ledgers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_member_permissions_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "ledger_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ledger_member_permissions_permission_code_fkey"
+            columns: ["permission_code"]
+            isOneToOne: false
+            referencedRelation: "permissions"
+            referencedColumns: ["code"]
+          },
+          {
+            foreignKeyName: "ledger_member_permissions_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -3966,11 +4025,25 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_write_category: {
+        Args: {
+          p_category: string
+          p_user?: string | null
+        }
+        Returns: boolean
+      }
       cancel_category_change: {
         Args: {
           p_request: string
         }
         Returns: undefined
+      }
+      category_access_level: {
+        Args: {
+          p_category: string
+          p_user?: string | null
+        }
+        Returns: string
       }
       category_audience: {
         Args: {
@@ -4203,12 +4276,44 @@ export type Database = {
         }
         Returns: undefined
       }
+      ledger_member_summary: {
+        Args: {
+          p_ledger_id: string
+        }
+        Returns: {
+            user_id: string
+            tx_count: number
+            pending_requests: number
+            last_active_at: string
+          }[]
+      }
+      member_activity: {
+        Args: {
+          p_ledger_id: string
+          p_user_id?: string | null
+          p_limit?: number | null
+        }
+        Returns: {
+            id: number
+            actor_user_id: string
+            action: string
+            entity_type: string
+            entity_label: string
+            created_at: string
+          }[]
+      }
       merge_categories: {
         Args: {
           p_source_id: string
           p_target_id: string
         }
         Returns: undefined
+      }
+      my_permissions: {
+        Args: {
+          p_ledger_id: string
+        }
+        Returns: string[]
       }
       my_role_rank: {
         Args: {
@@ -4227,6 +4332,10 @@ export type Database = {
           p_notification: string
         }
         Returns: Json
+      }
+      overridable_permissions: {
+        Args: Record<PropertyKey, never>
+        Returns: string
       }
       owns_account: {
         Args: {
@@ -4354,6 +4463,15 @@ export type Database = {
       run_due_recurring: {
         Args: {
           p_ledger_id: string
+        }
+        Returns: number
+      }
+      save_member_access: {
+        Args: {
+          p_member: string
+          p_role?: string | null
+          p_permissions?: Json | null
+          p_categories?: Json | null
         }
         Returns: number
       }
