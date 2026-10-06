@@ -29,10 +29,34 @@ export interface PdfPage {
 
 let pdfjsLib: typeof import('pdfjs-dist') | null = null
 
+/**
+ * pdf.js reads text with `for await (… of readableStream)`. Safari (every
+ * iPhone browser) has no async iteration on ReadableStream and the legacy
+ * build does not polyfill it, so every PDF failed there as "no text".
+ */
+function ensureStreamIteration() {
+  if (typeof ReadableStream === 'undefined') return
+  const proto = ReadableStream.prototype as unknown as Record<symbol, unknown>
+  if (proto[Symbol.asyncIterator]) return
+  proto[Symbol.asyncIterator] = async function* (this: ReadableStream) {
+    const reader = this.getReader()
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) return
+        yield value
+      }
+    } finally {
+      reader.releaseLock()
+    }
+  }
+}
+
 // The "legacy" build carries polyfills: the modern one needs Promise.try /
 // Promise.withResolvers (Safari 18.2+, Chrome 128+) and fails on older phones.
 async function getPdfjs() {
   if (pdfjsLib) return pdfjsLib
+  ensureStreamIteration()
   const lib = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as unknown as typeof import('pdfjs-dist')
   lib.GlobalWorkerOptions.workerSrc = new URL(
     'pdfjs-dist/legacy/build/pdf.worker.min.mjs',

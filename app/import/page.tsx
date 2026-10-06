@@ -659,6 +659,10 @@ function PdfIssueCard({ issue, providerName, password, onPassword, busy, onOpen,
           <p className="text-[14.5px] font-semibold text-[var(--color-text-primary)]">{title}</p>
           <p className={cn('text-[13px] mt-0.5 leading-relaxed', code === 'pdf_password_wrong' ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-secondary)]')}>{sub}</p>
           {issue.detected && <p className="text-[12px] text-[var(--color-text-tertiary)] mt-1">{t.import.detectedAs.replace('{{provider}}', name)}</p>}
+          {/* The reader's own error (e.g. a browser gap), so a report can say what failed. */}
+          {code === 'pdf_read' && issue.errors.length > 0 && (
+            <p className="text-[11.5px] text-[var(--color-text-quaternary)] mt-1 font-mono break-all">{issue.errors[0].slice(0, 200)}</p>
+          )}
         </div>
       </div>
       {isPassword && (
