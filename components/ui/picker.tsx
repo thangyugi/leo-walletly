@@ -254,7 +254,7 @@ function CategoryBadge({ category }: { category: Category }) {
   )
 }
 
-/** Category dropdown: your tree, then categories others shared with you (owner on the right). */
+/** Category dropdown: shared categories first (yours and others', owner on the right), then only-me ones; each by money direction. */
 export function CategoryPicker({
   categories, value, onChange, noneLabel, extra = [], ...rest
 }: Omit<PickerProps, 'options'> & {
@@ -266,9 +266,7 @@ export function CategoryPicker({
 }) {
   const { t } = useTranslation()
   const byId = new Map(categories.map((c) => [c.id, c]))
-  const mine = categories.filter((c) => c.is_mine !== false)
-  const shared = categories.filter((c) => c.is_mine === false)
-  // Sections by money direction (spending / income / transfers), then yours vs shared with you.
+  const isShared = (c: Category) => c.access !== 'private'
   const kinds = [
     { type: 'expense', label: t.transactions.typeExpense, tone: 'loss' as const },
     { type: 'income', label: t.transactions.typeIncome, tone: 'gain' as const },
@@ -279,14 +277,13 @@ export function CategoryPicker({
     const c = byId.get(o.id)!
     return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} />, group, groupTone, hint: c.is_mine === false ? c.owner_name : undefined }
   })
-  const sections = kinds.flatMap(({ type, label, tone }) => {
-    const m = mine.filter((c) => c.type === type)
-    const sh = shared.filter((c) => c.type === type)
-    return [
-      ...tree(m, sh.length ? `${label} · ${t.catui.groupMine}` : label, tone),
-      ...tree(sh, `${label} · ${t.catui.sharedWithMe}`, tone),
-    ]
-  })
+  const scopes = [
+    { label: t.catui.sectionShared, list: categories.filter(isShared) },
+    { label: t.catui.sectionPrivate, list: categories.filter((c) => !isShared(c)) },
+  ].filter((x) => x.list.length)
+  // Only one scope in use: no need to name it.
+  const sections = scopes.flatMap(({ label: scope, list }) => kinds.flatMap(({ type, label, tone }) =>
+    tree(list.filter((c) => c.type === type), scopes.length > 1 ? `${scope} · ${label}` : label, tone)))
   const options: PickerOption[] = [
     ...extra,
     ...(noneLabel !== undefined ? [{ value: '', label: noneLabel }] : []),
@@ -296,12 +293,12 @@ export function CategoryPicker({
 }
 
 /** Account mark: provider colour + initials (or the account's own colour). */
-function AccountBadge({ account }: { account: Account }) {
+export function AccountBadge({ account, size = 20 }: { account: Account; size?: number }) {
   const p = PROVIDERS.find((x) => x.value === account.providerCode)
   const color = p?.color ?? account.color ?? '#6b7280'
   const initials = p?.initials ?? account.name.slice(0, 2).toUpperCase()
   return (
-    <span className="w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-bold text-white" style={{ background: color }}>
+    <span className="rounded-md flex items-center justify-center font-bold text-white shrink-0" style={{ background: color, width: size, height: size, fontSize: Math.max(9, Math.round(size * 0.36)) }}>
       {initials}
     </span>
   )

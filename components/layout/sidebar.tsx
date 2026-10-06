@@ -55,7 +55,7 @@ export function LanguagePicker({ className, vertical }: { className?: string; ve
 export function NavList({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname()
   const { tk } = useTranslation()
-  const groups: NavGroup[] = ['main', 'manage', 'tools', 'system']
+  const groups = (['main', 'manage', 'tools', 'system'] as NavGroup[]).filter((g) => NAV_ITEMS.some((n) => n.group === g))
   return (
     <>
       {groups.map((group) => (
@@ -101,7 +101,7 @@ export function NavList({ onNavigate }: { onNavigate?: () => void }) {
 function RailNav() {
   const pathname = usePathname()
   const { tk } = useTranslation()
-  const groups: NavGroup[] = ['main', 'manage', 'tools', 'system']
+  const groups = (['main', 'manage', 'tools', 'system'] as NavGroup[]).filter((g) => NAV_ITEMS.some((n) => n.group === g))
   return (
     <nav className="flex-1 w-full overflow-y-auto px-1.5 pb-2" aria-label="main">
       {groups.map((group, gi) => (

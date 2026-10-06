@@ -586,7 +586,7 @@ function TransactionsContent() {
   const can = useLedgerStore((s) => s.can)
   const {
     items, total, page, pageSize, sortOption, filters, loading, revision,
-    setSortOption, setPage, fetchPage, fetchRange, summarize, getById, bulkDelete,
+    setSortOption, setPage, fetchPage, summarize, getById,
   } = useTransactionsStore()
 
   // Opened from another page on a period (?from=&to=&mode=, e.g. the overview's quarter).
@@ -708,18 +708,6 @@ function TransactionsContent() {
     })
   }
 
-  // Header trash: delete every transaction shown for the selected period.
-  async function deleteAllInPeriod() {
-    if (!ledgerId || !(await confirmDialog({ danger: true, message: t.transactions.deleteConfirm, note: t.confirm.notifyOthers }))) return
-    try {
-      const rows = await fetchRange(ledgerId, range.start, range.end)
-      const n = await bulkDelete(rows.map((r) => r.id))
-      toast.success(t.bulk.done.replace('{{count}}', String(n)))
-    } catch (e: any) {
-      toast.error(e.message)
-    }
-  }
-
   const selectedTotal = items.filter((tx) => selected.has(tx.id))
     .reduce((s, tx) => s + (tx.transactionType === 'expense' ? -tx.baseAmount : tx.transactionType === 'income' ? tx.baseAmount : 0), 0)
 
@@ -738,22 +726,8 @@ function TransactionsContent() {
             <Link href="/import" className="max-md:hidden">
               <Button size="sm" icon={<Upload />}>{t.transactions.import}</Button>
             </Link>
-            {total > 0 && can('transaction.delete') && (
-              <Button
-                variant="ghost" size="sm" icon={<Trash2 />}
-                aria-label={t.transactions.deleteAll}
-                onClick={deleteAllInPeriod}
-                className="max-sm:hidden text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]"
-              />
-            )}
           </>
         }
-        titleAction={total > 0 && can('transaction.delete') ? (
-          <button type="button" aria-label={t.transactions.deleteAll} title={t.transactions.deleteAll} onClick={deleteAllInPeriod}
-            className="w-10 h-10 flex items-center justify-center rounded-xl text-[var(--color-text-loss)] hover:bg-[var(--color-status-loss-bg)]">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        ) : undefined}
       />
 
       <SummaryPanel

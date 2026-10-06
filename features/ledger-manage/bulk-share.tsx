@@ -14,7 +14,8 @@ import { Avatar, LEVEL_STYLE } from './ui'
 import { ACCESS_ORDER, levelOf, type Person } from './model'
 
 /** Share many of my categories with many people at one level (or stop sharing them). */
-export function BulkShareDialog({ open, onClose, categories, people, me, onApply }: {
+export function BulkShareDialog({ open, onClose, categories, people, me, onApply, initialPeople = [] }: {
+  initialPeople?: string[]
   open: boolean
   onClose: () => void
   categories: Category[]
@@ -27,7 +28,7 @@ export function BulkShareDialog({ open, onClose, categories, people, me, onApply
   const mine = categories.filter((c) => !c.parent_id && c.is_mine)
   const others = people.filter((m) => m.id !== me)
   const [cats, setCats] = React.useState<Set<string>>(new Set())
-  const [who, setWho] = React.useState<Set<string>>(new Set())
+  const [who, setWho] = React.useState<Set<string>>(() => new Set(initialPeople))
   const [level, setLevel] = React.useState<AccessLevel | null>('write')
   const [busy, setBusy] = React.useState(false)
 

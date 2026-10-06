@@ -98,7 +98,7 @@ function NotificationsContent() {
   const selectCls = 'h-9 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[13px] text-[var(--color-text-primary)]'
 
   return (
-    <div className="animate-fade-in space-y-4 max-w-3xl">
+    <div className="animate-fade-in space-y-5">
       <PageHeader title={t.notifications.title} subtitle={t.notifications.subtitle}
         actions={<>
           <Button variant="outline" size="sm" icon={<CheckCheck />} disabled={unread === 0} onClick={() => void markAllRead()}>{t.notifications.markAllRead}</Button>

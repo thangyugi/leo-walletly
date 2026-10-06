@@ -103,7 +103,7 @@ function ApprovalsContent() {
   const empty = active === 'inbox' ? t.approvals.emptyInbox : active === 'sent' ? t.approvals.emptySent : t.approvals.emptyDone
 
   return (
-    <div className="animate-fade-in space-y-4 max-w-3xl">
+    <div className="animate-fade-in space-y-5">
       <PageHeader title={t.approvals.title} subtitle={t.approvals.subtitle}
         actions={active === 'inbox' && inbox.length > 1
           ? <Button size="sm" icon={<CheckCheck />} disabled={busy !== null} onClick={() => void approveAll()}>{t.approvals.approveAll.replace('{{count}}', String(inbox.length))}</Button>

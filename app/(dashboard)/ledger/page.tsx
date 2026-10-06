@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { History, UserPlus } from 'lucide-react'
+import { History, Settings, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
@@ -25,6 +25,8 @@ import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { AVATAR_COLORS } from '@/lib/utils'
 
+const HEADER_LINK = 'inline-flex items-center gap-2 h-9 px-3 sm:px-4 rounded-lg text-sm font-medium border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-secondary)]'
+
 // "Ledger management": an overview of who uses the ledger, what is shared and
 // how it is set up; a member's page opens read-only and turns editable on request.
 export default function LedgerManagePage() {
@@ -42,13 +44,14 @@ function LedgerManageContent() {
   const can = useLedgerStore((s) => s.can)
   const permissions = useLedgerStore((s) => s.permissions)
   const reloadLedgers = useLedgerStore((s) => s.initialize)
-  const { roles, ledgerTypes, timeZones } = useMasterStore()
+  const { roles } = useMasterStore()
   const store = useLedgerManageStore()
   const approvals = useApprovalsStore((s) => s.items)
   const reloadApprovals = useApprovalsStore((s) => s.reload)
   const fetchCategories = useCategoryStore((s) => s.fetchCategories)
   const [inviteOpen, setInviteOpen] = useState(false)
   const [bulkOpen, setBulkOpen] = useState(false)
+  const [bulkPeople, setBulkPeople] = useState<string[]>([])
 
   const ledgerId = current?.id
   const canInvite = permissions.has('member.invite')
@@ -130,11 +133,12 @@ function LedgerManageContent() {
   }
 
   return (
-    <div className="animate-fade-in space-y-4">
+    <div className="animate-fade-in space-y-5">
       <PageHeader title={L.title} subtitle={L.subtitle}
         actions={
           <div className="flex gap-2">
-            {can('audit.read') && <Link href="/settings/audit-log"><Button variant="outline" icon={<History />}>{L.auditLog}</Button></Link>}
+            <Link href="/ledger/activity" className={HEADER_LINK}><History className="w-4 h-4" />{L.auditLog}</Link>
+            <Link href="/ledger/settings" className={HEADER_LINK}><Settings className="w-4 h-4" /><span className="hidden sm:inline">{L.ledgerSettings}</span></Link>
             {canInvite && <Button icon={<UserPlus />} onClick={() => setInviteOpen(true)}>{L.inviteMember}</Button>}
           </div>
         } />
@@ -146,11 +150,31 @@ function LedgerManageContent() {
       ) : (
         <LedgerOverview ledger={current} ownerName={ownerName} me={me} people={people} invitations={store.invitations}
           summary={store.summary} activity={store.activity} categories={categories} pendingForMe={pendingForMe}
-          overrideCount={overrideCount} roles={roleList} canInvite={canInvite} canEditLedger={can('ledger.update')}
+          overrideCount={overrideCount} roles={roleList} canInvite={canInvite}
           canBulkShare={people.length > 1 && categories.some((c) => !c.parent_id && c.is_mine)}
-          onInvite={() => setInviteOpen(true)} onBulkShare={() => setBulkOpen(true)} onCopyInvite={(inv) => void copyInvite(inv)}
-          ledgerTypeLabel={(() => { const lt = ledgerTypes.find((x) => x.code === current.ledger_type_code); return lt ? tk(lt.name_key) : current.ledger_type_code })()}
-          timezoneLabel={(() => { const z = timeZones.find((x) => x.code === current.timezone_code); return z ? tk(z.name_key) : current.timezone_code ?? '—' })()} />
+          onInvite={() => setInviteOpen(true)} onBulkShare={(ids) => { setBulkPeople(ids ?? []); setBulkOpen(true) }}
+          assignableRoles={roleList.filter((r) => r.is_assignable && r.rank < myRank && can('member.update')).map((r) => r.code)}
+          canRemove={can('member.remove')}
+          onBulkRole={async (list, role) => {
+            let ok = 0
+            for (const m of list) {
+              if (m.role === role || m.role === 'OWNER') continue
+              try { await store.saveMember(m.memberId, { role }); ok++ } catch (e) { toast.error(`${m.name}: ${(e as Error).message}`) }
+            }
+            if (ok) toast.success(L.bulkRoleDone.replace('{{count}}', String(ok)).replace('{{role}}', tk(`role.${role}.name`)))
+            await afterSave()
+          }}
+          onBulkRemove={async (list) => {
+            const removable = list.filter((m) => m.role !== 'OWNER')
+            if (!removable.length || !(await confirmDialog({ danger: true, message: L.bulkRemoveConfirm.replace('{{names}}', removable.map((m) => m.name).join(', ')) }))) return
+            let ok = 0
+            for (const m of removable) {
+              try { await MemberService.remove(m.memberId); ok++ } catch (e) { toast.error(`${m.name}: ${(e as Error).message}`) }
+            }
+            if (ok) toast.success(L.bulkRemoveDone.replace('{{count}}', String(ok)))
+            void useUserManagementStore.getState().load(current.id, canInvite)
+            await afterSave()
+          }} onCopyInvite={(inv) => void copyInvite(inv)} />
       )}
 
       {inviteOpen && (
@@ -161,7 +185,7 @@ function LedgerManageContent() {
             return token
           }} />
       )}
-      <BulkShareDialog open={bulkOpen} onClose={() => { setBulkOpen(false); void afterSave() }} categories={categories} people={people} me={me}
+      <BulkShareDialog key={bulkOpen ? `open-${bulkPeople.join()}` : 'closed'} initialPeople={bulkPeople} open={bulkOpen} onClose={() => { setBulkOpen(false); void afterSave() }} categories={categories} people={people} me={me}
         onApply={async (m, changes) => { await store.saveMember(m.memberId, { categories: changes }) }} />
     </div>
   )

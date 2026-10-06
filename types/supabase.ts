@@ -4017,6 +4017,12 @@ export type Database = {
         }
         Returns: boolean
       }
+      can_see_audit_entry: {
+        Args: {
+          a: string
+        }
+        Returns: boolean
+      }
       can_see_transaction: {
         Args: {
           p_created_by: string
@@ -4275,6 +4281,28 @@ export type Database = {
           p_ledger_id: string
         }
         Returns: undefined
+      }
+      ledger_activity: {
+        Args: {
+          p_ledger_id: string
+          p_actor?: string | null
+          p_action?: string | null
+          p_entity?: string | null
+          p_since?: string | null
+          p_search?: string | null
+          p_before?: number | null
+          p_limit?: number | null
+        }
+        Returns: {
+            id: number
+            actor_user_id: string
+            action: string
+            entity_type: string
+            entity_id: string
+            entity_label: string
+            created_at: string
+            changes: Json
+          }[]
       }
       ledger_member_summary: {
         Args: {

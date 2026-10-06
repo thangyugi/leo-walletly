@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, ChevronRight, Eye, Pencil, Check, X, Share2, ShieldCheck, Lock, History, Search, Info, Repeat, LogOut, Split, Crown,
+  ArrowLeft, ChevronRight, Pencil, Check, X, Share2, ShieldCheck, Lock, History, Search, Info, Repeat, LogOut, Split, Crown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -132,7 +132,7 @@ export function MemberPage(p: MemberPageProps) {
   ]
 
   return (
-    <div className={cn('space-y-4', p.editing && 'pb-24')}>
+    <div className={cn('space-y-5', p.editing && 'pb-24')}>
       <nav className="flex items-center gap-1.5 text-[12.5px]">
         <Link href="/ledger" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"><ArrowLeft className="w-4 h-4" />{L.title}</Link>
         <ChevronRight className="w-3 h-3 text-[var(--color-text-quaternary)]" />
@@ -140,8 +140,7 @@ export function MemberPage(p: MemberPageProps) {
       </nav>
 
       {/* Profile */}
-      <div className="rounded-[14px] border border-[var(--color-border-default)] p-4 sm:px-[22px] sm:py-5"
-        style={{ background: 'linear-gradient(180deg, color-mix(in srgb, #3b82f6 7%, var(--color-surface-default)) 0%, var(--color-surface-default) 75%)' }}>
+      <div className="rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] p-4 sm:px-[22px] sm:py-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex items-start gap-4 flex-1 min-w-0">
             <Avatar name={m.name} color={m.color} size={60} />
@@ -149,9 +148,7 @@ export function MemberPage(p: MemberPageProps) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-[21px] font-bold tracking-tight text-[var(--color-text-primary)]">{m.name}</span>
                 <RolePill role={m.role} label={tk(`role.${m.role}.name`)} />
-                {p.editing
-                  ? <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[#fffaeb] text-[#b54708]"><Pencil className="w-3 h-3" />{L.editingBadge}</span>
-                  : <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]"><Eye className="w-3 h-3" />{L.viewBadge}</span>}
+                {p.editing && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[#ecfdf5] text-[#047857]"><Pencil className="w-3 h-3" />{L.editingBadge}</span>}
               </div>
               <p className="text-[12px] text-[var(--color-text-tertiary)] mt-1">{m.email} · {L.lastActive.replace('{{when}}', relTime(p.summary?.lastActiveAt ?? null, lang, L.never))}</p>
               <div className="grid grid-cols-2 sm:flex gap-x-7 gap-y-2 mt-3">
@@ -251,7 +248,7 @@ export function MemberPage(p: MemberPageProps) {
                     const changed = d.level !== savedCats[c.id]?.level || d.pct !== null
                     const pct = d.pct ?? (d.level ? sharePct(c, m.id, savedCats[c.id]?.level ? undefined : { weight: null }) : 0)
                     return (
-                      <div key={c.id} className={cn('flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 py-2 px-2 -mx-1 rounded-md', changed && 'bg-[#fffcf5] shadow-[inset_3px_0_0_#f79009]')}>
+                      <div key={c.id} className={cn('flex flex-wrap sm:flex-nowrap items-center gap-x-3 gap-y-2 py-2 px-2 -mx-1 rounded-xl', changed && 'bg-[#f6fef9] ring-1 ring-inset ring-[#bbf7d0]')}>
                         <button type="button" role="checkbox" aria-checked={!!d.level} aria-label={c.name}
                           onClick={() => setCat(c.id, { level: d.level ? null : 'write', pct: null })}
                           className={cn('w-[18px] h-[18px] rounded-[5px] border-[1.5px] inline-flex items-center justify-center shrink-0',
@@ -261,7 +258,7 @@ export function MemberPage(p: MemberPageProps) {
                         <CatIcon c={c} size={28} />
                         <div className="w-[118px] sm:w-[130px] min-w-0">
                           <p className={cn('text-[13px] font-semibold truncate', d.level ? 'text-[var(--color-text-primary)]' : 'text-[var(--color-text-quaternary)]')}>{c.name}</p>
-                          {changed && <span className="inline-flex h-[18px] items-center px-1.5 rounded-md text-[10px] font-semibold bg-[#fef0c7] text-[#b54708]">{L.changed}</span>}
+                          {changed && <span className="inline-flex h-[18px] items-center px-1.5 rounded-md text-[10px] font-semibold bg-[#d1fadf] text-[#067647]">{L.changed}</span>}
                         </div>
                         {d.level ? (
                           <div className="flex items-center gap-[2px] p-[2px] rounded-[10px] bg-[var(--color-bg-sunken)] order-last sm:order-none w-full sm:w-auto" role="radiogroup" aria-label={L.level}>
@@ -370,7 +367,7 @@ export function MemberPage(p: MemberPageProps) {
         <div className="fixed z-[160] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:ml-[116px]
           flex items-center gap-3 rounded-2xl bg-[#101828] text-white pl-4 pr-2 py-2 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.45)]">
           <span className="flex items-center gap-2 text-[13px] min-w-0 flex-1 md:flex-none">
-            <span className={cn('w-2 h-2 rounded-full shrink-0', dirty ? 'bg-[#fdb022]' : 'bg-white/40')} />
+            <span className={cn('w-2 h-2 rounded-full shrink-0', dirty ? 'bg-[#32d583]' : 'bg-white/40')} />
             <span className="truncate">{dirty ? L.unsaved.replace('{{count}}', String(changeCount)) : L.noChanges}</span>
           </span>
           <button type="button" onClick={() => void leaveEdit()} className="h-8 px-3 rounded-lg text-[13px] font-semibold text-white/75 hover:text-white">{L.cancel}</button>

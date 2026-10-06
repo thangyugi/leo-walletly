@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   LayoutDashboard, ArrowDownUp, CalendarDays, BarChart3, FolderTree, BookUser, RefreshCw,
-  FileText, ScanLine, Upload, Settings, Wallet, GitPullRequestArrow,
+  FileText, ScanLine, Upload, Wallet, GitPullRequestArrow,
 } from 'lucide-react'
 
 export type NavGroup = 'main' | 'manage' | 'tools' | 'system'
@@ -30,7 +30,6 @@ export const NAV_ITEMS: NavItem[] = [
   { href: '/monthly-report', labelKey: 'nav.report', icon: FileText, group: 'manage', shortKey: 'mobnav.report' },
   { href: '/scan', labelKey: 'nav.scan', icon: ScanLine, group: 'tools', shortKey: 'mobnav.scan' },
   { href: '/import', labelKey: 'nav.import', icon: Upload, group: 'tools', shortKey: 'mobnav.import' },
-  { href: '/settings/ledger', labelKey: 'ledger_settings.title', icon: Settings, group: 'system', shortKey: 'mobnav.settings' },
 ]
 
 export const NAV_GROUP_LABEL_KEY: Record<NavGroup, string | null> = {
