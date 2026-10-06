@@ -608,10 +608,12 @@ export function CategoriesBentoPage() {
   const byKind = (list: Category[]) => (['expense', 'income', 'transfer'] as const)
     .map((k) => ({ key: k, label: kindLabels[k], items: list.filter((c) => c.type === k) }))
     .filter((g) => g.items.length)
-  // The period's biggest spender (yours or shared with you) gets the large card.
-  const featured = q ? null : [...sharedRoots, ...privateRoots]
+  // The period's biggest spender gets the large card.
+  // Shared ones first: the large card leads the "Shared" section when anything is shared.
+  const topOf = (list: Category[]) => list
     .filter((c) => c.type === 'expense' && rolled(c).expense > 0)
     .sort((a, b) => rolled(b).expense - rolled(a).expense)[0] ?? null
+  const featured = q ? null : topOf(sharedRoots) ?? topOf(privateRoots)
   const featuredShared = !!featured && featured.access !== 'private'
   const leadShown = !!featured
   const cardOf = (c: Category) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />
