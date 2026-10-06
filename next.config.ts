@@ -1,7 +1,16 @@
 import type { NextConfig } from "next";
 import { withSerwist } from "@serwist/turbopack";
+import { spawnSync } from "node:child_process";
+
+// Short commit of this build, shown in Settings so a phone's installed app can be checked against the latest deploy.
+const BUILD_ID = (
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout?.trim() ||
+  "dev"
+).slice(0, 7);
 
 const nextConfig: NextConfig = {
+  env: { NEXT_PUBLIC_BUILD_ID: BUILD_ID },
   // pdfjs-dist uses canvas optionally on server; mark as external to avoid bundling issues
   serverExternalPackages: ['canvas'],
   // Supabase's local site_url (and so the link in the confirmation mail) is

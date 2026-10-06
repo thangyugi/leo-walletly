@@ -536,7 +536,7 @@ export default function ImportPage() {
                           {isTransfer ? t.transactions.transfer : isIncome ? t.transactions.typeIncome : t.transactions.typeExpense}
                         </span>
                       </td>
-                      <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-none">
+                      <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-0 max-sm:w-full">
                         <p className="text-sm text-[var(--color-text-primary)] truncate">{r.description}</p>
                         {r.duplicate && <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>}
                         {isTransfer && (
