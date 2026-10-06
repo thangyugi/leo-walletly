@@ -900,6 +900,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.supportedPdf', 'import', null, true),
   ('import.targetAccount', 'import', null, true),
   ('import.title', 'import', null, true),
+  ('import.topUpAccount', 'import', null, true),
+  ('import.topUpFrom', 'import', 'name', true),
+  ('import.topUpNone', 'import', null, true),
+  ('import.topUpTo', 'import', 'name', true),
+  ('import.topUpsFound', 'import', 'count', true),
   ('import.tryAnother', 'import', null, true),
   ('import.warnings', 'import', null, true),
   ('join.accept', 'join', null, false),
@@ -1208,15 +1213,15 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.title', 'login', null, false),
   ('ls.created', 'ls', null, false),
   ('ls.infoEditSub', 'ls', null, false),
-  ('ls.infoSub', 'ls', null, false),
+  ('ls.infoSub', 'ls', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('ls.infoTitle', 'ls', null, false),
   ('ls.leaveSub', 'ls', null, false),
   ('ls.linkActivity', 'ls', null, false),
   ('ls.linkMembers', 'ls', null, false),
-  ('ls.linkTexts', 'ls', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('ls.linkTexts', 'ls', null, false),
   ('ls.owner', 'ls', null, false),
   ('ls.related', 'ls', null, false),
   ('ls.rulesTitle', 'ls', null, false),
@@ -1611,15 +1616,15 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.sessions', 'settings', null, false),
   ('settings.security.status', 'settings', null, false),
   ('settings.security.subtitle', 'settings', null, false),
-  ('settings.security.title', 'settings', null, false),
+  ('settings.security.title', 'settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('settings.sidebar.account', 'settings', null, false),
   ('settings.sidebar.appearance', 'settings', null, false),
   ('settings.sidebar.auditLog', 'settings', null, false),
   ('settings.sidebar.connectedApps', 'settings', null, false),
-  ('settings.sidebar.devices', 'settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.sidebar.devices', 'settings', null, false),
   ('settings.sidebar.localization', 'settings', null, false),
   ('settings.sidebar.members', 'settings', null, false),
   ('settings.sidebar.notifications', 'settings', null, false),
@@ -2671,6 +2676,11 @@ insert into public.translations (key, language_code, value) values
   ('import.supportedPdf', 'ja', 'PDF：楽天カード（ゴールド・プレミアム含む）の明細、PayPayの取引履歴'),
   ('import.targetAccount', 'ja', '取り込み先の口座'),
   ('import.title', 'ja', 'データインポート'),
+  ('import.topUpAccount', 'ja', 'チャージの相手口座'),
+  ('import.topUpFrom', 'ja', '{{name}} から'),
+  ('import.topUpNone', 'ja', 'なし（収入・支出として記録）'),
+  ('import.topUpTo', 'ja', '{{name}} へ'),
+  ('import.topUpsFound', 'ja', 'チャージ {{count}} 件は自分の口座間の振替です（収入・支出に数えません）。相手の口座：'),
   ('import.tryAnother', 'ja', '別のファイルを選ぶ'),
   ('import.warnings', 'ja', '件の警告'),
   ('join.accept', 'ja', '参加する'),
@@ -2979,15 +2989,15 @@ insert into public.translations (key, language_code, value) values
   ('login.title', 'ja', 'ログイン'),
   ('ls.created', 'ja', '作成日'),
   ('ls.infoEditSub', 'ja', '変更した項目には印が付きます。保存するまで反映されません。'),
-  ('ls.infoSub', 'ja', '名前・通貨・地域・年度'),
+  ('ls.infoSub', 'ja', '名前・通貨・地域・年度')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ls.infoTitle', 'ja', '台帳の情報'),
   ('ls.leaveSub', 'ja', 'この台帳から抜けます。あなたの記録は残ります。'),
   ('ls.linkActivity', 'ja', '操作ログ'),
   ('ls.linkMembers', 'ja', 'メンバーと権限'),
-  ('ls.linkTexts', 'ja', '表示テキスト')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.linkTexts', 'ja', '表示テキスト'),
   ('ls.owner', 'ja', 'オーナー'),
   ('ls.related', 'ja', '関連ページ'),
   ('ls.rulesTitle', 'ja', '共有のルール'),
@@ -3382,15 +3392,15 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.sessions', 'ja', 'アクティブなセッション'),
   ('settings.security.status', 'ja', 'セキュリティステータス'),
   ('settings.security.subtitle', 'ja', 'アカウントの保護とログイン設定'),
-  ('settings.security.title', 'ja', 'セキュリティ'),
+  ('settings.security.title', 'ja', 'セキュリティ')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.sidebar.account', 'ja', 'アカウント設定'),
   ('settings.sidebar.appearance', 'ja', '外観'),
   ('settings.sidebar.auditLog', 'ja', 'アクティビティログ'),
   ('settings.sidebar.connectedApps', 'ja', '連携アプリ'),
-  ('settings.sidebar.devices', 'ja', 'デバイスとセッション')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.sidebar.devices', 'ja', 'デバイスとセッション'),
   ('settings.sidebar.localization', 'ja', '地域と言語'),
   ('settings.sidebar.members', 'ja', 'メンバー管理'),
   ('settings.sidebar.notifications', 'ja', '通知設定'),
@@ -4442,6 +4452,11 @@ insert into public.translations (key, language_code, value) values
   ('import.supportedPdf', 'vi', 'PDF: sao kê Thẻ Rakuten (cả Gold, Premium), lịch sử giao dịch PayPay'),
   ('import.targetAccount', 'vi', 'Tài khoản đích'),
   ('import.title', 'vi', 'Nhập dữ liệu'),
+  ('import.topUpAccount', 'vi', 'Tài khoản đối ứng của lần nạp'),
+  ('import.topUpFrom', 'vi', 'Từ {{name}}'),
+  ('import.topUpNone', 'vi', 'Không có — ghi là thu/chi'),
+  ('import.topUpTo', 'vi', 'Sang {{name}}'),
+  ('import.topUpsFound', 'vi', '{{count}} lần nạp tiền là chuyển khoản giữa tài khoản của bạn (không tính vào thu/chi). Tài khoản đối ứng:'),
   ('import.tryAnother', 'vi', 'Chọn file khác'),
   ('import.warnings', 'vi', 'cảnh báo'),
   ('join.accept', 'vi', 'Tham gia'),
@@ -4750,15 +4765,15 @@ insert into public.translations (key, language_code, value) values
   ('login.title', 'vi', 'Đăng nhập'),
   ('ls.created', 'vi', 'Ngày tạo'),
   ('ls.infoEditSub', 'vi', 'Mục nào đổi sẽ được đánh dấu; chỉ áp dụng khi bấm Lưu.'),
-  ('ls.infoSub', 'vi', 'Tên, tiền tệ, khu vực và năm tài chính'),
+  ('ls.infoSub', 'vi', 'Tên, tiền tệ, khu vực và năm tài chính')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ls.infoTitle', 'vi', 'Thông tin sổ'),
   ('ls.leaveSub', 'vi', 'Rời khỏi sổ này; những gì bạn đã ghi vẫn được giữ lại.'),
   ('ls.linkActivity', 'vi', 'Nhật ký hoạt động'),
   ('ls.linkMembers', 'vi', 'Thành viên & quyền'),
-  ('ls.linkTexts', 'vi', 'Văn bản giao diện')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.linkTexts', 'vi', 'Văn bản giao diện'),
   ('ls.owner', 'vi', 'Chủ sổ'),
   ('ls.related', 'vi', 'Trang liên quan'),
   ('ls.rulesTitle', 'vi', 'Quy tắc chia sẻ'),
@@ -5153,15 +5168,15 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.sessions', 'vi', 'Phiên đăng nhập hiện tại'),
   ('settings.security.status', 'vi', 'Trạng thái bảo mật'),
   ('settings.security.subtitle', 'vi', 'Bảo vệ tài khoản và thiết lập đăng nhập'),
-  ('settings.security.title', 'vi', 'Bảo mật'),
+  ('settings.security.title', 'vi', 'Bảo mật')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.sidebar.account', 'vi', 'Thiết lập tài khoản'),
   ('settings.sidebar.appearance', 'vi', 'Giao diện'),
   ('settings.sidebar.auditLog', 'vi', 'Nhật ký hoạt động'),
   ('settings.sidebar.connectedApps', 'vi', 'Ứng dụng đã kết nối'),
-  ('settings.sidebar.devices', 'vi', 'Thiết bị & Phiên đăng nhập')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.sidebar.devices', 'vi', 'Thiết bị & Phiên đăng nhập'),
   ('settings.sidebar.localization', 'vi', 'Ngôn ngữ & Vùng'),
   ('settings.sidebar.members', 'vi', 'Quản lý thành viên'),
   ('settings.sidebar.notifications', 'vi', 'Thông báo'),
@@ -6213,6 +6228,11 @@ insert into public.translations (key, language_code, value) values
   ('import.supportedPdf', 'en', 'PDF: Rakuten Card statements (incl. Gold, Premium), PayPay history'),
   ('import.targetAccount', 'en', 'Import into account'),
   ('import.title', 'en', 'Import Data'),
+  ('import.topUpAccount', 'en', 'Top-up account'),
+  ('import.topUpFrom', 'en', 'From {{name}}'),
+  ('import.topUpNone', 'en', 'None — book as income/expense'),
+  ('import.topUpTo', 'en', 'To {{name}}'),
+  ('import.topUpsFound', 'en', '{{count}} top-ups move money between your own accounts (not income or spending). Other account:'),
   ('import.tryAnother', 'en', 'Choose another file'),
   ('import.warnings', 'en', 'warnings'),
   ('join.accept', 'en', 'Join'),
@@ -6521,15 +6541,15 @@ insert into public.translations (key, language_code, value) values
   ('login.title', 'en', 'Sign In'),
   ('ls.created', 'en', 'Created'),
   ('ls.infoEditSub', 'en', 'Changed fields are marked; nothing applies until you save.'),
-  ('ls.infoSub', 'en', 'Name, currency, region and fiscal year'),
+  ('ls.infoSub', 'en', 'Name, currency, region and fiscal year')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('ls.infoTitle', 'en', 'Ledger details'),
   ('ls.leaveSub', 'en', 'Leave this ledger; what you recorded stays.'),
   ('ls.linkActivity', 'en', 'Activity log'),
   ('ls.linkMembers', 'en', 'Members & access'),
-  ('ls.linkTexts', 'en', 'Interface texts')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.linkTexts', 'en', 'Interface texts'),
   ('ls.owner', 'en', 'Owner'),
   ('ls.related', 'en', 'Related pages'),
   ('ls.rulesTitle', 'en', 'Sharing rules'),
@@ -6924,15 +6944,15 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.sessions', 'en', 'Active Sessions'),
   ('settings.security.status', 'en', 'Security Status'),
   ('settings.security.subtitle', 'en', 'Protect your account and login preferences'),
-  ('settings.security.title', 'en', 'Security'),
+  ('settings.security.title', 'en', 'Security')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.sidebar.account', 'en', 'Account Settings'),
   ('settings.sidebar.appearance', 'en', 'Appearance'),
   ('settings.sidebar.auditLog', 'en', 'Audit Log'),
   ('settings.sidebar.connectedApps', 'en', 'Connected Apps'),
-  ('settings.sidebar.devices', 'en', 'Devices & Sessions')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.sidebar.devices', 'en', 'Devices & Sessions'),
   ('settings.sidebar.localization', 'en', 'Localization'),
   ('settings.sidebar.members', 'en', 'Members'),
   ('settings.sidebar.notifications', 'en', 'Notifications'),
