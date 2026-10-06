@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils'
 import type { Category } from '@/features/categories/types'
 import type { Invitation } from '@/features/user-management/types'
 import type { Activity, MemberSummary } from './store'
-import { Avatar, AvatarStack, LevelPill, Panel, RolePill, Ring, EditLink, relTime, LEVEL_STYLE } from './ui'
+import { Avatar, AvatarStack, LevelPill, RolePill, Ring, relTime, LEVEL_STYLE } from './ui'
 import type { Person } from './model'
 import { levelOf, ACCESS_ORDER } from './model'
 
@@ -24,19 +24,16 @@ export interface OverviewProps {
   people: Person[]
   invitations: Invitation[]
   summary: Record<string, MemberSummary>
-  activity: Activity[]
   categories: Category[]
   pendingForMe: number
+  activity: Activity[]
   overrideCount: Record<string, number>
   roles: { code: string; rank: number; is_assignable: boolean }[]
   canInvite: boolean
-  canEditLedger: boolean
   canBulkShare: boolean
   onInvite: () => void
   onBulkShare: () => void
   onCopyInvite: (inv: Invitation) => void
-  ledgerTypeLabel: string
-  timezoneLabel: string
 }
 
 export function LedgerOverview(p: OverviewProps) {
@@ -68,20 +65,23 @@ export function LedgerOverview(p: OverviewProps) {
                 <AvatarStack people={p.people} size={24} />
                 {p.invitations.length > 0 && <span className="text-[11.5px] text-white/85 ml-1">{L.plusInvites.replace('{{count}}', String(p.invitations.length))}</span>}
               </div>
+              <Link href="/ledger/settings" className="inline-flex items-center gap-1.5 mt-2.5 h-7 pl-2.5 pr-2 rounded-full bg-white/[0.16] hover:bg-white/[0.26] text-[12px] font-semibold transition-colors">
+                <Settings className="w-3.5 h-3.5" />{L.ledgerSettings}<ChevronRight className="w-3.5 h-3.5 opacity-80" />
+              </Link>
             </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 lg:flex-1 border-t lg:border-t-0 border-white/[0.18]">
             <HeroStat icon={Users} label={L.statMembers} value={String(p.people.length)} sub={L.statMembersSub.replace('{{count}}', String(p.invitations.length))} />
             <HeroStat icon={Share2} label={L.statShared} value={<>{sharedTop.length}<span className="text-[15px] opacity-70">/{top.length}</span></>} sub={L.statSharedSub.replace('{{count}}', String(privateMine.length))} />
             <HeroStat icon={GitPullRequestArrow} label={L.statPending} value={String(p.pendingForMe)} sub={L.statPendingSub} href="/approvals" />
-            <HeroStat icon={History} label={L.statWeek} value={lastWeek >= 99 ? '99+' : String(lastWeek)} sub={L.statWeekSub} />
+            <HeroStat icon={History} label={L.statWeek} value={lastWeek >= 99 ? '99+' : String(lastWeek)} sub={L.statWeekSub} href="/ledger/activity" />
           </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-[1.55fr_1fr] gap-4 items-start">
-        {/* Members */}
-        <Panel icon={Users} title={L.membersTitle.replace('{{count}}', String(p.people.length))} sub={L.membersSub}
+      {/* People: who is in the ledger · what needs a look */}
+      <Group>
+        <GroupSection icon={Users} title={L.membersTitle.replace('{{count}}', String(p.people.length))} sub={L.membersSub}
           right={p.canInvite ? <Button size="sm" variant="outline" icon={<UserPlus />} onClick={p.onInvite}>{L.invite}</Button> : undefined}>
           <div className="hidden md:flex items-center px-1.5 pb-2 border-b border-[var(--color-border-default)] text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">
             <span className="flex-[1.6]">{L.colMember}</span><span className="w-[120px]">{L.colRole}</span><span className="w-[130px]">{L.colCategories}</span>
@@ -123,15 +123,15 @@ export function LedgerOverview(p: OverviewProps) {
               </div>
             ))}
           </div>
-        </Panel>
-
-        {/* Needs attention */}
-        <Panel icon={Bell} tone="#d97706" title={L.attentionTitle}>
+        </GroupSection>
+        <GroupSection icon={Bell} tone="#d97706" title={L.attentionTitle} side>
           <Attention p={p} privateMine={privateMine} nameOf={nameOf} />
-        </Panel>
+        </GroupSection>
+      </Group>
 
-        {/* Shared categories */}
-        <Panel icon={Share2} title={L.sharedTitle.replace('{{shared}}', String(sharedTop.length)).replace('{{total}}', String(top.length))} sub={L.sharedSub}
+      {/* Access: what is shared with whom · what each role may do */}
+      <Group>
+        <GroupSection icon={Share2} title={L.sharedTitle.replace('{{shared}}', String(sharedTop.length)).replace('{{total}}', String(top.length))} sub={L.sharedSub}
           right={p.canBulkShare ? <Button size="sm" variant="outline" icon={<Layers />} onClick={p.onBulkShare}>{L.bulkShare}</Button> : undefined}>
           <div className="flex flex-wrap gap-1.5 -mt-1 mb-2">{ACCESS_ORDER.map((k) => <LevelPill key={k} level={k} label={L[`level_${k}`]} className="h-5 text-[11px]" />)}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5">
@@ -156,10 +156,8 @@ export function LedgerOverview(p: OverviewProps) {
               )
             })}
           </div>
-        </Panel>
-
-        {/* Roles */}
-        <Panel icon={ShieldCheck} tone="#6941c6" title={L.rolesTitle}>
+        </GroupSection>
+        <GroupSection icon={ShieldCheck} tone="#6941c6" title={L.rolesTitle} side>
           <div className="divide-y divide-[var(--color-border-subtle)]">
             {p.roles.filter((r) => r.code !== 'OWNER').map((r) => {
               const ms = p.people.filter((m) => m.role === r.code)
@@ -179,52 +177,38 @@ export function LedgerOverview(p: OverviewProps) {
               {p.people.filter((m) => p.overrideCount[m.memberId]).map((m) => L.customFor.replace('{{name}}', m.name).replace('{{count}}', String(p.overrideCount[m.memberId]))).join(' · ')}
             </p>
           )}
-        </Panel>
+        </GroupSection>
+      </Group>
+    </div>
+  )
+}
 
-        {/* Ledger settings */}
-        <Panel icon={Settings} tone="#475467" title={L.settingsTitle} right={p.canEditLedger ? <EditLink label={L.edit} href="/settings/ledger" /> : undefined}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6">
-            {[
-              [BookOpen, L.setName, `${p.ledger.name} · ${p.ledger.currency_code}`],
-              [Layers, L.setType, p.ledgerTypeLabel],
-              [Clock, L.setTimezone, p.timezoneLabel],
-              [History, L.setFiscal, p.ledger.fiscal_year_start_month ? new Date(2024, p.ledger.fiscal_year_start_month - 1, 1).toLocaleDateString(lang, { month: 'long' }) : '—'],
-              [GitPullRequestArrow, L.setApproval, L.setApprovalValue],
-              [Mail, L.setInvite, L.setInviteValue],
-            ].map(([Icon, label, value]) => {
-              const I = Icon as typeof BookOpen
-              return (
-                <div key={label as string} className="flex items-start gap-2.5 py-2 border-b border-[var(--color-border-subtle)]">
-                  <I className="w-[15px] h-[15px] mt-0.5 text-[var(--color-text-quaternary)] shrink-0" />
-                  <span className="w-[112px] shrink-0 text-[12.5px] text-[var(--color-text-tertiary)]">{label as string}</span>
-                  <span className="flex-1 text-[13px] font-semibold text-[var(--color-text-primary)]">{value as string}</span>
-                </div>
-              )
-            })}
-          </div>
-        </Panel>
+/** One card holding two related sections: side by side on wide screens, stacked on phones. */
+function Group({ children }: { children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-[0_1px_2px_rgba(16,24,40,0.04)]
+      grid grid-cols-1 xl:grid-cols-[1.55fr_1fr] divide-y xl:divide-y-0 xl:divide-x divide-[var(--color-border-default)] overflow-hidden">
+      {children}
+    </section>
+  )
+}
 
-        {/* Activity */}
-        <Panel icon={History} tone="#175cd3" title={L.activityTitle}
-          right={<Link href="/settings/audit-log" className="text-[12.5px] font-semibold text-[var(--color-text-brand)]">{L.auditLog}</Link>}>
-          {p.activity.length === 0 ? <p className="text-[12.5px] text-[var(--color-text-quaternary)]">{L.noActivity}</p> : (
-            <div className="space-y-0.5">
-              {p.activity.slice(0, 6).map((a) => {
-                const who = p.people.find((m) => m.id === a.actorId)
-                return (
-                  <div key={a.id} className="flex items-center gap-2.5 py-1.5">
-                    {who ? <Avatar name={who.name} color={who.color} size={26} /> : <span className="w-[26px]" />}
-                    <span className="flex-1 min-w-0 text-[12.5px] text-[var(--color-text-secondary)] line-clamp-2">
-                      <b className="font-semibold text-[var(--color-text-primary)]">{who?.name ?? '—'}</b> {activityText(a, L)}
-                    </span>
-                    <span className="text-[11.5px] text-[var(--color-text-quaternary)] whitespace-nowrap">{relTime(a.at, lang, '')}</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-        </Panel>
+function GroupSection({ icon: Icon, tone = '#059669', title, sub, right, side, children }: {
+  icon: typeof Users; tone?: string; title: React.ReactNode; sub?: React.ReactNode; right?: React.ReactNode; side?: boolean; children: React.ReactNode
+}) {
+  return (
+    <div className={cn('p-4 sm:px-5 sm:py-[18px] min-w-0', side && 'bg-[color-mix(in_srgb,var(--color-bg-sunken)_45%,var(--color-surface-default))]')}>
+      <div className="flex items-start gap-2.5 mb-3">
+        <span className="w-[30px] h-[30px] rounded-[9px] inline-flex items-center justify-center shrink-0" style={{ background: `${tone}17`, color: tone }}>
+          <Icon className="w-[15px] h-[15px]" />
+        </span>
+        <div className="flex-1 min-w-0">
+          <h2 className="text-[15px] font-semibold tracking-tight text-[var(--color-text-primary)]">{title}</h2>
+          {sub && <p className="text-[12px] text-[var(--color-text-tertiary)] mt-px">{sub}</p>}
+        </div>
+        {right}
       </div>
+      {children}
     </div>
   )
 }

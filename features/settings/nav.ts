@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react'
 import {
   User, Settings, ShieldCheck, Monitor, Palette, Globe, Bell,
-  Building2, Type, History, Lock, Languages, Code2,
+  Type, Lock, Languages, Code2,
 } from 'lucide-react'
 
 export interface SettingsItem {
@@ -20,7 +20,8 @@ export interface SettingsSection {
 /**
  * The personal settings, grouped the way people look for them: who I am,
  * how the app looks and talks to me, the ledger I have open, then data and
- * rarely used tools. Members are managed from the main navigation (/users).
+ * rarely used tools. Members, ledger settings and the activity log live under
+ * "Ledger management" (/ledger).
  * Used by the hub (/settings), the desktop side list and the phone back bar.
  */
 export const SETTINGS_SECTIONS: SettingsSection[] = [
@@ -47,9 +48,7 @@ export const SETTINGS_SECTIONS: SettingsSection[] = [
     id: 'ledger',
     titleKey: 'settingsHub.sectionLedger',
     items: [
-      { href: '/settings/ledger', labelKey: 'settingsNav.ledger', icon: Building2 },
       { href: '/settings/texts', labelKey: 'settingsNav.texts', icon: Type },
-      { href: '/settings/audit-log', labelKey: 'settings.sidebar.auditLog', icon: History },
     ],
   },
   {

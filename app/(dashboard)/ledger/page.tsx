@@ -2,7 +2,7 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { History, UserPlus } from 'lucide-react'
+import { History, Settings, UserPlus } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
@@ -25,6 +25,8 @@ import { useLedgerData } from '@/hooks/useLedgerData'
 import { useTranslation } from '@/hooks/useTranslation'
 import { AVATAR_COLORS } from '@/lib/utils'
 
+const HEADER_LINK = 'inline-flex items-center gap-2 h-9 px-3 sm:px-4 rounded-lg text-sm font-medium border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[var(--color-text-primary)] hover:bg-[var(--color-interactive-secondary)]'
+
 // "Ledger management": an overview of who uses the ledger, what is shared and
 // how it is set up; a member's page opens read-only and turns editable on request.
 export default function LedgerManagePage() {
@@ -32,7 +34,7 @@ export default function LedgerManagePage() {
 }
 
 function LedgerManageContent() {
-  const { t, tk } = useTranslation()
+  const { t } = useTranslation()
   const L = t.lm
   const params = useSearchParams()
   const router = useRouter()
@@ -42,7 +44,7 @@ function LedgerManageContent() {
   const can = useLedgerStore((s) => s.can)
   const permissions = useLedgerStore((s) => s.permissions)
   const reloadLedgers = useLedgerStore((s) => s.initialize)
-  const { roles, ledgerTypes, timeZones } = useMasterStore()
+  const { roles } = useMasterStore()
   const store = useLedgerManageStore()
   const approvals = useApprovalsStore((s) => s.items)
   const reloadApprovals = useApprovalsStore((s) => s.reload)
@@ -134,7 +136,8 @@ function LedgerManageContent() {
       <PageHeader title={L.title} subtitle={L.subtitle}
         actions={
           <div className="flex gap-2">
-            {can('audit.read') && <Link href="/settings/audit-log"><Button variant="outline" icon={<History />}>{L.auditLog}</Button></Link>}
+            <Link href="/ledger/activity" className={HEADER_LINK}><History className="w-4 h-4" />{L.auditLog}</Link>
+            <Link href="/ledger/settings" className={HEADER_LINK}><Settings className="w-4 h-4" /><span className="hidden sm:inline">{L.ledgerSettings}</span></Link>
             {canInvite && <Button icon={<UserPlus />} onClick={() => setInviteOpen(true)}>{L.inviteMember}</Button>}
           </div>
         } />
@@ -146,11 +149,9 @@ function LedgerManageContent() {
       ) : (
         <LedgerOverview ledger={current} ownerName={ownerName} me={me} people={people} invitations={store.invitations}
           summary={store.summary} activity={store.activity} categories={categories} pendingForMe={pendingForMe}
-          overrideCount={overrideCount} roles={roleList} canInvite={canInvite} canEditLedger={can('ledger.update')}
+          overrideCount={overrideCount} roles={roleList} canInvite={canInvite}
           canBulkShare={people.length > 1 && categories.some((c) => !c.parent_id && c.is_mine)}
-          onInvite={() => setInviteOpen(true)} onBulkShare={() => setBulkOpen(true)} onCopyInvite={(inv) => void copyInvite(inv)}
-          ledgerTypeLabel={(() => { const lt = ledgerTypes.find((x) => x.code === current.ledger_type_code); return lt ? tk(lt.name_key) : current.ledger_type_code })()}
-          timezoneLabel={(() => { const z = timeZones.find((x) => x.code === current.timezone_code); return z ? tk(z.name_key) : current.timezone_code ?? '—' })()} />
+          onInvite={() => setInviteOpen(true)} onBulkShare={() => setBulkOpen(true)} onCopyInvite={(inv) => void copyInvite(inv)} />
       )}
 
       {inviteOpen && (

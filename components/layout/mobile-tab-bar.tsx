@@ -45,7 +45,7 @@ export function MobileTabBar() {
   if (lastPath !== pathname) { setLastPath(pathname); setSheet(null) }
 
   // Personal settings belong to the avatar (top right), not to "More".
-  const personal = pathname.startsWith('/settings') && pathname !== '/settings/ledger'
+  const personal = pathname.startsWith('/settings')
   const moreActive = !TABS.some((tab) => isActivePath(pathname, tab.href)) && pathname !== '/' && !personal
   const tabClass = (on: boolean) => cn(
     'flex flex-col items-center justify-center gap-[3px] h-[52px] rounded-xl text-[10.5px] font-semibold tracking-[-0.01em]',
@@ -70,7 +70,7 @@ export function MobileTabBar() {
   const quick = NAV_ITEMS.filter((n) => QUICK.has(n.href))
   const rest = (['manage', 'system'] as const).map((group) => ({
     group, items: NAV_ITEMS.filter((n) => n.group === group && !IN_TABS.has(n.href) && !QUICK.has(n.href)),
-  }))
+  })).filter((g) => g.items.length > 0)
 
   return (
     <>
