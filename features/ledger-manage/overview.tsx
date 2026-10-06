@@ -157,10 +157,15 @@ export function LedgerOverview(p: OverviewProps) {
       {/* Access: what is shared with whom · what each role may do */}
       <Group>
         <GroupSection icon={Share2} title={L.sharedTitle.replace('{{shared}}', String(sharedTop.length)).replace('{{total}}', String(top.length))} sub={L.sharedSub}
-          right={p.canBulkShare ? <Button size="sm" variant="outline" icon={<Layers />} onClick={() => p.onBulkShare()}>{L.bulkShare}</Button> : undefined}>
+          right={p.canBulkShare ? <Button size="sm" variant="outline" icon={<Layers />} onClick={() => p.onBulkShare()}>{L.manageSharing}</Button> : undefined}>
           <div className="flex flex-wrap gap-1.5 -mt-1 mb-2">{ACCESS_ORDER.map((k) => <LevelPill key={k} level={k} label={L[`level_${k}`]} className="h-5 text-[11px]" />)}</div>
+          {/* Grouped by money direction, like the categories page. */}
+          {([['expense', t.transactions.typeExpense], ['income', t.transactions.typeIncome], ['transfer', t.transactions.typeTransfer]] as const)
+            .map(([kind, kindLabel]) => ({ kind, kindLabel, list: top.filter((c) => c.type === kind) })).filter((g) => g.list.length).map((g) => (
+          <div key={g.kind} className="mt-2 first-of-type:mt-0">
+          <p className="flex items-center gap-2 mt-3 mb-0.5 text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">{g.kindLabel}<span className="font-medium normal-case tracking-normal">· {g.list.length}</span><span className="flex-1 h-px bg-[var(--color-border-subtle)]" /></p>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5">
-            {top.map((c) => {
+            {g.list.map((c) => {
               const who = p.people.filter((m) => m.id !== c.owner_id && levelOf(c, m.id))
               return (
                 <Link key={c.id} href={`/categories/${c.id}`} className="flex items-center gap-2.5 py-2 px-1 border-b border-[var(--color-border-subtle)] hover:bg-[var(--color-bg-sunken)] rounded-md">
@@ -181,6 +186,8 @@ export function LedgerOverview(p: OverviewProps) {
               )
             })}
           </div>
+          </div>
+          ))}
         </GroupSection>
         <GroupSection icon={ShieldCheck} tone="#6941c6" title={L.rolesTitle} side>
           <div className="divide-y divide-[var(--color-border-subtle)]">
