@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import {
   Upload, ArrowRight,
-  Inbox, Sparkles, CreditCard, Plus, Users,
+  Inbox, Sparkles, Plus, Users,
   UserPlus, Shapes,
 } from 'lucide-react'
 import {
@@ -15,6 +15,8 @@ import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { DateNavigator, buildLabel, quarterPickerValue, pickerQuery } from '@/components/ui/date-range-picker'
 import type { PickerValue } from '@/components/ui/date-range-picker'
+import { AccountBadge } from '@/components/ui/picker'
+import { useMasterStore } from '@/features/master/store'
 import { TransactionEditModal } from '@/components/ui/transaction-edit-modal'
 import { TransactionViewer } from '@/components/transactions/transaction-detail-panel'
 import { useTransactionsStore, type PeriodSummary } from '@/stores/transactions'
@@ -167,9 +169,10 @@ function UnclassifiedCard({ data, onOpen }: { data: { items: Transaction[]; tota
 }
 
 function AccountsPanel() {
-  const { t } = useTranslation()
+  const { t, tk } = useTranslation()
   const { format } = useMoney()
   const { accounts } = useLedgerData()
+  const accountTypes = useMasterStore((s) => s.accountTypes)
   const balances = accounts.filter((a) => !a.isArchived && a.balance !== 0)
 
   if (balances.length === 0) return null
@@ -181,16 +184,15 @@ function AccountsPanel() {
       </Link>
       <div className="space-y-2">
         {balances.map((a) => {
-          const color = a.color ?? '#6b7280'
+          const type = accountTypes.find((x) => x.code === a.accountTypeCode)
           return (
             <div key={a.id} className="flex items-center gap-3">
-              <div
-                className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
-                style={{ background: `color-mix(in srgb, ${color} 12%, transparent)` }}
-              >
-                <CreditCard className="w-3.5 h-3.5" style={{ color }} />
-              </div>
-              <span className="flex-1 text-xs font-medium text-[var(--color-text-primary)] truncate">{a.name}</span>
+              {/* Provider mark + type, so a wallet and a card of the same brand don't look alike. */}
+              <AccountBadge account={a} size={28} />
+              <span className="flex-1 min-w-0">
+                <span className="block text-xs font-medium text-[var(--color-text-primary)] truncate">{a.name}</span>
+                {type && <span className="block text-[10.5px] text-[var(--color-text-quaternary)] truncate">{tk(type.name_key)}</span>}
+              </span>
               <span className={cn(
                 'text-xs font-semibold font-tabular',
                 a.balance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',

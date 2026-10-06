@@ -429,8 +429,9 @@ function SubGroupsSection({ parentId, subs, all, txns, depth, canEdit, onAdd, on
         {sorted.map(({ sg, budget, expense, count, pct, barPct }) => (
           <div key={sg.id} role="link" tabIndex={0} onClick={() => onOpen(sg)} onKeyDown={(e) => e.key === 'Enter' && onOpen(sg)}
             className="p-3 border border-[var(--color-border-default)] rounded-[10px] hover:border-[var(--color-interactive-primary)] transition-colors cursor-pointer group relative">
+            {/* Phones: tapping opens the sub-group (edit / delete live on its page), no floating buttons. */}
             {canEdit && (
-              <div className="absolute right-2 top-2.5 hidden group-hover:flex group-focus-within:flex items-center gap-1">
+              <div className="absolute right-2 top-2.5 hidden sm:group-hover:flex sm:group-focus-within:flex items-center gap-1">
                 <button onClick={(e) => { e.stopPropagation(); onEdit(sg) }} title={t.catdetail.editSub} aria-label={t.catdetail.editSub}
                   className="w-6 h-6 flex items-center justify-center rounded-md bg-white border border-[var(--color-border-default)] hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)] shadow-sm cursor-pointer">
                   <Pencil className="w-3 h-3" />
@@ -446,7 +447,7 @@ function SubGroupsSection({ parentId, subs, all, txns, depth, canEdit, onAdd, on
             <div className="flex items-center gap-1.5 mb-2">
               <span className="w-6 h-6 rounded-[6px] flex items-center justify-center shrink-0" style={{ background: sg.color + '22', color: sg.color }}><CategoryIcon name={sg.emoji} className="w-3.5 h-3.5" /></span>
               <span className="text-xs font-semibold text-[var(--color-text-primary)] truncate flex-1">{sg.name}</span>
-              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] group-hover:hidden">{count}</span>
+              <span className="font-mono text-[10px] px-1.5 py-0.5 rounded bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)] sm:group-hover:hidden">{count}</span>
             </div>
             {pendingOn(sg.id).length > 0 && (
               <PendingTag className="mb-1.5" label={pendingOn(sg.id).some((r) => r.action === 'category.delete') ? t.approvals.pendingDelete : t.approvals.pendingChip} />
