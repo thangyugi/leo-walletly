@@ -84,7 +84,7 @@ export function Panel({ icon: Icon, tone = '#059669', title, sub, right, childre
 }) {
   return (
     <section className={cn('rounded-[14px] border bg-[var(--color-surface-default)] p-4 sm:px-5 sm:py-[18px] shadow-[0_1px_2px_rgba(16,24,40,0.04)]',
-      highlight ? 'border-[#fedf89] ring-2 ring-[#fedf89]/70' : 'border-[var(--color-border-default)]', className)}>
+      highlight ? 'border-[#a6f4c5] ring-2 ring-[#d1fadf]' : 'border-[var(--color-border-default)]', className)}>
       <div className="flex items-start gap-2.5 mb-3">
         <span className="w-[30px] h-[30px] rounded-[9px] inline-flex items-center justify-center shrink-0" style={{ background: `${tone}17`, color: tone }}>
           <Icon className="w-[15px] h-[15px]" />

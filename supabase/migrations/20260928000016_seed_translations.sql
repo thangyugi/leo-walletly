@@ -49,6 +49,9 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('al.a_update', 'al', null, false),
   ('al.allTime', 'al', null, false),
   ('al.allTypes', 'al', null, false),
+  ('al.byAction', 'al', null, false),
+  ('al.byPerson', 'al', null, false),
+  ('al.byType', 'al', null, false),
   ('al.clear', 'al', null, false),
   ('al.details', 'al', 'count', false),
   ('al.e_account', 'al', null, false),
@@ -113,6 +116,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('al.f_transfer_account_id', 'al', null, false),
   ('al.f_user_id', 'al', null, false),
   ('al.f_warning_threshold_pct', 'al', null, false),
+  ('al.filters', 'al', null, false),
   ('al.hiddenValue', 'al', null, false),
   ('al.hide', 'al', null, false),
   ('al.k_create', 'al', null, false),
@@ -403,14 +407,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catdetail.memberSpendCount', 'catdetail', 'count', false),
   ('catdetail.memberSpendEmpty', 'catdetail', null, false),
   ('catdetail.memberSpendLine', 'catdetail', 'count,share', false),
-  ('catdetail.memberSpendPlain', 'catdetail', null, false),
-  ('catdetail.memberSpendShared', 'catdetail', 'count', false),
-  ('catdetail.memberSpendTitle', 'catdetail', null, false),
-  ('catdetail.membersCount', 'catdetail', 'count', false),
-  ('catdetail.mergeTitle', 'catdetail', null, false)
+  ('catdetail.memberSpendPlain', 'catdetail', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('catdetail.memberSpendShared', 'catdetail', 'count', false),
+  ('catdetail.memberSpendTitle', 'catdetail', null, false),
+  ('catdetail.membersCount', 'catdetail', 'count', false),
+  ('catdetail.mergeTitle', 'catdetail', null, false),
   ('catdetail.monthLabel', 'catdetail', 'y,m', false),
   ('catdetail.noMembers', 'catdetail', null, false),
   ('catdetail.noRules', 'catdetail', null, false),
@@ -557,6 +561,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.remaining', 'catui', 'amount', false),
   ('catui.saveAsKeyword', 'catui', null, false),
   ('catui.search', 'catui', null, false),
+  ('catui.sectionPrivate', 'catui', null, false),
+  ('catui.sectionPrivateSub', 'catui', null, false),
+  ('catui.sectionShared', 'catui', null, false),
+  ('catui.sectionSharedSub', 'catui', 'mine,others', false),
   ('catui.settle', 'catui', null, false),
   ('catui.settled', 'catui', null, false),
   ('catui.shared', 'catui', null, false),
@@ -802,7 +810,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.formTitle', 'groups', null, true),
   ('groups.hierarchy', 'groups', null, true),
   ('groups.iconLabel', 'groups', null, true),
-  ('groups.keywords', 'groups', null, true),
+  ('groups.keywords', 'groups', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('groups.keywordsHint', 'groups', null, true),
   ('groups.keywordsLabel', 'groups', null, true),
   ('groups.keywordsPlaceholder', 'groups', null, true),
@@ -810,10 +821,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.mismatch', 'groups', null, true),
   ('groups.name', 'groups', null, true),
   ('groups.noGroups', 'groups', null, true),
-  ('groups.noGroupsSub', 'groups', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('groups.noGroupsSub', 'groups', null, true),
   ('groups.none', 'groups', null, true),
   ('groups.over_budget', 'groups', null, true),
   ('groups.parent', 'groups', null, true),
@@ -986,7 +994,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('lm.bulkDone', 'lm', 'cats,people', false),
   ('lm.bulkNoPeople', 'lm', null, false),
   ('lm.bulkPick', 'lm', null, false),
+  ('lm.bulkRemove', 'lm', null, false),
+  ('lm.bulkRemoveConfirm', 'lm', 'names', false),
+  ('lm.bulkRemoveDone', 'lm', 'count', false),
+  ('lm.bulkRole', 'lm', null, false),
+  ('lm.bulkRoleDone', 'lm', 'count,role', false),
   ('lm.bulkShare', 'lm', null, false),
+  ('lm.bulkShareCats', 'lm', null, false),
   ('lm.bulkStep1', 'lm', 'count', false),
   ('lm.bulkStep2', 'lm', null, false),
   ('lm.bulkStep3', 'lm', null, false),
@@ -1050,6 +1064,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('lm.membersSub', 'lm', null, false),
   ('lm.membersTitle', 'lm', 'count', false),
   ('lm.nCategories', 'lm', 'count', false),
+  ('lm.nSelected', 'lm', 'count', false),
   ('lm.never', 'lm', null, false),
   ('lm.noActivity', 'lm', null, false),
   ('lm.noChanges', 'lm', null, false),
@@ -1075,6 +1090,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('lm.perm_transaction_update', 'lm', null, false),
   ('lm.permsSub', 'lm', null, false),
   ('lm.permsTitle', 'lm', null, false),
+  ('lm.pickPeople', 'lm', null, false),
   ('lm.plusInvites', 'lm', 'count', false),
   ('lm.private', 'lm', null, false),
   ('lm.readOnlyNote', 'lm', null, false),
@@ -1089,6 +1105,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('lm.saveN', 'lm', 'count', false),
   ('lm.saved', 'lm', 'name', false),
   ('lm.searchCats', 'lm', null, false),
+  ('lm.select', 'lm', null, false),
   ('lm.selectAll', 'lm', null, false),
   ('lm.setApproval', 'lm', null, false),
   ('lm.setApprovalValue', 'lm', null, false),
@@ -1196,7 +1213,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('ls.transferHint', 'ls', null, false),
   ('members.accountant', 'members', null, false),
   ('members.accountantDesc', 'members', null, false),
-  ('members.action', 'members', null, false),
+  ('members.action', 'members', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('members.active', 'members', null, false),
   ('members.activeMembers', 'members', null, false),
   ('members.activeSeats', 'members', null, false),
@@ -1213,10 +1233,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('members.invite', 'members', null, false),
   ('members.inviteError', 'members', null, false),
   ('members.inviteLink', 'members', null, false),
-  ('members.inviteLinkHint', 'members', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('members.inviteLinkHint', 'members', null, false),
   ('members.inviteMember', 'members', null, false),
   ('members.inviteSuccess', 'members', null, false),
   ('members.joined', 'members', null, false),
@@ -1599,7 +1616,10 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.sidebar.profile', 'settings', null, false),
   ('settings.sidebar.security', 'settings', null, false),
   ('settingsHub.back', 'settingsHub', null, false),
-  ('settingsHub.editProfile', 'settingsHub', null, false),
+  ('settingsHub.editProfile', 'settingsHub', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('settingsHub.sectionAccount', 'settingsHub', null, false),
   ('settingsHub.sectionAdvanced', 'settingsHub', null, false),
   ('settingsHub.sectionLedger', 'settingsHub', null, false),
@@ -1616,10 +1636,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('summary.categories', 'summary', null, false),
   ('summary.over', 'summary', 'amount', false),
   ('summary.perPerson', 'summary', 'count', false),
-  ('summary.sharedCount', 'summary', 'count', false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('summary.sharedCount', 'summary', 'count', false),
   ('summary.short', 'summary', 'amount', false),
   ('texts.applyLedger', 'texts', null, false),
   ('texts.applyMe', 'texts', null, false),
@@ -1794,6 +1811,9 @@ insert into public.translations (key, language_code, value) values
   ('al.a_update', 'ja', '変更'),
   ('al.allTime', 'ja', 'すべて'),
   ('al.allTypes', 'ja', 'すべて'),
+  ('al.byAction', 'ja', '操作'),
+  ('al.byPerson', 'ja', 'メンバー'),
+  ('al.byType', 'ja', '種類'),
   ('al.clear', 'ja', '絞り込みを解除'),
   ('al.details', 'ja', '詳細（{{count}}）'),
   ('al.e_account', 'ja', '口座'),
@@ -1858,6 +1878,7 @@ insert into public.translations (key, language_code, value) values
   ('al.f_transfer_account_id', 'ja', '振替先'),
   ('al.f_user_id', 'ja', 'メンバー'),
   ('al.f_warning_threshold_pct', 'ja', '警告ライン'),
+  ('al.filters', 'ja', '絞り込み'),
   ('al.hiddenValue', 'ja', '（非公開）'),
   ('al.hide', 'ja', '閉じる'),
   ('al.k_create', 'ja', 'が追加：'),
@@ -2148,14 +2169,14 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.memberSpendCount', 'ja', '{{count}} 件'),
   ('catdetail.memberSpendEmpty', 'ja', 'この期間の支出はありません'),
   ('catdetail.memberSpendLine', 'ja', '{{count}} 件 · 負担 {{share}}'),
-  ('catdetail.memberSpendPlain', 'ja', '選択期間に誰がいくら支払ったか'),
-  ('catdetail.memberSpendShared', 'ja', '選択期間 · {{count}} 人で均等割り'),
-  ('catdetail.memberSpendTitle', 'ja', 'メンバー別の支出'),
-  ('catdetail.membersCount', 'ja', '{{count}} 人のメンバー'),
-  ('catdetail.mergeTitle', 'ja', 'カテゴリを統合')
+  ('catdetail.memberSpendPlain', 'ja', '選択期間に誰がいくら支払ったか')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('catdetail.memberSpendShared', 'ja', '選択期間 · {{count}} 人で均等割り'),
+  ('catdetail.memberSpendTitle', 'ja', 'メンバー別の支出'),
+  ('catdetail.membersCount', 'ja', '{{count}} 人のメンバー'),
+  ('catdetail.mergeTitle', 'ja', 'カテゴリを統合'),
   ('catdetail.monthLabel', 'ja', '{{y}}年{{m}}月'),
   ('catdetail.noMembers', 'ja', 'メンバーはいません'),
   ('catdetail.noRules', 'ja', 'ルールはまだありません'),
@@ -2302,6 +2323,10 @@ insert into public.translations (key, language_code, value) values
   ('catui.remaining', 'ja', '残り {{amount}}'),
   ('catui.saveAsKeyword', 'ja', 'キーワードとして保存'),
   ('catui.search', 'ja', 'カテゴリを検索…'),
+  ('catui.sectionPrivate', 'ja', '自分だけ'),
+  ('catui.sectionPrivateSub', 'ja', 'あなただけに表示されます。開くと共有できます'),
+  ('catui.sectionShared', 'ja', '共有中'),
+  ('catui.sectionSharedSub', 'ja', 'あなたが共有 {{mine}} · 共有されている {{others}}'),
   ('catui.settle', 'ja', '精算する'),
   ('catui.settled', 'ja', '精算しました'),
   ('catui.shared', 'ja', '共有'),
@@ -2547,7 +2572,10 @@ insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'ja', 'グループを作成'),
   ('groups.hierarchy', 'ja', '階層構造'),
   ('groups.iconLabel', 'ja', 'アイコン'),
-  ('groups.keywords', 'ja', 'キーワード'),
+  ('groups.keywords', 'ja', 'キーワード')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.keywordsHint', 'ja', 'キーワードを入力してEnterを押してください'),
   ('groups.keywordsLabel', 'ja', '自動判定キーワード'),
   ('groups.keywordsPlaceholder', 'ja', 'キーワードを入力してEnter...'),
@@ -2555,10 +2583,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.mismatch', 'ja', '不一致'),
   ('groups.name', 'ja', 'グループ名'),
   ('groups.noGroups', 'ja', 'グループがありません'),
-  ('groups.noGroupsSub', 'ja', '新しいグループを作成して取引を分類しましょう')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.noGroupsSub', 'ja', '新しいグループを作成して取引を分類しましょう'),
   ('groups.none', 'ja', 'なし'),
   ('groups.over_budget', 'ja', '予算超過'),
   ('groups.parent', 'ja', '親グループ'),
@@ -2731,7 +2756,13 @@ insert into public.translations (key, language_code, value) values
   ('lm.bulkDone', 'ja', '{{cats}} カテゴリを {{people}} 人に適用しました'),
   ('lm.bulkNoPeople', 'ja', 'まだ他のメンバーがいません'),
   ('lm.bulkPick', 'ja', 'カテゴリと相手を選んでください'),
+  ('lm.bulkRemove', 'ja', '台帳から外す'),
+  ('lm.bulkRemoveConfirm', 'ja', '{{names}} を台帳から外しますか？記録した取引は残ります。'),
+  ('lm.bulkRemoveDone', 'ja', '{{count}} 人を外しました'),
+  ('lm.bulkRole', 'ja', '役割を変更'),
+  ('lm.bulkRoleDone', 'ja', '{{count}} 人の役割を「{{role}}」にしました'),
   ('lm.bulkShare', 'ja', 'まとめて共有'),
+  ('lm.bulkShareCats', 'ja', 'カテゴリを共有'),
   ('lm.bulkStep1', 'ja', '1 · カテゴリ（{{count}}）'),
   ('lm.bulkStep2', 'ja', '2 · 共有する相手'),
   ('lm.bulkStep3', 'ja', '3 · 権限'),
@@ -2795,6 +2826,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.membersSub', 'ja', '名前を押すと権限の詳細が開きます'),
   ('lm.membersTitle', 'ja', 'メンバー · {{count}}'),
   ('lm.nCategories', 'ja', '{{count}} カテゴリ'),
+  ('lm.nSelected', 'ja', '{{count}} 人を選択'),
   ('lm.never', 'ja', '記録なし'),
   ('lm.noActivity', 'ja', 'まだ記録がありません'),
   ('lm.noChanges', 'ja', '変更はまだありません'),
@@ -2820,6 +2852,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.perm_transaction_update', 'ja', '自分の取引を編集'),
   ('lm.permsSub', 'ja', '役割の初期値から個別に変更できます'),
   ('lm.permsTitle', 'ja', '権限の詳細'),
+  ('lm.pickPeople', 'ja', 'メンバーを選んでください'),
   ('lm.plusInvites', 'ja', '+{{count}} 件の招待'),
   ('lm.private', 'ja', '非公開'),
   ('lm.readOnlyNote', 'ja', '役割は管理者が、カテゴリの共有は各カテゴリのオーナーが変更できます。'),
@@ -2834,6 +2867,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.saveN', 'ja', '{{count}} 件の変更を保存'),
   ('lm.saved', 'ja', '{{name}} さんの権限を保存しました'),
   ('lm.searchCats', 'ja', 'カテゴリを検索…'),
+  ('lm.select', 'ja', '選択'),
   ('lm.selectAll', 'ja', 'すべて選択'),
   ('lm.setApproval', 'ja', '変更の承認'),
   ('lm.setApprovalValue', 'ja', '「提案」はオーナーの承認が必要、「共同管理」は即時反映'),
@@ -2941,7 +2975,10 @@ insert into public.translations (key, language_code, value) values
   ('ls.transferHint', 'ja', 'オーナーを譲るには、メンバーのページを開いてください。'),
   ('members.accountant', 'ja', '会計士'),
   ('members.accountantDesc', 'ja', '取引とレポートを管理できます'),
-  ('members.action', 'ja', '操作'),
+  ('members.action', 'ja', '操作')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('members.active', 'ja', '有効'),
   ('members.activeMembers', 'ja', 'アクティブなメンバー'),
   ('members.activeSeats', 'ja', 'アクティブな席'),
@@ -2958,10 +2995,7 @@ insert into public.translations (key, language_code, value) values
   ('members.invite', 'ja', 'メンバーを招待'),
   ('members.inviteError', 'ja', '招待の送信に失敗しました'),
   ('members.inviteLink', 'ja', '招待リンク'),
-  ('members.inviteLinkHint', 'ja', 'このリンクは1回だけ表示されます。相手に送ってください。')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('members.inviteLinkHint', 'ja', 'このリンクは1回だけ表示されます。相手に送ってください。'),
   ('members.inviteMember', 'ja', 'メンバーを招待'),
   ('members.inviteSuccess', 'ja', '招待を送信しました'),
   ('members.joined', 'ja', '参加日'),
@@ -3344,7 +3378,10 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.profile', 'ja', 'プロフィール'),
   ('settings.sidebar.security', 'ja', 'セキュリティ'),
   ('settingsHub.back', 'ja', '戻る'),
-  ('settingsHub.editProfile', 'ja', 'プロフィールを編集'),
+  ('settingsHub.editProfile', 'ja', 'プロフィールを編集')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settingsHub.sectionAccount', 'ja', 'マイアカウント'),
   ('settingsHub.sectionAdvanced', 'ja', 'データと詳細設定'),
   ('settingsHub.sectionLedger', 'ja', '開いている元帳'),
@@ -3361,10 +3398,7 @@ insert into public.translations (key, language_code, value) values
   ('summary.categories', 'ja', 'カテゴリ'),
   ('summary.over', 'ja', '{{amount}} 多く支払い'),
   ('summary.perPerson', 'ja', '{{count}} 人で均等割り'),
-  ('summary.sharedCount', 'ja', '共有 {{count}}')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('summary.sharedCount', 'ja', '共有 {{count}}'),
   ('summary.short', 'ja', '{{amount}} 不足'),
   ('texts.applyLedger', 'ja', 'この元帳に適用'),
   ('texts.applyMe', 'ja', '自分だけに適用'),
@@ -3539,6 +3573,9 @@ insert into public.translations (key, language_code, value) values
   ('al.a_update', 'vi', 'Sửa'),
   ('al.allTime', 'vi', 'Tất cả'),
   ('al.allTypes', 'vi', 'Tất cả'),
+  ('al.byAction', 'vi', 'Hành động'),
+  ('al.byPerson', 'vi', 'Người thực hiện'),
+  ('al.byType', 'vi', 'Loại'),
   ('al.clear', 'vi', 'Xoá bộ lọc'),
   ('al.details', 'vi', 'Xem chi tiết ({{count}})'),
   ('al.e_account', 'vi', 'Tài khoản'),
@@ -3603,6 +3640,7 @@ insert into public.translations (key, language_code, value) values
   ('al.f_transfer_account_id', 'vi', 'Tài khoản nhận'),
   ('al.f_user_id', 'vi', 'Thành viên'),
   ('al.f_warning_threshold_pct', 'vi', 'Ngưỡng cảnh báo'),
+  ('al.filters', 'vi', 'Bộ lọc'),
   ('al.hiddenValue', 'vi', '(không xem được)'),
   ('al.hide', 'vi', 'Thu gọn'),
   ('al.k_create', 'vi', 'đã thêm'),
@@ -3893,14 +3931,14 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.memberSpendCount', 'vi', '{{count}} giao dịch'),
   ('catdetail.memberSpendEmpty', 'vi', 'Kỳ này chưa có chi tiêu'),
   ('catdetail.memberSpendLine', 'vi', '{{count}} giao dịch · phần chia {{share}}'),
-  ('catdetail.memberSpendPlain', 'vi', 'Ai đã trả bao nhiêu trong kỳ đã chọn'),
-  ('catdetail.memberSpendShared', 'vi', 'Trong kỳ đã chọn · chia đều cho {{count}} người'),
-  ('catdetail.memberSpendTitle', 'vi', 'Chi tiêu theo thành viên'),
-  ('catdetail.membersCount', 'vi', '{{count}} thành viên'),
-  ('catdetail.mergeTitle', 'vi', 'Gộp danh mục')
+  ('catdetail.memberSpendPlain', 'vi', 'Ai đã trả bao nhiêu trong kỳ đã chọn')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('catdetail.memberSpendShared', 'vi', 'Trong kỳ đã chọn · chia đều cho {{count}} người'),
+  ('catdetail.memberSpendTitle', 'vi', 'Chi tiêu theo thành viên'),
+  ('catdetail.membersCount', 'vi', '{{count}} thành viên'),
+  ('catdetail.mergeTitle', 'vi', 'Gộp danh mục'),
   ('catdetail.monthLabel', 'vi', 'Tháng {{m}}/{{y}}'),
   ('catdetail.noMembers', 'vi', 'Chưa có thành viên'),
   ('catdetail.noRules', 'vi', 'Chưa có quy tắc'),
@@ -4047,6 +4085,10 @@ insert into public.translations (key, language_code, value) values
   ('catui.remaining', 'vi', 'còn {{amount}}'),
   ('catui.saveAsKeyword', 'vi', 'Lưu làm từ khoá'),
   ('catui.search', 'vi', 'Tìm kiếm danh mục…'),
+  ('catui.sectionPrivate', 'vi', 'Chỉ mình tôi'),
+  ('catui.sectionPrivateSub', 'vi', 'Chỉ bạn nhìn thấy — mở một danh mục để chia sẻ'),
+  ('catui.sectionShared', 'vi', 'Đang chia sẻ'),
+  ('catui.sectionSharedSub', 'vi', '{{mine}} của bạn đang chia sẻ · {{others}} người khác chia sẻ với bạn'),
   ('catui.settle', 'vi', 'Thanh toán lại'),
   ('catui.settled', 'vi', 'Đã ghi nhận thanh toán'),
   ('catui.shared', 'vi', 'Chia sẻ'),
@@ -4292,7 +4334,10 @@ insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'vi', 'Tạo nhóm'),
   ('groups.hierarchy', 'vi', 'Cấu trúc phân cấp'),
   ('groups.iconLabel', 'vi', 'Biểu tượng'),
-  ('groups.keywords', 'vi', 'Từ khóa'),
+  ('groups.keywords', 'vi', 'Từ khóa')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.keywordsHint', 'vi', 'Nhập từ khóa và nhấn Enter'),
   ('groups.keywordsLabel', 'vi', 'Từ khóa nhận diện tự động'),
   ('groups.keywordsPlaceholder', 'vi', 'Nhập từ khóa và nhấn Enter...'),
@@ -4300,10 +4345,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.mismatch', 'vi', 'Lệch'),
   ('groups.name', 'vi', 'Tên nhóm'),
   ('groups.noGroups', 'vi', 'Chưa có nhóm nào'),
-  ('groups.noGroupsSub', 'vi', 'Tạo nhóm để phân loại giao dịch')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.noGroupsSub', 'vi', 'Tạo nhóm để phân loại giao dịch'),
   ('groups.none', 'vi', 'Không có'),
   ('groups.over_budget', 'vi', 'vượt ngân sách'),
   ('groups.parent', 'vi', 'Nhóm cha'),
@@ -4476,7 +4518,13 @@ insert into public.translations (key, language_code, value) values
   ('lm.bulkDone', 'vi', 'Đã áp dụng {{cats}} danh mục cho {{people}} người'),
   ('lm.bulkNoPeople', 'vi', 'Sổ chưa có thành viên khác'),
   ('lm.bulkPick', 'vi', 'Chọn danh mục và người'),
+  ('lm.bulkRemove', 'vi', 'Gỡ khỏi sổ'),
+  ('lm.bulkRemoveConfirm', 'vi', 'Gỡ {{names}} khỏi sổ? Giao dịch họ đã ghi vẫn được giữ lại.'),
+  ('lm.bulkRemoveDone', 'vi', 'Đã gỡ {{count}} người'),
+  ('lm.bulkRole', 'vi', 'Đổi vai trò'),
+  ('lm.bulkRoleDone', 'vi', 'Đã đổi {{count}} người sang vai trò {{role}}'),
   ('lm.bulkShare', 'vi', 'Chia sẻ hàng loạt'),
+  ('lm.bulkShareCats', 'vi', 'Chia sẻ danh mục'),
   ('lm.bulkStep1', 'vi', '1 · Danh mục ({{count}})'),
   ('lm.bulkStep2', 'vi', '2 · Chia sẻ với'),
   ('lm.bulkStep3', 'vi', '3 · Mức quyền'),
@@ -4540,6 +4588,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.membersSub', 'vi', 'Bấm vào một người để xem chi tiết quyền'),
   ('lm.membersTitle', 'vi', 'Thành viên · {{count}}'),
   ('lm.nCategories', 'vi', '{{count}} danh mục'),
+  ('lm.nSelected', 'vi', 'Đã chọn {{count}} người'),
   ('lm.never', 'vi', 'Chưa có'),
   ('lm.noActivity', 'vi', 'Chưa có hoạt động nào'),
   ('lm.noChanges', 'vi', 'Chưa có thay đổi'),
@@ -4565,6 +4614,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.perm_transaction_update', 'vi', 'Sửa giao dịch của mình'),
   ('lm.permsSub', 'vi', 'Theo vai trò; có thể chỉnh riêng từng quyền'),
   ('lm.permsTitle', 'vi', 'Quyền chi tiết'),
+  ('lm.pickPeople', 'vi', 'Chọn thành viên'),
   ('lm.plusInvites', 'vi', '+{{count}} lời mời'),
   ('lm.private', 'vi', 'Riêng tư'),
   ('lm.readOnlyNote', 'vi', 'Vai trò do quản trị sổ đổi; chia sẻ danh mục do chủ của từng danh mục đổi.'),
@@ -4579,6 +4629,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.saveN', 'vi', 'Lưu {{count}} thay đổi'),
   ('lm.saved', 'vi', 'Đã lưu quyền của {{name}}'),
   ('lm.searchCats', 'vi', 'Tìm danh mục…'),
+  ('lm.select', 'vi', 'Chọn nhiều'),
   ('lm.selectAll', 'vi', 'Chọn tất cả'),
   ('lm.setApproval', 'vi', 'Duyệt thay đổi'),
   ('lm.setApprovalValue', 'vi', 'Mức Đề xuất cần chủ danh mục duyệt; Đồng quản lý áp dụng ngay'),
@@ -4686,7 +4737,10 @@ insert into public.translations (key, language_code, value) values
   ('ls.transferHint', 'vi', 'Muốn chuyển quyền chủ sổ, hãy mở trang của thành viên đó.'),
   ('members.accountant', 'vi', 'Kế toán'),
   ('members.accountantDesc', 'vi', 'Có thể quản lý giao dịch và báo cáo'),
-  ('members.action', 'vi', 'Hành động'),
+  ('members.action', 'vi', 'Hành động')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('members.active', 'vi', 'Hoạt động'),
   ('members.activeMembers', 'vi', 'Thành viên đang hoạt động'),
   ('members.activeSeats', 'vi', 'Số người đang dùng'),
@@ -4703,10 +4757,7 @@ insert into public.translations (key, language_code, value) values
   ('members.invite', 'vi', 'Mời thành viên'),
   ('members.inviteError', 'vi', 'Gửi lời mời thất bại'),
   ('members.inviteLink', 'vi', 'Liên kết mời'),
-  ('members.inviteLinkHint', 'vi', 'Liên kết chỉ hiện một lần. Hãy gửi cho người được mời.')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('members.inviteLinkHint', 'vi', 'Liên kết chỉ hiện một lần. Hãy gửi cho người được mời.'),
   ('members.inviteMember', 'vi', 'Mời thành viên'),
   ('members.inviteSuccess', 'vi', 'Đã gửi lời mời'),
   ('members.joined', 'vi', 'Ngày tham gia'),
@@ -5089,7 +5140,10 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.profile', 'vi', 'Hồ sơ cá nhân'),
   ('settings.sidebar.security', 'vi', 'Bảo mật'),
   ('settingsHub.back', 'vi', 'Quay lại'),
-  ('settingsHub.editProfile', 'vi', 'Sửa hồ sơ cá nhân'),
+  ('settingsHub.editProfile', 'vi', 'Sửa hồ sơ cá nhân')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settingsHub.sectionAccount', 'vi', 'Tài khoản của tôi'),
   ('settingsHub.sectionAdvanced', 'vi', 'Dữ liệu & nâng cao'),
   ('settingsHub.sectionLedger', 'vi', 'Sổ cái đang mở'),
@@ -5106,10 +5160,7 @@ insert into public.translations (key, language_code, value) values
   ('summary.categories', 'vi', 'Danh mục'),
   ('summary.over', 'vi', 'trả dư {{amount}}'),
   ('summary.perPerson', 'vi', 'chia đều {{count}} người'),
-  ('summary.sharedCount', 'vi', '{{count}} chia sẻ')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('summary.sharedCount', 'vi', '{{count}} chia sẻ'),
   ('summary.short', 'vi', 'thiếu {{amount}}'),
   ('texts.applyLedger', 'vi', 'Áp dụng cho sổ'),
   ('texts.applyMe', 'vi', 'Chỉ áp cho tôi'),
@@ -5284,6 +5335,9 @@ insert into public.translations (key, language_code, value) values
   ('al.a_update', 'en', 'Changed'),
   ('al.allTime', 'en', 'All time'),
   ('al.allTypes', 'en', 'Everything'),
+  ('al.byAction', 'en', 'Action'),
+  ('al.byPerson', 'en', 'Person'),
+  ('al.byType', 'en', 'Type'),
   ('al.clear', 'en', 'Clear filters'),
   ('al.details', 'en', 'Details ({{count}})'),
   ('al.e_account', 'en', 'Accounts'),
@@ -5348,6 +5402,7 @@ insert into public.translations (key, language_code, value) values
   ('al.f_transfer_account_id', 'en', 'Transfer to'),
   ('al.f_user_id', 'en', 'Member'),
   ('al.f_warning_threshold_pct', 'en', 'Warning at'),
+  ('al.filters', 'en', 'Filters'),
   ('al.hiddenValue', 'en', '(hidden)'),
   ('al.hide', 'en', 'Hide'),
   ('al.k_create', 'en', 'added'),
@@ -5638,14 +5693,14 @@ insert into public.translations (key, language_code, value) values
   ('catdetail.memberSpendCount', 'en', '{{count}} transactions'),
   ('catdetail.memberSpendEmpty', 'en', 'No spending in this period'),
   ('catdetail.memberSpendLine', 'en', '{{count}} transactions · share {{share}}'),
-  ('catdetail.memberSpendPlain', 'en', 'Who paid how much in the selected period'),
-  ('catdetail.memberSpendShared', 'en', 'Selected period · split equally by {{count}}'),
-  ('catdetail.memberSpendTitle', 'en', 'Spending by member'),
-  ('catdetail.membersCount', 'en', '{{count}} members'),
-  ('catdetail.mergeTitle', 'en', 'Merge category')
+  ('catdetail.memberSpendPlain', 'en', 'Who paid how much in the selected period')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('catdetail.memberSpendShared', 'en', 'Selected period · split equally by {{count}}'),
+  ('catdetail.memberSpendTitle', 'en', 'Spending by member'),
+  ('catdetail.membersCount', 'en', '{{count}} members'),
+  ('catdetail.mergeTitle', 'en', 'Merge category'),
   ('catdetail.monthLabel', 'en', '{{m}}/{{y}}'),
   ('catdetail.noMembers', 'en', 'No members'),
   ('catdetail.noRules', 'en', 'No rules yet'),
@@ -5792,6 +5847,10 @@ insert into public.translations (key, language_code, value) values
   ('catui.remaining', 'en', '{{amount}} left'),
   ('catui.saveAsKeyword', 'en', 'Save as keyword'),
   ('catui.search', 'en', 'Search categories…'),
+  ('catui.sectionPrivate', 'en', 'Only me'),
+  ('catui.sectionPrivateSub', 'en', 'Only you can see these — open one to share it'),
+  ('catui.sectionShared', 'en', 'Shared'),
+  ('catui.sectionSharedSub', 'en', '{{mine}} of yours shared · {{others}} shared with you'),
   ('catui.settle', 'en', 'Settle up'),
   ('catui.settled', 'en', 'Settlement recorded'),
   ('catui.shared', 'en', 'Shared'),
@@ -6037,7 +6096,10 @@ insert into public.translations (key, language_code, value) values
   ('groups.formTitle', 'en', 'Create Group'),
   ('groups.hierarchy', 'en', 'Hierarchy Structure'),
   ('groups.iconLabel', 'en', 'Icon'),
-  ('groups.keywords', 'en', 'Keywords'),
+  ('groups.keywords', 'en', 'Keywords')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.keywordsHint', 'en', 'Type a keyword and press Enter'),
   ('groups.keywordsLabel', 'en', 'Auto-classification Keywords'),
   ('groups.keywordsPlaceholder', 'en', 'Type keyword and press Enter...'),
@@ -6045,10 +6107,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.mismatch', 'en', 'Mismatch'),
   ('groups.name', 'en', 'Group Name'),
   ('groups.noGroups', 'en', 'No groups yet'),
-  ('groups.noGroupsSub', 'en', 'Create groups to classify your transactions')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.noGroupsSub', 'en', 'Create groups to classify your transactions'),
   ('groups.none', 'en', 'None'),
   ('groups.over_budget', 'en', 'over budget'),
   ('groups.parent', 'en', 'Parent Group'),
@@ -6221,7 +6280,13 @@ insert into public.translations (key, language_code, value) values
   ('lm.bulkDone', 'en', 'Applied {{cats}} categories to {{people}} people'),
   ('lm.bulkNoPeople', 'en', 'No other members yet'),
   ('lm.bulkPick', 'en', 'Pick categories and people'),
+  ('lm.bulkRemove', 'en', 'Remove'),
+  ('lm.bulkRemoveConfirm', 'en', 'Remove {{names}} from the ledger? Their transactions stay.'),
+  ('lm.bulkRemoveDone', 'en', 'Removed {{count}} people'),
+  ('lm.bulkRole', 'en', 'Change role'),
+  ('lm.bulkRoleDone', 'en', 'Changed {{count}} people to {{role}}'),
   ('lm.bulkShare', 'en', 'Share in bulk'),
+  ('lm.bulkShareCats', 'en', 'Share categories'),
   ('lm.bulkStep1', 'en', '1 · Categories ({{count}})'),
   ('lm.bulkStep2', 'en', '2 · Share with'),
   ('lm.bulkStep3', 'en', '3 · Access level'),
@@ -6285,6 +6350,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.membersSub', 'en', 'Open someone to see their access in detail'),
   ('lm.membersTitle', 'en', 'Members · {{count}}'),
   ('lm.nCategories', 'en', '{{count}} categories'),
+  ('lm.nSelected', 'en', '{{count}} selected'),
   ('lm.never', 'en', 'No activity yet'),
   ('lm.noActivity', 'en', 'No activity yet'),
   ('lm.noChanges', 'en', 'No changes yet'),
@@ -6310,6 +6376,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.perm_transaction_update', 'en', 'Edit their transactions'),
   ('lm.permsSub', 'en', 'From the role, adjustable one by one'),
   ('lm.permsTitle', 'en', 'Permissions'),
+  ('lm.pickPeople', 'en', 'Pick members'),
   ('lm.plusInvites', 'en', '+{{count}} invites'),
   ('lm.private', 'en', 'Private'),
   ('lm.readOnlyNote', 'en', 'Roles are changed by ledger admins; sharing by each category''s owner.'),
@@ -6324,6 +6391,7 @@ insert into public.translations (key, language_code, value) values
   ('lm.saveN', 'en', 'Save {{count}} changes'),
   ('lm.saved', 'en', 'Saved {{name}}''s access'),
   ('lm.searchCats', 'en', 'Search categories…'),
+  ('lm.select', 'en', 'Select'),
   ('lm.selectAll', 'en', 'Select all'),
   ('lm.setApproval', 'en', 'Approvals'),
   ('lm.setApprovalValue', 'en', '“Propose” needs the owner; “Co-manage” applies at once'),
@@ -6431,7 +6499,10 @@ insert into public.translations (key, language_code, value) values
   ('ls.transferHint', 'en', 'To hand over ownership, open that member''s page.'),
   ('members.accountant', 'en', 'Accountant'),
   ('members.accountantDesc', 'en', 'Can manage transactions and reports'),
-  ('members.action', 'en', 'Action'),
+  ('members.action', 'en', 'Action')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('members.active', 'en', 'Active'),
   ('members.activeMembers', 'en', 'Active Members'),
   ('members.activeSeats', 'en', 'Active Seats'),
@@ -6448,10 +6519,7 @@ insert into public.translations (key, language_code, value) values
   ('members.invite', 'en', 'Invite Member'),
   ('members.inviteError', 'en', 'Failed to send invitation'),
   ('members.inviteLink', 'en', 'Invite link'),
-  ('members.inviteLinkHint', 'en', 'This link is shown once. Send it to the invitee.')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('members.inviteLinkHint', 'en', 'This link is shown once. Send it to the invitee.'),
   ('members.inviteMember', 'en', 'Invite Member'),
   ('members.inviteSuccess', 'en', 'Invitation sent'),
   ('members.joined', 'en', 'Joined'),
@@ -6834,7 +6902,10 @@ insert into public.translations (key, language_code, value) values
   ('settings.sidebar.profile', 'en', 'Profile'),
   ('settings.sidebar.security', 'en', 'Security'),
   ('settingsHub.back', 'en', 'Back'),
-  ('settingsHub.editProfile', 'en', 'Edit profile'),
+  ('settingsHub.editProfile', 'en', 'Edit profile')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settingsHub.sectionAccount', 'en', 'My account'),
   ('settingsHub.sectionAdvanced', 'en', 'Data & advanced'),
   ('settingsHub.sectionLedger', 'en', 'Open ledger'),
@@ -6851,10 +6922,7 @@ insert into public.translations (key, language_code, value) values
   ('summary.categories', 'en', 'Categories'),
   ('summary.over', 'en', '{{amount}} over'),
   ('summary.perPerson', 'en', 'split by {{count}}'),
-  ('summary.sharedCount', 'en', '{{count}} shared')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('summary.sharedCount', 'en', '{{count}} shared'),
   ('summary.short', 'en', '{{amount}} short'),
   ('texts.applyLedger', 'en', 'Apply to ledger'),
   ('texts.applyMe', 'en', 'Apply for me'),

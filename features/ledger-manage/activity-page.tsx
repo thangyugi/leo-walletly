@@ -4,9 +4,11 @@ import * as React from 'react'
 import Link from 'next/link'
 import {
   ArrowLeft, ChevronRight, ChevronDown, Search, X, Plus, Pencil, Trash2, RotateCcw, ArrowDownUp, FolderTree, Wallet,
-  PiggyBank, Wand2, RefreshCw, Users, BookOpen, History, Loader2, ArrowRight,
+  PiggyBank, Wand2, RefreshCw, Users, BookOpen, History, Loader2, ArrowRight, CalendarDays, SlidersHorizontal, Check,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { PageHeader } from '@/components/layout/page-header'
+import { Popover } from '@/components/ui/popover'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -72,6 +74,9 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
   const [loadingMore, setLoadingMore] = React.useState(false)
   const [open, setOpen] = React.useState<Set<number>>(new Set())
   const [rules, setRules] = React.useState<Record<string, string>>({})
+  const [panel, setPanel] = React.useState<null | 'range' | 'filter'>(null)
+  const rangeRef = React.useRef<HTMLButtonElement>(null)
+  const filterRef = React.useRef<HTMLButtonElement>(null)
 
   // Typing settles for a moment before searching.
   React.useEffect(() => { const h = setTimeout(() => setQuery(search.trim()), 300); return () => clearTimeout(h) }, [search])
@@ -169,70 +174,85 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
   const [yesterday] = React.useState(() => new Date(Date.now() - 86400_000).toDateString())
   const dayLabel = (k: string) => (k === today ? A.today : k === yesterday ? A.yesterday : new Date(k).toLocaleDateString(lang, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }))
 
-  const filtered = !!(query || entity || action || actor || range !== 30)
+  const activeCount = [entity, action, actor].filter(Boolean).length
+  const filtered = !!(query || activeCount || range !== 30)
+  const rangeLabel = (d: number) => (d ? A.lastDays.replace('{{count}}', String(d)) : A.allTime)
   const reset = () => { setSearch(''); setQuery(''); setEntity(null); setAction(null); setActor(null); setRange(30) }
 
-  const chip = (on: boolean) => cn('shrink-0 inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12.5px] font-medium transition-colors whitespace-nowrap',
-    on ? 'bg-[#111827] border-[#111827] text-white' : 'bg-[var(--color-surface-default)] border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')
+  const pill = (on: boolean) => cn('inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12.5px] font-medium transition-colors whitespace-nowrap',
+    on ? 'border-[#10b981] bg-[#ecfdf5] text-[#047857]' : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')
 
   return (
-    <div className="space-y-4 max-w-4xl">
+    <div className="space-y-5">
       <nav className="flex items-center gap-1.5 text-[12.5px]">
         <Link href="/ledger" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"><ArrowLeft className="w-4 h-4" />{t.lm.title}</Link>
         <ChevronRight className="w-3 h-3 text-[var(--color-text-quaternary)]" />
         <span className="font-semibold text-[var(--color-text-primary)]">{A.title}</span>
       </nav>
-      <header>
-        <h1 className="text-[19px] font-semibold tracking-tight text-[var(--color-text-primary)]">{A.title}</h1>
-        <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">{A.subtitle}</p>
-      </header>
+      <PageHeader title={A.title} subtitle={A.subtitle} />
 
-      {/* Filters */}
-      <section className="rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] p-3 sm:p-4 space-y-3">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <label className="flex-1 flex items-center gap-2 h-9 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] focus-within:border-[var(--color-border-focus)]">
-            <Search className="w-4 h-4 text-[var(--color-text-quaternary)]" />
-            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={A.search} aria-label={A.search} className="flex-1 min-w-0 bg-transparent text-[13px] outline-none" />
+      {/* Filters: one quiet row; the rest opens on demand, active ones show as removable chips. */}
+      <div className="space-y-2.5">
+        <div className="flex items-center gap-2">
+          <label className="flex-1 min-w-0 flex items-center gap-2 h-10 px-3.5 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] focus-within:border-[var(--color-border-focus)] transition-colors">
+            <Search className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder={A.search} aria-label={A.search} className="flex-1 min-w-0 bg-transparent text-[13.5px] outline-none" />
             {search && <button type="button" onClick={() => setSearch('')} aria-label={t.common.close}><X className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" /></button>}
           </label>
-          <div className="inline-flex p-[3px] rounded-[10px] bg-[var(--color-bg-sunken)] gap-[2px] self-start" role="radiogroup" aria-label={A.period}>
-            {RANGES.map((d) => (
-              <button key={d} type="button" role="radio" aria-checked={range === d} onClick={() => setRange(d)}
-                className={cn('px-3 h-[30px] rounded-lg text-[12.5px] font-medium whitespace-nowrap', range === d ? 'bg-[var(--color-surface-default)] text-[var(--color-text-primary)] font-semibold shadow-[0_1px_2px_rgba(16,24,40,0.08)]' : 'text-[var(--color-text-tertiary)]')}>
-                {d ? A.lastDays.replace('{{count}}', String(d)) : A.allTime}
-              </button>
-            ))}
-          </div>
+          <button ref={rangeRef} type="button" onClick={() => setPanel(panel === 'range' ? null : 'range')} aria-haspopup="dialog" aria-expanded={panel === 'range'}
+            className="shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[13px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]">
+            <CalendarDays className="w-4 h-4 text-[var(--color-text-tertiary)]" /><span className="hidden sm:inline">{rangeLabel(range)}</span><ChevronDown className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
+          </button>
+          <button ref={filterRef} type="button" onClick={() => setPanel(panel === 'filter' ? null : 'filter')} aria-haspopup="dialog" aria-expanded={panel === 'filter'}
+            className={cn('shrink-0 inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border text-[13px] font-medium transition-colors',
+              activeCount ? 'border-[#111827] bg-[#111827] text-white' : 'border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')}>
+            <SlidersHorizontal className="w-4 h-4" /><span className="hidden sm:inline">{A.filters}</span>
+            {activeCount > 0 && <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-white/20 text-[11px] font-semibold inline-flex items-center justify-center">{activeCount}</span>}
+          </button>
         </div>
-        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-3 px-3 sm:mx-0 sm:px-0 sm:flex-wrap">
-          <button type="button" className={chip(!entity)} onClick={() => setEntity(null)}>{A.allTypes}</button>
-          {ENTITIES.map((e) => (
-            <button key={e.key} type="button" className={chip(entity === e.key)} onClick={() => setEntity(entity === e.key ? null : e.key)}>
-              <e.icon className="w-3.5 h-3.5" />{A[`e_${e.key}`]}
+
+        {(activeCount > 0 || range !== 30) && (
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="text-[12px] text-[var(--color-text-tertiary)] sm:hidden mr-0.5">{rangeLabel(range)} ·</span>
+            {entity && <ActiveChip label={A[`e_${entity}`]} onRemove={() => setEntity(null)} />}
+            {action && <ActiveChip label={A[`a_${action}`]} onRemove={() => setAction(null)} />}
+            {actor && <ActiveChip label={personOf(actor)?.name ?? '—'} onRemove={() => setActor(null)} />}
+            <button type="button" onClick={reset} className="ml-1 text-[12px] font-semibold text-[var(--color-text-brand)]">{A.clear}</button>
+          </div>
+        )}
+
+        <Popover anchorRef={rangeRef} open={panel === 'range'} onClose={() => setPanel(null)} width={200} align="end" title={A.period} className="p-1">
+          {RANGES.map((d) => (
+            <button key={d} type="button" onClick={() => { setRange(d); setPanel(null) }}
+              className={cn('w-full flex items-center gap-2 px-3 h-10 rounded-lg text-[13.5px] text-left hover:bg-[var(--color-bg-sunken)]', range === d ? 'font-semibold text-[var(--color-text-primary)]' : 'text-[var(--color-text-secondary)]')}>
+              <span className="flex-1">{rangeLabel(d)}</span>{range === d && <Check className="w-4 h-4 text-[#059669]" />}
             </button>
           ))}
-        </div>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <div className="flex gap-1.5">
+        </Popover>
+
+        <Popover anchorRef={filterRef} open={panel === 'filter'} onClose={() => setPanel(null)} width={340} align="end" title={A.filters} className="p-4 space-y-4">
+          <FilterGroup label={A.byType}>
+            {ENTITIES.map((e) => (
+              <button key={e.key} type="button" className={pill(entity === e.key)} onClick={() => setEntity(entity === e.key ? null : e.key)}>
+                <e.icon className="w-3.5 h-3.5" />{A[`e_${e.key}`]}
+              </button>
+            ))}
+          </FilterGroup>
+          <FilterGroup label={A.byAction}>
             {(['create', 'update', 'delete'] as const).map((a) => (
-              <button key={a} type="button" className={chip(action === a)} onClick={() => setAction(action === a ? null : a)}>
-                {a === 'create' ? <Plus className="w-3.5 h-3.5" /> : a === 'update' ? <Pencil className="w-3.5 h-3.5" /> : <Trash2 className="w-3.5 h-3.5" />}{A[`a_${a}`]}
-              </button>
+              <button key={a} type="button" className={pill(action === a)} onClick={() => setAction(action === a ? null : a)}>{A[`a_${a}`]}</button>
             ))}
-          </div>
-          <span className="hidden sm:block w-px h-6 bg-[var(--color-border-default)]" />
-          <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
+          </FilterGroup>
+          <FilterGroup label={A.byPerson}>
             {people.map((p) => (
-              <button key={p.id} type="button" onClick={() => setActor(actor === p.id ? null : p.id)}
-                className={cn('shrink-0 inline-flex items-center gap-1.5 h-8 pl-1 pr-3 rounded-full border text-[12.5px] font-medium transition-colors',
-                  actor === p.id ? 'border-[#10b981] bg-[#f6fef9] text-[var(--color-text-primary)]' : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')}>
-                <Avatar name={p.name} color={p.color} size={24} />{p.name}
+              <button key={p.id} type="button" onClick={() => setActor(actor === p.id ? null : p.id)} className={cn(pill(actor === p.id), 'pl-1')}>
+                <Avatar name={p.name} color={p.color} size={22} />{p.name}
               </button>
             ))}
-          </div>
-          {filtered && <button type="button" onClick={reset} className="ml-auto inline-flex items-center gap-1 text-[12.5px] font-semibold text-[var(--color-text-brand)]"><RotateCcw className="w-3.5 h-3.5" />{A.clear}</button>}
-        </div>
-      </section>
+          </FilterGroup>
+          {activeCount > 0 && <button type="button" onClick={() => { setEntity(null); setAction(null); setActor(null) }} className="text-[12.5px] font-semibold text-[var(--color-text-brand)]">{A.clear}</button>}
+        </Popover>
+      </div>
 
       {/* Entries */}
       {rows === null ? (
@@ -333,5 +353,23 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
         </div>
       )}
     </div>
+  )
+}
+
+function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">{label}</p>
+      <div className="flex flex-wrap gap-1.5">{children}</div>
+    </div>
+  )
+}
+
+function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 h-7 pl-2.5 pr-1 rounded-full bg-[#ecfdf5] text-[#047857] text-[12px] font-medium">
+      {label}
+      <button type="button" onClick={onRemove} aria-label={label} className="w-5 h-5 rounded-full inline-flex items-center justify-center hover:bg-[#d1fadf]"><X className="w-3 h-3" /></button>
+    </span>
   )
 }

@@ -4,8 +4,9 @@ import * as React from 'react'
 import Link from 'next/link'
 import {
   BookOpen, Users, Share2, GitPullRequestArrow, History, Bell, Mail, Lock, ShieldCheck, Settings, UserPlus, Layers,
-  ChevronRight, Link2, Clock, CheckCircle2, Sparkles,
+  ChevronRight, Link2, Clock, CheckCircle2, Sparkles, ListChecks, X, Check, ChevronDown, UserMinus,
 } from 'lucide-react'
+import { Popover } from '@/components/ui/popover'
 import { Button } from '@/components/ui/button'
 import { CategoryIcon } from '@/features/categories/category-icon'
 import { useTranslation } from '@/hooks/useTranslation'
@@ -32,7 +33,12 @@ export interface OverviewProps {
   canInvite: boolean
   canBulkShare: boolean
   onInvite: () => void
-  onBulkShare: () => void
+  onBulkShare: (peopleIds?: string[]) => void
+  /** Roles the signed-in user may hand out (empty = cannot change roles). */
+  assignableRoles: string[]
+  canRemove: boolean
+  onBulkRole: (people: Person[], role: string) => Promise<void>
+  onBulkRemove: (people: Person[]) => Promise<void>
   onCopyInvite: (inv: Invitation) => void
 }
 
@@ -44,12 +50,22 @@ export function LedgerOverview(p: OverviewProps) {
   const mineTop = top.filter((c) => c.is_mine)
   const privateMine = mineTop.filter((c) => c.audience_ids.length === 0)
   const [now] = React.useState(() => Date.now())
+  const [selecting, setSelecting] = React.useState(false)
+  const [picked, setPicked] = React.useState<Set<string>>(new Set())
+  const [roleOpen, setRoleOpen] = React.useState(false)
+  const [busy, setBusy] = React.useState(false)
+  const roleRef = React.useRef<HTMLButtonElement>(null)
+  const selectable = p.people.filter((m) => m.id !== p.me)
+  const chosen = selectable.filter((m) => picked.has(m.id))
+  const canSelect = selectable.length > 0 && (p.canBulkShare || p.assignableRoles.length > 0 || p.canRemove)
+  const stopSelecting = () => { setSelecting(false); setPicked(new Set()); setRoleOpen(false) }
+  const run = async (fn: () => Promise<void>) => { setBusy(true); try { await fn(); stopSelecting() } finally { setBusy(false) } }
   const weekAgo = now - 7 * 86400_000
   const lastWeek = p.activity.filter((a) => new Date(a.at).getTime() >= weekAgo).length
   const nameOf = (id: string | null) => p.people.find((x) => x.id === id)?.name ?? '—'
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       {/* Summary band */}
       <div className="relative overflow-hidden rounded-2xl text-white shadow-[0_14px_34px_-22px_rgba(4,120,87,0.7)]"
         style={{ background: 'linear-gradient(120deg,#047857 0%,#059669 55%,#10b981 100%)' }}>
@@ -82,7 +98,10 @@ export function LedgerOverview(p: OverviewProps) {
       {/* People: who is in the ledger · what needs a look */}
       <Group>
         <GroupSection icon={Users} title={L.membersTitle.replace('{{count}}', String(p.people.length))} sub={L.membersSub}
-          right={p.canInvite ? <Button size="sm" variant="outline" icon={<UserPlus />} onClick={p.onInvite}>{L.invite}</Button> : undefined}>
+          right={<div className="flex gap-2">
+            {canSelect && <Button size="sm" variant={selecting ? 'secondary' : 'outline'} icon={selecting ? <X /> : <ListChecks />} onClick={() => (selecting ? stopSelecting() : setSelecting(true))}>{selecting ? L.cancel : L.select}</Button>}
+            {p.canInvite && !selecting && <Button size="sm" variant="outline" icon={<UserPlus />} onClick={p.onInvite}>{L.invite}</Button>}
+          </div>}>
           <div className="hidden md:flex items-center px-1.5 pb-2 border-b border-[var(--color-border-default)] text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">
             <span className="flex-[1.6]">{L.colMember}</span><span className="w-[120px]">{L.colRole}</span><span className="w-[130px]">{L.colCategories}</span>
             <span className="w-[80px]">{L.colTx}</span><span className="w-[120px]">{L.colActive}</span><span className="w-4" />
@@ -92,7 +111,16 @@ export function LedgerOverview(p: OverviewProps) {
               const n = top.filter((c) => levelOf(c, m.id) !== null).length
               const s = p.summary[m.id]
               return (
-                <Link key={m.id} href={`/ledger?member=${m.id}`} className="flex items-center gap-3 md:gap-0 py-2.5 px-1.5 rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors">
+                <Link key={m.id} href={`/ledger?member=${m.id}`}
+                  onClick={(e) => { if (!selecting) return; e.preventDefault(); if (m.id === p.me) return; setPicked((s0) => { const n2 = new Set(s0); if (n2.has(m.id)) n2.delete(m.id); else n2.add(m.id); return n2 }) }}
+                  aria-pressed={selecting ? picked.has(m.id) : undefined}
+                  className={cn('flex items-center gap-3 md:gap-0 py-2.5 px-1.5 rounded-xl transition-colors', selecting && picked.has(m.id) ? 'bg-[#f6fef9] ring-1 ring-inset ring-[#bbf7d0]' : 'hover:bg-[var(--color-bg-sunken)]', selecting && m.id === p.me && 'opacity-50 cursor-default')}>
+                  {selecting && (
+                    <span className={cn('mr-3 w-[18px] h-[18px] rounded-[5px] border-[1.5px] inline-flex items-center justify-center shrink-0',
+                      picked.has(m.id) ? 'bg-[#059669] border-[#059669] text-white' : 'border-[var(--color-border-strong)] bg-[var(--color-surface-default)]')}>
+                      {picked.has(m.id) && <Check className="w-3 h-3" strokeWidth={3} />}
+                    </span>
+                  )}
                   <div className="flex items-center gap-2.5 flex-[1.6] min-w-0">
                     <Avatar name={m.name} color={m.color} size={34} />
                     <div className="min-w-0">
@@ -108,7 +136,7 @@ export function LedgerOverview(p: OverviewProps) {
                     <span className={cn('w-[7px] h-[7px] rounded-full', s?.lastActiveAt && now - new Date(s.lastActiveAt).getTime() < 86400_000 ? 'bg-[#12b76a]' : 'bg-[var(--color-border-strong)]')} />
                     <span className="truncate">{relTime(s?.lastActiveAt ?? null, lang, L.never)}</span>
                   </span>
-                  <ChevronRight className="w-4 h-4 text-[var(--color-text-quaternary)] ml-auto md:ml-0" />
+                  {!selecting && <ChevronRight className="w-4 h-4 text-[var(--color-text-quaternary)] ml-auto md:ml-0" />}
                 </Link>
               )
             })}
@@ -124,7 +152,7 @@ export function LedgerOverview(p: OverviewProps) {
             ))}
           </div>
         </GroupSection>
-        <GroupSection icon={Bell} tone="#d97706" title={L.attentionTitle} side>
+        <GroupSection icon={Bell} title={L.attentionTitle} side>
           <Attention p={p} privateMine={privateMine} nameOf={nameOf} />
         </GroupSection>
       </Group>
@@ -132,7 +160,7 @@ export function LedgerOverview(p: OverviewProps) {
       {/* Access: what is shared with whom · what each role may do */}
       <Group>
         <GroupSection icon={Share2} title={L.sharedTitle.replace('{{shared}}', String(sharedTop.length)).replace('{{total}}', String(top.length))} sub={L.sharedSub}
-          right={p.canBulkShare ? <Button size="sm" variant="outline" icon={<Layers />} onClick={p.onBulkShare}>{L.bulkShare}</Button> : undefined}>
+          right={p.canBulkShare ? <Button size="sm" variant="outline" icon={<Layers />} onClick={() => p.onBulkShare()}>{L.bulkShare}</Button> : undefined}>
           <div className="flex flex-wrap gap-1.5 -mt-1 mb-2">{ACCESS_ORDER.map((k) => <LevelPill key={k} level={k} label={L[`level_${k}`]} className="h-5 text-[11px]" />)}</div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-x-5">
             {top.map((c) => {
@@ -179,6 +207,35 @@ export function LedgerOverview(p: OverviewProps) {
           )}
         </GroupSection>
       </Group>
+
+      {selecting && (
+        <div className="fixed z-[160] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:ml-[116px]
+          flex flex-wrap items-center gap-2 rounded-2xl bg-[#101828] text-white pl-4 pr-2 py-2 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.45)]">
+          <span className="text-[13px] font-medium mr-1 whitespace-nowrap">{chosen.length ? L.nSelected.replace('{{count}}', String(chosen.length)) : L.pickPeople}</span>
+          {p.canBulkShare && (
+            <button type="button" disabled={!chosen.length || busy} onClick={() => { p.onBulkShare(chosen.map((m) => m.id)); stopSelecting() }}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] font-semibold bg-white/10 hover:bg-white/[0.16] disabled:opacity-40"><Layers className="w-3.5 h-3.5" />{L.bulkShareCats}</button>
+          )}
+          {p.assignableRoles.length > 0 && (
+            <button ref={roleRef} type="button" disabled={!chosen.length || busy} onClick={() => setRoleOpen((o) => !o)} aria-haspopup="dialog" aria-expanded={roleOpen}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] font-semibold bg-white/10 hover:bg-white/[0.16] disabled:opacity-40"><ShieldCheck className="w-3.5 h-3.5" />{L.bulkRole}<ChevronDown className="w-3.5 h-3.5 opacity-70" /></button>
+          )}
+          {p.canRemove && (
+            <button type="button" disabled={!chosen.length || busy} onClick={() => void run(() => p.onBulkRemove(chosen))}
+              className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12.5px] font-semibold text-[#fda29b] hover:bg-white/[0.08] disabled:opacity-40"><UserMinus className="w-3.5 h-3.5" />{L.bulkRemove}</button>
+          )}
+          <button type="button" onClick={stopSelecting} aria-label={L.cancel} className="w-8 h-8 rounded-lg inline-flex items-center justify-center text-white/70 hover:text-white"><X className="w-4 h-4" /></button>
+          <Popover anchorRef={roleRef} open={roleOpen} onClose={() => setRoleOpen(false)} width={260} align="center" title={L.bulkRole} className="p-1">
+            {p.assignableRoles.map((r) => (
+              <button key={r} type="button" onClick={() => { setRoleOpen(false); void run(() => p.onBulkRole(chosen, r)) }}
+                className="w-full text-left px-3 py-2.5 rounded-lg hover:bg-[var(--color-bg-sunken)]">
+                <span className="block text-[13.5px] font-semibold text-[var(--color-text-primary)]">{tk(`role.${r}.name`)}</span>
+                <span className="block text-[11.5px] text-[var(--color-text-tertiary)]">{tk(`role.${r}.description`)}</span>
+              </button>
+            ))}
+          </Popover>
+        </div>
+      )}
     </div>
   )
 }

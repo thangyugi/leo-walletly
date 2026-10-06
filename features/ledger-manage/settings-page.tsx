@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
-  ArrowLeft, ChevronRight, Copy, Check, Pencil, Eye, BookOpen, Layers, Coins, Clock, Globe, Languages, CalendarRange,
+  ArrowLeft, ChevronRight, Copy, Check, Pencil, BookOpen, Layers, Coins, Clock, Globe, Languages, CalendarRange,
   Hash, Crown, Users, History, Type, Trash2, LogOut, GitPullRequestArrow, Mail, Info,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -105,25 +105,23 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
   ]
 
   return (
-    <div className={cn('space-y-4 max-w-4xl', editing && 'pb-24')}>
+    <div className={cn('space-y-5', editing && 'pb-24')}>
       <nav className="flex items-center gap-1.5 text-[12.5px]">
         <Link href="/ledger" className="inline-flex items-center gap-1.5 text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)]"><ArrowLeft className="w-4 h-4" />{t.lm.title}</Link>
         <ChevronRight className="w-3 h-3 text-[var(--color-text-quaternary)]" />
         <span className="font-semibold text-[var(--color-text-primary)]">{S.title}</span>
       </nav>
 
-      <header className="flex flex-col sm:flex-row sm:items-end gap-3">
+      <header className="flex flex-col xl:flex-row xl:items-end justify-between gap-3">
         <div className="flex-1 min-w-0">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[19px] font-semibold tracking-tight text-[var(--color-text-primary)]">{S.title}</h1>
-            {editing
-              ? <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[#fffaeb] text-[#b54708]"><Pencil className="w-3 h-3" />{t.lm.editingBadge}</span>
-              : <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]"><Eye className="w-3 h-3" />{t.lm.viewBadge}</span>}
+            <h1 className="font-semibold text-[var(--color-text-primary)] tracking-tight leading-snug" style={{ fontSize: '1.1875rem' }}>{S.title}</h1>
+            {editing && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[#ecfdf5] text-[#047857]"><Pencil className="w-3 h-3" />{t.lm.editingBadge}</span>}
           </div>
-          <p className="mt-1 text-sm text-[var(--color-text-tertiary)]">{S.subtitle}</p>
+          <p className="mt-1 text-sm text-[var(--color-text-tertiary)] leading-normal">{S.subtitle}</p>
         </div>
         {!editing && editable && (
-          <Link href={`${base}?edit=1`} scroll={false} className="hidden sm:inline-flex self-start sm:self-auto items-center gap-2 h-9 px-4 rounded-lg text-sm font-medium text-white bg-[#101828] hover:bg-[#1d2939]"><Pencil className="w-4 h-4" />{t.lm.edit}</Link>
+          <Link href={`${base}?edit=1`} scroll={false} className="hidden sm:inline-flex self-start xl:self-auto items-center gap-2 h-9 px-4 rounded-lg text-sm font-medium text-white bg-[#101828] hover:bg-[#1d2939]"><Pencil className="w-4 h-4" />{t.lm.edit}</Link>
         )}
       </header>
 
@@ -133,10 +131,10 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
             {rows.map((r) => {
               const isChanged = editing && r.key in form && (changed as readonly string[]).includes(r.key)
               return (
-                <div key={r.key} className={cn('grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-x-4 gap-y-1.5 py-3 px-1 -mx-1 rounded-md', isChanged && 'bg-[#fffcf5] shadow-[inset_3px_0_0_#f79009] px-3 -mx-3')}>
+                <div key={r.key} className={cn('grid grid-cols-1 sm:grid-cols-[200px_1fr] gap-x-4 gap-y-1.5 py-3 px-1 -mx-1 rounded-xl', isChanged && 'bg-[#f6fef9] ring-1 ring-inset ring-[#bbf7d0] px-3 -mx-3 my-1')}>
                   <div className="flex items-center gap-2.5 text-[13px] text-[var(--color-text-tertiary)]">
                     <r.icon className="w-4 h-4 text-[var(--color-text-quaternary)] shrink-0" />{r.label}
-                    {isChanged && <span className="inline-flex h-[18px] items-center px-1.5 rounded-md text-[10px] font-semibold bg-[#fef0c7] text-[#b54708]">{t.lm.changed}</span>}
+                    {isChanged && <span className="inline-flex h-[18px] items-center px-1.5 rounded-md text-[10px] font-semibold bg-[#d1fadf] text-[#067647]">{t.lm.changed}</span>}
                   </div>
                   <div className="min-w-0">
                     {editing && r.edit ? r.edit : <span className="text-[13.5px] font-semibold text-[var(--color-text-primary)] break-words">{r.view}</span>}
@@ -150,7 +148,7 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
         </Panel>
 
         <div className="space-y-4">
-          <Panel icon={GitPullRequestArrow} tone="#b54708" title={S.rulesTitle}>
+          <Panel icon={GitPullRequestArrow} title={S.rulesTitle}>
             <ul className="space-y-2.5 text-[12.5px] text-[var(--color-text-secondary)]">
               <li className="flex gap-2"><GitPullRequestArrow className="w-4 h-4 mt-px text-[var(--color-text-quaternary)] shrink-0" />{t.lm.setApprovalValue}</li>
               <li className="flex gap-2"><Mail className="w-4 h-4 mt-px text-[var(--color-text-quaternary)] shrink-0" />{t.lm.setInviteValue}</li>
@@ -200,7 +198,7 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
         <div className="fixed z-[160] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:ml-[116px]
           flex items-center gap-3 rounded-2xl bg-[#101828] text-white pl-4 pr-2 py-2 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.45)]">
           <span className="flex items-center gap-2 text-[13px] min-w-0 flex-1 md:flex-none">
-            <span className={cn('w-2 h-2 rounded-full shrink-0', dirty ? 'bg-[#fdb022]' : 'bg-white/40')} />
+            <span className={cn('w-2 h-2 rounded-full shrink-0', dirty ? 'bg-[#32d583]' : 'bg-white/40')} />
             <span className="truncate">{dirty ? t.lm.unsaved.replace('{{count}}', String(changed.length)) : t.lm.noChanges}</span>
           </span>
           <button type="button" onClick={() => void leaveEdit()} className="h-8 px-3 rounded-lg text-[13px] font-semibold text-white/75 hover:text-white">{t.lm.cancel}</button>
