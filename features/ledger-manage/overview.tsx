@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import {
-  BookOpen, Users, Share2, GitPullRequestArrow, History, Bell, Mail, Lock, ShieldCheck, Settings, UserPlus, Layers,
+  BookOpen, Users, Share2, GitPullRequestArrow, History, Bell, Mail, Lock, ShieldCheck, UserPlus, Layers,
   ChevronRight, Link2, Clock, CheckCircle2, Sparkles, ListChecks, X, Check, ChevronDown, UserMinus,
 } from 'lucide-react'
 import { Popover } from '@/components/ui/popover'
@@ -81,9 +81,6 @@ export function LedgerOverview(p: OverviewProps) {
                 <AvatarStack people={p.people} size={24} />
                 {p.invitations.length > 0 && <span className="text-[11.5px] text-white/85 ml-1">{L.plusInvites.replace('{{count}}', String(p.invitations.length))}</span>}
               </div>
-              <Link href="/ledger/settings" className="inline-flex items-center gap-1.5 mt-2.5 h-7 pl-2.5 pr-2 rounded-full bg-white/[0.16] hover:bg-white/[0.26] text-[12px] font-semibold transition-colors">
-                <Settings className="w-3.5 h-3.5" />{L.ledgerSettings}<ChevronRight className="w-3.5 h-3.5 opacity-80" />
-              </Link>
             </div>
           </div>
           <div className="grid grid-cols-2 lg:grid-cols-4 lg:flex-1 border-t lg:border-t-0 border-white/[0.18]">

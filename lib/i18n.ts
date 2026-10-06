@@ -1127,6 +1127,8 @@ const ja = {
     sectionSharedSub: 'あなたが共有 {{mine}} · 共有されている {{others}}',
     sectionPrivate: '自分だけ',
     sectionPrivateSub: 'あなただけに表示されます。開くと共有できます',
+    unclassifiedTitle: '未分類の取引',
+    unclassifiedSub: '最新順・全期間 · {{groups}} グループ',
   },
   catform: {
     errorNotOwner: 'サブカテゴリは自分のカテゴリの中にだけ作れます。共有されたカテゴリは持ち主だけが変更できます。',
@@ -3005,6 +3007,8 @@ const vi: typeof ja = {
     sectionSharedSub: '{{mine}} của bạn đang chia sẻ · {{others}} người khác chia sẻ với bạn',
     sectionPrivate: 'Chỉ mình tôi',
     sectionPrivateSub: 'Chỉ bạn nhìn thấy — mở một danh mục để chia sẻ',
+    unclassifiedTitle: 'Giao dịch chưa phân loại',
+    unclassifiedSub: 'Mới nhất trên mọi thời gian · {{groups}} nhóm',
   },
   catform: {
     errorNotOwner: 'Chỉ tạo được danh mục con trong danh mục của bạn. Danh mục được chia sẻ chỉ chủ sở hữu mới thay đổi được.',
@@ -4883,6 +4887,8 @@ const en: typeof ja = {
     sectionSharedSub: '{{mine}} of yours shared · {{others}} shared with you',
     sectionPrivate: 'Only me',
     sectionPrivateSub: 'Only you can see these — open one to share it',
+    unclassifiedTitle: 'Unclassified transactions',
+    unclassifiedSub: 'Latest across all time · {{groups}} groups',
   },
   catform: {
     errorNotOwner: 'You can only add sub-categories to your own categories. Only the owner can change a shared category.',
