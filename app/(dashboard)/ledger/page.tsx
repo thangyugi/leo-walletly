@@ -34,7 +34,7 @@ export default function LedgerManagePage() {
 }
 
 function LedgerManageContent() {
-  const { t, tk } = useTranslation()
+  const { t } = useTranslation()
   const L = t.lm
   const params = useSearchParams()
   const router = useRouter()
@@ -153,28 +153,7 @@ function LedgerManageContent() {
           overrideCount={overrideCount} roles={roleList} canInvite={canInvite}
           canBulkShare={people.length > 1 && categories.some((c) => !c.parent_id && c.is_mine)}
           onInvite={() => setInviteOpen(true)} onBulkShare={(ids) => { setBulkPeople(ids ?? []); setBulkOpen(true) }}
-          assignableRoles={roleList.filter((r) => r.is_assignable && r.rank < myRank && can('member.update')).map((r) => r.code)}
-          canRemove={can('member.remove')}
-          onBulkRole={async (list, role) => {
-            let ok = 0
-            for (const m of list) {
-              if (m.role === role || m.role === 'OWNER') continue
-              try { await store.saveMember(m.memberId, { role }); ok++ } catch (e) { toast.error(`${m.name}: ${(e as Error).message}`) }
-            }
-            if (ok) toast.success(L.bulkRoleDone.replace('{{count}}', String(ok)).replace('{{role}}', tk(`role.${role}.name`)))
-            await afterSave()
-          }}
-          onBulkRemove={async (list) => {
-            const removable = list.filter((m) => m.role !== 'OWNER')
-            if (!removable.length || !(await confirmDialog({ danger: true, message: L.bulkRemoveConfirm.replace('{{names}}', removable.map((m) => m.name).join(', ')) }))) return
-            let ok = 0
-            for (const m of removable) {
-              try { await MemberService.remove(m.memberId); ok++ } catch (e) { toast.error(`${m.name}: ${(e as Error).message}`) }
-            }
-            if (ok) toast.success(L.bulkRemoveDone.replace('{{count}}', String(ok)))
-            void useUserManagementStore.getState().load(current.id, canInvite)
-            await afterSave()
-          }} onCopyInvite={(inv) => void copyInvite(inv)} />
+ onCopyInvite={(inv) => void copyInvite(inv)} />
       )}
 
       {inviteOpen && (
