@@ -58,7 +58,7 @@ async function readFileText(file: File): Promise<string> {
   return text.replace(/^﻿/, '') // strip BOM
 }
 
-/** Legacy parser output → ParsedImportRow (positive amount + type, raw cells kept). */
+/** Legacy parser output → ParsedImportRow (positive amount + type, raw cells kept). A parser's 'transfer' is a top-up between own accounts. */
 function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
   return legacy
     .filter((tx) => tx.amount !== 0 && tx.date)
@@ -69,7 +69,10 @@ function toRows(legacy: LegacyTransaction[]): ParsedImportRow[] {
         rowNumber: i + 1,
         date: tx.date.slice(0, 10),
         amount: Math.abs(tx.amount),
-        type: tx.amount >= 0 ? 'income' : 'expense',
+        // Only top-ups stay transfers; refunds, sends etc. count by their sign.
+        ...(tx.type === 'transfer'
+          ? { type: 'transfer' as const, direction: tx.amount >= 0 ? 'in' as const : 'out' as const }
+          : { type: tx.amount >= 0 ? 'income' as const : 'expense' as const }),
         description: tx.description || '—',
         rawLine: values.map((v) => v.value).join(','),
         values,

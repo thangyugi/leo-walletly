@@ -12,9 +12,10 @@ import { extractPdfText, flatLines, parseJpDate, extractYearHint, amountsIn, typ
 const DATE_ROW_RE = /(\d{4}[\/\-]\d{1,2}[\/\-]\d{1,2})/
 
 function resolveType(typeStr: string, amount: number): TransactionType {
-  if (/チャージ|入金|受取|ポイント付与/.test(typeStr)) return 'income'
+  // チャージ = loading the wallet from a card or bank: an internal transfer, not income.
+  if (/チャージ/.test(typeStr)) return 'transfer'
+  if (/入金|受取|ポイント付与/.test(typeStr)) return 'income'
   if (/返金|キャンセル|払戻/.test(typeStr)) return 'refund'
-  if (/送金|振込/.test(typeStr)) return 'transfer'
   return amount >= 0 ? 'income' : 'expense'
 }
 

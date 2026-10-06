@@ -140,12 +140,12 @@ export function MemberPage(p: MemberPageProps) {
       </nav>
 
       {/* Profile */}
-      <div className="rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] p-4 sm:px-[22px] sm:py-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
+      <div className="relative rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] p-4 sm:px-[22px] sm:py-5 shadow-[0_1px_2px_rgba(16,24,40,0.04)]">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
           <div className="flex items-start gap-4 flex-1 min-w-0">
             <Avatar name={m.name} color={m.color} size={60} />
             <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
+              <div className={cn('flex flex-wrap items-center gap-2', canEdit && !p.editing && 'pr-[118px] sm:pr-0')}>
                 <span className="text-[21px] font-bold tracking-tight text-[var(--color-text-primary)]">{m.name}</span>
                 <RolePill role={m.role} label={tk(`role.${m.role}.name`)} />
                 {p.editing && <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full text-[12px] font-medium bg-[#ecfdf5] text-[#047857]"><Pencil className="w-3 h-3" />{L.editingBadge}</span>}
@@ -156,14 +156,15 @@ export function MemberPage(p: MemberPageProps) {
               </div>
             </div>
           </div>
-          <div className="hidden sm:flex items-center gap-2 shrink-0">
+          {/* Edit sits in the card's top-right corner on every screen size. */}
+          <div className={cn('items-center gap-2 shrink-0', p.editing ? 'hidden sm:flex' : 'flex absolute top-3 right-3 sm:static')}>
             {p.editing ? (
               <>
                 <Button variant="outline" onClick={() => void leaveEdit()} disabled={saving}>{L.cancel}</Button>
                 <Button icon={<Check />} onClick={() => void save()} loading={saving} disabled={!dirty}>{dirty ? L.saveN.replace('{{count}}', String(changeCount)) : L.save}</Button>
               </>
             ) : canEdit ? (
-              <Link href={`${base}&edit=1`} scroll={false} className="inline-flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-medium text-white bg-[#101828] hover:bg-[#1d2939] transition-colors"><Pencil className="w-4 h-4" />{L.editAccess}</Link>
+              <Link href={`${base}&edit=1`} scroll={false} className="inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[13px] font-semibold border border-[#a6f4c5] bg-[#ecfdf5] text-[#047857] hover:bg-[#d1fadf] transition-colors"><Pencil className="w-3.5 h-3.5" />{L.editAccess}</Link>
             ) : null}
           </div>
         </div>
@@ -357,12 +358,7 @@ export function MemberPage(p: MemberPageProps) {
         </div>
       )}
 
-      {/* Mobile actions; the save bar on every size while editing */}
-      {!p.editing && canEdit && (
-        <div className="sm:hidden fixed inset-x-3 z-[140] bottom-[calc(76px+env(safe-area-inset-bottom))]">
-          <Link href={`${base}&edit=1`} scroll={false} className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl text-sm font-semibold text-white bg-[#101828] shadow-[0_12px_32px_rgba(17,24,39,0.25)]"><Pencil className="w-4 h-4" />{L.editAccess}</Link>
-        </div>
-      )}
+      {/* The save bar, on every size while editing */}
       {p.editing && (
         <div className="fixed z-[160] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:ml-[116px]
           flex items-center gap-3 rounded-2xl bg-[#101828] text-white pl-4 pr-2 py-2 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.45)]">

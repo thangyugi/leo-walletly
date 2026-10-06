@@ -62,6 +62,7 @@ export function SettingsHub() {
         className="w-full lg:w-auto lg:px-8 h-12 rounded-2xl border border-[var(--color-status-loss-bg)] bg-[var(--color-surface-default)] text-sm font-semibold text-[var(--color-text-loss)] flex items-center justify-center gap-2 hover:bg-[var(--color-status-loss-bg)] transition-colors">
         <LogOut className="w-4 h-4" />{t.common.signOut}
       </button>
+      <p className="text-center lg:text-left text-[11px] text-[var(--color-text-quaternary)] tabular-nums">Walletly · {process.env.NEXT_PUBLIC_BUILD_ID}</p>
     </div>
   )
 }

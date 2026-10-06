@@ -859,7 +859,10 @@ export interface ParsedImportRow {
   date: string
   /** Always positive. */
   amount: number
-  type: 'expense' | 'income'
+  /** 'transfer' = a top-up between the user's own accounts (direction says which way). */
+  type: 'expense' | 'income' | 'transfer'
+  /** Transfers only: 'in' = money arrives in the imported account, 'out' = it leaves. */
+  direction?: 'in' | 'out'
   description: string
   externalId?: string
   rawLine?: string

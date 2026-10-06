@@ -5,7 +5,7 @@ import Link from 'next/link'
 import {
   Lock, FileWarning,
   Upload, CheckCircle2, AlertCircle, X, Sparkles, RefreshCw, Globe, RotateCcw,
-  ArrowRight, Check, TrendingDown, TrendingUp, Minus, Copy,
+  ArrowRight, Check, TrendingDown, TrendingUp, Minus, Copy, ArrowLeftRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -28,6 +28,22 @@ import { AppSelect } from '@/components/ui/app-select'
 type PageStep = 'setup' | 'review'
 /** ruleCategoryId: what the ledger's own rules give the row (the preview's default). */
 type Row = ParsedImportRow & { selected: boolean; categoryId: string; ruleCategoryId: string; duplicate: boolean }
+
+/** A top-up with no other account picked is booked as income/expense (the old behaviour). */
+function effType(r: ParsedImportRow, otherId: string): 'expense' | 'income' | 'transfer' {
+  if (r.type !== 'transfer') return r.type
+  if (otherId) return 'transfer'
+  return r.direction === 'out' ? 'expense' : 'income'
+}
+
+function rowPayload(r: ParsedImportRow, otherId: string) {
+  const type = effType(r, otherId)
+  return {
+    row_number: r.rowNumber, date: r.date, amount: r.amount, type, description: r.description,
+    external_id: r.externalId ?? null,
+    ...(type === 'transfer' ? { direction: r.direction, transfer_account_id: otherId } : {}),
+  }
+}
 
 function fmtDate(d: string): string {
   const [y, m, dd] = d.split('-')
@@ -138,6 +154,8 @@ export default function ImportPage() {
   const [userMapping, setUserMapping] = useState<Partial<ColumnMapping>>({})
   const [previousJob, setPreviousJob] = useState<string | null>(null)
   const [job, setJob] = useState<Tables<'import_jobs'> | null>(null)
+  // The other side of top-ups (e.g. PayPayカード for a PayPay wallet); '' = book them as income/expense.
+  const [otherAccountId, setOtherAccountId] = useState('')
   const [importing, setImporting] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
   // A PDF that could not be read: why (password, unknown kind…), with what was read.
@@ -176,8 +194,18 @@ export default function ImportPage() {
     return m
   }
 
-  async function buildRows(res: ImportResult, accId: string) {
-    const payload = res.rows.map((r) => ({ row_number: r.rowNumber, date: r.date, amount: r.amount, type: r.type, description: r.description, external_id: r.externalId ?? null }))
+  /** Where a wallet is loaded from / a card loads into: PayPay ↔ PayPayカード, else nothing. */
+  function guessOtherAccount(accId: string, res: ImportResult) {
+    if (!res.rows.some((r) => r.type === 'transfer')) return ''
+    const acc = activeAccounts.find((a) => a.id === accId)
+    const others = activeAccounts.filter((a) => a.id !== accId && a.currencyCode === acc?.currencyCode)
+    const pair: Record<string, string> = { paypay: 'paypay_card', paypay_card: 'paypay' }
+    const want = acc?.providerCode ? pair[acc.providerCode] : undefined
+    return (want && others.find((a) => a.providerCode === want)?.id) || ''
+  }
+
+  async function buildRows(res: ImportResult, accId: string, otherId: string) {
+    const payload = res.rows.map((r) => rowPayload(r, otherId))
     // Categories come only from the ledger's rules (keywords / active rules),
     // exactly as the import will apply them; anything else stays uncategorized.
     const [{ data: dups }, { data: matched }] = await Promise.all([
@@ -236,7 +264,11 @@ export default function ImportPage() {
       const res = pdfRes ?? await parseFile(f, code as PaymentProvider, mapOverride)
       setResult(res)
       if (res.rows.length === 0) setError(res.errors.join('\n') || t.import.errorNoTxns)
-      else await buildRows(res, accId)
+      else {
+        const other = guessOtherAccount(accId, res)
+        setOtherAccountId(other)
+        await buildRows(res, accId, other)
+      }
     } catch (e: any) {
       setError(e.message)
     } finally {
@@ -266,8 +298,7 @@ export default function ImportPage() {
         p_checksum: await sha256(file),
         p_file_size: file.size,
         p_rows: rows.map((r) => ({
-          row_number: r.rowNumber, date: r.date, amount: r.amount, type: r.type, description: r.description,
-          external_id: r.externalId ?? null,
+          ...rowPayload(r, otherAccountId),
           // Left to the import's own rule pass (recorded as a rule match) unless picked by hand.
           category_id: r.categoryId && r.categoryId !== r.ruleCategoryId ? r.categoryId : null,
           selected: r.selected,
@@ -286,7 +317,7 @@ export default function ImportPage() {
 
   function handleReset() {
     setFile(null); setResult(null); setRows([]); setError(null); setMapping(null); setUserMapping({}); setPdfIssue(null); setPdfPassword('')
-    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId('')
+    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId(''); setOtherAccountId('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -294,10 +325,12 @@ export default function ImportPage() {
   const selectedCount = rows.filter((r) => r.selected).length
   const summary = useMemo(() => {
     const sel = rows.filter((r) => r.selected)
-    const income = sel.filter((r) => r.type === 'income').reduce((s, r) => s + r.amount, 0)
-    const expense = sel.filter((r) => r.type === 'expense').reduce((s, r) => s + r.amount, 0)
+    const income = sel.filter((r) => effType(r, otherAccountId) === 'income').reduce((s, r) => s + r.amount, 0)
+    const expense = sel.filter((r) => effType(r, otherAccountId) === 'expense').reduce((s, r) => s + r.amount, 0)
     return { income, expense, net: income - expense }
-  }, [rows])
+  }, [rows, otherAccountId])
+  const hasTransfers = rows.some((r) => r.type === 'transfer')
+  const otherAccount = activeAccounts.find((a) => a.id === otherAccountId)
   const money = (n: number) => format(n, { from: account?.currencyCode as never, to: account?.currencyCode as never })
 
   return (
@@ -447,6 +480,24 @@ export default function ImportPage() {
             </div>
           </div>
 
+          {hasTransfers && (
+            <div className="flex items-center gap-2 flex-wrap px-4 py-2.5 border-b border-[var(--color-border-default)]">
+              <ArrowLeftRight className="w-3.5 h-3.5 text-[var(--color-text-tertiary)] shrink-0" />
+              <span className="text-xs text-[var(--color-text-secondary)] flex-1 min-w-[180px]">
+                {t.import.topUpsFound.replace('{{count}}', String(rows.filter((r) => r.type === 'transfer').length))}
+              </span>
+              <AccountPicker
+                aria-label={t.import.topUpAccount}
+                size="sm"
+                className="w-56"
+                accounts={activeAccounts.filter((a) => a.id !== accountId && a.currencyCode === account?.currencyCode)}
+                extra={[{ value: '', label: t.import.topUpNone }]}
+                value={otherAccountId}
+                onChange={(v) => { setOtherAccountId(v); if (result) void buildRows(result, accountId, v) }}
+              />
+            </div>
+          )}
+
           {showErrors && result && result.errors.length > 0 && (
             <div className="px-4 py-2.5 border-b border-[var(--color-border-subtle)] bg-[var(--color-status-warning-bg)] space-y-1 max-h-28 overflow-y-auto">
               {result.errors.map((e, i) => <p key={i} className="text-xs text-[var(--color-text-warning)]">{e}</p>)}
@@ -467,7 +518,10 @@ export default function ImportPage() {
               </thead>
               <tbody>
                 {rows.map((r) => {
-                  const isIncome = r.type === 'income'
+                  const type = effType(r, otherAccountId)
+                  const isIncome = type === 'income'
+                  const isTransfer = type === 'transfer'
+                  const transferIn = r.direction !== 'out'
                   return (
                     <tr key={r.rowNumber} className={cn('border-t border-[var(--color-border-subtle)] transition-colors', !r.selected && 'opacity-40')}>
                       <td className="py-2.5 pl-3 pr-1 w-8">
@@ -476,39 +530,46 @@ export default function ImportPage() {
                       <td className="py-2.5 px-2 text-xs text-[var(--color-text-quaternary)] whitespace-nowrap">{fmtDate(r.date)}</td>
                       <td className="max-sm:hidden py-2.5 px-2">
                         <span className={cn('inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded-full',
-                          isIncome ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' : 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]')}>
-                          {isIncome ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
-                          {isIncome ? t.transactions.typeIncome : t.transactions.typeExpense}
+                          isTransfer ? 'bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]'
+                            : isIncome ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' : 'bg-[var(--color-status-loss-bg)] text-[var(--color-text-loss)]')}>
+                          {isTransfer ? <ArrowLeftRight className="w-2.5 h-2.5" /> : isIncome ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                          {isTransfer ? t.transactions.transfer : isIncome ? t.transactions.typeIncome : t.transactions.typeExpense}
                         </span>
                       </td>
-                      <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-none">
+                      <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-0 max-sm:w-full">
                         <p className="text-sm text-[var(--color-text-primary)] truncate">{r.description}</p>
                         {r.duplicate && <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>}
+                        {isTransfer && (
+                          <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5 truncate">
+                            {(transferIn ? t.import.topUpFrom : t.import.topUpTo).replace('{{name}}', otherAccount?.name ?? '—')}
+                          </p>
+                        )}
                         {/* Phones have no category column: the picker sits under the text. */}
-                        <CategoryPicker
+                        {!isTransfer && <CategoryPicker
                           aria-label={t.transactions.labelCategory}
                           size="sm"
                           className="sm:hidden mt-1.5"
-                          categories={categories.filter((c) => c.is_active && c.type === r.type)}
+                          categories={categories.filter((c) => c.is_active && c.type === type)}
                           noneLabel={t.txform.uncategorized}
                           value={r.categoryId}
                           onChange={(v) => setRow(r.rowNumber, { categoryId: v })}
-                        />
+                        />}
                       </td>
                       <td className="py-2.5 px-2 hidden sm:table-cell">
-                        <CategoryPicker
+                        {isTransfer ? <span className="text-xs text-[var(--color-text-quaternary)]">—</span> : <CategoryPicker
                           aria-label={t.transactions.labelCategory}
                           size="sm"
                           className="w-44"
-                          categories={categories.filter((c) => c.is_active && c.type === r.type)}
+                          categories={categories.filter((c) => c.is_active && c.type === type)}
                           noneLabel={t.txform.uncategorized}
                           value={r.categoryId}
                           onChange={(v) => setRow(r.rowNumber, { categoryId: v })}
-                        />
+                        />}
                       </td>
                       <td className="py-2.5 px-3 text-right whitespace-nowrap">
-                        <span className={cn('text-sm font-semibold tabular-nums', isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
-                          {isIncome ? '+' : '−'}{money(r.amount)}
+                        <span className={cn('text-sm font-semibold tabular-nums',
+                          isTransfer ? 'text-[var(--color-text-secondary)]' : isIncome ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
+                          {(isTransfer ? transferIn : isIncome) ? '+' : '−'}{money(r.amount)}
                         </span>
                       </td>
                     </tr>

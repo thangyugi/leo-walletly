@@ -121,7 +121,7 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
           <p className="mt-1 text-sm text-[var(--color-text-tertiary)] leading-normal">{S.subtitle}</p>
         </div>
         {!editing && editable && (
-          <Link href={`${base}?edit=1`} scroll={false} className="hidden sm:inline-flex self-start xl:self-auto items-center gap-2 h-9 px-4 rounded-lg text-sm font-medium text-white bg-[#101828] hover:bg-[#1d2939]"><Pencil className="w-4 h-4" />{t.lm.edit}</Link>
+          <Link href={`${base}?edit=1`} scroll={false} className="self-start xl:self-auto inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-[13px] font-semibold border border-[#a6f4c5] bg-[#ecfdf5] text-[#047857] hover:bg-[#d1fadf] transition-colors"><Pencil className="w-3.5 h-3.5" />{t.lm.edit}</Link>
         )}
       </header>
 
@@ -189,11 +189,6 @@ export function LedgerSettingsView({ editing, ownerName }: { editing: boolean; o
         </section>
       )}
 
-      {!editing && editable && (
-        <div className="sm:hidden fixed inset-x-3 z-[140] bottom-[calc(76px+env(safe-area-inset-bottom))]">
-          <Link href={`${base}?edit=1`} scroll={false} className="flex items-center justify-center gap-2 w-full h-11 rounded-2xl text-sm font-semibold text-white bg-[#101828] shadow-[0_12px_32px_rgba(17,24,39,0.25)]"><Pencil className="w-4 h-4" />{t.lm.edit}</Link>
-        </div>
-      )}
       {editing && (
         <div className="fixed z-[160] inset-x-3 bottom-[calc(76px+env(safe-area-inset-bottom))] md:inset-x-auto md:left-1/2 md:-translate-x-1/2 md:bottom-6 md:ml-[116px]
           flex items-center gap-3 rounded-2xl bg-[#101828] text-white pl-4 pr-2 py-2 shadow-[0_18px_40px_-12px_rgba(16,24,40,0.45)]">

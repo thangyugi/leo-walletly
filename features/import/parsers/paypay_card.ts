@@ -17,7 +17,8 @@ const METHOD_KEY = '決済方法'
 const PAYMENT_TYPE_KEY = '支払区分'
 
 // PayPay残高チャージ = transfer (not an expense, avoids double counting)
-const TRANSFER_RE = /paypay残高|残高チャージ|paypayチャージ/i
+// The card's line for loading the PayPay wallet is just "チャージ" (PASMO etc. top-ups are spending).
+const TRANSFER_RE = /^チャージ$|paypay残高|残高チャージ|paypayチャージ/i
 
 function resolveType(storeName: string): TransactionType {
   if (TRANSFER_RE.test(storeName)) return 'transfer'

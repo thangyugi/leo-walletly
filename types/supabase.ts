@@ -4188,6 +4188,16 @@ export type Database = {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
+      find_import_transfer: {
+        Args: {
+          p_from: string
+          p_to: string
+          p_amount: number
+          p_date: string
+          p_claimed: string[]
+        }
+        Returns: string
+      }
       get_invitation: {
         Args: {
           p_token: string

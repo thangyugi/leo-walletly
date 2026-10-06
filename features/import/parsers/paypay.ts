@@ -42,7 +42,7 @@ function resolveType(typeStr: string, amount: number): TransactionType {
   if (/チャージ|charge|top.?up/.test(t)) return 'transfer'
   if (/受取|incoming|received/.test(t)) return 'income'
   if (/返金|キャンセル|払戻|refund|cancel/.test(t)) return 'refund'
-  if (/送金|振込|transfer|send/.test(t)) return 'transfer'
+  // Money sent to another person is spending (or income when received), not an internal move.
   return amount >= 0 ? 'income' : 'expense'
 }
 

@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { toast } from 'sonner'
-import { Plus, ArrowUpRight, Sun, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users, ChevronRight, Archive } from 'lucide-react'
+import { Plus, ArrowUpRight, Sun, Check, Loader2, Search, Inbox, CheckCheck, Lock, Users, ChevronRight, Archive, TrendingUp } from 'lucide-react'
 import { Modal } from '@/components/ui/modal'
 import { CategoryForm } from './category-form'
 import { CategoryIcon } from './category-icon'
@@ -63,6 +63,75 @@ function BarInner({ pct, barClass }: { pct: number; barClass: string }) {
 }
 
 /* ─── FeaturedCard ─────────────────────────────────────────────────────────── */
+/** The period's biggest-spending category: big header in its colour, who sees it, its sub-categories. */
+function FeaturedCard({ category, subCategories, expense }: { category: Category; subCategories: Category[]; expense: number }) {
+  const allCats = useCategoryStore((st) => st.categories)
+  const { t } = useTranslation()
+  const kindLabel = useKindLabel()
+  const { fmt, sym, budgetFactor } = React.useContext(FmtCtx)
+  const budget = effectiveBudget(category, allCats) * budgetFactor
+  const pct = budget > 0 ? Math.round((expense / budget) * 100) : 0
+  const subs = subCategories.slice(0, 4)
+  const extra = Math.max(0, subCategories.length - subs.length)
+  const shared = category.access !== 'private'
+  return (
+    <Link href={categoryHref(category)}
+      className="relative col-span-1 md:col-span-2 xl:col-span-2 bg-[var(--color-surface-default)] border border-[var(--color-border-default)] rounded-[14px] overflow-hidden shadow-[var(--shadow-card)] hover:border-[var(--color-interactive-primary)] hover:shadow-md transition-all duration-200 group flex flex-col">
+      <div className="relative p-[18px_22px] text-white overflow-hidden" style={{ background: `linear-gradient(135deg,${category.color}e6 0%,${category.color}a6 60%,${category.color}70 130%)`, minHeight: 138 }}>
+        <span className="absolute right-[-14px] top-[-26px] opacity-[0.16] pointer-events-none" aria-hidden><CategoryIcon name={category.emoji} className="w-[150px] h-[150px]" /></span>
+        <div className="relative flex items-center gap-1.5">
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm"><TrendingUp className="w-3 h-3" />{t.catui.topSpend}</span>
+          <span className="inline-flex items-center gap-1 h-[22px] px-2 rounded-full text-[11px] font-medium bg-white/20 backdrop-blur-sm">
+            {shared ? <Users className="w-3 h-3" /> : <Lock className="w-3 h-3" />}{shared ? t.catui.shared : t.catui.private}
+          </span>
+          <span className="ml-auto w-8 h-8 rounded-full bg-white/20 group-hover:bg-white/30 inline-flex items-center justify-center transition-colors" aria-hidden><ArrowUpRight className="w-4 h-4" /></span>
+        </div>
+        <div className="relative mt-5 flex items-end gap-3">
+          <span className="w-11 h-11 rounded-xl bg-white/20 inline-flex items-center justify-center"><CategoryIcon name={category.emoji} className="w-6 h-6" /></span>
+          <div className="min-w-0">
+            <h3 className="text-[22px] font-semibold tracking-[-0.025em] leading-tight truncate">{category.name}</h3>
+            <p className="text-[12px] opacity-85">{kindLabel(category.kind_code)}</p>
+          </div>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-5 p-5 flex-1">
+        <div className="flex flex-col gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]">{t.catui.totalSpent}</div>
+            <div className="text-[22px] font-semibold tracking-[-0.022em] font-tabular mt-0.5 leading-tight">{fmt(expense)}<span className="text-[var(--color-text-tertiary)] font-medium text-sm"> {sym}</span></div>
+          </div>
+          {budget > 0 && (
+            <div>
+              <div className="h-2 bg-[var(--color-bg-sunken)] rounded-full overflow-hidden"><div className="h-full bg-[var(--color-gain-500)] rounded-full" style={{ width: `${Math.min(pct, 100)}%` }} /></div>
+              <div className="flex items-center justify-between mt-1.5 text-[11px] text-[var(--color-text-tertiary)]">
+                <span>{t.catui.budget} <b className="text-[var(--color-text-secondary)]">{fmt(budget)} {sym}</b></span>
+                <span><b className="text-[var(--color-text-secondary)]">{pct}%</b></span>
+              </div>
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)] mb-2">{fill(t.catui.subcategories, { count: subCategories.length })}</div>
+          {subs.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {subs.map((sc) => (
+                <div key={sc.id} className="flex items-center gap-2.5 min-w-0">
+                  <span className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0" style={{ background: `${sc.color}22`, color: sc.color }}><CategoryIcon name={sc.emoji} className="w-3.5 h-3.5" /></span>
+                  <span className="min-w-0">
+                    <span className="block text-[13px] font-semibold text-[var(--color-text-primary)] truncate leading-tight">{sc.name}</span>
+                    <span className="block text-[11px] text-[var(--color-text-tertiary)] truncate">{kindLabel(sc.kind_code)}</span>
+                  </span>
+                </div>
+              ))}
+              {extra > 0 && <div className="text-[11px] text-[var(--color-text-quaternary)] pl-[38px]">{fill(t.catui.andMore, { count: extra })}</div>}
+            </div>
+          ) : <div className="text-[11px] text-[var(--color-text-quaternary)]">{t.catui.noSubcategories}</div>}
+        </div>
+      </div>
+    </Link>
+  )
+}
+
 function CategoryCard({ category, expense, txCount }: { category: Category; expense: number; txCount: number }) {
   const allCats = useCategoryStore((st) => st.categories)
   const { t } = useTranslation()
@@ -90,7 +159,7 @@ function CategoryCard({ category, expense, txCount }: { category: Category; expe
           <div className="text-sm font-semibold text-[var(--color-text-primary)] truncate leading-snug">{category.name}</div>
           <div className="text-xs text-[var(--color-text-tertiary)] mt-0.5 truncate">{meta}</div>
         </div>
-        <CategoryAccessBadge category={category} className="max-w-[48%]" />
+        <CategoryAccessBadge category={category} compact />
       </div>
 
       <div>
@@ -121,7 +190,7 @@ const initialsOf = (name: string) => (name.trim().split(/\s+/).map((w) => w[0]).
  * people's avatars, or the owner's avatar + name when someone shared it with
  * you. `tone="glass"` sits on a coloured cover.
  */
-export function CategoryAccessBadge({ category, tone = 'surface', className }: { category: Category; tone?: 'surface' | 'glass'; className?: string }) {
+export function CategoryAccessBadge({ category, tone = 'surface', className, compact }: { category: Category; tone?: 'surface' | 'glass'; className?: string; compact?: boolean }) {
   const { t } = useTranslation()
   const { members, categories } = useLedgerData()
   const nameOf = (uid: string) => { const m = members.find((x) => x.user_id === uid); return m?.user?.display_name || m?.user?.email || '—' }
@@ -131,6 +200,22 @@ export function CategoryAccessBadge({ category, tone = 'surface', className }: {
     <span key={i} className={cn('w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold ring-[1.5px]', glass ? 'ring-white/40' : 'ring-[var(--color-surface-default)]', cls)} style={{ marginLeft: i ? -5 : 0 }}>{label}</span>
   )
 
+  // Cards: just faces — who shares it with you, or who you share it with.
+  if (compact) {
+    if (category.access === 'private') return null
+    const people = category.access === 'shared_with_me' ? [category.owner_name] : category.audience_ids.map(nameOf)
+    const tip = category.access === 'shared_with_me' ? fill(t.catui.ownerBadge, { name: category.owner_name }) : people.join(', ')
+    return (
+      <span title={tip} aria-label={tip} className={cn('shrink-0 inline-flex items-center', className)}>
+        {people.slice(0, 3).map((n, i) => (
+          <span key={i} className={cn('w-[22px] h-[22px] rounded-full flex items-center justify-center text-[9px] font-bold ring-2 ring-[var(--color-surface-default)]',
+            category.access === 'shared_with_me' ? 'bg-[var(--color-info-100)] text-[var(--color-info-600)]' : 'bg-[var(--color-brand-100)] text-[var(--color-brand-700)]')}
+            style={{ marginLeft: i ? -6 : 0 }}>{initialsOf(n)}</span>
+        ))}
+        {people.length > 3 && <span className="ml-1 text-[10.5px] font-semibold text-[var(--color-text-tertiary)]">+{people.length - 3}</span>}
+      </span>
+    )
+  }
   if (category.access === 'shared_with_me') {
     return (
       <span title={fill(t.catui.ownerBadge, { name: category.owner_name })}
@@ -181,9 +266,8 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
   const totalPendingAmount = pendingTxns.filter((x) => x.transactionType === 'expense').reduce((s, x) => s + x.baseAmount, 0)
   const displayTxns = pendingTxns.slice(0, 4)
   const done = pendingTotal === 0
-  const pct = total && total > 0 ? Math.round(((classified ?? 0) / total) * 100) : done ? 100 : 0
 
-  // A to-do box, not a category: amber while work is waiting, green when clear.
+  // A to-do box, not a category: neutral while work is waiting, green when clear.
   if (done) {
     return (
       <div className="col-span-1 md:col-span-2 xl:col-span-2 rounded-[14px] border border-[var(--color-brand-100)] bg-[var(--color-status-gain-bg)] p-5 flex items-center gap-4">
@@ -199,31 +283,19 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
   }
 
   return (
-    <div className="col-span-1 md:col-span-2 xl:col-span-2 rounded-[14px] overflow-hidden border border-[var(--color-warning-100)] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] flex flex-col">
-      <div className="px-5 pt-4 pb-4 flex items-start gap-4" style={{ background: 'linear-gradient(180deg, var(--color-warning-50) 0%, var(--color-surface-default) 100%)' }}>
-        <div className="w-11 h-11 rounded-xl bg-[var(--color-warning-100)] flex items-center justify-center shrink-0">
-          <Inbox className="w-5 h-5 text-[var(--color-warning-700)]" />
+    <div className="col-span-1 md:col-span-2 xl:col-span-2 rounded-[14px] overflow-hidden border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] flex flex-col">
+      <div className="px-5 pt-[18px] pb-3 flex items-start gap-3">
+        <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-50)] flex items-center justify-center shrink-0">
+          <Inbox className="w-5 h-5 text-[var(--color-brand-700)]" />
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] font-semibold uppercase tracking-[0.1em] px-1.5 py-0.5 rounded-md bg-[var(--color-warning-100)] text-[var(--color-warning-700)]">{t.catui.classifyInbox}</span>
-            <span className="text-[11px] text-[var(--color-text-tertiary)] truncate">{fill(t.catui.pendingTitle, { groups: pendingGroupCount, count: pendingTotal })}</span>
+          <div className="flex items-baseline gap-2">
+            <h3 className="text-[15px] font-semibold tracking-[-0.01em] text-[var(--color-text-primary)]">{t.catui.unclassifiedTitle}</h3>
+            <span className="ml-auto text-[22px] font-semibold font-tabular leading-none text-[var(--color-text-primary)]">{pendingTotal}</span>
           </div>
-          <div className="mt-1.5 flex items-baseline gap-2">
-            <span className="text-[28px] font-semibold tracking-[-0.03em] font-tabular leading-none text-[var(--color-text-primary)]">{pendingTotal}</span>
-            <span className="text-[12px] text-[var(--color-text-secondary)]">{t.catui.pendingCount.replace('{{count}}', '').trim()}</span>
-            <span className="ml-auto text-[12px] text-[var(--color-text-tertiary)] whitespace-nowrap">
-              {t.catui.pendingSub.split('{{amount}}')[0]}<b className="font-tabular text-[var(--color-text-primary)]">{fmt(totalPendingAmount)} {sym}</b>
-            </span>
-          </div>
-          {total ? (
-            <div className="mt-3">
-              <div className="h-1.5 rounded-full bg-[var(--color-bg-sunken)] overflow-hidden">
-                <div className="h-full rounded-full bg-[var(--color-interactive-primary)] transition-all" style={{ width: `${pct}%` }} />
-              </div>
-              <div className="mt-1 text-[10px] text-[var(--color-text-quaternary)]">{fill(t.catui.classifiedProgress, { done: classified ?? 0, total })} · {pct}%</div>
-            </div>
-          ) : null}
+          <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5">
+            {fill(t.catui.unclassifiedSub, { groups: pendingGroupCount })} · {t.catui.pendingSub.split('{{amount}}')[0]}<b className="font-tabular text-[var(--color-text-secondary)]">{fmt(totalPendingAmount)} {sym}</b>
+          </p>
         </div>
       </div>
 
@@ -233,7 +305,7 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
           const acc = accountOf(txn.accountId)
           return (
             <div key={txn.id} className="flex items-center gap-2 py-[7px] px-3 rounded-lg border border-dashed border-[var(--color-border-default)] text-[12px]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-warning-500)] shrink-0" />
+              <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-quaternary)] shrink-0" />
               <span className="text-[var(--color-text-secondary)] min-w-0 flex-1 truncate">{txn.merchantName || txn.description}</span>
               {acc && <span className="shrink-0 text-[10px] text-[var(--color-text-quaternary)]">{acc.name}</span>}
               <span className={cn('shrink-0 font-semibold font-tabular', txn.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-primary)]')}>
@@ -267,7 +339,7 @@ function SmartClassifyCard({ pendingTxns, pendingTotal, categories, onApplyAll, 
             {fill(t.catui.applySuggestions, { count: totalSuggestions })}
           </button>
         )}
-        <Link href="/categories/classify" className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-[6px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
+        <Link href="/categories/classify?scope=all" className="inline-flex items-center gap-1.5 text-xs font-medium px-3 py-[6px] rounded-[7px] bg-[var(--color-interactive-primary)] text-white hover:bg-[var(--color-interactive-primary-hover)] transition-colors">
           {t.catui.classifyNow}<ArrowUpRight className="w-3.5 h-3.5" />
         </Link>
       </div>
@@ -464,7 +536,8 @@ export function CategoriesBentoPage() {
     if (!ledgerId) return
     const range = { start: picker.start, end: picker.end }
     void fetchStats(ledgerId, range)
-    void fetchUncategorized(ledgerId, 200, range).then(setPending)
+    // The to-classify box shows the latest ones, whatever the period.
+    void fetchUncategorized(ledgerId, 200).then(setPending)
   }, [ledgerId, revision, categories.length, picker.start, picker.end, fetchStats, fetchUncategorized])
 
   // Summary panel: the same KPIs for the previous period ("vs previous").
@@ -531,6 +604,25 @@ export function CategoriesBentoPage() {
   const sharedWithMeShown = sharedWithMe.filter(matches).sort((a, b) => rolled(b).expense - rolled(a).expense)
   const sharedRoots = [...sharedMine, ...sharedWithMeShown]
   const privateRoots = rootCategories.filter((c) => c.access === 'private' && matches(c))
+  const kindLabels: Record<string, string> = { expense: t.transactions.typeExpense, income: t.transactions.typeIncome, transfer: t.transactions.typeTransfer }
+  const byKind = (list: Category[]) => (['expense', 'income', 'transfer'] as const)
+    .map((k) => ({ key: k, label: kindLabels[k], items: list.filter((c) => c.type === k) }))
+    .filter((g) => g.items.length)
+  // The period's biggest spender gets the large card.
+  // Shared ones first: the large card leads the "Shared" section when anything is shared.
+  const topOf = (list: Category[]) => list
+    .filter((c) => c.type === 'expense' && rolled(c).expense > 0)
+    .sort((a, b) => rolled(b).expense - rolled(a).expense)[0] ?? null
+  const featured = q ? null : topOf(sharedRoots) ?? topOf(privateRoots)
+  const featuredShared = !!featured && featured.access !== 'private'
+  const leadShown = !!featured
+  const cardOf = (c: Category) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />
+  const leadRow = search ? null : (
+    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+      {featured && <FeaturedCard category={featured} expense={rolled(featured).expense} subCategories={categories.filter((c) => c.is_active && c.parent_id === featured.id)} />}
+      <SmartClassifyCard pendingTxns={pending.items} pendingTotal={pending.total} categories={categories} onApplyAll={applyAll} classified={kpi?.classified_count} total={kpi?.total_count} />
+    </div>
+  )
 
   async function applyAll() {
     const n = await applyRules(pending.items.map((x) => x.id))
@@ -556,11 +648,16 @@ export function CategoriesBentoPage() {
       { key: 'transfer', label: t.transactions.typeTransfer, tone: 'info' as const },
     ]
     type Section = { key: string; label: string; tone: 'loss' | 'gain' | 'info' | 'shared'; rows: ReturnType<typeof row>[] }
-    const out: Section[] = kinds.map((k) => ({ ...k, rows: own.filter((c) => c.type === k.key).map(row).sort(byAmount) })).filter((x) => x.rows.length)
-    if (showBentoTabs && sharedWithMe.length) {
-      const rows = sharedWithMe.filter(match).map(row).sort(byAmount)
-      if (rows.length) out.unshift({ key: 'shared', label: t.catui.sharedWithMe, tone: 'shared', rows })
-    }
+    // Shared first (yours and others'), then only me; each split by money direction.
+    const pool = showBentoTabs ? [...own, ...sharedWithMe.filter(match)] : own
+    const scopes = [
+      { key: 'shared', label: t.catui.sectionShared, list: pool.filter((c) => c.access !== 'private') },
+      { key: 'private', label: t.catui.sectionPrivate, list: pool.filter((c) => c.access === 'private') },
+    ].filter((x) => x.list.length)
+    const out: Section[] = scopes.flatMap((sc) => kinds.map((k) => ({
+      key: `${sc.key}-${k.key}`, label: scopes.length > 1 ? `${sc.label} · ${k.label}` : k.label, tone: k.tone,
+      rows: sc.list.filter((c) => c.type === k.key).map(row).sort(byAmount),
+    })).filter((x) => x.rows.length))
     return out
   })()
   const pendingAmount = pending.items.filter((x) => x.transactionType === 'expense').reduce((a, x) => a + x.baseAmount, 0)
@@ -652,23 +749,18 @@ export function CategoriesBentoPage() {
 
         {showBento ? (
           <>
-            {/* Work waiting first; once everything is classified the box steps aside. */}
-            {pending.total > 0 && !search && (
-              <div className="max-sm:hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                <SmartClassifyCard pendingTxns={pending.items} pendingTotal={pending.total} categories={categories} onApplyAll={applyAll} classified={kpi?.classified_count} total={kpi?.total_count} />
-              </div>
-            )}
-            {/* By who sees them: shared first, then only me. */}
+            {/* Shared first, then only me; each by money direction. The biggest spender leads its
+                section in a large card, with the latest unclassified transactions beside it. */}
             {sharedRoots.length > 0 && (
               <ScopeSection icon={Users} title={t.catui.sectionShared} count={sharedRoots.length}
-                sub={fill(t.catui.sectionSharedSub, { mine: sharedMine.length, others: sharedWithMeShown.length })}>
-                {sharedRoots.map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
-              </ScopeSection>
+                sub={fill(t.catui.sectionSharedSub, { mine: sharedMine.length, others: sharedWithMeShown.length })}
+                lead={featured && featuredShared ? leadRow : null}
+                groups={byKind(sharedRoots.filter((c) => c !== featured || !leadShown))} card={cardOf} />
             )}
-            <ScopeSection icon={Lock} title={t.catui.sectionPrivate} count={privateRoots.length} sub={t.catui.sectionPrivateSub}>
-              {privateRoots.map((c) => <CategoryCard key={c.id} category={c} expense={rolled(c).expense} txCount={rolled(c).tx} />)}
-              {can('category.create') && !search && <AddCategoryTile onClick={() => setIsFormOpen(true)} />}
-            </ScopeSection>
+            <ScopeSection icon={Lock} title={t.catui.sectionPrivate} count={privateRoots.length} sub={t.catui.sectionPrivateSub}
+              lead={!featuredShared ? leadRow : null}
+              groups={byKind(privateRoots.filter((c) => c !== featured || !leadShown))} card={cardOf}
+              tail={can('category.create') && !search ? <AddCategoryTile onClick={() => setIsFormOpen(true)} /> : null} />
             <div className="max-sm:hidden grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
               <ArchiveStrip archivedCategories={archivedCategories} onShowAll={() => setActiveTab('archived')} />
             </div>
@@ -714,7 +806,14 @@ export function CategoriesBentoPage() {
   )
 }
 
-function ScopeSection({ icon: Icon, title, count, sub, children }: { icon: typeof Users; title: string; count: number; sub: string; children: React.ReactNode }) {
+function ScopeSection({ icon: Icon, title, count, sub, groups, card, tail, lead }: {
+  icon: typeof Users; title: string; count: number; sub: string
+  /** A row shown right under the heading (the large card + to-classify box). */
+  lead?: React.ReactNode
+  groups: { key: string; label: string; items: Category[] }[]
+  card: (c: Category) => React.ReactNode
+  tail?: React.ReactNode
+}) {
   return (
     <section className="max-sm:hidden space-y-3" aria-label={title}>
       <div className="flex items-center gap-2.5">
@@ -726,7 +825,23 @@ function ScopeSection({ icon: Icon, title, count, sub, children }: { icon: typeo
           <p className="text-[12px] text-[var(--color-text-tertiary)]">{sub}</p>
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">{children}</div>
+      {lead}
+      {groups.map((g, gi) => (
+        <div key={g.key} className="space-y-2">
+          {/* One kind only and nothing else: no need to name it. */}
+          {(groups.length > 1 || g.key !== 'expense') && (
+            <p className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">
+              {g.label}<span className="font-medium normal-case tracking-normal">· {g.items.length}</span><span className="flex-1 h-px bg-[var(--color-border-default)]" />
+            </p>
+          )}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
+            {g.items.map(card)}
+            {gi === groups.length - 1 && tail}
+          </div>
+        </div>
+      ))}
+      {groups.length === 0 && tail && <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">{tail}</div>}
     </section>
   )
 }
+
