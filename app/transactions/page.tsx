@@ -388,13 +388,11 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate, selecting, onLon
   const { accountOf, categories, members } = useLedgerData()
   const cat = categories.find((c) => c.id === txn.categoryId)
   const acc = accountOf(txn.accountId)
-  const memberIdx = members.findIndex((m) => m.user_id === txn.paidByUserId)
+  // The transaction's person is its "user" (paid by), as in the detail panel and the filter;
+  // whoever typed it in only counts when no one is set.
+  const memberIdx = members.findIndex((m) => m.user_id === txn.payerId)
   const member = memberIdx >= 0 ? members[memberIdx] : null
-  const memberName = member?.user?.display_name ?? member?.user?.email ?? ''
-  // Phones: who entered the transaction (falls back to the payer).
-  const creatorIdx = members.findIndex((m) => m.user_id === (txn.createdBy ?? txn.paidByUserId))
-  const creator = creatorIdx >= 0 ? members[creatorIdx] : null
-  const creatorName = creator?.user?.display_name ?? creator?.user?.email?.split('@')[0] ?? ''
+  const memberName = member?.user?.display_name ?? member?.user?.email?.split('@')[0] ?? ''
   const isExpense = txn.transactionType === 'expense'
   const accentHex = '#6b7280'
   const accColor = acc?.color ?? '#6b7280'
@@ -482,11 +480,11 @@ function TxnTableRow({ txn, checked, onCheck, onView, showDate, selecting, onLon
               <span className="truncate">{acc.name}</span>
             </span>
           )}
-          {creator && (
-            <span className="inline-flex items-center gap-1 min-w-0 shrink text-[11px] text-[var(--color-text-tertiary)] whitespace-nowrap" title={creatorName}>
+          {member && (
+            <span className="inline-flex items-center gap-1 min-w-0 shrink text-[11px] text-[var(--color-text-tertiary)] whitespace-nowrap" title={memberName}>
               <span className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-bold text-white shrink-0"
-                style={{ background: creator.color ?? AVATAR_COLORS[creatorIdx % AVATAR_COLORS.length] }}>{getInitials(creatorName || '?')}</span>
-              <span className="truncate max-w-[72px]">{creatorName.split(' ')[0]}</span>
+                style={{ background: member.color ?? AVATAR_COLORS[memberIdx % AVATAR_COLORS.length] }}>{getInitials(memberName || '?')}</span>
+              <span className="truncate max-w-[72px]">{memberName.split(' ')[0]}</span>
             </span>
           )}
           {dateLabel && <span className="text-[11px] text-[var(--color-text-quaternary)] whitespace-nowrap">{dateLabel}</span>}
