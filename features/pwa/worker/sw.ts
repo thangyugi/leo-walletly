@@ -59,6 +59,9 @@ serwist.addEventListeners()
 self.addEventListener('push', (event) => {
   let data: { title?: string; body?: string; url?: string; tag?: string } = {}
   try { data = event.data?.json() ?? {} } catch { data = { body: event.data?.text() } }
+  // Mark the home-screen icon too; the app sets the exact count when it opens.
+  const nav = self.navigator as WorkerNavigator & { setAppBadge?: () => Promise<void> }
+  void nav.setAppBadge?.().catch(() => {})
   event.waitUntil(self.registration.showNotification(data.title || 'Leo Walletly', {
     body: data.body,
     tag: data.tag,
