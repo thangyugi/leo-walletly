@@ -7,10 +7,12 @@ import { MobileHeader } from '@/components/layout/header'
 import { TopBar } from '@/components/layout/topbar'
 import { MobileTabBar } from '@/components/layout/mobile-tab-bar'
 import { CommandPalette } from '@/components/ui/command-palette'
+import { useNavDepth } from '@/components/layout/back-link'
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const [searchOpen, setSearchOpen] = useState(false)
   const pathname = usePathname()
+  useNavDepth()
 
   // Global Cmd+K shortcut
   useEffect(() => {

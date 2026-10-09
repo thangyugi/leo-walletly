@@ -104,6 +104,10 @@ const ja = {
     unclassSub: 'これまでのすべて · {{count}} 件',
     unclassCta: 'すべて表示して分類',
     noTxPeriod: 'この期間の取引はありません',
+    manage: '管理',
+    membersCount: '{{count}} 人のメンバー',
+    accountsCount: '{{count}} 口座',
+    accountsTotal: '合計残高',
   },
   join: {
     invitedBy: '{{inviter}} さんが招待しています',
@@ -504,6 +508,7 @@ const ja = {
     sync: '同期',
     page: 'ページ',
     noDescription: '説明なし',
+    done: '完了',
   },
   categories: {
     food:          '食費',
@@ -1998,6 +2003,10 @@ const vi: typeof ja = {
     unclassSub: 'Từ trước đến nay · {{count}} giao dịch',
     unclassCta: 'Xem toàn bộ & phân loại',
     noTxPeriod: 'Không có giao dịch trong kỳ này',
+    manage: 'Quản lý',
+    membersCount: '{{count}} thành viên',
+    accountsCount: '{{count}} tài khoản',
+    accountsTotal: 'Tổng số dư',
   },
   join: {
     invitedBy: '{{inviter}} mời bạn tham gia',
@@ -2398,6 +2407,7 @@ const vi: typeof ja = {
     sync: 'Đồng bộ',
     page: 'Trang',
     noDescription: 'Không có mô tả',
+    done: 'Xong',
   },
   categories: {
     food:          'Ăn uống',
@@ -3891,6 +3901,10 @@ const en: typeof ja = {
     unclassSub: 'All time · {{count}} transactions',
     unclassCta: 'See all & classify',
     noTxPeriod: 'No transactions in this period',
+    manage: 'Manage',
+    membersCount: '{{count}} members',
+    accountsCount: '{{count}} accounts',
+    accountsTotal: 'Total balance',
   },
   join: {
     invitedBy: '{{inviter}} invited you',
@@ -4291,6 +4305,7 @@ const en: typeof ja = {
     sync: 'Sync',
     page: 'Page',
     noDescription: 'No description',
+    done: 'Done',
   },
   categories: {
     food:          'Food',

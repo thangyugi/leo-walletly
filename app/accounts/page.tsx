@@ -12,6 +12,7 @@ import { Input, Select } from '@/components/ui/input'
 import { AmountInput } from '@/components/ui/amount-input'
 import { EmptyState } from '@/components/ui/async-state'
 import { PageHeader } from '@/components/layout/page-header'
+import { BackLink } from '@/components/layout/back-link'
 import { CategoryIcon } from '@/features/categories/category-icon'
 import { useAccountsStore, type Account, type AccountInput } from '@/features/accounts/store'
 import { useMasterStore } from '@/features/master/store'
@@ -167,8 +168,11 @@ export default function AccountsPage() {
 
   return (
     <div className="animate-fade-in space-y-5">
+      <div className="space-y-2">
+      <BackLink />
       <PageHeader title={t.accounts.title} subtitle={t.accounts.subtitle}
         actions={can('account.create') ? <Button size="sm" icon={<Plus />} onClick={() => setEditing('new')}>{t.accounts.add}</Button> : undefined} />
+      </div>
 
       <div className="card-base p-5 flex items-center gap-4">
         <div className="w-10 h-10 rounded-xl bg-[var(--color-brand-50)] flex items-center justify-center"><Landmark className="w-5 h-5 text-[var(--color-brand-600)]" /></div>

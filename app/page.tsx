@@ -1,16 +1,15 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import Link from 'next/link'
 import {
   Upload, ArrowRight,
   Inbox, Sparkles, Plus, Users,
-  UserPlus, Shapes,
+  Shapes, BarChart3, ReceiptText, Wallet, Scale,
 } from 'lucide-react'
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
-import { Card, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { PageHeader } from '@/components/layout/page-header'
 import { DateNavigator, buildLabel, quarterPickerValue, pickerQuery } from '@/components/ui/date-range-picker'
@@ -61,6 +60,36 @@ const fmtDateDMY = (d: string) => formatDate(d)
 
 const EMPTY: PeriodSummary = { income: 0, expense: 0, net: 0, count: 0, expenseCount: 0, incomeCount: 0 }
 
+/**
+ * Every box on the overview has the same head: a tinted icon tile, a title,
+ * a quiet sub-line and one link on the right. Bodies follow the same insets.
+ */
+function DashCard({ icon: Icon, tone = 'brand', title, sub, action, children, className }: {
+  icon: typeof Users; tone?: 'brand' | 'warning'; title: ReactNode; sub?: ReactNode
+  action?: { href: string; label: string }; children: ReactNode; className?: string
+}) {
+  return (
+    <section className={cn('rounded-[14px] border border-[var(--color-border-default)] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] overflow-hidden', className)}>
+      <div className="flex items-center gap-3 px-4 sm:px-5 pt-4 pb-3">
+        <span className={cn('w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0',
+          tone === 'warning' ? 'bg-[#fef0c7] text-[#b54708]' : 'bg-[var(--color-brand-50)] text-[var(--color-brand-600)]')}>
+          <Icon className="w-4 h-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h2 className="text-[14px] font-semibold leading-tight text-[var(--color-text-primary)] truncate">{title}</h2>
+          {sub && <p className="text-[12px] text-[var(--color-text-tertiary)] mt-0.5 truncate">{sub}</p>}
+        </div>
+        {action && (
+          <Link href={action.href} className="shrink-0 inline-flex items-center gap-1 text-[12.5px] font-medium text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors group">
+            {action.label}<ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
+  )
+}
+
 // ------------------------------------------------------------------
 // Users panel (ledger_members)
 // ------------------------------------------------------------------
@@ -69,59 +98,33 @@ const AVATAR_COLORS = ['#059669', '#3b82f6', '#f59e0b', '#ec4899', '#8b5cf6', '#
 function UsersPanel() {
   const { t } = useTranslation()
   const { members } = useLedgerData()
-  const can = useLedgerStore((s) => s.can)
 
   return (
-    <div className="card-base p-5">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-brand-50)] flex items-center justify-center">
-            <Users className="w-4 h-4 text-[var(--color-brand-600)]" />
-          </div>
-          <p className="text-sm font-semibold text-[var(--color-text-primary)]">{t.dashboard.users}</p>
-        </div>
-        {can('member.invite') && (
-          <Link
-            href="/users"
-            className="flex items-center gap-1 text-xs text-[var(--color-text-tertiary)] hover:text-[var(--color-text-secondary)] transition-colors"
-          >
-            <UserPlus className="w-3.5 h-3.5" />
-            {t.dashboard.invite}
-          </Link>
-        )}
-      </div>
-      <div className="space-y-2.5">
+    <DashCard icon={Users} title={t.dashboard.users} sub={t.dashboard.membersCount.replace('{{count}}', String(members.length))}
+      action={{ href: '/ledger', label: t.dashboard.manage }}>
+      <ul className="px-4 sm:px-5 pb-4 space-y-3">
         {members.map((m, i) => {
           const name = m.user?.display_name || m.user?.email || '—'
           const isOwner = m.role_code === 'OWNER'
           return (
-            <div key={m.id} className="flex items-center gap-2.5">
-              <div
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 text-[10px] font-bold text-white"
-                style={{ background: m.color ?? AVATAR_COLORS[i % AVATAR_COLORS.length] }}
-              >
+            <li key={m.id} className="flex items-center gap-3">
+              <span className="w-8 h-8 rounded-full flex items-center justify-center shrink-0 text-[11px] font-bold text-white"
+                style={{ background: m.color ?? AVATAR_COLORS[i % AVATAR_COLORS.length] }}>
                 {getInitials(name)}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-xs font-medium text-[var(--color-text-primary)] truncate">{name}</p>
-                <p className="text-[10px] text-[var(--color-text-quaternary)] truncate">{m.user?.email}</p>
-              </div>
-              <span className={cn(
-                'text-[10px] font-semibold px-1.5 py-0.5 rounded-md',
-                isOwner
-                  ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]'
-                  : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]',
-              )}>
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-[13px] font-medium text-[var(--color-text-primary)] truncate">{name}</span>
+                <span className="block text-[11.5px] text-[var(--color-text-tertiary)] truncate">{m.user?.email}</span>
+              </span>
+              <span className={cn('text-[11px] font-semibold px-2 py-0.5 rounded-md shrink-0',
+                isOwner ? 'bg-[var(--color-brand-50)] text-[var(--color-brand-700)]' : 'bg-[var(--color-bg-sunken)] text-[var(--color-text-tertiary)]')}>
                 {isOwner ? t.dashboard.owner : t.dashboard.member}
               </span>
-            </div>
+            </li>
           )
         })}
-      </div>
-      <Link href="/users" className="block text-[10px] text-[var(--color-text-quaternary)] hover:text-[var(--color-text-secondary)] mt-3 pt-3 border-t border-[var(--color-border-subtle)]">
-        {t.dashboard.manageUsers}
-      </Link>
-    </div>
+      </ul>
+    </DashCard>
   )
 }
 
@@ -133,25 +136,15 @@ function UnclassifiedCard({ data, onOpen }: { data: { items: Transaction[]; tota
   const { t } = useTranslation()
   const { format } = useMoney()
   return (
-    <div className="rounded-[14px] border border-[#fedf89] bg-[var(--color-surface-default)] shadow-[var(--shadow-card)] overflow-hidden">
-      <div className="flex items-start gap-3 px-4 pt-4 pb-3 bg-[linear-gradient(180deg,#fffaeb,var(--color-surface-default))]">
-        <span className="w-9 h-9 rounded-[10px] bg-[#fef0c7] text-[#b54708] flex items-center justify-center shrink-0"><Shapes className="w-[18px] h-[18px]" /></span>
-        <div className="min-w-0 flex-1">
-          <p className="text-[13.5px] font-semibold text-[var(--color-text-primary)]">{t.dashboard.unclassTitle}</p>
-          <p className="text-[12px] text-[var(--color-text-tertiary)]">{t.dashboard.unclassSub.replace('{{count}}', String(data.total))}</p>
-        </div>
-        <span className="shrink-0 text-right">
-          <span className="block text-[15px] font-bold font-tabular text-[#b54708]">{data.total}</span>
-          {data.amount > 0 && <span className="block text-[10.5px] font-tabular text-[var(--color-text-tertiary)]">−{format(data.amount)}</span>}
-        </span>
-      </div>
+    <DashCard icon={Shapes} tone="warning" title={t.dashboard.unclassTitle}
+      sub={<>{t.dashboard.unclassSub.replace('{{count}}', String(data.total))}{data.amount > 0 && <> · <span className="font-tabular">−{format(data.amount)}</span></>}</>}>
       <ul className="divide-y divide-[var(--color-border-subtle)] border-t border-[var(--color-border-subtle)]">
         {data.items.map((x) => (
           <li key={x.id}>
-            <button type="button" onClick={() => onOpen(x)} className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-[var(--color-bg-sunken)]">
+            <button type="button" onClick={() => onOpen(x)} className="w-full flex items-center gap-3 px-4 sm:px-5 py-2.5 text-left hover:bg-[var(--color-bg-sunken)]">
               <span className="min-w-0 flex-1">
                 <span className="block text-[13px] font-medium text-[var(--color-text-primary)] truncate">{x.description}</span>
-                <span className="block text-[11px] text-[var(--color-text-quaternary)] font-tabular">{x.transactionDate}</span>
+                <span className="block text-[11.5px] text-[var(--color-text-tertiary)] font-tabular">{formatDate(x.transactionDate)}</span>
               </span>
               <span className={cn('text-[13px] font-semibold font-tabular shrink-0', x.transactionType === 'income' ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
                 {x.transactionType === 'income' ? '+' : '−'}{format(x.baseAmount)}
@@ -164,46 +157,58 @@ function UnclassifiedCard({ data, onOpen }: { data: { items: Transaction[]; tota
         className="flex items-center justify-center gap-1.5 h-11 border-t border-[var(--color-border-subtle)] text-[13px] font-semibold text-[var(--color-interactive-primary)] hover:bg-[var(--color-brand-25)]">
         {t.dashboard.unclassCta}<ArrowRight className="w-3.5 h-3.5" />
       </Link>
-    </div>
+    </DashCard>
   )
 }
 
 function AccountsPanel() {
   const { t, tk } = useTranslation()
   const { format } = useMoney()
-  const { accounts } = useLedgerData()
+  const { ledger, accounts } = useLedgerData()
   const accountTypes = useMasterStore((s) => s.accountTypes)
-  const balances = accounts.filter((a) => !a.isArchived && a.balance !== 0)
-
-  if (balances.length === 0) return null
+  // Every open account (also at zero), so this box is always the way into account management.
+  const open = accounts.filter((a) => !a.isArchived)
+  const total = open.filter((a) => a.includeInNetWorth !== false && a.currencyCode === ledger?.currency_code).reduce((s, a) => s + a.balance, 0)
 
   return (
-    <div className="card-base p-5">
-      <Link href="/accounts" className="block text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] hover:text-[var(--color-text-secondary)] mb-3">
-        {t.dashboard.accounts}
-      </Link>
-      <div className="space-y-2">
-        {balances.map((a) => {
-          const type = accountTypes.find((x) => x.code === a.accountTypeCode)
-          return (
-            <div key={a.id} className="flex items-center gap-3">
-              {/* Provider mark + type, so a wallet and a card of the same brand don't look alike. */}
-              <AccountBadge account={a} size={28} />
-              <span className="flex-1 min-w-0">
-                <span className="block text-xs font-medium text-[var(--color-text-primary)] truncate">{a.name}</span>
-                {type && <span className="block text-[10.5px] text-[var(--color-text-quaternary)] truncate">{tk(type.name_key)}</span>}
-              </span>
-              <span className={cn(
-                'text-xs font-semibold font-tabular',
-                a.balance >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]',
-              )}>
-                {a.balance >= 0 ? '+' : ''}{format(a.balance, { from: a.currencyCode as never, to: a.currencyCode as never })}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-    </div>
+    <DashCard icon={Wallet} title={t.dashboard.accounts} sub={t.dashboard.accountsCount.replace('{{count}}', String(open.length))}
+      action={{ href: '/accounts', label: t.dashboard.manage }}>
+      {open.length === 0 ? (
+        <Link href="/accounts" className="mx-4 sm:mx-5 mb-4 flex items-center justify-center gap-1.5 h-10 rounded-lg border border-dashed border-[var(--color-border-strong)] text-[13px] font-medium text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]">
+          <Plus className="w-3.5 h-3.5" />{t.import.addAccount}
+        </Link>
+      ) : (
+        <>
+          <ul className="px-4 sm:px-5 pb-3 space-y-3">
+            {open.map((a) => {
+              const type = accountTypes.find((x) => x.code === a.accountTypeCode)
+              return (
+                <li key={a.id}>
+                  <Link href="/accounts" className="flex items-center gap-3 group">
+                    {/* Provider mark + type, so a wallet and a card of the same brand don't look alike. */}
+                    <AccountBadge account={a} size={32} />
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[13px] font-medium text-[var(--color-text-primary)] truncate group-hover:underline underline-offset-2">{a.name}</span>
+                      {type && <span className="block text-[11.5px] text-[var(--color-text-tertiary)] truncate">{tk(type.name_key)}</span>}
+                    </span>
+                    <span className={cn('text-[13px] font-semibold font-tabular shrink-0',
+                      a.balance > 0 ? 'text-[var(--color-text-gain)]' : a.balance < 0 ? 'text-[var(--color-text-loss)]' : 'text-[var(--color-text-tertiary)]')}>
+                      {a.balance > 0 ? '+' : ''}{format(a.balance, { from: a.currencyCode as never, to: a.currencyCode as never })}
+                    </span>
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+          <div className="flex items-center justify-between px-4 sm:px-5 py-3 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]">
+            <span className="text-[12.5px] font-semibold text-[var(--color-text-secondary)]">{t.dashboard.accountsTotal}</span>
+            <span className={cn('text-[14px] font-bold font-tabular', total >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
+              {total > 0 ? '+' : ''}{format(total)}
+            </span>
+          </div>
+        </>
+      )}
+    </DashCard>
   )
 }
 
@@ -215,8 +220,8 @@ function CashFlowChart({ data }: { data: { label: string; income: number; expens
   const { format } = useMoney()
 
   return (
-    <div className="card-base p-5">
-      <p className="text-sm font-semibold text-[var(--color-text-primary)] mb-4">{t.dashboard.cashFlow}</p>
+    <DashCard icon={BarChart3} title={t.dashboard.cashFlow}>
+      <div className="px-4 sm:px-5 pb-4">
       <div style={{ height: 170 }}>
         <ResponsiveContainer width="100%" height="100%">
           <BarChart data={data} margin={CHART_MARGINS.default} barCategoryGap="30%">
@@ -235,14 +240,15 @@ function CashFlowChart({ data }: { data: { label: string; income: number; expens
       <div className="flex items-center gap-4 mt-2">
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ background: CHART_COLORS.gain }} />
-          <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.inflow}</span>
+          <span className="text-xs text-[var(--color-text-tertiary)]">{t.dashboard.inflow}</span>
         </div>
         <div className="flex items-center gap-1.5">
           <div className="w-2.5 h-2.5 rounded-sm" style={{ background: CHART_COLORS.loss }} />
-          <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.outflow}</span>
+          <span className="text-xs text-[var(--color-text-tertiary)]">{t.dashboard.outflow}</span>
         </div>
       </div>
-    </div>
+      </div>
+    </DashCard>
   )
 }
 
@@ -440,26 +446,10 @@ export default function DashboardPage() {
           <div className="lg:col-span-2 space-y-4">
             <CashFlowChart data={flow} />
 
-            <Card padding="none">
-              <CardHeader>
-                <div>
-                  <CardTitle>
-                    {t.dashboard.recentTxn}
-                    <span className="block sm:inline sm:ml-2 text-[var(--color-text-quaternary)] font-normal text-xs sm:text-sm">
-                      <span className="max-sm:hidden">· </span>{buildLabel(picker.start, picker.end, picker.mode, lang)} · {total} {t.dashboard.total}
-                    </span>
-                  </CardTitle>
-                </div>
-                <Link
-                  href={txHref}
-                  className="flex items-center gap-1 text-xs font-medium whitespace-nowrap text-[var(--color-text-tertiary)] hover:text-[var(--color-text-primary)] transition-colors group"
-                >
-                  {t.dashboard.viewAll}
-                  <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                </Link>
-              </CardHeader>
-
-              <div className={cn('hidden sm:grid items-center gap-3 px-4 py-2 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]', RECENT_GRID)}>
+            <DashCard icon={ReceiptText} title={t.dashboard.recentTxn}
+              sub={`${buildLabel(picker.start, picker.end, picker.mode, lang)} · ${total} ${t.dashboard.total}`}
+              action={{ href: txHref, label: t.dashboard.viewAll }}>
+              <div className={cn('hidden sm:grid items-center gap-3 px-4 py-2 border-y border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]', RECENT_GRID)}>
                 <div />
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.content}</p>
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)]">{t.transactions.date}</p>
@@ -468,7 +458,7 @@ export default function DashboardPage() {
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--color-text-quaternary)] text-right">{t.transactions.amount}</p>
               </div>
 
-              <div className="divide-y divide-[var(--color-border-subtle)]">
+              <div className="divide-y divide-[var(--color-border-subtle)] max-sm:border-t max-sm:border-[var(--color-border-subtle)]">
                 {recent.map((txn) => (
                   <RecentTxnRow key={txn.id} txn={txn} onClick={() => setViewing(txn)} />
                 ))}
@@ -486,7 +476,7 @@ export default function DashboardPage() {
                   </Link>
                 </div>
               )}
-            </Card>
+            </DashCard>
           </div>
 
           {/* Right sidebar */}
@@ -495,30 +485,26 @@ export default function DashboardPage() {
             <UsersPanel />
             <AccountsPanel />
 
-            <div className="card-base p-5">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-[var(--color-text-quaternary)] mb-1 truncate">
-                {t.dashboard.summary}
-              </p>
-              <p className="text-[11px] text-[var(--color-text-quaternary)] mb-3 truncate">{buildLabel(picker.start, picker.end, picker.mode, lang)}</p>
-              <div className="space-y-2">
+            <DashCard icon={Scale} title={t.dashboard.summary} sub={buildLabel(picker.start, picker.end, picker.mode, lang)}>
+              <div className="px-4 sm:px-5 pb-1 space-y-2.5">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.inflow}</span>
-                  <span className="text-sm font-semibold font-tabular text-[var(--color-text-gain)]">+{format(stats.income)}</span>
+                  <span className="text-[13px] text-[var(--color-text-secondary)]">{t.dashboard.inflow}</span>
+                  <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-gain)]">+{format(stats.income)}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-[var(--color-text-quaternary)]">{t.dashboard.outflow}</span>
-                  <span className="text-sm font-semibold font-tabular text-[var(--color-text-loss)]">−{format(stats.expense)}</span>
-                </div>
-                <div className="flex justify-between items-center pt-2 border-t border-[var(--color-border-subtle)]">
-                  <span className="text-xs font-semibold text-[var(--color-text-secondary)]">{t.dashboard.balance}</span>
-                  <span className={cn('text-sm font-bold font-tabular', stats.net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
-                    {stats.net >= 0 ? '+' : ''}{format(stats.net)}
-                  </span>
+                  <span className="text-[13px] text-[var(--color-text-secondary)]">{t.dashboard.outflow}</span>
+                  <span className="text-[13px] font-semibold font-tabular text-[var(--color-text-loss)]">−{format(stats.expense)}</span>
                 </div>
               </div>
-            </div>
+              <div className="mt-3 flex items-center justify-between px-4 sm:px-5 py-3 border-t border-[var(--color-border-subtle)] bg-[var(--color-bg-sunken)]">
+                <span className="text-[12.5px] font-semibold text-[var(--color-text-secondary)]">{t.dashboard.balance}</span>
+                <span className={cn('text-[14px] font-bold font-tabular', stats.net >= 0 ? 'text-[var(--color-text-gain)]' : 'text-[var(--color-text-loss)]')}>
+                  {stats.net >= 0 ? '+' : ''}{format(stats.net)}
+                </span>
+              </div>
+            </DashCard>
 
-            <div className="rounded-xl border border-[var(--color-brand-100)] bg-[var(--color-brand-25)] p-4">
+            <div className="rounded-[14px] border border-[var(--color-brand-100)] bg-[var(--color-brand-25)] px-4 sm:px-5 py-4">
               <div className="flex items-start gap-2.5">
                 <Sparkles className="w-4 h-4 text-[var(--color-brand-600)] shrink-0 mt-0.5" />
                 <div>
