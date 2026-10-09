@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import { createPortal } from 'react-dom'
-import { Check, ChevronDown, Search } from 'lucide-react'
+import { Check, ChevronDown, Search, Users, Lock } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { useTranslation } from '@/hooks/useTranslation'
 import { CategoryIcon } from '@/features/categories/category-icon'
@@ -27,7 +27,14 @@ export interface PickerOption {
   group?: string
   /** Colour dot before the group heading (money out / in / moved). */
   groupTone?: 'loss' | 'gain' | 'info'
+  /** A wider section above the groups (categories: shared with others / only me). */
+  scope?: { key: 'shared' | 'private'; label: string; sub: string }
 }
+
+const SCOPE_STYLE = {
+  shared: { band: 'bg-[#eff8ff] text-[#175cd3]', icon: Users, mark: 'text-[#2e90fa]' },
+  private: { band: 'bg-[var(--color-bg-sunken)] text-[var(--color-text-secondary)]', icon: Lock, mark: 'text-[var(--color-text-quaternary)]' },
+} as const
 
 interface PickerProps {
   value: string
@@ -148,11 +155,24 @@ export function Picker({
       {shown.length === 0 && <p className="px-3.5 py-2 text-xs text-[var(--color-text-quaternary)]">{t.common.empty}</p>}
       {shown.map((o, i) => {
         const on = o.value === value
-        const heading = o.group && o.group !== shown[i - 1]?.group ? o.group : null
+        const prev = shown[i - 1]
+        const scopeHead = o.scope && o.scope.key !== prev?.scope?.key ? o.scope : null
+        const heading = o.group && (o.group !== prev?.group || scopeHead) ? o.group : null
+        const SS = o.scope ? SCOPE_STYLE[o.scope.key] : null
         return (
           <React.Fragment key={o.value || '__none'}>
+          {scopeHead && SS && (
+            // Shared vs only-me: a coloured band with an icon and one line saying what it means.
+            <div role="presentation" className={cn('flex items-start gap-2.5', big ? 'mx-3 mt-3 mb-1 px-3 py-2.5 rounded-xl' : 'mx-2 mt-2 mb-1 px-2.5 py-2 rounded-lg', SS.band)}>
+              <SS.icon className={cn('shrink-0 mt-px', big ? 'w-4 h-4' : 'w-3.5 h-3.5')} />
+              <span className="min-w-0">
+                <span className={cn('block font-semibold', big ? 'text-[13.5px]' : 'text-[12px]')}>{scopeHead.label}</span>
+                <span className={cn('block opacity-80', big ? 'text-[12px]' : 'text-[11px]')}>{scopeHead.sub}</span>
+              </span>
+            </div>
+          )}
           {heading && (
-            <div role="presentation" className={cn(big ? 'px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]' : 'px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
+            <div role="presentation" className={cn(big ? 'px-5 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]' : 'px-3.5 pt-2 pb-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-[var(--color-text-quaternary)]', i > 0 && !scopeHead && 'mt-1 border-t border-[var(--color-border-subtle)]')}>
               {o.groupTone && <span className={cn('inline-block w-2 h-2 rounded-full mr-1.5 align-middle -mt-px',
                 o.groupTone === 'loss' ? 'bg-[var(--color-text-loss)]' : o.groupTone === 'gain' ? 'bg-[var(--color-text-gain)]' : 'bg-[var(--color-brand-600)]')} />}
               {heading}
@@ -175,6 +195,7 @@ export function Picker({
             {o.icon && <span className="shrink-0 flex items-center">{o.icon}</span>}
             <span className="flex-1 min-w-0 truncate">{o.label}</span>
             {o.hint && <span className="shrink-0 text-[11px] text-[var(--color-text-quaternary)]">{o.hint}</span>}
+            {SS && !on && <SS.icon aria-hidden className={cn('w-3.5 h-3.5 shrink-0', SS.mark)} />}
             {on && <Check className="w-3.5 h-3.5 shrink-0" />}
           </button>
           </React.Fragment>
@@ -278,12 +299,12 @@ export function CategoryPicker({
     return { value: o.id, label: c.name, depth, icon: <CategoryBadge category={c} />, group, groupTone, hint: c.is_mine === false ? c.owner_name : undefined }
   })
   const scopes = [
-    { label: t.catui.sectionShared, list: categories.filter(isShared) },
-    { label: t.catui.sectionPrivate, list: categories.filter((c) => !isShared(c)) },
+    { scope: { key: 'shared' as const, label: t.catui.sectionShared, sub: t.catui.pickSharedSub }, list: categories.filter(isShared) },
+    { scope: { key: 'private' as const, label: t.catui.sectionPrivate, sub: t.catui.pickPrivateSub }, list: categories.filter((c) => !isShared(c)) },
   ].filter((x) => x.list.length)
   // Only one scope in use: no need to name it.
-  const sections = scopes.flatMap(({ label: scope, list }) => kinds.flatMap(({ type, label, tone }) =>
-    tree(list.filter((c) => c.type === type), scopes.length > 1 ? `${scope} · ${label}` : label, tone)))
+  const sections = scopes.flatMap(({ scope, list }) => kinds.flatMap(({ type, label, tone }) =>
+    tree(list.filter((c) => c.type === type), label, tone).map((o) => (scopes.length > 1 ? { ...o, scope } : o))))
   const options: PickerOption[] = [
     ...extra,
     ...(noneLabel !== undefined ? [{ value: '', label: noneLabel }] : []),

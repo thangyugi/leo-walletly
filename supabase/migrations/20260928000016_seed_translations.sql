@@ -557,6 +557,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.pendingSub', 'catui', 'amount', false),
   ('catui.pendingTitle', 'catui', 'groups,count', false),
   ('catui.perPerson', 'catui', null, false),
+  ('catui.pickPrivateSub', 'catui', null, false),
+  ('catui.pickSharedSub', 'catui', null, false),
   ('catui.private', 'catui', null, false),
   ('catui.remaining', 'catui', 'amount', false),
   ('catui.saveAsKeyword', 'catui', null, false),
@@ -808,12 +810,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.cancel', 'groups', null, true),
   ('groups.color', 'groups', null, true),
   ('groups.cost_center', 'groups', null, true),
-  ('groups.default', 'groups', null, true),
-  ('groups.delete', 'groups', null, true),
-  ('groups.deleteConfirm', 'groups', null, true)
+  ('groups.default', 'groups', null, true)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('groups.delete', 'groups', null, true),
+  ('groups.deleteConfirm', 'groups', null, true),
   ('groups.department', 'groups', null, true),
   ('groups.editTitle', 'groups', null, true),
   ('groups.emoji', 'groups', null, true),
@@ -1211,12 +1213,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.signupSubmit', 'login', null, false),
   ('login.signupSubtitle', 'login', null, false),
   ('login.signupSuccess', 'login', null, false),
-  ('login.signupWithEmail', 'login', null, false),
-  ('login.skip', 'login', null, false),
-  ('login.submit', 'login', null, false)
+  ('login.signupWithEmail', 'login', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('login.skip', 'login', null, false),
+  ('login.submit', 'login', null, false),
   ('login.subtitle', 'login', null, false),
   ('login.title', 'login', null, false),
   ('ls.created', 'ls', null, false),
@@ -1614,12 +1616,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.recoveryLabel', 'settings', null, false),
   ('settings.security.revokeSession', 'settings', null, false),
   ('settings.security.riskHigh', 'settings', null, false),
-  ('settings.security.riskLevel', 'settings', null, false),
-  ('settings.security.riskLow', 'settings', null, false),
-  ('settings.security.riskMedium', 'settings', null, false)
+  ('settings.security.riskLevel', 'settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.security.riskLow', 'settings', null, false),
+  ('settings.security.riskMedium', 'settings', null, false),
   ('settings.security.securityStatus', 'settings', null, false),
   ('settings.security.sessions', 'settings', null, false),
   ('settings.security.status', 'settings', null, false),
@@ -2339,6 +2341,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'ja', '未分類の支出合計: {{amount}}'),
   ('catui.pendingTitle', 'ja', '{{groups}} グループ・{{count}} 件が未分類'),
   ('catui.perPerson', 'ja', '1人あたり'),
+  ('catui.pickPrivateSub', 'ja', 'この取引はあなただけに表示されます'),
+  ('catui.pickSharedSub', 'ja', '共有メンバーにもこの取引が見えます'),
   ('catui.private', 'ja', '自分だけ'),
   ('catui.remaining', 'ja', '残り {{amount}}'),
   ('catui.saveAsKeyword', 'ja', 'キーワードとして保存'),
@@ -2590,12 +2594,12 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'ja', 'キャンセル'),
   ('groups.color', 'ja', 'カラー'),
   ('groups.cost_center', 'ja', 'コストセンター'),
-  ('groups.default', 'ja', 'デフォルト'),
-  ('groups.delete', 'ja', '削除'),
-  ('groups.deleteConfirm', 'ja', 'グループを削除しますか？')
+  ('groups.default', 'ja', 'デフォルト')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('groups.delete', 'ja', '削除'),
+  ('groups.deleteConfirm', 'ja', 'グループを削除しますか？'),
   ('groups.department', 'ja', '部署'),
   ('groups.editTitle', 'ja', 'グループを編集'),
   ('groups.emoji', 'ja', '絵文字'),
@@ -2993,12 +2997,12 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'ja', 'アカウント作成'),
   ('login.signupSubtitle', 'ja', '新しいアカウントを作成'),
   ('login.signupSuccess', 'ja', '確認メールを送信しました。メール内のリンクを開いてください。'),
-  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録'),
-  ('login.skip', 'ja', 'スキップ（デモ）'),
-  ('login.submit', 'ja', 'ログイン')
+  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.skip', 'ja', 'スキップ（デモ）'),
+  ('login.submit', 'ja', 'ログイン'),
   ('login.subtitle', 'ja', '財務管理システムにログイン'),
   ('login.title', 'ja', 'ログイン'),
   ('ls.created', 'ja', '作成日'),
@@ -3396,12 +3400,12 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'ja', '復旧方法'),
   ('settings.security.revokeSession', 'ja', 'セッションを終了'),
   ('settings.security.riskHigh', 'ja', '高'),
-  ('settings.security.riskLevel', 'ja', 'リスクレベル'),
-  ('settings.security.riskLow', 'ja', '低'),
-  ('settings.security.riskMedium', 'ja', '中')
+  ('settings.security.riskLevel', 'ja', 'リスクレベル')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.riskLow', 'ja', '低'),
+  ('settings.security.riskMedium', 'ja', '中'),
   ('settings.security.securityStatus', 'ja', 'アカウントセキュリティ'),
   ('settings.security.sessions', 'ja', 'アクティブなセッション'),
   ('settings.security.status', 'ja', 'セキュリティステータス'),
@@ -4121,6 +4125,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'vi', 'Tổng chi tiêu chưa phân loại: {{amount}}'),
   ('catui.pendingTitle', 'vi', '{{groups}} nhóm · {{count}} giao dịch chờ phân loại'),
   ('catui.perPerson', 'vi', 'Trung bình / người'),
+  ('catui.pickPrivateSub', 'vi', 'Chỉ bạn nhìn thấy giao dịch này'),
+  ('catui.pickSharedSub', 'vi', 'Người được chia sẻ cũng thấy giao dịch này'),
   ('catui.private', 'vi', 'Chỉ mình tôi'),
   ('catui.remaining', 'vi', 'còn {{amount}}'),
   ('catui.saveAsKeyword', 'vi', 'Lưu làm từ khoá'),
@@ -4372,12 +4378,12 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'vi', 'Hủy'),
   ('groups.color', 'vi', 'Màu sắc'),
   ('groups.cost_center', 'vi', 'Trung tâm chi phí'),
-  ('groups.default', 'vi', 'Mặc định'),
-  ('groups.delete', 'vi', 'Xóa'),
-  ('groups.deleteConfirm', 'vi', 'Xóa nhóm này?')
+  ('groups.default', 'vi', 'Mặc định')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('groups.delete', 'vi', 'Xóa'),
+  ('groups.deleteConfirm', 'vi', 'Xóa nhóm này?'),
   ('groups.department', 'vi', 'Phòng ban'),
   ('groups.editTitle', 'vi', 'Chỉnh sửa nhóm'),
   ('groups.emoji', 'vi', 'Biểu tượng'),
@@ -4775,12 +4781,12 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'vi', 'Tạo tài khoản'),
   ('login.signupSubtitle', 'vi', 'Tạo tài khoản mới'),
   ('login.signupSuccess', 'vi', 'Đã gửi email xác nhận. Hãy mở liên kết trong email.'),
-  ('login.signupWithEmail', 'vi', 'Đăng ký với email này'),
-  ('login.skip', 'vi', 'Bỏ qua (Demo)'),
-  ('login.submit', 'vi', 'Đăng nhập')
+  ('login.signupWithEmail', 'vi', 'Đăng ký với email này')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.skip', 'vi', 'Bỏ qua (Demo)'),
+  ('login.submit', 'vi', 'Đăng nhập'),
   ('login.subtitle', 'vi', 'Đăng nhập vào hệ thống quản lý tài chính'),
   ('login.title', 'vi', 'Đăng nhập'),
   ('ls.created', 'vi', 'Ngày tạo'),
@@ -5178,12 +5184,12 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục'),
   ('settings.security.revokeSession', 'vi', 'Đăng xuất thiết bị'),
   ('settings.security.riskHigh', 'vi', 'CAO'),
-  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro'),
-  ('settings.security.riskLow', 'vi', 'THẤP'),
-  ('settings.security.riskMedium', 'vi', 'TRUNG BÌNH')
+  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.riskLow', 'vi', 'THẤP'),
+  ('settings.security.riskMedium', 'vi', 'TRUNG BÌNH'),
   ('settings.security.securityStatus', 'vi', 'Bảo mật tài khoản'),
   ('settings.security.sessions', 'vi', 'Phiên đăng nhập hiện tại'),
   ('settings.security.status', 'vi', 'Trạng thái bảo mật'),
@@ -5903,6 +5909,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'en', 'Uncategorized spending: {{amount}}'),
   ('catui.pendingTitle', 'en', '{{groups}} groups · {{count}} uncategorized'),
   ('catui.perPerson', 'en', 'Per person'),
+  ('catui.pickPrivateSub', 'en', 'Only you see this transaction'),
+  ('catui.pickSharedSub', 'en', 'People it is shared with see this transaction'),
   ('catui.private', 'en', 'Only me'),
   ('catui.remaining', 'en', '{{amount}} left'),
   ('catui.saveAsKeyword', 'en', 'Save as keyword'),
@@ -6154,12 +6162,12 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'en', 'Cancel'),
   ('groups.color', 'en', 'Color'),
   ('groups.cost_center', 'en', 'Cost Center'),
-  ('groups.default', 'en', 'Default'),
-  ('groups.delete', 'en', 'Delete'),
-  ('groups.deleteConfirm', 'en', 'Delete this group?')
+  ('groups.default', 'en', 'Default')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('groups.delete', 'en', 'Delete'),
+  ('groups.deleteConfirm', 'en', 'Delete this group?'),
   ('groups.department', 'en', 'Department'),
   ('groups.editTitle', 'en', 'Edit Group'),
   ('groups.emoji', 'en', 'Emoji'),
@@ -6557,12 +6565,12 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'en', 'Create account'),
   ('login.signupSubtitle', 'en', 'Create a new account'),
   ('login.signupSuccess', 'en', 'We sent a confirmation email. Open the link to continue.'),
-  ('login.signupWithEmail', 'en', 'Sign up with this email'),
-  ('login.skip', 'en', 'Skip (Demo)'),
-  ('login.submit', 'en', 'Sign In')
+  ('login.signupWithEmail', 'en', 'Sign up with this email')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.skip', 'en', 'Skip (Demo)'),
+  ('login.submit', 'en', 'Sign In'),
   ('login.subtitle', 'en', 'Log in to your finances'),
   ('login.title', 'en', 'Sign In'),
   ('ls.created', 'en', 'Created'),
@@ -6960,12 +6968,12 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'en', 'Recovery methods'),
   ('settings.security.revokeSession', 'en', 'Revoke session'),
   ('settings.security.riskHigh', 'en', 'HIGH'),
-  ('settings.security.riskLevel', 'en', 'Risk Level'),
-  ('settings.security.riskLow', 'en', 'LOW'),
-  ('settings.security.riskMedium', 'en', 'MEDIUM')
+  ('settings.security.riskLevel', 'en', 'Risk Level')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.riskLow', 'en', 'LOW'),
+  ('settings.security.riskMedium', 'en', 'MEDIUM'),
   ('settings.security.securityStatus', 'en', 'Account Security'),
   ('settings.security.sessions', 'en', 'Active Sessions'),
   ('settings.security.status', 'en', 'Security Status'),

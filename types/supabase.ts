@@ -4255,6 +4255,7 @@ export type Database = {
           p_rows: Json
           p_file_size?: number | null
           p_file_path?: string | null
+          p_paid_by?: string | null
         }
         Returns: Database['public']['Tables']["import_jobs"]['Row']
       }
@@ -4525,6 +4526,7 @@ export type Database = {
           p_fallback_category_id?: string | null
           p_document?: Json | null
           p_items?: Json | null
+          p_paid_by?: string | null
         }
         Returns: Json
       }
