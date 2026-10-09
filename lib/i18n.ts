@@ -977,6 +977,7 @@ const ja = {
     errorCategoryAccess: 'このカテゴリは他の人のもので、あなたとは共有されていません。',
     errorNoPermission: 'この取引を変更する権限がありません。',
     errorCategoryReadOnly: 'このカテゴリは閲覧のみで共有されています',
+    fromAccount: '振替元',
   },
   bulk: {
     selected: '{{count}} 件選択済み',
@@ -2869,6 +2870,7 @@ const vi: typeof ja = {
     errorCategoryAccess: 'Danh mục này của người khác và chưa được chia sẻ với bạn.',
     errorNoPermission: 'Bạn không có quyền thay đổi giao dịch này.',
     errorCategoryReadOnly: 'Danh mục này chỉ được chia sẻ để xem',
+    fromAccount: 'Tài khoản chuyển',
   },
   bulk: {
     selected: 'Đã chọn {{count}}',
@@ -4761,6 +4763,7 @@ const en: typeof ja = {
     errorCategoryAccess: 'That category belongs to someone else and is not shared with you.',
     errorNoPermission: 'You can\'t change this transaction.',
     errorCategoryReadOnly: 'This category is shared with you to view only',
+    fromAccount: 'From account',
   },
   bulk: {
     selected: '{{count}} selected',

@@ -874,10 +874,11 @@ function TransactionsContent() {
       {phone && selecting && <div aria-hidden className="h-24" />}
 
       {detailTxn && !editingTxn && (
-        <TransactionDetailPanel key={detailTxn.id} txn={detailTxn} onOpenTransaction={(id) => void getById(id).then((tx) => { if (tx) setDetailTxn(tx) })} onClose={closeDetail} onEdit={() => { setEditingTxn(detailTxn); setDetailTxn(null) }} />
+        <TransactionDetailPanel key={detailTxn.id} txn={detailTxn} onOpenTransaction={(id) => void getById(id).then((tx) => { if (tx) setDetailTxn(tx) })} onClose={closeDetail} onEdit={() => setEditingTxn(detailTxn)} />
       )}
 
-      {editingTxn && <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} />}
+      {/* Closing the editor returns to the open detail; a delete closes both. */}
+      {editingTxn && <TransactionEditModal txn={editingTxn} onClose={() => setEditingTxn(null)} onSaved={(tx) => { if (!tx) closeDetail() }} />}
       {adding && <TransactionEditModal txn={null} defaults={{ transactionDate: picker.end < toLocalISODate() ? picker.end : toLocalISODate() }} onClose={() => setAdding(false)} />}
     </div>
   )
