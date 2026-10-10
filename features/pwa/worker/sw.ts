@@ -7,8 +7,9 @@
  * - App shell (/_next/static, icons, the offline page) is precached per build.
  * - Pages and other same-origin assets: Serwist's Next.js defaults
  *   (network first for pages, cache first for hashed JS, …).
- * - Financial data never touches the worker or Cache Storage: Supabase calls
- *   and /api routes are left to the browser (no respondWith at all).
+ * - Supabase calls and /api routes are left to the browser (no respondWith at
+ *   all). For offline use the page itself keeps copies of what it read
+ *   (lib/offline-cache.ts, per user, deleted on sign-out).
  */
 import { defaultCache } from '@serwist/turbopack/worker'
 import { Serwist, type PrecacheEntry, type SerwistGlobalConfig } from 'serwist'
