@@ -104,6 +104,10 @@ const ja = {
     unclassSub: 'これまでのすべて · {{count}} 件',
     unclassCta: 'すべて表示して分類',
     noTxPeriod: 'この期間の取引はありません',
+    manage: '管理',
+    membersCount: '{{count}} 人のメンバー',
+    accountsCount: '{{count}} 口座',
+    accountsTotal: '合計残高',
   },
   join: {
     invitedBy: '{{inviter}} さんが招待しています',
@@ -504,6 +508,7 @@ const ja = {
     sync: '同期',
     page: 'ページ',
     noDescription: '説明なし',
+    done: '完了',
   },
   categories: {
     food:          '食費',
@@ -977,6 +982,7 @@ const ja = {
     errorCategoryAccess: 'このカテゴリは他の人のもので、あなたとは共有されていません。',
     errorNoPermission: 'この取引を変更する権限がありません。',
     errorCategoryReadOnly: 'このカテゴリは閲覧のみで共有されています',
+    fromAccount: '振替元',
   },
   bulk: {
     selected: '{{count}} 件選択済み',
@@ -1134,6 +1140,8 @@ const ja = {
     sectionPrivateSub: 'あなただけに表示されます。開くと共有できます',
     unclassifiedTitle: '未分類の取引',
     unclassifiedSub: '最新順・全期間 · {{groups}} グループ',
+    pickSharedSub: '共有メンバーにもこの取引が見えます',
+    pickPrivateSub: 'この取引はあなただけに表示されます',
   },
   catform: {
     errorNotOwner: 'サブカテゴリは自分のカテゴリの中にだけ作れます。共有されたカテゴリは持ち主だけが変更できます。',
@@ -1997,6 +2005,10 @@ const vi: typeof ja = {
     unclassSub: 'Từ trước đến nay · {{count}} giao dịch',
     unclassCta: 'Xem toàn bộ & phân loại',
     noTxPeriod: 'Không có giao dịch trong kỳ này',
+    manage: 'Quản lý',
+    membersCount: '{{count}} thành viên',
+    accountsCount: '{{count}} tài khoản',
+    accountsTotal: 'Tổng số dư',
   },
   join: {
     invitedBy: '{{inviter}} mời bạn tham gia',
@@ -2397,6 +2409,7 @@ const vi: typeof ja = {
     sync: 'Đồng bộ',
     page: 'Trang',
     noDescription: 'Không có mô tả',
+    done: 'Xong',
   },
   categories: {
     food:          'Ăn uống',
@@ -2869,6 +2882,7 @@ const vi: typeof ja = {
     errorCategoryAccess: 'Danh mục này của người khác và chưa được chia sẻ với bạn.',
     errorNoPermission: 'Bạn không có quyền thay đổi giao dịch này.',
     errorCategoryReadOnly: 'Danh mục này chỉ được chia sẻ để xem',
+    fromAccount: 'Tài khoản chuyển',
   },
   bulk: {
     selected: 'Đã chọn {{count}}',
@@ -3026,6 +3040,8 @@ const vi: typeof ja = {
     sectionPrivateSub: 'Chỉ bạn nhìn thấy — mở một danh mục để chia sẻ',
     unclassifiedTitle: 'Giao dịch chưa phân loại',
     unclassifiedSub: 'Mới nhất trên mọi thời gian · {{groups}} nhóm',
+    pickSharedSub: 'Người được chia sẻ cũng thấy giao dịch này',
+    pickPrivateSub: 'Chỉ bạn nhìn thấy giao dịch này',
   },
   catform: {
     errorNotOwner: 'Chỉ tạo được danh mục con trong danh mục của bạn. Danh mục được chia sẻ chỉ chủ sở hữu mới thay đổi được.',
@@ -3889,6 +3905,10 @@ const en: typeof ja = {
     unclassSub: 'All time · {{count}} transactions',
     unclassCta: 'See all & classify',
     noTxPeriod: 'No transactions in this period',
+    manage: 'Manage',
+    membersCount: '{{count}} members',
+    accountsCount: '{{count}} accounts',
+    accountsTotal: 'Total balance',
   },
   join: {
     invitedBy: '{{inviter}} invited you',
@@ -4289,6 +4309,7 @@ const en: typeof ja = {
     sync: 'Sync',
     page: 'Page',
     noDescription: 'No description',
+    done: 'Done',
   },
   categories: {
     food:          'Food',
@@ -4761,6 +4782,7 @@ const en: typeof ja = {
     errorCategoryAccess: 'That category belongs to someone else and is not shared with you.',
     errorNoPermission: 'You can\'t change this transaction.',
     errorCategoryReadOnly: 'This category is shared with you to view only',
+    fromAccount: 'From account',
   },
   bulk: {
     selected: '{{count}} selected',
@@ -4918,6 +4940,8 @@ const en: typeof ja = {
     sectionPrivateSub: 'Only you can see these — open one to share it',
     unclassifiedTitle: 'Unclassified transactions',
     unclassifiedSub: 'Latest across all time · {{groups}} groups',
+    pickSharedSub: 'People it is shared with see this transaction',
+    pickPrivateSub: 'Only you see this transaction',
   },
   catform: {
     errorNotOwner: 'You can only add sub-categories to your own categories. Only the owner can change a shared category.',

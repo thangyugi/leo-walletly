@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import { CheckCheck, Archive, Bell, Settings, SlidersHorizontal, X } from 'lucide-react'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/page-header'
+import { BackLink } from '@/components/layout/back-link'
 import { Button } from '@/components/ui/button'
 import { AppSelect } from '@/components/ui/app-select'
 import { NotificationItem } from '@/features/notifications/notification-item'
@@ -14,6 +15,7 @@ import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useMasterStore } from '@/features/master/store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { cn } from '@/lib/utils'
+import { PushCard } from '@/features/pwa/push-card'
 
 type TimeFilter = 'any' | 'today' | '7' | '30' | 'month'
 
@@ -99,11 +101,17 @@ function NotificationsContent() {
 
   return (
     <div className="animate-fade-in space-y-5">
+      <div className="space-y-2">
+      <BackLink />
       <PageHeader title={t.notifications.title} subtitle={t.notifications.subtitle}
         actions={<>
           <Button variant="outline" size="sm" icon={<CheckCheck />} disabled={unread === 0} onClick={() => void markAllRead()}>{t.notifications.markAllRead}</Button>
           <Link href="/settings/notifications"><Button variant="ghost" size="sm" icon={<Settings />} aria-label={t.settings.sidebar.notifications} /></Link>
         </>} />
+      </div>
+
+      {/* Until this device gets them, offer notifications on the lock screen (hidden once on). */}
+      <PushCard compact />
 
       {/* Kinds */}
       <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4 sm:mx-0 sm:px-0" role="tablist" aria-label={t.notifications.filterKind}>

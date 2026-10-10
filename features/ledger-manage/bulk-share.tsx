@@ -88,8 +88,12 @@ export function BulkShareDialog({ open, onClose, categories, people, me, onApply
         <button type="button" onClick={onClose} aria-label={t.common.close} className="p-2 rounded-full hover:bg-[var(--color-bg-sunken)] text-[var(--color-text-quaternary)]"><X className="w-4 h-4" /></button>
       </div>
 
+      {/* Phones: one person at a time, a vertical list (nothing pans sideways). */}
+      <PhoneList others={others} who={quickWho} setWho={setQuickWho} shown={shown} rows={rows} setRows={setRows} query={query} setQuery={setQuery}
+        value={value} current={current} set={set} draft={draft} levelLabel={levelLabel} quickLevel={quickLevel} setQuickLevel={setQuickLevel} quickApply={quickApply} />
+
       {/* Quick fill: ticked rows → one person → one level. */}
-      <div className="mx-5 mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-[var(--color-bg-sunken)] px-3 py-2.5 text-[12.5px]">
+      <div className="max-sm:hidden mx-5 mb-3 flex flex-wrap items-center gap-2 rounded-xl bg-[var(--color-bg-sunken)] px-3 py-2.5 text-[12.5px]">
         <span className="font-medium text-[var(--color-text-secondary)]">{rows.size ? L.quickFor.replace('{{count}}', String(rows.size)) : L.quickHint}</span>
         <span className="flex-1" />
         <SelectPill value={quickWho} onChange={setQuickWho} label={L.bulkStep2} disabled={!rows.size}
@@ -99,7 +103,7 @@ export function BulkShareDialog({ open, onClose, categories, people, me, onApply
         <Button size="sm" variant="outline" disabled={!rows.size || !quickWho} onClick={quickApply}>{L.apply}</Button>
       </div>
 
-      <div className="px-5 pb-2 flex items-center gap-2">
+      <div className="max-sm:hidden px-5 pb-2 flex items-center gap-2">
         <label className="flex items-center gap-2 h-8 px-3 rounded-lg border border-[var(--color-border-default)] bg-[var(--color-surface-default)] w-full sm:w-60">
           <Search className="w-3.5 h-3.5 text-[var(--color-text-quaternary)]" />
           <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={L.searchCats} className="flex-1 min-w-0 bg-transparent text-[13px] outline-none" />
@@ -109,7 +113,7 @@ export function BulkShareDialog({ open, onClose, categories, people, me, onApply
         </span>
       </div>
 
-      <div className="px-5 max-h-[56vh] overflow-auto">
+      <div className="max-sm:hidden px-5 max-h-[56vh] overflow-auto">
         <table className="w-full border-separate border-spacing-0 text-[13px]">
           <thead className="sticky top-0 z-[1] bg-[var(--color-surface-default)]">
             <tr>
@@ -164,12 +168,12 @@ export function BulkShareDialog({ open, onClose, categories, people, me, onApply
         {!others.length && <p className="py-6 text-center text-[12.5px] text-[var(--color-text-tertiary)]">{L.bulkNoPeople}</p>}
       </div>
 
-      <div className="flex items-center gap-2 px-5 py-3.5 mt-2 border-t border-[var(--color-border-default)] rounded-b-2xl">
+      <div className="flex items-center gap-2 px-4 sm:px-5 py-3 sm:py-3.5 mt-2 border-t border-[var(--color-border-default)] rounded-b-2xl">
         <span className="flex items-center gap-2 flex-1 text-[12.5px] text-[var(--color-text-tertiary)]">
           <span className={cn('w-2 h-2 rounded-full', changes ? 'bg-[#12b76a]' : 'bg-[var(--color-border-strong)]')} />
           {changes ? L.unsaved.replace('{{count}}', String(changes)) : L.noChanges}
         </span>
-        <Button variant="outline" onClick={onClose} disabled={busy}>{L.cancel}</Button>
+        <Button variant="outline" onClick={onClose} disabled={busy} className="max-sm:hidden">{L.cancel}</Button>
         <Button icon={<Check />} onClick={() => void save()} disabled={!changes} loading={busy}>{changes ? L.saveN.replace('{{count}}', String(changes)) : L.save}</Button>
       </div>
     </Modal>
@@ -217,5 +221,89 @@ function SelectPill({ value, onChange, options, label, disabled }: {
         {options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
       </select>
     </label>
+  )
+}
+
+/**
+ * The phone version: pick the member as a chip, then one row per category with
+ * its level on the right. Ticking rows opens a small "set all to …" bar.
+ * Only vertical scrolling, so a swipe never drags the whole panel around.
+ */
+function PhoneList({ others, who, setWho, shown, rows, setRows, query, setQuery, value, current, set, draft, levelLabel, quickLevel, setQuickLevel, quickApply }: {
+  others: Person[]; who: string; setWho: (v: string) => void; shown: Category[]
+  rows: Set<string>; setRows: React.Dispatch<React.SetStateAction<Set<string>>>
+  query: string; setQuery: (v: string) => void
+  value: (c: Category, uid: string) => Level; current: (c: Category, uid: string) => Level
+  set: (c: Category, uid: string, lv: Level) => void; draft: Record<string, Level>
+  levelLabel: (lv: Level) => string; quickLevel: string; setQuickLevel: (v: string) => void; quickApply: () => void
+}) {
+  const { t } = useTranslation()
+  const L = t.lm
+  const LR = L as unknown as Record<string, string>
+  const person = others.find((m) => m.id === who) ?? others[0]
+  const toggle = (id: string) => setRows((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n })
+  if (!person) return <p className="sm:hidden px-4 py-6 text-center text-[12.5px] text-[var(--color-text-tertiary)]">{L.bulkNoPeople}</p>
+  const groups = ([['expense', t.transactions.typeExpense], ['income', t.transactions.typeIncome], ['transfer', t.transactions.typeTransfer]] as const)
+    .map(([kind, label]) => ({ kind, label, list: shown.filter((c) => c.type === kind) })).filter((g) => g.list.length)
+  return (
+    <div className="sm:hidden">
+      <div className="px-4 pb-3 space-y-2.5">
+        <div className="flex gap-1.5 overflow-x-auto no-scrollbar -mx-4 px-4" role="radiogroup" aria-label={L.bulkStep2}>
+          {others.map((m) => (
+            <button key={m.id} type="button" role="radio" aria-checked={m.id === person.id} onClick={() => setWho(m.id)}
+              className={cn('shrink-0 inline-flex items-center gap-2 h-9 pl-1.5 pr-3 rounded-full border text-[13px] font-medium transition-colors',
+                m.id === person.id ? 'border-[#a6f4c5] bg-[#ecfdf5] text-[#047857]' : 'border-[var(--color-border-default)] bg-[var(--color-surface-default)] text-[var(--color-text-secondary)]')}>
+              <Avatar name={m.name} color={m.color} size={24} />{m.name}
+            </button>
+          ))}
+        </div>
+        <label className="flex items-center gap-2 h-10 px-3 rounded-xl border border-[var(--color-border-default)] bg-[var(--color-surface-default)]">
+          <Search className="w-4 h-4 text-[var(--color-text-quaternary)]" />
+          <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder={L.searchCats} className="flex-1 min-w-0 bg-transparent text-[14px] outline-none" />
+        </label>
+      </div>
+
+      <div className="max-h-[52dvh] overflow-y-auto overflow-x-hidden overscroll-contain touch-pan-y border-t border-[var(--color-border-subtle)]">
+        {groups.map((g) => (
+          <div key={g.kind}>
+            <p className="sticky top-0 z-[1] px-4 py-2 bg-[var(--color-bg-sunken)] text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-tertiary)]">{g.label} · {g.list.length}</p>
+            <ul className="divide-y divide-[var(--color-border-subtle)]">
+              {g.list.map((c) => {
+                const was = current(c, person.id)
+                const now = value(c, person.id)
+                const changed = key(c.id, person.id) in draft
+                return (
+                  <li key={c.id} className={cn('flex items-center gap-3 px-4 min-h-[56px] py-2', rows.has(c.id) && 'bg-[#f6fef9]')}>
+                    <Box on={rows.has(c.id)} label={c.name} onClick={() => toggle(c.id)} />
+                    <span className="w-8 h-8 rounded-[10px] inline-flex items-center justify-center shrink-0" style={{ background: `${c.color}1f`, color: c.color }}><CategoryIcon name={c.emoji} className="w-4 h-4" /></span>
+                    <span className="flex-1 min-w-0">
+                      <span className="block text-[14px] font-medium text-[var(--color-text-primary)] truncate">{c.name}</span>
+                      {changed && (
+                        <span className="flex items-center gap-1 text-[11px] text-[var(--color-text-tertiary)]">
+                          <span className="line-through truncate">{levelLabel(was)}</span><ArrowRight className="w-2.5 h-2.5 shrink-0" />
+                          <button type="button" onClick={() => set(c, person.id, was)} className="ml-1 font-semibold text-[var(--color-text-brand)]">{L.undo}</button>
+                        </span>
+                      )}
+                    </span>
+                    <LevelSelect value={now} changed={changed} label={`${c.name} · ${person.name}`}
+                      options={[null, ...ACCESS_ORDER].map((k) => ({ value: k, label: levelLabel(k) }))}
+                      onChange={(lv) => set(c, person.id, lv)} />
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      {rows.size > 0 && (
+        <div className="mx-4 mt-3 flex items-center gap-2 rounded-xl bg-[var(--color-bg-sunken)] px-3 py-2">
+          <span className="flex-1 min-w-0 text-[12.5px] font-medium text-[var(--color-text-secondary)] truncate">{L.quickFor.replace('{{count}}', String(rows.size))} {person.name}</span>
+          <SelectPill value={quickLevel} onChange={setQuickLevel} label={L.level}
+            options={[...ACCESS_ORDER.map((k) => ({ value: k, label: LR[`level_${k}`] })), { value: 'none', label: L.unshare }]} />
+          <Button size="sm" onClick={() => { quickApply(); setRows(new Set()) }}>{L.apply}</Button>
+        </div>
+      )}
+    </div>
   )
 }

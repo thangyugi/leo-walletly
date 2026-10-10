@@ -15,7 +15,7 @@ const EDGE = 8
  * inside the viewport, so sidebars, cards with overflow and the screen edge
  * never clip it. On phones it becomes a bottom sheet with `title`.
  */
-export function Popover({ anchorRef, open, onClose, children, width, align = 'start', title, className, sheetFooter }: {
+export function Popover({ anchorRef, open, onClose, children, width, align = 'start', title, className, sheetClassName, sheetFooter }: {
   anchorRef: React.RefObject<HTMLElement | null>
   open: boolean
   onClose: () => void
@@ -26,6 +26,8 @@ export function Popover({ anchorRef, open, onClose, children, width, align = 'st
   /** Heading of the phone sheet. */
   title?: React.ReactNode
   className?: string
+  /** Body insets of the phone sheet; by default a small inset that lines rows up with the sheet title. */
+  sheetClassName?: string
   sheetFooter?: React.ReactNode
 }) {
   const phone = useIsPhone()
@@ -79,7 +81,8 @@ export function Popover({ anchorRef, open, onClose, children, width, align = 'st
   }, [open, phone, place, anchorRef])
 
   if (!open) return null
-  if (phone) return <BottomSheet title={title} onClose={onClose} footer={sheetFooter}>{children}</BottomSheet>
+  // The desktop panel's own padding (className) does not apply to the sheet; give it its own insets.
+  if (phone) return <BottomSheet title={title} onClose={onClose} footer={sheetFooter} bodyClassName={sheetClassName ?? 'px-2'}>{children}</BottomSheet>
   return createPortal(
     <div ref={panelRef} data-popover-layer
       className={cn('fixed z-[10000] overflow-auto bg-[var(--color-bg-surface)] border border-[var(--color-border-subtle)] rounded-xl shadow-xl animate-slide-in-up', className)}

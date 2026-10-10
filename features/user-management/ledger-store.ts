@@ -63,11 +63,7 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
 
   initialize: async () => {
     set({ loading: true, error: null })
-    // Offline: fail at once (the client would retry for seconds) and keep what is shown.
-    if (typeof navigator !== 'undefined' && !navigator.onLine) {
-      set({ error: 'offline', initialized: true, loading: false })
-      return
-    }
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine
     try {
       // The auth store has already checked the session with the server; reading
       // the stored one here also works offline (getUser would need the network).
@@ -79,7 +75,8 @@ export const useLedgerStore = create<LedgerState>((set, get) => ({
       }
 
       // Recreate the profile rows if they are missing (see migration 0039).
-      await supabase.rpc('ensure_user_profile')
+      // Offline the reads below come from the copies kept on this device (lib/offline-cache.ts).
+      if (!offline) await supabase.rpc('ensure_user_profile')
 
       const [profileRes, prefsRes, membersRes] = await Promise.all([
         supabase.from('users').select('*').eq('id', user.id).maybeSingle(),

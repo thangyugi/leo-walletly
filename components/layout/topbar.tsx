@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { ChevronRight, Bell, LogOut, UserCog, Building2, ArrowRight } from 'lucide-react'
+import { UnreadBadge, useAppBadge } from '@/features/notifications/unread-badge'
 import Link from 'next/link'
 import { useAuthStore } from '@/stores/auth'
 import { useSignOut } from '@/hooks/useSignOut'
@@ -61,6 +62,7 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
 
   const titleKey = EXTRA_TITLES[pathname] ?? NAV_ITEMS.find((n) => isActivePath(pathname, n.href))?.labelKey ?? 'common.overview'
   const unread = items.filter((n) => !n.readAt).length
+  useAppBadge(unread)
   const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? ''
   const initial = (displayName[0] ?? 'L').toUpperCase()
 
@@ -100,10 +102,8 @@ export function TopBar({ onSearchOpen }: { onSearchOpen?: () => void }) {
             className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
             aria-label={t.notifications.title}
           >
-            <Bell className="w-4 h-4 text-[var(--color-text-tertiary)]" />
-            {unread > 0 && (
-              <span className="absolute top-1.5 right-1.5 min-w-[8px] h-2 rounded-full bg-[var(--color-interactive-primary)] border-[1.5px] border-[var(--color-sidebar-bg)]" />
-            )}
+            <Bell className={unread > 0 ? 'w-4 h-4 text-[var(--color-text-primary)]' : 'w-4 h-4 text-[var(--color-text-tertiary)]'} strokeWidth={unread > 0 ? 2.25 : 2} />
+            <UnreadBadge count={unread} className="-top-1 -right-1.5" />
           </button>
 
           {showNotif && (

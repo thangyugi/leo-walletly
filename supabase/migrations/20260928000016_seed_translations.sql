@@ -557,6 +557,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('catui.pendingSub', 'catui', 'amount', false),
   ('catui.pendingTitle', 'catui', 'groups,count', false),
   ('catui.perPerson', 'catui', null, false),
+  ('catui.pickPrivateSub', 'catui', null, false),
+  ('catui.pickSharedSub', 'catui', null, false),
   ('catui.private', 'catui', null, false),
   ('catui.remaining', 'catui', 'amount', false),
   ('catui.saveAsKeyword', 'catui', null, false),
@@ -637,6 +639,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('common.details', 'common', null, false),
   ('common.developerTools', 'common', null, false),
   ('common.disabled', 'common', null, false),
+  ('common.done', 'common', null, false),
   ('common.edit', 'common', null, false),
   ('common.empty', 'common', null, false),
   ('common.enabled', 'common', null, false),
@@ -682,6 +685,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('confirm.title', 'confirm', null, false),
   ('confirm.undo', 'confirm', null, false),
   ('dashboard.accounts', 'dashboard', null, true),
+  ('dashboard.accountsCount', 'dashboard', 'count', true),
+  ('dashboard.accountsTotal', 'dashboard', null, true),
   ('dashboard.addAccount', 'dashboard', null, true),
   ('dashboard.addTransaction', 'dashboard', null, true),
   ('dashboard.avgDaily', 'dashboard', null, true),
@@ -696,10 +701,12 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('dashboard.importNow', 'dashboard', null, true),
   ('dashboard.inflow', 'dashboard', null, true),
   ('dashboard.invite', 'dashboard', null, true),
+  ('dashboard.manage', 'dashboard', null, true),
   ('dashboard.manageUsers', 'dashboard', null, true),
   ('dashboard.markAllRead', 'dashboard', null, true),
   ('dashboard.member', 'dashboard', null, true),
   ('dashboard.members', 'dashboard', null, true),
+  ('dashboard.membersCount', 'dashboard', 'count', true),
   ('dashboard.mtd', 'dashboard', null, true),
   ('dashboard.netBalance', 'dashboard', null, true),
   ('dashboard.netPeriod', 'dashboard', null, true),
@@ -803,17 +810,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.cancel', 'groups', null, true),
   ('groups.color', 'groups', null, true),
   ('groups.cost_center', 'groups', null, true),
-  ('groups.default', 'groups', null, true),
+  ('groups.default', 'groups', null, true)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('groups.delete', 'groups', null, true),
   ('groups.deleteConfirm', 'groups', null, true),
   ('groups.department', 'groups', null, true),
   ('groups.editTitle', 'groups', null, true),
   ('groups.emoji', 'groups', null, true),
   ('groups.formTitle', 'groups', null, true),
-  ('groups.hierarchy', 'groups', null, true)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('groups.hierarchy', 'groups', null, true),
   ('groups.iconLabel', 'groups', null, true),
   ('groups.keywords', 'groups', null, true),
   ('groups.keywordsHint', 'groups', null, true),
@@ -1206,17 +1213,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.signupSubmit', 'login', null, false),
   ('login.signupSubtitle', 'login', null, false),
   ('login.signupSuccess', 'login', null, false),
-  ('login.signupWithEmail', 'login', null, false),
+  ('login.signupWithEmail', 'login', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('login.skip', 'login', null, false),
   ('login.submit', 'login', null, false),
   ('login.subtitle', 'login', null, false),
   ('login.title', 'login', null, false),
   ('ls.created', 'ls', null, false),
   ('ls.infoEditSub', 'ls', null, false),
-  ('ls.infoSub', 'ls', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('ls.infoSub', 'ls', null, false),
   ('ls.infoTitle', 'ls', null, false),
   ('ls.leaveSub', 'ls', null, false),
   ('ls.linkActivity', 'ls', null, false),
@@ -1609,17 +1616,17 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.recoveryLabel', 'settings', null, false),
   ('settings.security.revokeSession', 'settings', null, false),
   ('settings.security.riskHigh', 'settings', null, false),
-  ('settings.security.riskLevel', 'settings', null, false),
+  ('settings.security.riskLevel', 'settings', null, false)
+on conflict (key) do nothing;
+
+insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
   ('settings.security.riskLow', 'settings', null, false),
   ('settings.security.riskMedium', 'settings', null, false),
   ('settings.security.securityStatus', 'settings', null, false),
   ('settings.security.sessions', 'settings', null, false),
   ('settings.security.status', 'settings', null, false),
   ('settings.security.subtitle', 'settings', null, false),
-  ('settings.security.title', 'settings', null, false)
-on conflict (key) do nothing;
-
-insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.security.title', 'settings', null, false),
   ('settings.sidebar.account', 'settings', null, false),
   ('settings.sidebar.appearance', 'settings', null, false),
   ('settings.sidebar.auditLog', 'settings', null, false),
@@ -1748,6 +1755,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('txform.errorDescription', 'txform', null, false),
   ('txform.errorNoPermission', 'txform', null, false),
   ('txform.errorTransfer', 'txform', null, false),
+  ('txform.fromAccount', 'txform', null, false),
   ('txform.markReconciled', 'txform', null, false),
   ('txform.notReconciled', 'txform', null, false),
   ('txform.notes', 'txform', null, false),
@@ -2333,6 +2341,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'ja', '未分類の支出合計: {{amount}}'),
   ('catui.pendingTitle', 'ja', '{{groups}} グループ・{{count}} 件が未分類'),
   ('catui.perPerson', 'ja', '1人あたり'),
+  ('catui.pickPrivateSub', 'ja', 'この取引はあなただけに表示されます'),
+  ('catui.pickSharedSub', 'ja', '共有メンバーにもこの取引が見えます'),
   ('catui.private', 'ja', '自分だけ'),
   ('catui.remaining', 'ja', '残り {{amount}}'),
   ('catui.saveAsKeyword', 'ja', 'キーワードとして保存'),
@@ -2413,6 +2423,7 @@ insert into public.translations (key, language_code, value) values
   ('common.details', 'ja', '詳細'),
   ('common.developerTools', 'ja', '開発者ツール'),
   ('common.disabled', 'ja', '無効'),
+  ('common.done', 'ja', '完了'),
   ('common.edit', 'ja', '編集'),
   ('common.empty', 'ja', 'データがありません'),
   ('common.enabled', 'ja', '有効'),
@@ -2458,6 +2469,8 @@ insert into public.translations (key, language_code, value) values
   ('confirm.title', 'ja', '確認'),
   ('confirm.undo', 'ja', 'この操作は元に戻せません。'),
   ('dashboard.accounts', 'ja', 'アカウント'),
+  ('dashboard.accountsCount', 'ja', '{{count}} 口座'),
+  ('dashboard.accountsTotal', 'ja', '合計残高'),
   ('dashboard.addAccount', 'ja', '口座を追加'),
   ('dashboard.addTransaction', 'ja', '取引を追加'),
   ('dashboard.avgDaily', 'ja', '1日あたりの平均支出'),
@@ -2472,10 +2485,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'ja', '今すぐインポート'),
   ('dashboard.inflow', 'ja', '入金'),
   ('dashboard.invite', 'ja', '招待'),
+  ('dashboard.manage', 'ja', '管理'),
   ('dashboard.manageUsers', 'ja', 'メンバー管理 →'),
   ('dashboard.markAllRead', 'ja', 'すべて既読にする'),
   ('dashboard.member', 'ja', 'メンバー'),
   ('dashboard.members', 'ja', 'メンバー'),
+  ('dashboard.membersCount', 'ja', '{{count}} 人のメンバー'),
   ('dashboard.mtd', 'ja', 'MTD'),
   ('dashboard.netBalance', 'ja', '純資産'),
   ('dashboard.netPeriod', 'ja', '収支'),
@@ -2579,17 +2594,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'ja', 'キャンセル'),
   ('groups.color', 'ja', 'カラー'),
   ('groups.cost_center', 'ja', 'コストセンター'),
-  ('groups.default', 'ja', 'デフォルト'),
+  ('groups.default', 'ja', 'デフォルト')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.delete', 'ja', '削除'),
   ('groups.deleteConfirm', 'ja', 'グループを削除しますか？'),
   ('groups.department', 'ja', '部署'),
   ('groups.editTitle', 'ja', 'グループを編集'),
   ('groups.emoji', 'ja', '絵文字'),
   ('groups.formTitle', 'ja', 'グループを作成'),
-  ('groups.hierarchy', 'ja', '階層構造')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.hierarchy', 'ja', '階層構造'),
   ('groups.iconLabel', 'ja', 'アイコン'),
   ('groups.keywords', 'ja', 'キーワード'),
   ('groups.keywordsHint', 'ja', 'キーワードを入力してEnterを押してください'),
@@ -2982,17 +2997,17 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'ja', 'アカウント作成'),
   ('login.signupSubtitle', 'ja', '新しいアカウントを作成'),
   ('login.signupSuccess', 'ja', '確認メールを送信しました。メール内のリンクを開いてください。'),
-  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録'),
+  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('login.skip', 'ja', 'スキップ（デモ）'),
   ('login.submit', 'ja', 'ログイン'),
   ('login.subtitle', 'ja', '財務管理システムにログイン'),
   ('login.title', 'ja', 'ログイン'),
   ('ls.created', 'ja', '作成日'),
   ('ls.infoEditSub', 'ja', '変更した項目には印が付きます。保存するまで反映されません。'),
-  ('ls.infoSub', 'ja', '名前・通貨・地域・年度')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.infoSub', 'ja', '名前・通貨・地域・年度'),
   ('ls.infoTitle', 'ja', '台帳の情報'),
   ('ls.leaveSub', 'ja', 'この台帳から抜けます。あなたの記録は残ります。'),
   ('ls.linkActivity', 'ja', '操作ログ'),
@@ -3385,17 +3400,17 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'ja', '復旧方法'),
   ('settings.security.revokeSession', 'ja', 'セッションを終了'),
   ('settings.security.riskHigh', 'ja', '高'),
-  ('settings.security.riskLevel', 'ja', 'リスクレベル'),
+  ('settings.security.riskLevel', 'ja', 'リスクレベル')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.security.riskLow', 'ja', '低'),
   ('settings.security.riskMedium', 'ja', '中'),
   ('settings.security.securityStatus', 'ja', 'アカウントセキュリティ'),
   ('settings.security.sessions', 'ja', 'アクティブなセッション'),
   ('settings.security.status', 'ja', 'セキュリティステータス'),
   ('settings.security.subtitle', 'ja', 'アカウントの保護とログイン設定'),
-  ('settings.security.title', 'ja', 'セキュリティ')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.security.title', 'ja', 'セキュリティ'),
   ('settings.sidebar.account', 'ja', 'アカウント設定'),
   ('settings.sidebar.appearance', 'ja', '外観'),
   ('settings.sidebar.auditLog', 'ja', 'アクティビティログ'),
@@ -3524,6 +3539,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'ja', '内容を入力してください'),
   ('txform.errorNoPermission', 'ja', 'この取引を変更する権限がありません。'),
   ('txform.errorTransfer', 'ja', '振替先の口座を選択してください'),
+  ('txform.fromAccount', 'ja', '振替元'),
   ('txform.markReconciled', 'ja', '照合済みにする'),
   ('txform.notReconciled', 'ja', '未照合'),
   ('txform.notes', 'ja', 'メモ'),
@@ -4109,6 +4125,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'vi', 'Tổng chi tiêu chưa phân loại: {{amount}}'),
   ('catui.pendingTitle', 'vi', '{{groups}} nhóm · {{count}} giao dịch chờ phân loại'),
   ('catui.perPerson', 'vi', 'Trung bình / người'),
+  ('catui.pickPrivateSub', 'vi', 'Chỉ bạn nhìn thấy giao dịch này'),
+  ('catui.pickSharedSub', 'vi', 'Người được chia sẻ cũng thấy giao dịch này'),
   ('catui.private', 'vi', 'Chỉ mình tôi'),
   ('catui.remaining', 'vi', 'còn {{amount}}'),
   ('catui.saveAsKeyword', 'vi', 'Lưu làm từ khoá'),
@@ -4189,6 +4207,7 @@ insert into public.translations (key, language_code, value) values
   ('common.details', 'vi', 'Chi tiết'),
   ('common.developerTools', 'vi', 'Công cụ lập trình'),
   ('common.disabled', 'vi', 'Đã tắt'),
+  ('common.done', 'vi', 'Xong'),
   ('common.edit', 'vi', 'Sửa'),
   ('common.empty', 'vi', 'Không có dữ liệu'),
   ('common.enabled', 'vi', 'Đã bật'),
@@ -4234,6 +4253,8 @@ insert into public.translations (key, language_code, value) values
   ('confirm.title', 'vi', 'Xác nhận'),
   ('confirm.undo', 'vi', 'Thao tác này không thể hoàn tác.'),
   ('dashboard.accounts', 'vi', 'Tài khoản'),
+  ('dashboard.accountsCount', 'vi', '{{count}} tài khoản'),
+  ('dashboard.accountsTotal', 'vi', 'Tổng số dư'),
   ('dashboard.addAccount', 'vi', 'Thêm tài khoản'),
   ('dashboard.addTransaction', 'vi', 'Thêm giao dịch'),
   ('dashboard.avgDaily', 'vi', 'Chi tiêu trung bình ngày'),
@@ -4248,10 +4269,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'vi', 'Nhập ngay'),
   ('dashboard.inflow', 'vi', 'Thu nhập'),
   ('dashboard.invite', 'vi', 'Mời'),
+  ('dashboard.manage', 'vi', 'Quản lý'),
   ('dashboard.manageUsers', 'vi', 'Quản lý thành viên →'),
   ('dashboard.markAllRead', 'vi', 'Đánh dấu tất cả là đã đọc'),
   ('dashboard.member', 'vi', 'Thành viên'),
   ('dashboard.members', 'vi', 'Thành viên'),
+  ('dashboard.membersCount', 'vi', '{{count}} thành viên'),
   ('dashboard.mtd', 'vi', 'Lũy kế tháng'),
   ('dashboard.netBalance', 'vi', 'Số dư ròng'),
   ('dashboard.netPeriod', 'vi', 'Thu − chi'),
@@ -4355,17 +4378,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'vi', 'Hủy'),
   ('groups.color', 'vi', 'Màu sắc'),
   ('groups.cost_center', 'vi', 'Trung tâm chi phí'),
-  ('groups.default', 'vi', 'Mặc định'),
+  ('groups.default', 'vi', 'Mặc định')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.delete', 'vi', 'Xóa'),
   ('groups.deleteConfirm', 'vi', 'Xóa nhóm này?'),
   ('groups.department', 'vi', 'Phòng ban'),
   ('groups.editTitle', 'vi', 'Chỉnh sửa nhóm'),
   ('groups.emoji', 'vi', 'Biểu tượng'),
   ('groups.formTitle', 'vi', 'Tạo nhóm'),
-  ('groups.hierarchy', 'vi', 'Cấu trúc phân cấp')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.hierarchy', 'vi', 'Cấu trúc phân cấp'),
   ('groups.iconLabel', 'vi', 'Biểu tượng'),
   ('groups.keywords', 'vi', 'Từ khóa'),
   ('groups.keywordsHint', 'vi', 'Nhập từ khóa và nhấn Enter'),
@@ -4758,17 +4781,17 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'vi', 'Tạo tài khoản'),
   ('login.signupSubtitle', 'vi', 'Tạo tài khoản mới'),
   ('login.signupSuccess', 'vi', 'Đã gửi email xác nhận. Hãy mở liên kết trong email.'),
-  ('login.signupWithEmail', 'vi', 'Đăng ký với email này'),
+  ('login.signupWithEmail', 'vi', 'Đăng ký với email này')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('login.skip', 'vi', 'Bỏ qua (Demo)'),
   ('login.submit', 'vi', 'Đăng nhập'),
   ('login.subtitle', 'vi', 'Đăng nhập vào hệ thống quản lý tài chính'),
   ('login.title', 'vi', 'Đăng nhập'),
   ('ls.created', 'vi', 'Ngày tạo'),
   ('ls.infoEditSub', 'vi', 'Mục nào đổi sẽ được đánh dấu; chỉ áp dụng khi bấm Lưu.'),
-  ('ls.infoSub', 'vi', 'Tên, tiền tệ, khu vực và năm tài chính')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.infoSub', 'vi', 'Tên, tiền tệ, khu vực và năm tài chính'),
   ('ls.infoTitle', 'vi', 'Thông tin sổ'),
   ('ls.leaveSub', 'vi', 'Rời khỏi sổ này; những gì bạn đã ghi vẫn được giữ lại.'),
   ('ls.linkActivity', 'vi', 'Nhật ký hoạt động'),
@@ -5161,17 +5184,17 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục'),
   ('settings.security.revokeSession', 'vi', 'Đăng xuất thiết bị'),
   ('settings.security.riskHigh', 'vi', 'CAO'),
-  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro'),
+  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.security.riskLow', 'vi', 'THẤP'),
   ('settings.security.riskMedium', 'vi', 'TRUNG BÌNH'),
   ('settings.security.securityStatus', 'vi', 'Bảo mật tài khoản'),
   ('settings.security.sessions', 'vi', 'Phiên đăng nhập hiện tại'),
   ('settings.security.status', 'vi', 'Trạng thái bảo mật'),
   ('settings.security.subtitle', 'vi', 'Bảo vệ tài khoản và thiết lập đăng nhập'),
-  ('settings.security.title', 'vi', 'Bảo mật')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.security.title', 'vi', 'Bảo mật'),
   ('settings.sidebar.account', 'vi', 'Thiết lập tài khoản'),
   ('settings.sidebar.appearance', 'vi', 'Giao diện'),
   ('settings.sidebar.auditLog', 'vi', 'Nhật ký hoạt động'),
@@ -5300,6 +5323,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'vi', 'Hãy nhập nội dung'),
   ('txform.errorNoPermission', 'vi', 'Bạn không có quyền thay đổi giao dịch này.'),
   ('txform.errorTransfer', 'vi', 'Hãy chọn tài khoản nhận'),
+  ('txform.fromAccount', 'vi', 'Tài khoản chuyển'),
   ('txform.markReconciled', 'vi', 'Đánh dấu đã đối soát'),
   ('txform.notReconciled', 'vi', 'Chưa đối soát'),
   ('txform.notes', 'vi', 'Ghi chú'),
@@ -5885,6 +5909,8 @@ insert into public.translations (key, language_code, value) values
   ('catui.pendingSub', 'en', 'Uncategorized spending: {{amount}}'),
   ('catui.pendingTitle', 'en', '{{groups}} groups · {{count}} uncategorized'),
   ('catui.perPerson', 'en', 'Per person'),
+  ('catui.pickPrivateSub', 'en', 'Only you see this transaction'),
+  ('catui.pickSharedSub', 'en', 'People it is shared with see this transaction'),
   ('catui.private', 'en', 'Only me'),
   ('catui.remaining', 'en', '{{amount}} left'),
   ('catui.saveAsKeyword', 'en', 'Save as keyword'),
@@ -5965,6 +5991,7 @@ insert into public.translations (key, language_code, value) values
   ('common.details', 'en', 'Details'),
   ('common.developerTools', 'en', 'Developer Tools'),
   ('common.disabled', 'en', 'Disabled'),
+  ('common.done', 'en', 'Done'),
   ('common.edit', 'en', 'Edit'),
   ('common.empty', 'en', 'No data'),
   ('common.enabled', 'en', 'Enabled'),
@@ -6010,6 +6037,8 @@ insert into public.translations (key, language_code, value) values
   ('confirm.title', 'en', 'Are you sure?'),
   ('confirm.undo', 'en', 'This can''t be undone.'),
   ('dashboard.accounts', 'en', 'Accounts'),
+  ('dashboard.accountsCount', 'en', '{{count}} accounts'),
+  ('dashboard.accountsTotal', 'en', 'Total balance'),
   ('dashboard.addAccount', 'en', 'Add account'),
   ('dashboard.addTransaction', 'en', 'Add Transaction'),
   ('dashboard.avgDaily', 'en', 'Avg. daily expense'),
@@ -6024,10 +6053,12 @@ insert into public.translations (key, language_code, value) values
   ('dashboard.importNow', 'en', 'Import Now'),
   ('dashboard.inflow', 'en', 'Inflow'),
   ('dashboard.invite', 'en', 'Invite'),
+  ('dashboard.manage', 'en', 'Manage'),
   ('dashboard.manageUsers', 'en', 'Manage members →'),
   ('dashboard.markAllRead', 'en', 'Mark all as read'),
   ('dashboard.member', 'en', 'Member'),
   ('dashboard.members', 'en', 'Members'),
+  ('dashboard.membersCount', 'en', '{{count}} members'),
   ('dashboard.mtd', 'en', 'MTD'),
   ('dashboard.netBalance', 'en', 'Net Balance'),
   ('dashboard.netPeriod', 'en', 'Net'),
@@ -6131,17 +6162,17 @@ insert into public.translations (key, language_code, value) values
   ('groups.cancel', 'en', 'Cancel'),
   ('groups.color', 'en', 'Color'),
   ('groups.cost_center', 'en', 'Cost Center'),
-  ('groups.default', 'en', 'Default'),
+  ('groups.default', 'en', 'Default')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('groups.delete', 'en', 'Delete'),
   ('groups.deleteConfirm', 'en', 'Delete this group?'),
   ('groups.department', 'en', 'Department'),
   ('groups.editTitle', 'en', 'Edit Group'),
   ('groups.emoji', 'en', 'Emoji'),
   ('groups.formTitle', 'en', 'Create Group'),
-  ('groups.hierarchy', 'en', 'Hierarchy Structure')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('groups.hierarchy', 'en', 'Hierarchy Structure'),
   ('groups.iconLabel', 'en', 'Icon'),
   ('groups.keywords', 'en', 'Keywords'),
   ('groups.keywordsHint', 'en', 'Type a keyword and press Enter'),
@@ -6534,17 +6565,17 @@ insert into public.translations (key, language_code, value) values
   ('login.signupSubmit', 'en', 'Create account'),
   ('login.signupSubtitle', 'en', 'Create a new account'),
   ('login.signupSuccess', 'en', 'We sent a confirmation email. Open the link to continue.'),
-  ('login.signupWithEmail', 'en', 'Sign up with this email'),
+  ('login.signupWithEmail', 'en', 'Sign up with this email')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('login.skip', 'en', 'Skip (Demo)'),
   ('login.submit', 'en', 'Sign In'),
   ('login.subtitle', 'en', 'Log in to your finances'),
   ('login.title', 'en', 'Sign In'),
   ('ls.created', 'en', 'Created'),
   ('ls.infoEditSub', 'en', 'Changed fields are marked; nothing applies until you save.'),
-  ('ls.infoSub', 'en', 'Name, currency, region and fiscal year')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('ls.infoSub', 'en', 'Name, currency, region and fiscal year'),
   ('ls.infoTitle', 'en', 'Ledger details'),
   ('ls.leaveSub', 'en', 'Leave this ledger; what you recorded stays.'),
   ('ls.linkActivity', 'en', 'Activity log'),
@@ -6937,17 +6968,17 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.recoveryLabel', 'en', 'Recovery methods'),
   ('settings.security.revokeSession', 'en', 'Revoke session'),
   ('settings.security.riskHigh', 'en', 'HIGH'),
-  ('settings.security.riskLevel', 'en', 'Risk Level'),
+  ('settings.security.riskLevel', 'en', 'Risk Level')
+on conflict (key, language_code) do nothing;
+
+insert into public.translations (key, language_code, value) values
   ('settings.security.riskLow', 'en', 'LOW'),
   ('settings.security.riskMedium', 'en', 'MEDIUM'),
   ('settings.security.securityStatus', 'en', 'Account Security'),
   ('settings.security.sessions', 'en', 'Active Sessions'),
   ('settings.security.status', 'en', 'Security Status'),
   ('settings.security.subtitle', 'en', 'Protect your account and login preferences'),
-  ('settings.security.title', 'en', 'Security')
-on conflict (key, language_code) do nothing;
-
-insert into public.translations (key, language_code, value) values
+  ('settings.security.title', 'en', 'Security'),
   ('settings.sidebar.account', 'en', 'Account Settings'),
   ('settings.sidebar.appearance', 'en', 'Appearance'),
   ('settings.sidebar.auditLog', 'en', 'Audit Log'),
@@ -7076,6 +7107,7 @@ insert into public.translations (key, language_code, value) values
   ('txform.errorDescription', 'en', 'Enter a description'),
   ('txform.errorNoPermission', 'en', 'You can''t change this transaction.'),
   ('txform.errorTransfer', 'en', 'Choose the destination account'),
+  ('txform.fromAccount', 'en', 'From account'),
   ('txform.markReconciled', 'en', 'Mark reconciled'),
   ('txform.notReconciled', 'en', 'Not reconciled'),
   ('txform.notes', 'en', 'Notes'),

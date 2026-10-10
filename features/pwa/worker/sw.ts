@@ -7,8 +7,9 @@
  * - App shell (/_next/static, icons, the offline page) is precached per build.
  * - Pages and other same-origin assets: Serwist's Next.js defaults
  *   (network first for pages, cache first for hashed JS, …).
- * - Financial data never touches the worker or Cache Storage: Supabase calls
- *   and /api routes are left to the browser (no respondWith at all).
+ * - Supabase calls and /api routes are left to the browser (no respondWith at
+ *   all). For offline use the page itself keeps copies of what it read
+ *   (lib/offline-cache.ts, per user, deleted on sign-out).
  */
 import { defaultCache } from '@serwist/turbopack/worker'
 import { Serwist, type PrecacheEntry, type SerwistGlobalConfig } from 'serwist'
@@ -59,6 +60,9 @@ serwist.addEventListeners()
 self.addEventListener('push', (event) => {
   let data: { title?: string; body?: string; url?: string; tag?: string } = {}
   try { data = event.data?.json() ?? {} } catch { data = { body: event.data?.text() } }
+  // Mark the home-screen icon too; the app sets the exact count when it opens.
+  const nav = self.navigator as WorkerNavigator & { setAppBadge?: () => Promise<void> }
+  void nav.setAppBadge?.().catch(() => {})
   event.waitUntil(self.registration.showNotification(data.title || 'Leo Walletly', {
     body: data.body,
     tag: data.tag,

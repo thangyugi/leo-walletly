@@ -7,6 +7,7 @@ import { useTranslation } from '@/hooks/useTranslation'
 import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useNotificationsStore } from '@/features/notifications/store'
 import { LedgerSwitcher } from '@/features/user-management/components/ledger-switcher'
+import { UnreadBadge, useAppBadge } from '@/features/notifications/unread-badge'
 
 /**
  * Phone top bar: one row instead of the logo bar + breadcrumb bar. The ledger
@@ -17,6 +18,7 @@ export function MobileHeader({ onSearchOpen }: { onSearchOpen?: () => void }) {
   const user = useAuthStore((s) => s.user)
   const profile = useLedgerStore((s) => s.profile)
   const unread = useNotificationsStore((s) => s.items.filter((n) => !n.readAt).length)
+  useAppBadge(unread)
   const displayName = profile?.display_name ?? user?.email?.split('@')[0] ?? ''
   const initial = (displayName[0] ?? 'L').toUpperCase()
 
@@ -35,11 +37,11 @@ export function MobileHeader({ onSearchOpen }: { onSearchOpen?: () => void }) {
       </button>
       <Link
         href="/notifications"
-        aria-label={t.notifications.title}
+        aria-label={unread > 0 ? `${t.notifications.title} (${unread})` : t.notifications.title}
         className="relative w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[var(--color-bg-sunken)] transition-colors"
       >
-        <Bell className="w-[18px] h-[18px] text-[var(--color-text-secondary)]" />
-        {unread > 0 && <span className="absolute top-2.5 right-2.5 w-2 h-2 rounded-full bg-[var(--color-interactive-primary)] border-[1.5px] border-[var(--color-sidebar-bg)]" />}
+        <Bell className={unread > 0 ? 'w-[18px] h-[18px] text-[var(--color-text-primary)]' : 'w-[18px] h-[18px] text-[var(--color-text-secondary)]'} strokeWidth={unread > 0 ? 2.25 : 2} />
+        <UnreadBadge count={unread} className="top-1 right-0.5" />
       </Link>
       <Link
         href="/settings"

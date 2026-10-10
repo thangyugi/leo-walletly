@@ -17,6 +17,7 @@ import { useAccountsStore } from '@/features/accounts/store'
 import { useMasterStore } from '@/features/master/store'
 import { useTransactionsStore } from '@/stores/transactions'
 import { useLedgerData } from '@/hooks/useLedgerData'
+import { useLedgerStore } from '@/features/user-management/ledger-store'
 import { useTranslation } from '@/hooks/useTranslation'
 import { useMoney } from '@/features/currency/hooks/useMoney'
 import { supabase } from '@/lib/supabase'
@@ -137,7 +138,8 @@ function ColSelect({ label, value, headers, onChange }: { label: string; value: 
 export default function ImportPage() {
   const { t, tk } = useTranslation()
   const { format } = useMoney()
-  const { ledger, accounts, categories } = useLedgerData()
+  const { ledger, accounts, categories, members } = useLedgerData()
+  const meId = useLedgerStore((s) => s.userId)
   const providers = useMasterStore((s) => s.providers)
   const createAccount = useAccountsStore((s) => s.create)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -156,6 +158,8 @@ export default function ImportPage() {
   const [job, setJob] = useState<Tables<'import_jobs'> | null>(null)
   // The other side of top-ups (e.g. PayPayカード for a PayPay wallet); '' = book them as income/expense.
   const [otherAccountId, setOtherAccountId] = useState('')
+  // Who the rows are booked for ("User"); empty = me.
+  const [payer, setPayer] = useState('')
   const [importing, setImporting] = useState(false)
   const [showErrors, setShowErrors] = useState(false)
   // A PDF that could not be read: why (password, unknown kind…), with what was read.
@@ -297,6 +301,7 @@ export default function ImportPage() {
         p_file_type: file.name.toLowerCase().endsWith('.pdf') ? 'pdf' : 'csv',
         p_checksum: await sha256(file),
         p_file_size: file.size,
+        p_paid_by: payer || undefined,
         p_rows: rows.map((r) => ({
           ...rowPayload(r, otherAccountId),
           // Left to the import's own rule pass (recorded as a rule match) unless picked by hand.
@@ -317,7 +322,7 @@ export default function ImportPage() {
 
   function handleReset() {
     setFile(null); setResult(null); setRows([]); setError(null); setMapping(null); setUserMapping({}); setPdfIssue(null); setPdfPassword('')
-    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId(''); setOtherAccountId('')
+    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId(''); setOtherAccountId(''); setPayer('')
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -474,6 +479,14 @@ export default function ImportPage() {
                 value={accountId}
                 onChange={(v) => { setAccountId(v); if (file) void processFile(file, userMapping, v) }}
               />
+              {members.length > 1 && (
+                <AppSelect aria-label={t.dashboard.users} value={payer || meId || ''} onChange={(e) => setPayer(e.target.value === meId ? '' : e.target.value)}
+                  className="h-8 px-2 text-xs border border-[var(--color-border-default)] rounded-lg bg-[var(--color-surface-default)]">
+                  {members.map((m) => (
+                    <option key={m.user_id} value={m.user_id}>{t.dashboard.users}: {m.user?.display_name ?? m.user?.email}</option>
+                  ))}
+                </AppSelect>
+              )}
               <button onClick={handleReset} className="flex items-center gap-1 text-xs text-[var(--color-text-quaternary)] hover:text-[var(--color-text-primary)]">
                 <RotateCcw className="w-3.5 h-3.5" />{t.import.resetBtn}
               </button>

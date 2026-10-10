@@ -179,7 +179,7 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
   const rangeLabel = (d: number) => (d ? A.lastDays.replace('{{count}}', String(d)) : A.allTime)
   const reset = () => { setSearch(''); setQuery(''); setEntity(null); setAction(null); setActor(null); setRange(30) }
 
-  const pill = (on: boolean) => cn('inline-flex items-center gap-1.5 h-8 px-3 rounded-full border text-[12.5px] font-medium transition-colors whitespace-nowrap',
+  const pill = (on: boolean) => cn('inline-flex items-center gap-1.5 h-9 sm:h-8 px-3.5 sm:px-3 rounded-full border text-[13px] sm:text-[12.5px] font-medium transition-colors whitespace-nowrap',
     on ? 'border-[#10b981] bg-[#ecfdf5] text-[#047857]' : 'border-[var(--color-border-default)] text-[var(--color-text-secondary)] hover:bg-[var(--color-bg-sunken)]')
 
   return (
@@ -230,7 +230,14 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
           ))}
         </Popover>
 
-        <Popover anchorRef={filterRef} open={panel === 'filter'} onClose={() => setPanel(null)} width={340} align="end" title={A.filters} className="p-4 space-y-4">
+        <Popover anchorRef={filterRef} open={panel === 'filter'} onClose={() => setPanel(null)} width={340} align="end" title={A.filters} className="p-4 space-y-4"
+          sheetClassName="px-5 pt-2 space-y-5"
+          sheetFooter={(
+            <div className="flex items-center gap-2">
+              <Button variant="outline" className="flex-1 h-11" disabled={!activeCount} onClick={() => { setEntity(null); setAction(null); setActor(null) }}>{A.clear}</Button>
+              <Button className="flex-[2] h-11" onClick={() => setPanel(null)}>{t.common.done}</Button>
+            </div>
+          )}>
           <FilterGroup label={A.byType}>
             {ENTITIES.map((e) => (
               <button key={e.key} type="button" className={pill(entity === e.key)} onClick={() => setEntity(entity === e.key ? null : e.key)}>
@@ -250,7 +257,7 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
               </button>
             ))}
           </FilterGroup>
-          {activeCount > 0 && <button type="button" onClick={() => { setEntity(null); setAction(null); setActor(null) }} className="text-[12.5px] font-semibold text-[var(--color-text-brand)]">{A.clear}</button>}
+          {activeCount > 0 && <button type="button" onClick={() => { setEntity(null); setAction(null); setActor(null) }} className="max-sm:hidden text-[12.5px] font-semibold text-[var(--color-text-brand)]">{A.clear}</button>}
         </Popover>
       </div>
 
@@ -359,8 +366,8 @@ export function ActivityPage({ ledgerId, people, categories, accountName }: {
 function FilterGroup({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-quaternary)]">{label}</p>
-      <div className="flex flex-wrap gap-1.5">{children}</div>
+      <p className="mb-2.5 text-[11.5px] font-semibold uppercase tracking-[0.07em] text-[var(--color-text-tertiary)]">{label}</p>
+      <div className="flex flex-wrap gap-2 sm:gap-1.5">{children}</div>
     </div>
   )
 }

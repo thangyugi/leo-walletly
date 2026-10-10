@@ -929,7 +929,7 @@ function RecentTransactions({ category, subs, all, txns, canEdit, onOpen, onView
         {shown.length === 0 ? <div className="px-[18px] py-6 text-[12px] text-[var(--color-text-tertiary)] text-center">{t.catdetail.noTx}</div> : shown.map(({ x, kind, kw }) => {
           const c = all.find((cc) => cc.id === x.categoryId) ?? category
           const isIncome = x.transactionType === 'income'
-          const who = person(x.createdBy ?? x.payerId)
+          const who = person(x.payerId)
           return (
             <div key={x.id} role="button" tabIndex={0} onClick={() => onOpen(x)} onKeyDown={(e) => e.key === 'Enter' && onOpen(x)}
               className="grid items-center gap-2.5 sm:gap-3 px-4 sm:px-[18px] py-[11px] grid-cols-[32px_minmax(0,1fr)_auto_auto_auto] sm:grid-cols-[32px_minmax(0,1fr)_minmax(0,120px)_auto_auto] hover:bg-[var(--color-bg-sunken)] transition-colors cursor-pointer">
