@@ -621,6 +621,17 @@ function TransactionsContent() {
 
   // From Accounts › View transactions: /transactions?account=<id> — that
   // account only, on the month of its latest transaction.
+  // An empty period: where the newest transaction is, if the ledger has any.
+  const [latest, setLatest] = useState<{ ledgerId: string; date: string | null } | null>(null)
+  const periodEmpty = !!ledgerId && !loading && items.length === 0
+  useEffect(() => {
+    if (!periodEmpty || !ledgerId) return
+    let alive = true
+    void useTransactionsStore.getState().latestDate(ledgerId).then((date) => { if (alive) setLatest({ ledgerId, date }) })
+    return () => { alive = false }
+  }, [periodEmpty, ledgerId, revision])
+  const latestOther = periodEmpty && latest?.ledgerId === ledgerId && latest.date && (latest.date < picker.start || latest.date > picker.end) ? latest.date : null
+
   const accountParam = params.get('account')
   useEffect(() => {
     if (!accountParam || !ledgerId) return
@@ -762,11 +773,23 @@ function TransactionsContent() {
 
       <Card padding="none">
         {!loading && items.length === 0 ? (
+          latestOther && !filters.search ? (
+            // This period is empty but the ledger is not (e.g. a statement of earlier months
+            // was just imported): say so and offer the month of the newest transaction.
+            <EmptyState
+              title={t.transactions.noneInPeriod.replace('{{period}}', picker.label)}
+              description={t.transactions.latestAt.replace('{{date}}', formatDate(latestOther))}
+              action={<Button size="sm" onClick={() => setPicker(monthPickerValue(latestOther, lang))}>
+                {t.transactions.goLatest.replace('{{month}}', monthPickerValue(latestOther, lang).label)}
+              </Button>}
+            />
+          ) : (
           <EmptyState
             title={total === 0 && !filters.search ? t.transactions.noData : t.transactions.noResult}
             description={t.transactions.noDataSub}
             action={<Link href="/import"><Button size="sm" icon={<Upload />}>{t.transactions.import}</Button></Link>}
           />
+          )
         ) : (
           <>
             <div className={cn(ROW_GRID, 'hidden sm:grid items-center gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)]')}>

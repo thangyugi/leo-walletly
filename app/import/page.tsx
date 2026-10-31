@@ -25,6 +25,7 @@ import { cn, formatDate, toLocalISODate } from '@/lib/utils'
 import type { ImportResult, PaymentProvider, ParsedImportRow } from '@/types'
 import type { Tables } from '@/types/supabase'
 import { AppSelect } from '@/components/ui/app-select'
+import { pickerQuery } from '@/components/ui/date-range-picker'
 
 type PageStep = 'setup' | 'review'
 /** ruleCategoryId: what the ledger's own rules give the row (the preview's default). */
@@ -328,6 +329,14 @@ export default function ImportPage() {
 
   const setRow = (n: number, patch: Partial<Row>) => setRows((rs) => rs.map((r) => (r.rowNumber === n ? { ...r, ...patch } : r)))
   const selectedCount = rows.filter((r) => r.selected).length
+  // Where the file's rows sit in time: the transactions page opens on this month,
+  // so a statement of earlier months must be reachable by its own dates.
+  const fileRange = useMemo(() => {
+    const ds = rows.map((r) => r.date).filter(Boolean).sort()
+    return ds.length ? { from: ds[0], to: ds[ds.length - 1] } : null
+  }, [rows])
+  const rangeHref = fileRange ? `/transactions?${pickerQuery({ start: fileRange.from, end: fileRange.to, mode: 'day' })}` : '/transactions'
+  const allDuplicates = rows.length > 0 && rows.every((r) => r.duplicate)
   const summary = useMemo(() => {
     const sel = rows.filter((r) => r.selected)
     const income = sel.filter((r) => effType(r, otherAccountId) === 'income').reduce((s, r) => s + r.amount, 0)
@@ -419,9 +428,18 @@ export default function ImportPage() {
         </div>
       )}
 
-      {previousJob && !job && (
-        <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--color-status-warning-bg)] text-sm text-[var(--color-text-warning)]">
-          <Copy className="w-4 h-4" />{t.import.alreadyImported.replace('{{date}}', formatDate(previousJob))}
+      {(previousJob || allDuplicates) && !job && (
+        <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--color-status-warning-bg)] text-sm text-[var(--color-text-warning)]">
+          <Copy className="w-4 h-4 shrink-0 mt-0.5" />
+          <div className="min-w-0 flex-1 space-y-1">
+            {previousJob && <p>{t.import.alreadyImported.replace('{{date}}', formatDate(previousJob))}</p>}
+            {allDuplicates && fileRange && <p>{t.import.allDuplicates.replace('{{from}}', formatDate(fileRange.from)).replace('{{to}}', formatDate(fileRange.to))}</p>}
+            {allDuplicates && (
+              <Link href={rangeHref} className="inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+                {t.import.viewImported}<ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            )}
+          </div>
         </div>
       )}
 
@@ -617,12 +635,17 @@ export default function ImportPage() {
               <p className="text-sm font-bold text-[var(--color-brand-700)]">{t.import.importSuccess.replace('{{count}}', String(job.imported_rows))}</p>
               <p className="text-xs text-[var(--color-brand-600)] mt-0.5">
                 {job.duplicate_rows > 0 && `${t.import.duplicatesSkipped.replace('{{count}}', String(job.duplicate_rows))} · `}
-                {account?.name} · {t.import.checkDashboard}
+                {account?.name}
               </p>
+              {fileRange && (
+                <p className="text-xs text-[var(--color-brand-700)] mt-1 font-medium">
+                  {t.import.datesInFile.replace('{{from}}', formatDate(fileRange.from)).replace('{{to}}', formatDate(fileRange.to))}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
-            <Link href="/transactions"><Button size="sm">{t.dashboard.viewAll}</Button></Link>
+            <Link href={rangeHref}><Button size="sm" iconRight={<ArrowRight />}>{t.import.viewImported}</Button></Link>
             <Button variant="secondary" size="sm" onClick={handleReset}>
               <RotateCcw className="w-3.5 h-3.5" />{t.import.importAnother}
             </Button>

@@ -849,6 +849,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('groups.warning', 'groups', null, true),
   ('import.accountCreated', 'import', 'name', true),
   ('import.addAccount', 'import', null, true),
+  ('import.allDuplicates', 'import', 'from,to', true),
   ('import.alreadyImported', 'import', 'date', true),
   ('import.autoDetectHint', 'import', null, true),
   ('import.autoDetected', 'import', null, true),
@@ -863,6 +864,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.colMappingHint', 'import', null, true),
   ('import.copied', 'import', null, true),
   ('import.copy', 'import', null, true),
+  ('import.datesInFile', 'import', 'from,to', true),
   ('import.detectedAs', 'import', 'provider', true),
   ('import.dropFile', 'import', null, true),
   ('import.duplicatesSkipped', 'import', 'count', true),
@@ -913,6 +915,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.topUpTo', 'import', 'name', true),
   ('import.topUpsFound', 'import', 'count', true),
   ('import.tryAnother', 'import', null, true),
+  ('import.viewImported', 'import', null, true),
   ('import.warnings', 'import', null, true),
   ('join.accept', 'join', null, false),
   ('join.backHome', 'join', null, false),
@@ -1210,13 +1213,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.resetSubmit', 'login', null, false),
   ('login.resetTitle', 'login', null, false),
   ('login.resetWaiting', 'login', null, false),
-  ('login.signupSubmit', 'login', null, false),
-  ('login.signupSubtitle', 'login', null, false),
-  ('login.signupSuccess', 'login', null, false),
-  ('login.signupWithEmail', 'login', null, false)
+  ('login.signupSubmit', 'login', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('login.signupSubtitle', 'login', null, false),
+  ('login.signupSuccess', 'login', null, false),
+  ('login.signupWithEmail', 'login', null, false),
   ('login.skip', 'login', null, false),
   ('login.submit', 'login', null, false),
   ('login.subtitle', 'login', null, false),
@@ -1613,13 +1616,13 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.moderateRisk', 'settings', null, false),
   ('settings.security.passkeysLabel', 'settings', null, false),
   ('settings.security.password', 'settings', null, false),
-  ('settings.security.recoveryLabel', 'settings', null, false),
-  ('settings.security.revokeSession', 'settings', null, false),
-  ('settings.security.riskHigh', 'settings', null, false),
-  ('settings.security.riskLevel', 'settings', null, false)
+  ('settings.security.recoveryLabel', 'settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.security.revokeSession', 'settings', null, false),
+  ('settings.security.riskHigh', 'settings', null, false),
+  ('settings.security.riskLevel', 'settings', null, false),
   ('settings.security.riskLow', 'settings', null, false),
   ('settings.security.riskMedium', 'settings', null, false),
   ('settings.security.securityStatus', 'settings', null, false),
@@ -1692,6 +1695,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.editTitle', 'transactions', null, true),
   ('transactions.expense', 'transactions', null, true),
   ('transactions.filter', 'transactions', null, true),
+  ('transactions.goLatest', 'transactions', 'month', true),
   ('transactions.import', 'transactions', null, true),
   ('transactions.income', 'transactions', null, true),
   ('transactions.labelCategory', 'transactions', null, true),
@@ -1699,9 +1703,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('transactions.labelDateTo', 'transactions', null, true),
   ('transactions.labelProvider', 'transactions', null, true),
   ('transactions.labelType', 'transactions', null, true),
+  ('transactions.latestAt', 'transactions', 'date', true),
   ('transactions.noData', 'transactions', null, true),
   ('transactions.noDataSub', 'transactions', null, true),
   ('transactions.noResult', 'transactions', null, true),
+  ('transactions.noneInPeriod', 'transactions', 'period', true),
   ('transactions.othersTx', 'transactions', 'name', true),
   ('transactions.pageInfo', 'transactions', 'total,current,count', true),
   ('transactions.removeGroup', 'transactions', null, true),
@@ -2633,6 +2639,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.warning', 'ja', '警告しきい値 (%)'),
   ('import.accountCreated', 'ja', '口座「{{name}}」を自動で作成しました'),
   ('import.addAccount', 'ja', '口座を追加'),
+  ('import.allDuplicates', 'ja', 'このファイルの取引はすべて登録済みです（{{from}} 〜 {{to}}）。'),
   ('import.alreadyImported', 'ja', 'このファイルは {{date}} にインポート済みです'),
   ('import.autoDetectHint', 'ja', 'ファイルをアップロードすると、形式を自動的に検出します'),
   ('import.autoDetected', 'ja', '検出済み: '),
@@ -2647,6 +2654,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'ja', 'インポート前に列を確認・調整してください'),
   ('import.copied', 'ja', 'コピーしました'),
   ('import.copy', 'ja', 'コピー'),
+  ('import.datesInFile', 'ja', 'ファイルの日付: {{from}} 〜 {{to}}'),
   ('import.detectedAs', 'ja', '判別結果：{{provider}}'),
   ('import.dropFile', 'ja', 'ここにCSVまたはPDFをドロップ'),
   ('import.duplicatesSkipped', 'ja', '重複 {{count}} 件をスキップ'),
@@ -2697,6 +2705,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'ja', '{{name}} へ'),
   ('import.topUpsFound', 'ja', 'チャージ {{count}} 件は自分の口座間の振替です（収入・支出に数えません）。相手の口座：'),
   ('import.tryAnother', 'ja', '別のファイルを選ぶ'),
+  ('import.viewImported', 'ja', '取り込んだ取引を見る'),
   ('import.warnings', 'ja', '件の警告'),
   ('join.accept', 'ja', '参加する'),
   ('join.backHome', 'ja', 'ホームに戻る'),
@@ -2994,13 +3003,13 @@ insert into public.translations (key, language_code, value) values
   ('login.resetSubmit', 'ja', '新しいパスワードを保存'),
   ('login.resetTitle', 'ja', 'パスワードの再設定'),
   ('login.resetWaiting', 'ja', 'リンクを確認しています…'),
-  ('login.signupSubmit', 'ja', 'アカウント作成'),
-  ('login.signupSubtitle', 'ja', '新しいアカウントを作成'),
-  ('login.signupSuccess', 'ja', '確認メールを送信しました。メール内のリンクを開いてください。'),
-  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録')
+  ('login.signupSubmit', 'ja', 'アカウント作成')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.signupSubtitle', 'ja', '新しいアカウントを作成'),
+  ('login.signupSuccess', 'ja', '確認メールを送信しました。メール内のリンクを開いてください。'),
+  ('login.signupWithEmail', 'ja', 'このメールアドレスで登録'),
   ('login.skip', 'ja', 'スキップ（デモ）'),
   ('login.submit', 'ja', 'ログイン'),
   ('login.subtitle', 'ja', '財務管理システムにログイン'),
@@ -3397,13 +3406,13 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.moderateRisk', 'ja', '中程度のリスク'),
   ('settings.security.passkeysLabel', 'ja', 'パスキー'),
   ('settings.security.password', 'ja', 'パスワード'),
-  ('settings.security.recoveryLabel', 'ja', '復旧方法'),
-  ('settings.security.revokeSession', 'ja', 'セッションを終了'),
-  ('settings.security.riskHigh', 'ja', '高'),
-  ('settings.security.riskLevel', 'ja', 'リスクレベル')
+  ('settings.security.recoveryLabel', 'ja', '復旧方法')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.revokeSession', 'ja', 'セッションを終了'),
+  ('settings.security.riskHigh', 'ja', '高'),
+  ('settings.security.riskLevel', 'ja', 'リスクレベル'),
   ('settings.security.riskLow', 'ja', '低'),
   ('settings.security.riskMedium', 'ja', '中'),
   ('settings.security.securityStatus', 'ja', 'アカウントセキュリティ'),
@@ -3476,6 +3485,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.editTitle', 'ja', '取引を編集'),
   ('transactions.expense', 'ja', '支出'),
   ('transactions.filter', 'ja', 'フィルター'),
+  ('transactions.goLatest', 'ja', '{{month}} を表示'),
   ('transactions.import', 'ja', 'インポート'),
   ('transactions.income', 'ja', '収入'),
   ('transactions.labelCategory', 'ja', 'カテゴリ'),
@@ -3483,9 +3493,11 @@ insert into public.translations (key, language_code, value) values
   ('transactions.labelDateTo', 'ja', '終了日'),
   ('transactions.labelProvider', 'ja', 'アカウント'),
   ('transactions.labelType', 'ja', 'タイプ'),
+  ('transactions.latestAt', 'ja', '最新の取引は {{date}} です。'),
   ('transactions.noData', 'ja', '取引がありません'),
   ('transactions.noDataSub', 'ja', '最初の取引をインポートして開始します。'),
   ('transactions.noResult', 'ja', '結果が見つかりません'),
+  ('transactions.noneInPeriod', 'ja', '{{period}} の取引はありません'),
   ('transactions.othersTx', 'ja', '{{name}} さんの取引です。変更できるのは本人だけです'),
   ('transactions.pageInfo', 'ja', '{{total}}ページ中 {{current}}ページ目 (全{{count}}件)'),
   ('transactions.removeGroup', 'ja', 'グループを解除'),
@@ -4417,6 +4429,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.warning', 'vi', 'Ngưỡng cảnh báo (%)'),
   ('import.accountCreated', 'vi', 'Đã tự tạo tài khoản "{{name}}"'),
   ('import.addAccount', 'vi', 'Thêm tài khoản'),
+  ('import.allDuplicates', 'vi', 'Mọi giao dịch trong file này đã có trong sổ ({{from}} – {{to}}).'),
   ('import.alreadyImported', 'vi', 'File này đã được nhập ngày {{date}}'),
   ('import.autoDetectHint', 'vi', 'Tự động nhận diện định dạng sau khi tải file'),
   ('import.autoDetected', 'vi', 'Đã nhận diện: '),
@@ -4431,6 +4444,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'vi', 'Kiểm tra và điều chỉnh các cột trước khi nhập'),
   ('import.copied', 'vi', 'Đã sao chép'),
   ('import.copy', 'vi', 'Sao chép'),
+  ('import.datesInFile', 'vi', 'Ngày trong file: {{from}} – {{to}}'),
   ('import.detectedAs', 'vi', 'Nhận dạng: {{provider}}'),
   ('import.dropFile', 'vi', 'Thả file CSV hoặc PDF vào đây'),
   ('import.duplicatesSkipped', 'vi', 'Bỏ qua {{count}} giao dịch trùng'),
@@ -4481,6 +4495,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'vi', 'Sang {{name}}'),
   ('import.topUpsFound', 'vi', '{{count}} lần nạp tiền là chuyển khoản giữa tài khoản của bạn (không tính vào thu/chi). Tài khoản đối ứng:'),
   ('import.tryAnother', 'vi', 'Chọn file khác'),
+  ('import.viewImported', 'vi', 'Xem các giao dịch vừa nhập'),
   ('import.warnings', 'vi', 'cảnh báo'),
   ('join.accept', 'vi', 'Tham gia'),
   ('join.backHome', 'vi', 'Quay lại trang chủ'),
@@ -4778,13 +4793,13 @@ insert into public.translations (key, language_code, value) values
   ('login.resetSubmit', 'vi', 'Lưu mật khẩu mới'),
   ('login.resetTitle', 'vi', 'Đặt lại mật khẩu'),
   ('login.resetWaiting', 'vi', 'Đang kiểm tra link…'),
-  ('login.signupSubmit', 'vi', 'Tạo tài khoản'),
-  ('login.signupSubtitle', 'vi', 'Tạo tài khoản mới'),
-  ('login.signupSuccess', 'vi', 'Đã gửi email xác nhận. Hãy mở liên kết trong email.'),
-  ('login.signupWithEmail', 'vi', 'Đăng ký với email này')
+  ('login.signupSubmit', 'vi', 'Tạo tài khoản')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.signupSubtitle', 'vi', 'Tạo tài khoản mới'),
+  ('login.signupSuccess', 'vi', 'Đã gửi email xác nhận. Hãy mở liên kết trong email.'),
+  ('login.signupWithEmail', 'vi', 'Đăng ký với email này'),
   ('login.skip', 'vi', 'Bỏ qua (Demo)'),
   ('login.submit', 'vi', 'Đăng nhập'),
   ('login.subtitle', 'vi', 'Đăng nhập vào hệ thống quản lý tài chính'),
@@ -5181,13 +5196,13 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.moderateRisk', 'vi', 'Rủi ro trung bình'),
   ('settings.security.passkeysLabel', 'vi', 'Mã khóa (Passkeys)'),
   ('settings.security.password', 'vi', 'Mật khẩu'),
-  ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục'),
-  ('settings.security.revokeSession', 'vi', 'Đăng xuất thiết bị'),
-  ('settings.security.riskHigh', 'vi', 'CAO'),
-  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro')
+  ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.revokeSession', 'vi', 'Đăng xuất thiết bị'),
+  ('settings.security.riskHigh', 'vi', 'CAO'),
+  ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro'),
   ('settings.security.riskLow', 'vi', 'THẤP'),
   ('settings.security.riskMedium', 'vi', 'TRUNG BÌNH'),
   ('settings.security.securityStatus', 'vi', 'Bảo mật tài khoản'),
@@ -5260,6 +5275,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.editTitle', 'vi', 'Chỉnh sửa giao dịch'),
   ('transactions.expense', 'vi', 'Chi tiêu'),
   ('transactions.filter', 'vi', 'Lọc'),
+  ('transactions.goLatest', 'vi', 'Xem {{month}}'),
   ('transactions.import', 'vi', 'Nhập dữ liệu'),
   ('transactions.income', 'vi', 'Thu nhập'),
   ('transactions.labelCategory', 'vi', 'Danh mục'),
@@ -5267,9 +5283,11 @@ insert into public.translations (key, language_code, value) values
   ('transactions.labelDateTo', 'vi', 'Đến ngày'),
   ('transactions.labelProvider', 'vi', 'Tài khoản'),
   ('transactions.labelType', 'vi', 'Loại'),
+  ('transactions.latestAt', 'vi', 'Giao dịch gần nhất là ngày {{date}}.'),
   ('transactions.noData', 'vi', 'Chưa có giao dịch'),
   ('transactions.noDataSub', 'vi', 'Nhập các giao dịch đầu tiên để bắt đầu.'),
   ('transactions.noResult', 'vi', 'Không tìm thấy kết quả'),
+  ('transactions.noneInPeriod', 'vi', 'Không có giao dịch trong {{period}}'),
   ('transactions.othersTx', 'vi', 'Giao dịch của {{name}} — chỉ người đó được sửa'),
   ('transactions.pageInfo', 'vi', 'Trang {{current}}/{{total}} (Tổng {{count}} giao dịch)'),
   ('transactions.removeGroup', 'vi', 'Bỏ nhóm'),
@@ -6201,6 +6219,7 @@ insert into public.translations (key, language_code, value) values
   ('groups.warning', 'en', 'Warning threshold (%)'),
   ('import.accountCreated', 'en', 'Created account "{{name}}"'),
   ('import.addAccount', 'en', 'Add account'),
+  ('import.allDuplicates', 'en', 'Every transaction in this file is already in the ledger ({{from}} – {{to}}).'),
   ('import.alreadyImported', 'en', 'This file was already imported on {{date}}'),
   ('import.autoDetectHint', 'en', 'Upload a file and we will detect the format automatically'),
   ('import.autoDetected', 'en', 'Detected: '),
@@ -6215,6 +6234,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'en', 'Review and adjust columns before importing'),
   ('import.copied', 'en', 'Copied'),
   ('import.copy', 'en', 'Copy'),
+  ('import.datesInFile', 'en', 'Dates in the file: {{from}} – {{to}}'),
   ('import.detectedAs', 'en', 'Recognised as: {{provider}}'),
   ('import.dropFile', 'en', 'Drop CSV or PDF here'),
   ('import.duplicatesSkipped', 'en', '{{count}} duplicates skipped'),
@@ -6265,6 +6285,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'en', 'To {{name}}'),
   ('import.topUpsFound', 'en', '{{count}} top-ups move money between your own accounts (not income or spending). Other account:'),
   ('import.tryAnother', 'en', 'Choose another file'),
+  ('import.viewImported', 'en', 'See the imported transactions'),
   ('import.warnings', 'en', 'warnings'),
   ('join.accept', 'en', 'Join'),
   ('join.backHome', 'en', 'Back to Home'),
@@ -6562,13 +6583,13 @@ insert into public.translations (key, language_code, value) values
   ('login.resetSubmit', 'en', 'Save new password'),
   ('login.resetTitle', 'en', 'Reset password'),
   ('login.resetWaiting', 'en', 'Checking the link…'),
-  ('login.signupSubmit', 'en', 'Create account'),
-  ('login.signupSubtitle', 'en', 'Create a new account'),
-  ('login.signupSuccess', 'en', 'We sent a confirmation email. Open the link to continue.'),
-  ('login.signupWithEmail', 'en', 'Sign up with this email')
+  ('login.signupSubmit', 'en', 'Create account')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.signupSubtitle', 'en', 'Create a new account'),
+  ('login.signupSuccess', 'en', 'We sent a confirmation email. Open the link to continue.'),
+  ('login.signupWithEmail', 'en', 'Sign up with this email'),
   ('login.skip', 'en', 'Skip (Demo)'),
   ('login.submit', 'en', 'Sign In'),
   ('login.subtitle', 'en', 'Log in to your finances'),
@@ -6965,13 +6986,13 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.moderateRisk', 'en', 'Moderate Risk'),
   ('settings.security.passkeysLabel', 'en', 'Passkeys'),
   ('settings.security.password', 'en', 'Password'),
-  ('settings.security.recoveryLabel', 'en', 'Recovery methods'),
-  ('settings.security.revokeSession', 'en', 'Revoke session'),
-  ('settings.security.riskHigh', 'en', 'HIGH'),
-  ('settings.security.riskLevel', 'en', 'Risk Level')
+  ('settings.security.recoveryLabel', 'en', 'Recovery methods')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.revokeSession', 'en', 'Revoke session'),
+  ('settings.security.riskHigh', 'en', 'HIGH'),
+  ('settings.security.riskLevel', 'en', 'Risk Level'),
   ('settings.security.riskLow', 'en', 'LOW'),
   ('settings.security.riskMedium', 'en', 'MEDIUM'),
   ('settings.security.securityStatus', 'en', 'Account Security'),
@@ -7044,6 +7065,7 @@ insert into public.translations (key, language_code, value) values
   ('transactions.editTitle', 'en', 'Edit Transaction'),
   ('transactions.expense', 'en', 'Expense'),
   ('transactions.filter', 'en', 'Filter'),
+  ('transactions.goLatest', 'en', 'Go to {{month}}'),
   ('transactions.import', 'en', 'Import'),
   ('transactions.income', 'en', 'Income'),
   ('transactions.labelCategory', 'en', 'Category'),
@@ -7051,9 +7073,11 @@ insert into public.translations (key, language_code, value) values
   ('transactions.labelDateTo', 'en', 'To'),
   ('transactions.labelProvider', 'en', 'Provider'),
   ('transactions.labelType', 'en', 'Type'),
+  ('transactions.latestAt', 'en', 'The latest transaction is on {{date}}.'),
   ('transactions.noData', 'en', 'No transactions'),
   ('transactions.noDataSub', 'en', 'Import a file to get started'),
   ('transactions.noResult', 'en', 'No results found'),
+  ('transactions.noneInPeriod', 'en', 'No transactions in {{period}}'),
   ('transactions.othersTx', 'en', '{{name}}''s transaction — only they can change it'),
   ('transactions.pageInfo', 'en', 'Page {{current}} of {{total}} ({{count}} total)'),
   ('transactions.removeGroup', 'en', 'Remove group'),

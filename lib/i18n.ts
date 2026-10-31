@@ -192,6 +192,9 @@ const ja = {
     sortNameAZ:     '名前 (A-Z)',
     selectedCount:  '件選択済み',
     pageInfo:       '{{total}}ページ中 {{current}}ページ目 (全{{count}}件)',
+    noneInPeriod: '{{period}} の取引はありません',
+    latestAt: '最新の取引は {{date}} です。',
+    goLatest: '{{month}} を表示',
   },
   calendar: {
     title:   '月別カレンダー',
@@ -401,6 +404,9 @@ const ja = {
     topUpNone: 'なし（収入・支出として記録）',
     topUpFrom: '{{name}} から',
     topUpTo: '{{name}} へ',
+    viewImported: '取り込んだ取引を見る',
+    datesInFile: 'ファイルの日付: {{from}} 〜 {{to}}',
+    allDuplicates: 'このファイルの取引はすべて登録済みです（{{from}} 〜 {{to}}）。',
   },
   login: {
     subtitle: '財務管理システムにログイン',
@@ -2093,6 +2099,9 @@ const vi: typeof ja = {
     sortNameAZ:     'Tên (A-Z)',
     selectedCount:  'đã chọn',
     pageInfo:       'Trang {{current}}/{{total}} (Tổng {{count}} giao dịch)',
+    noneInPeriod: 'Không có giao dịch trong {{period}}',
+    latestAt: 'Giao dịch gần nhất là ngày {{date}}.',
+    goLatest: 'Xem {{month}}',
   },
   calendar: {
     title:   'Lịch theo tháng',
@@ -2302,6 +2311,9 @@ const vi: typeof ja = {
     topUpNone: 'Không có — ghi là thu/chi',
     topUpFrom: 'Từ {{name}}',
     topUpTo: 'Sang {{name}}',
+    viewImported: 'Xem các giao dịch vừa nhập',
+    datesInFile: 'Ngày trong file: {{from}} – {{to}}',
+    allDuplicates: 'Mọi giao dịch trong file này đã có trong sổ ({{from}} – {{to}}).',
   },
   login: {
     subtitle: 'Đăng nhập vào hệ thống quản lý tài chính',
@@ -3993,6 +4005,9 @@ const en: typeof ja = {
     sortNameAZ:     'Name (A-Z)',
     selectedCount:  'selected',
     pageInfo:       'Page {{current}} of {{total}} ({{count}} total)',
+    noneInPeriod: 'No transactions in {{period}}',
+    latestAt: 'The latest transaction is on {{date}}.',
+    goLatest: 'Go to {{month}}',
   },
   calendar: {
     title:   'Monthly Calendar',
@@ -4202,6 +4217,9 @@ const en: typeof ja = {
     topUpNone: 'None — book as income/expense',
     topUpFrom: 'From {{name}}',
     topUpTo: 'To {{name}}',
+    viewImported: 'See the imported transactions',
+    datesInFile: 'Dates in the file: {{from}} – {{to}}',
+    allDuplicates: 'Every transaction in this file is already in the ledger ({{from}} – {{to}}).',
   },
   login: {
     subtitle: 'Log in to your finances',

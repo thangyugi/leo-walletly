@@ -98,6 +98,8 @@ interface TransactionsState {
   fetchUncategorized: (ledgerId: string, limit?: number, range?: { start: string; end: string }) => Promise<{ items: Transaction[]; total: number }>
   /** Date of the account's most recent transaction (either side of a transfer), or null. */
   latestDateForAccount: (ledgerId: string, accountId: string) => Promise<string | null>
+  /** Date of the newest transaction in the ledger (null when there is none). */
+  latestDate: (ledgerId: string) => Promise<string | null>
   search: (ledgerId: string, term: string, limit?: number) => Promise<Transaction[]>
   getById: (id: string) => Promise<Transaction | null>
   summarize: (ledgerId: string, start: string, end: string) => Promise<PeriodSummary>
@@ -301,6 +303,19 @@ export const useTransactionsStore = create<TransactionsState>((set, get) => ({
       .limit(limit)
     fail(error)
     return { items: (data ?? []).map(mapTransaction), total: count ?? 0 }
+  },
+
+  latestDate: async (ledgerId) => {
+    const { data } = await supabase
+      .from('transactions')
+      .select('transaction_date')
+      .eq('ledger_id', ledgerId)
+      .is('deleted_at', null)
+      .neq('status', 'void')
+      .order('transaction_date', { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    return data?.transaction_date ?? null
   },
 
   latestDateForAccount: async (ledgerId, accountId) => {
