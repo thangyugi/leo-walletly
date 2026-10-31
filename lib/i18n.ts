@@ -411,6 +411,7 @@ const ja = {
     dupHidden: '一致した取引のうち {{count}} 件はあなたには表示されません。',
     viewExisting: '登録済みの取引を見る',
     openExisting: '登録済みの取引を開く',
+    datesHint: 'カード明細は請求月ではなく利用日で登録されます',
   },
   login: {
     subtitle: '財務管理システムにログイン',
@@ -2322,6 +2323,7 @@ const vi: typeof ja = {
     dupHidden: '{{count}} giao dịch trùng không hiển thị với bạn (có thể do quyền xem).',
     viewExisting: 'Xem các giao dịch đã có',
     openExisting: 'Mở giao dịch đã có',
+    datesHint: 'giao dịch thẻ được ghi theo ngày dùng thẻ, không theo tháng thanh toán',
   },
   login: {
     subtitle: 'Đăng nhập vào hệ thống quản lý tài chính',
@@ -4232,6 +4234,7 @@ const en: typeof ja = {
     dupHidden: '{{count}} matching transactions are not visible to you.',
     viewExisting: 'See the existing transactions',
     openExisting: 'Open the existing transaction',
+    datesHint: 'card purchases are booked on the day of use, not the billing month',
   },
   login: {
     subtitle: 'Log in to your finances',

@@ -489,6 +489,13 @@ export default function ImportPage() {
             </div>
           </div>
 
+          {/* The dates the rows will be booked on (a card bill for October lists the purchases of August–September). */}
+          {fileRange && (
+            <p className="px-4 py-2 border-b border-[var(--color-border-subtle)] text-xs font-medium text-[var(--color-text-secondary)]">
+              {t.import.datesInFile.replace('{{from}}', formatDate(fileRange.from)).replace('{{to}}', formatDate(fileRange.to))}
+              {fileRange.to.slice(0, 7) < toLocalISODate().slice(0, 7) && <span className="text-[var(--color-text-tertiary)] font-normal"> · {t.import.datesHint}</span>}
+            </p>
+          )}
           <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-[var(--color-border-default)] bg-[var(--color-bg-sunken)] flex-wrap">
             <div className="flex items-center gap-2">
               <button

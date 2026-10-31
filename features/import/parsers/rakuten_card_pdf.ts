@@ -86,9 +86,11 @@ export function parseRakutenCardPages(pages: PdfPage[]): { transactions: Transac
       if (parsed) i += k
     }
     if (!parsed) continue
-    // The rest of a long shop name on the next line (no date, no amounts).
-    const next = lines[i + 1]?.text
-    if (next && !DATE_RE.test(next) && amountsIn(next).length === 0 && next.length <= 40 && !NOT_A_PURCHASE.test(next)) {
+    // The rest of a long shop name on the next line (no date, no amounts), right
+    // under it on the same page — never a heading further down or on the next page.
+    const nextLine = lines[i + 1]
+    const next = nextLine && nextLine.page === lines[i].page && nextLine.y - lines[i].y <= 14 ? nextLine.text : undefined
+    if (next && !DATE_RE.test(next) && amountsIn(next).length === 0 && next.length <= 40 && !NOT_A_PURCHASE.test(next) && !/お支払予定|リボ|明細/.test(next)) {
       parsed.storeName = `${parsed.storeName}${next.trim()}`
       i++
     }

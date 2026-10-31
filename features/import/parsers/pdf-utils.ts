@@ -119,9 +119,10 @@ export async function extractPdfText(file: File, password?: string): Promise<Pdf
     // Sort all items top-to-bottom, then left-to-right
     rawItems.sort((a, b) => a.y - b.y || a.x - b.x)
 
-    // Group items into lines by Y-position proximity
-    // Threshold: 8px to handle slight baseline variations in table rows
-    const Y_THRESHOLD = 8
+    // Group items into lines by Y-position proximity. 5px absorbs baseline
+    // differences inside one table row; a shop name wrapped onto the next line
+    // sits ~8px lower and must stay its own line (Rakuten: "…アプ" / "リ").
+    const Y_THRESHOLD = 5
     const lineMap = new Map<number, PdfTextItem[]>()
 
     for (const item of rawItems) {

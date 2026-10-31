@@ -864,6 +864,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.colMappingHint', 'import', null, true),
   ('import.copied', 'import', null, true),
   ('import.copy', 'import', null, true),
+  ('import.datesHint', 'import', null, true),
   ('import.datesInFile', 'import', 'from,to', true),
   ('import.detectedAs', 'import', 'provider', true),
   ('import.dropFile', 'import', null, true),
@@ -1212,11 +1213,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.resetDone', 'login', null, false),
   ('login.resetLinkInvalid', 'login', null, false),
   ('login.resetSent', 'login', null, false),
-  ('login.resetSentTo', 'login', 'email', false),
-  ('login.resetSub', 'login', 'email', false)
+  ('login.resetSentTo', 'login', 'email', false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('login.resetSub', 'login', 'email', false),
   ('login.resetSubmit', 'login', null, false),
   ('login.resetTitle', 'login', null, false),
   ('login.resetWaiting', 'login', null, false),
@@ -1615,11 +1616,11 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.mfaEnabled', 'settings', null, false),
   ('settings.security.mfaLabel', 'settings', null, false),
   ('settings.security.mfaStatus', 'settings', null, false),
-  ('settings.security.mfaSub', 'settings', null, false),
-  ('settings.security.mfaTitle', 'settings', null, false)
+  ('settings.security.mfaSub', 'settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.security.mfaTitle', 'settings', null, false),
   ('settings.security.moderateRisk', 'settings', null, false),
   ('settings.security.passkeysLabel', 'settings', null, false),
   ('settings.security.password', 'settings', null, false),
@@ -2658,6 +2659,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'ja', 'インポート前に列を確認・調整してください'),
   ('import.copied', 'ja', 'コピーしました'),
   ('import.copy', 'ja', 'コピー'),
+  ('import.datesHint', 'ja', 'カード明細は請求月ではなく利用日で登録されます'),
   ('import.datesInFile', 'ja', 'ファイルの日付: {{from}} 〜 {{to}}'),
   ('import.detectedAs', 'ja', '判別結果：{{provider}}'),
   ('import.dropFile', 'ja', 'ここにCSVまたはPDFをドロップ'),
@@ -3006,11 +3008,11 @@ insert into public.translations (key, language_code, value) values
   ('login.resetDone', 'ja', 'パスワードを変更しました。アプリを開いています…'),
   ('login.resetLinkInvalid', 'ja', 'パスワード再設定リンクの有効期限が切れたか、すでに使用されています。もう一度リクエストしてください。'),
   ('login.resetSent', 'ja', 'パスワード再設定メールを送信しました'),
-  ('login.resetSentTo', 'ja', '{{email}} にパスワード再設定メールを送信しました。メール内のリンクから新しいパスワードを設定してください。'),
-  ('login.resetSub', 'ja', '{{email}} の新しいパスワードを入力してください')
+  ('login.resetSentTo', 'ja', '{{email}} にパスワード再設定メールを送信しました。メール内のリンクから新しいパスワードを設定してください。')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSub', 'ja', '{{email}} の新しいパスワードを入力してください'),
   ('login.resetSubmit', 'ja', '新しいパスワードを保存'),
   ('login.resetTitle', 'ja', 'パスワードの再設定'),
   ('login.resetWaiting', 'ja', 'リンクを確認しています…'),
@@ -3409,11 +3411,11 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaEnabled', 'ja', '有効'),
   ('settings.security.mfaLabel', 'ja', '2要素認証 (MFA)'),
   ('settings.security.mfaStatus', 'ja', '2段階認証は現在 {status} です'),
-  ('settings.security.mfaSub', 'ja', 'アカウントにセキュリティレイヤーを追加します。'),
-  ('settings.security.mfaTitle', 'ja', '2要素認証')
+  ('settings.security.mfaSub', 'ja', 'アカウントにセキュリティレイヤーを追加します。')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.mfaTitle', 'ja', '2要素認証'),
   ('settings.security.moderateRisk', 'ja', '中程度のリスク'),
   ('settings.security.passkeysLabel', 'ja', 'パスキー'),
   ('settings.security.password', 'ja', 'パスワード'),
@@ -4452,6 +4454,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'vi', 'Kiểm tra và điều chỉnh các cột trước khi nhập'),
   ('import.copied', 'vi', 'Đã sao chép'),
   ('import.copy', 'vi', 'Sao chép'),
+  ('import.datesHint', 'vi', 'giao dịch thẻ được ghi theo ngày dùng thẻ, không theo tháng thanh toán'),
   ('import.datesInFile', 'vi', 'Ngày trong file: {{from}} – {{to}}'),
   ('import.detectedAs', 'vi', 'Nhận dạng: {{provider}}'),
   ('import.dropFile', 'vi', 'Thả file CSV hoặc PDF vào đây'),
@@ -4800,11 +4803,11 @@ insert into public.translations (key, language_code, value) values
   ('login.resetDone', 'vi', 'Đã đổi mật khẩu. Đang vào ứng dụng…'),
   ('login.resetLinkInvalid', 'vi', 'Link đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Hãy yêu cầu link mới.'),
   ('login.resetSent', 'vi', 'Đã gửi email đặt lại mật khẩu'),
-  ('login.resetSentTo', 'vi', 'Đã gửi email đặt lại mật khẩu tới {{email}}. Mở link trong email để đặt mật khẩu mới.'),
-  ('login.resetSub', 'vi', 'Nhập mật khẩu mới cho {{email}}')
+  ('login.resetSentTo', 'vi', 'Đã gửi email đặt lại mật khẩu tới {{email}}. Mở link trong email để đặt mật khẩu mới.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSub', 'vi', 'Nhập mật khẩu mới cho {{email}}'),
   ('login.resetSubmit', 'vi', 'Lưu mật khẩu mới'),
   ('login.resetTitle', 'vi', 'Đặt lại mật khẩu'),
   ('login.resetWaiting', 'vi', 'Đang kiểm tra link…'),
@@ -5203,11 +5206,11 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaEnabled', 'vi', 'Bật'),
   ('settings.security.mfaLabel', 'vi', 'Xác thực 2 lớp (MFA)'),
   ('settings.security.mfaStatus', 'vi', 'Xác thực 2 lớp hiện đang {status}'),
-  ('settings.security.mfaSub', 'vi', 'Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.'),
-  ('settings.security.mfaTitle', 'vi', 'Xác thực 2 lớp')
+  ('settings.security.mfaSub', 'vi', 'Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.mfaTitle', 'vi', 'Xác thực 2 lớp'),
   ('settings.security.moderateRisk', 'vi', 'Rủi ro trung bình'),
   ('settings.security.passkeysLabel', 'vi', 'Mã khóa (Passkeys)'),
   ('settings.security.password', 'vi', 'Mật khẩu'),
@@ -6246,6 +6249,7 @@ insert into public.translations (key, language_code, value) values
   ('import.colMappingHint', 'en', 'Review and adjust columns before importing'),
   ('import.copied', 'en', 'Copied'),
   ('import.copy', 'en', 'Copy'),
+  ('import.datesHint', 'en', 'card purchases are booked on the day of use, not the billing month'),
   ('import.datesInFile', 'en', 'Dates in the file: {{from}} – {{to}}'),
   ('import.detectedAs', 'en', 'Recognised as: {{provider}}'),
   ('import.dropFile', 'en', 'Drop CSV or PDF here'),
@@ -6594,11 +6598,11 @@ insert into public.translations (key, language_code, value) values
   ('login.resetDone', 'en', 'Password changed. Opening the app…'),
   ('login.resetLinkInvalid', 'en', 'The reset link has expired or was already used. Please request a new one.'),
   ('login.resetSent', 'en', 'Password reset email sent'),
-  ('login.resetSentTo', 'en', 'Sent a password reset email to {{email}}. Open the link in it to set a new password.'),
-  ('login.resetSub', 'en', 'Enter a new password for {{email}}')
+  ('login.resetSentTo', 'en', 'Sent a password reset email to {{email}}. Open the link in it to set a new password.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSub', 'en', 'Enter a new password for {{email}}'),
   ('login.resetSubmit', 'en', 'Save new password'),
   ('login.resetTitle', 'en', 'Reset password'),
   ('login.resetWaiting', 'en', 'Checking the link…'),
@@ -6997,11 +7001,11 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaEnabled', 'en', 'Enabled'),
   ('settings.security.mfaLabel', 'en', 'Two-factor authentication (MFA)'),
   ('settings.security.mfaStatus', 'en', 'MFA is currently {status}'),
-  ('settings.security.mfaSub', 'en', 'Add an extra layer of security to your account.'),
-  ('settings.security.mfaTitle', 'en', 'Two-factor Auth')
+  ('settings.security.mfaSub', 'en', 'Add an extra layer of security to your account.')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.mfaTitle', 'en', 'Two-factor Auth'),
   ('settings.security.moderateRisk', 'en', 'Moderate Risk'),
   ('settings.security.passkeysLabel', 'en', 'Passkeys'),
   ('settings.security.password', 'en', 'Password'),
