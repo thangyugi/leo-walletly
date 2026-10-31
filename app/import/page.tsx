@@ -29,7 +29,8 @@ import { pickerQuery } from '@/components/ui/date-range-picker'
 
 type PageStep = 'setup' | 'review'
 /** ruleCategoryId: what the ledger's own rules give the row (the preview's default). */
-type Row = ParsedImportRow & { selected: boolean; categoryId: string; ruleCategoryId: string; duplicate: boolean }
+/** dupOf: the transaction already in the ledger that this row matches. */
+type Row = ParsedImportRow & { selected: boolean; categoryId: string; ruleCategoryId: string; duplicate: boolean; dupOf?: string }
 
 /** A top-up with no other account picked is booked as income/expense (the old behaviour). */
 function effType(r: ParsedImportRow, otherId: string): 'expense' | 'income' | 'transfer' {
@@ -159,6 +160,8 @@ export default function ImportPage() {
   const [job, setJob] = useState<Tables<'import_jobs'> | null>(null)
   // The other side of top-ups (e.g. PayPayカード for a PayPay wallet); '' = book them as income/expense.
   const [otherAccountId, setOtherAccountId] = useState('')
+  // The transactions this file's duplicates point at (see buildRows).
+  const [dupInfo, setDupInfo] = useState<{ total: number; visible: number; from: string | null; to: string | null; accounts: string[] } | null>(null)
   // Who the rows are booked for ("User"); empty = me.
   const [payer, setPayer] = useState('')
   const [importing, setImporting] = useState(false)
@@ -222,8 +225,20 @@ export default function ImportPage() {
       const ruleCategoryId = ruleBy.get(r.rowNumber) ?? ''
       return { ...r, selected: true, duplicate: false, categoryId: ruleCategoryId, ruleCategoryId }
     })
-    const dupSet = new Set((dups ?? []).map((d) => d.row_number))
-    setRows(base.map((r) => (dupSet.has(r.rowNumber) ? { ...r, duplicate: true, selected: false } : r)))
+    const dupOf = new Map((dups ?? []).map((d) => [d.row_number, d.duplicate_of_id]))
+    setRows(base.map((r) => (dupOf.has(r.rowNumber) ? { ...r, duplicate: true, selected: false, dupOf: dupOf.get(r.rowNumber) ?? undefined } : r)))
+    // Where those matches really are (date, account): a duplicate the user cannot find is the
+    // first thing to explain, e.g. a statement of other months or another account.
+    const ids = [...new Set((dups ?? []).map((d) => d.duplicate_of_id).filter(Boolean))] as string[]
+    if (ids.length) {
+      const { data: found } = await supabase.from('transactions').select('id, transaction_date, account_id').in('id', ids.slice(0, 500))
+      const dates = (found ?? []).map((x) => x.transaction_date).sort()
+      setDupInfo({
+        total: ids.length, visible: found?.length ?? 0,
+        from: dates[0] ?? null, to: dates[dates.length - 1] ?? null,
+        accounts: [...new Set((found ?? []).map((x) => x.account_id))],
+      })
+    } else setDupInfo(null)
   }
 
   async function processFile(f: File, mappingOverride?: Partial<ColumnMapping>, accountOverride?: string, password?: string) {
@@ -323,7 +338,7 @@ export default function ImportPage() {
 
   function handleReset() {
     setFile(null); setResult(null); setRows([]); setError(null); setMapping(null); setUserMapping({}); setPdfIssue(null); setPdfPassword('')
-    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId(''); setOtherAccountId(''); setPayer('')
+    setJob(null); setPreviousJob(null); setProviderCode('generic_csv'); setAccountId(''); setOtherAccountId(''); setPayer(''); setDupInfo(null)
     if (fileInputRef.current) fileInputRef.current.value = ''
   }
 
@@ -428,15 +443,23 @@ export default function ImportPage() {
         </div>
       )}
 
-      {(previousJob || allDuplicates) && !job && (
+      {(previousJob || allDuplicates || dupInfo) && !job && (
         <div className="flex items-start gap-2.5 p-3 rounded-xl bg-[var(--color-status-warning-bg)] text-sm text-[var(--color-text-warning)]">
           <Copy className="w-4 h-4 shrink-0 mt-0.5" />
           <div className="min-w-0 flex-1 space-y-1">
             {previousJob && <p>{t.import.alreadyImported.replace('{{date}}', formatDate(previousJob))}</p>}
             {allDuplicates && fileRange && <p>{t.import.allDuplicates.replace('{{from}}', formatDate(fileRange.from)).replace('{{to}}', formatDate(fileRange.to))}</p>}
-            {allDuplicates && (
-              <Link href={rangeHref} className="inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
-                {t.import.viewImported}<ArrowRight className="w-3.5 h-3.5" />
+            {dupInfo && dupInfo.from && dupInfo.to && (
+              <p className="font-medium">
+                {t.import.dupWhere.replace('{{count}}', String(dupInfo.visible)).replace('{{from}}', formatDate(dupInfo.from)).replace('{{to}}', formatDate(dupInfo.to))
+                  .replace('{{accounts}}', dupInfo.accounts.map((id) => activeAccounts.find((a) => a.id === id)?.name ?? '—').join(', '))}
+              </p>
+            )}
+            {dupInfo && dupInfo.visible < dupInfo.total && <p>{t.import.dupHidden.replace('{{count}}', String(dupInfo.total - dupInfo.visible))}</p>}
+            {(allDuplicates || dupInfo) && (
+              <Link href={dupInfo?.from && dupInfo.to ? `/transactions?${pickerQuery({ start: dupInfo.from, end: dupInfo.to, mode: 'day' })}` : rangeHref}
+                className="inline-flex items-center gap-1 font-semibold underline-offset-2 hover:underline">
+                {t.import.viewExisting}<ArrowRight className="w-3.5 h-3.5" />
               </Link>
             )}
           </div>
@@ -569,7 +592,9 @@ export default function ImportPage() {
                       </td>
                       <td className="py-2.5 px-2 max-w-[220px] max-sm:max-w-0 max-sm:w-full">
                         <p className="text-sm text-[var(--color-text-primary)] truncate">{r.description}</p>
-                        {r.duplicate && <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>}
+                        {r.duplicate && (r.dupOf
+                          ? <Link href={`/transactions?tx=${r.dupOf}`} title={t.import.openExisting} className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)] underline-offset-2 hover:underline">{t.import.statusDuplicate} ↗</Link>
+                          : <span className="text-[10px] px-1.5 rounded bg-[var(--color-status-warning-bg)] text-[var(--color-text-warning)]">{t.import.statusDuplicate}</span>)}
                         {isTransfer && (
                           <p className="text-[11px] text-[var(--color-text-tertiary)] mt-0.5 truncate">
                             {(transferIn ? t.import.topUpFrom : t.import.topUpTo).replace('{{name}}', otherAccount?.name ?? '—')}

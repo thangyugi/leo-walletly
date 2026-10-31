@@ -407,6 +407,10 @@ const ja = {
     viewImported: '取り込んだ取引を見る',
     datesInFile: 'ファイルの日付: {{from}} 〜 {{to}}',
     allDuplicates: 'このファイルの取引はすべて登録済みです（{{from}} 〜 {{to}}）。',
+    dupWhere: '登録済みの {{count}} 件は {{from}} 〜 {{to}}（{{accounts}}）にあります。',
+    dupHidden: '一致した取引のうち {{count}} 件はあなたには表示されません。',
+    viewExisting: '登録済みの取引を見る',
+    openExisting: '登録済みの取引を開く',
   },
   login: {
     subtitle: '財務管理システムにログイン',
@@ -2314,6 +2318,10 @@ const vi: typeof ja = {
     viewImported: 'Xem các giao dịch vừa nhập',
     datesInFile: 'Ngày trong file: {{from}} – {{to}}',
     allDuplicates: 'Mọi giao dịch trong file này đã có trong sổ ({{from}} – {{to}}).',
+    dupWhere: '{{count}} giao dịch đã có trong sổ đang nằm ở ngày {{from}} – {{to}} (tài khoản: {{accounts}}).',
+    dupHidden: '{{count}} giao dịch trùng không hiển thị với bạn (có thể do quyền xem).',
+    viewExisting: 'Xem các giao dịch đã có',
+    openExisting: 'Mở giao dịch đã có',
   },
   login: {
     subtitle: 'Đăng nhập vào hệ thống quản lý tài chính',
@@ -4220,6 +4228,10 @@ const en: typeof ja = {
     viewImported: 'See the imported transactions',
     datesInFile: 'Dates in the file: {{from}} – {{to}}',
     allDuplicates: 'Every transaction in this file is already in the ledger ({{from}} – {{to}}).',
+    dupWhere: '{{count}} existing transactions are dated {{from}} – {{to}} ({{accounts}}).',
+    dupHidden: '{{count}} matching transactions are not visible to you.',
+    viewExisting: 'See the existing transactions',
+    openExisting: 'Open the existing transaction',
   },
   login: {
     subtitle: 'Log in to your finances',

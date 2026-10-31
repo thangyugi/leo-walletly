@@ -867,6 +867,8 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.datesInFile', 'import', 'from,to', true),
   ('import.detectedAs', 'import', 'provider', true),
   ('import.dropFile', 'import', null, true),
+  ('import.dupHidden', 'import', 'count', true),
+  ('import.dupWhere', 'import', 'count,from,to,accounts', true),
   ('import.duplicatesSkipped', 'import', 'count', true),
   ('import.errorNoTxns', 'import', null, true),
   ('import.importAnother', 'import', null, true),
@@ -875,6 +877,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.importSuccess', 'import', 'count', true),
   ('import.importing', 'import', null, true),
   ('import.noAccount', 'import', null, true),
+  ('import.openExisting', 'import', null, true),
   ('import.parsing', 'import', null, true),
   ('import.pdfNoRowsSub', 'import', null, true),
   ('import.pdfNoRowsTitle', 'import', 'provider', true),
@@ -915,6 +918,7 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('import.topUpTo', 'import', 'name', true),
   ('import.topUpsFound', 'import', 'count', true),
   ('import.tryAnother', 'import', null, true),
+  ('import.viewExisting', 'import', null, true),
   ('import.viewImported', 'import', null, true),
   ('import.warnings', 'import', null, true),
   ('join.accept', 'join', null, false),
@@ -1209,14 +1213,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('login.resetLinkInvalid', 'login', null, false),
   ('login.resetSent', 'login', null, false),
   ('login.resetSentTo', 'login', 'email', false),
-  ('login.resetSub', 'login', 'email', false),
-  ('login.resetSubmit', 'login', null, false),
-  ('login.resetTitle', 'login', null, false),
-  ('login.resetWaiting', 'login', null, false),
-  ('login.signupSubmit', 'login', null, false)
+  ('login.resetSub', 'login', 'email', false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('login.resetSubmit', 'login', null, false),
+  ('login.resetTitle', 'login', null, false),
+  ('login.resetWaiting', 'login', null, false),
+  ('login.signupSubmit', 'login', null, false),
   ('login.signupSubtitle', 'login', null, false),
   ('login.signupSuccess', 'login', null, false),
   ('login.signupWithEmail', 'login', null, false),
@@ -1612,14 +1616,14 @@ insert into public.translation_keys (key, namespace, placeholders, is_user_edita
   ('settings.security.mfaLabel', 'settings', null, false),
   ('settings.security.mfaStatus', 'settings', null, false),
   ('settings.security.mfaSub', 'settings', null, false),
-  ('settings.security.mfaTitle', 'settings', null, false),
-  ('settings.security.moderateRisk', 'settings', null, false),
-  ('settings.security.passkeysLabel', 'settings', null, false),
-  ('settings.security.password', 'settings', null, false),
-  ('settings.security.recoveryLabel', 'settings', null, false)
+  ('settings.security.mfaTitle', 'settings', null, false)
 on conflict (key) do nothing;
 
 insert into public.translation_keys (key, namespace, placeholders, is_user_editable) values
+  ('settings.security.moderateRisk', 'settings', null, false),
+  ('settings.security.passkeysLabel', 'settings', null, false),
+  ('settings.security.password', 'settings', null, false),
+  ('settings.security.recoveryLabel', 'settings', null, false),
   ('settings.security.revokeSession', 'settings', null, false),
   ('settings.security.riskHigh', 'settings', null, false),
   ('settings.security.riskLevel', 'settings', null, false),
@@ -2657,6 +2661,8 @@ insert into public.translations (key, language_code, value) values
   ('import.datesInFile', 'ja', 'ファイルの日付: {{from}} 〜 {{to}}'),
   ('import.detectedAs', 'ja', '判別結果：{{provider}}'),
   ('import.dropFile', 'ja', 'ここにCSVまたはPDFをドロップ'),
+  ('import.dupHidden', 'ja', '一致した取引のうち {{count}} 件はあなたには表示されません。'),
+  ('import.dupWhere', 'ja', '登録済みの {{count}} 件は {{from}} 〜 {{to}}（{{accounts}}）にあります。'),
   ('import.duplicatesSkipped', 'ja', '重複 {{count}} 件をスキップ'),
   ('import.errorNoTxns', 'ja', '取引が見つかりませんでした'),
   ('import.importAnother', 'ja', '別のファイルをインポート'),
@@ -2665,6 +2671,7 @@ insert into public.translations (key, language_code, value) values
   ('import.importSuccess', 'ja', '{{count}} 件のデータを追加しました'),
   ('import.importing', 'ja', 'インポート中…'),
   ('import.noAccount', 'ja', '先に口座を作成してください'),
+  ('import.openExisting', 'ja', '登録済みの取引を開く'),
   ('import.parsing', 'ja', '解析中...'),
   ('import.pdfNoRowsSub', 'ja', 'このファイルのレイアウトは想定と異なります。下の読み取りテキストを送っていただければ対応します。'),
   ('import.pdfNoRowsTitle', 'ja', '{{provider}} の明細と判別しましたが、取引を読み取れませんでした'),
@@ -2705,6 +2712,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'ja', '{{name}} へ'),
   ('import.topUpsFound', 'ja', 'チャージ {{count}} 件は自分の口座間の振替です（収入・支出に数えません）。相手の口座：'),
   ('import.tryAnother', 'ja', '別のファイルを選ぶ'),
+  ('import.viewExisting', 'ja', '登録済みの取引を見る'),
   ('import.viewImported', 'ja', '取り込んだ取引を見る'),
   ('import.warnings', 'ja', '件の警告'),
   ('join.accept', 'ja', '参加する'),
@@ -2999,14 +3007,14 @@ insert into public.translations (key, language_code, value) values
   ('login.resetLinkInvalid', 'ja', 'パスワード再設定リンクの有効期限が切れたか、すでに使用されています。もう一度リクエストしてください。'),
   ('login.resetSent', 'ja', 'パスワード再設定メールを送信しました'),
   ('login.resetSentTo', 'ja', '{{email}} にパスワード再設定メールを送信しました。メール内のリンクから新しいパスワードを設定してください。'),
-  ('login.resetSub', 'ja', '{{email}} の新しいパスワードを入力してください'),
-  ('login.resetSubmit', 'ja', '新しいパスワードを保存'),
-  ('login.resetTitle', 'ja', 'パスワードの再設定'),
-  ('login.resetWaiting', 'ja', 'リンクを確認しています…'),
-  ('login.signupSubmit', 'ja', 'アカウント作成')
+  ('login.resetSub', 'ja', '{{email}} の新しいパスワードを入力してください')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSubmit', 'ja', '新しいパスワードを保存'),
+  ('login.resetTitle', 'ja', 'パスワードの再設定'),
+  ('login.resetWaiting', 'ja', 'リンクを確認しています…'),
+  ('login.signupSubmit', 'ja', 'アカウント作成'),
   ('login.signupSubtitle', 'ja', '新しいアカウントを作成'),
   ('login.signupSuccess', 'ja', '確認メールを送信しました。メール内のリンクを開いてください。'),
   ('login.signupWithEmail', 'ja', 'このメールアドレスで登録'),
@@ -3402,14 +3410,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaLabel', 'ja', '2要素認証 (MFA)'),
   ('settings.security.mfaStatus', 'ja', '2段階認証は現在 {status} です'),
   ('settings.security.mfaSub', 'ja', 'アカウントにセキュリティレイヤーを追加します。'),
-  ('settings.security.mfaTitle', 'ja', '2要素認証'),
-  ('settings.security.moderateRisk', 'ja', '中程度のリスク'),
-  ('settings.security.passkeysLabel', 'ja', 'パスキー'),
-  ('settings.security.password', 'ja', 'パスワード'),
-  ('settings.security.recoveryLabel', 'ja', '復旧方法')
+  ('settings.security.mfaTitle', 'ja', '2要素認証')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.moderateRisk', 'ja', '中程度のリスク'),
+  ('settings.security.passkeysLabel', 'ja', 'パスキー'),
+  ('settings.security.password', 'ja', 'パスワード'),
+  ('settings.security.recoveryLabel', 'ja', '復旧方法'),
   ('settings.security.revokeSession', 'ja', 'セッションを終了'),
   ('settings.security.riskHigh', 'ja', '高'),
   ('settings.security.riskLevel', 'ja', 'リスクレベル'),
@@ -4447,6 +4455,8 @@ insert into public.translations (key, language_code, value) values
   ('import.datesInFile', 'vi', 'Ngày trong file: {{from}} – {{to}}'),
   ('import.detectedAs', 'vi', 'Nhận dạng: {{provider}}'),
   ('import.dropFile', 'vi', 'Thả file CSV hoặc PDF vào đây'),
+  ('import.dupHidden', 'vi', '{{count}} giao dịch trùng không hiển thị với bạn (có thể do quyền xem).'),
+  ('import.dupWhere', 'vi', '{{count}} giao dịch đã có trong sổ đang nằm ở ngày {{from}} – {{to}} (tài khoản: {{accounts}}).'),
   ('import.duplicatesSkipped', 'vi', 'Bỏ qua {{count}} giao dịch trùng'),
   ('import.errorNoTxns', 'vi', 'Không tìm thấy giao dịch nào'),
   ('import.importAnother', 'vi', 'Nhập file khác'),
@@ -4455,6 +4465,7 @@ insert into public.translations (key, language_code, value) values
   ('import.importSuccess', 'vi', 'Đã nhập {{count}} giao dịch thành công'),
   ('import.importing', 'vi', 'Đang nhập…'),
   ('import.noAccount', 'vi', 'Hãy tạo tài khoản trước'),
+  ('import.openExisting', 'vi', 'Mở giao dịch đã có'),
   ('import.parsing', 'vi', 'Đang xử lý...'),
   ('import.pdfNoRowsSub', 'vi', 'Bố cục file này khác mẫu app đang hỗ trợ. Hãy gửi phần chữ đọc được bên dưới (hoặc chính file) để bổ sung.'),
   ('import.pdfNoRowsTitle', 'vi', 'Nhận ra {{provider}} nhưng không đọc được giao dịch nào'),
@@ -4495,6 +4506,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'vi', 'Sang {{name}}'),
   ('import.topUpsFound', 'vi', '{{count}} lần nạp tiền là chuyển khoản giữa tài khoản của bạn (không tính vào thu/chi). Tài khoản đối ứng:'),
   ('import.tryAnother', 'vi', 'Chọn file khác'),
+  ('import.viewExisting', 'vi', 'Xem các giao dịch đã có'),
   ('import.viewImported', 'vi', 'Xem các giao dịch vừa nhập'),
   ('import.warnings', 'vi', 'cảnh báo'),
   ('join.accept', 'vi', 'Tham gia'),
@@ -4789,14 +4801,14 @@ insert into public.translations (key, language_code, value) values
   ('login.resetLinkInvalid', 'vi', 'Link đặt lại mật khẩu đã hết hạn hoặc đã được dùng. Hãy yêu cầu link mới.'),
   ('login.resetSent', 'vi', 'Đã gửi email đặt lại mật khẩu'),
   ('login.resetSentTo', 'vi', 'Đã gửi email đặt lại mật khẩu tới {{email}}. Mở link trong email để đặt mật khẩu mới.'),
-  ('login.resetSub', 'vi', 'Nhập mật khẩu mới cho {{email}}'),
-  ('login.resetSubmit', 'vi', 'Lưu mật khẩu mới'),
-  ('login.resetTitle', 'vi', 'Đặt lại mật khẩu'),
-  ('login.resetWaiting', 'vi', 'Đang kiểm tra link…'),
-  ('login.signupSubmit', 'vi', 'Tạo tài khoản')
+  ('login.resetSub', 'vi', 'Nhập mật khẩu mới cho {{email}}')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSubmit', 'vi', 'Lưu mật khẩu mới'),
+  ('login.resetTitle', 'vi', 'Đặt lại mật khẩu'),
+  ('login.resetWaiting', 'vi', 'Đang kiểm tra link…'),
+  ('login.signupSubmit', 'vi', 'Tạo tài khoản'),
   ('login.signupSubtitle', 'vi', 'Tạo tài khoản mới'),
   ('login.signupSuccess', 'vi', 'Đã gửi email xác nhận. Hãy mở liên kết trong email.'),
   ('login.signupWithEmail', 'vi', 'Đăng ký với email này'),
@@ -5192,14 +5204,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaLabel', 'vi', 'Xác thực 2 lớp (MFA)'),
   ('settings.security.mfaStatus', 'vi', 'Xác thực 2 lớp hiện đang {status}'),
   ('settings.security.mfaSub', 'vi', 'Thêm một lớp bảo mật bổ sung cho tài khoản của bạn.'),
-  ('settings.security.mfaTitle', 'vi', 'Xác thực 2 lớp'),
-  ('settings.security.moderateRisk', 'vi', 'Rủi ro trung bình'),
-  ('settings.security.passkeysLabel', 'vi', 'Mã khóa (Passkeys)'),
-  ('settings.security.password', 'vi', 'Mật khẩu'),
-  ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục')
+  ('settings.security.mfaTitle', 'vi', 'Xác thực 2 lớp')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.moderateRisk', 'vi', 'Rủi ro trung bình'),
+  ('settings.security.passkeysLabel', 'vi', 'Mã khóa (Passkeys)'),
+  ('settings.security.password', 'vi', 'Mật khẩu'),
+  ('settings.security.recoveryLabel', 'vi', 'Phương thức khôi phục'),
   ('settings.security.revokeSession', 'vi', 'Đăng xuất thiết bị'),
   ('settings.security.riskHigh', 'vi', 'CAO'),
   ('settings.security.riskLevel', 'vi', 'Mức độ rủi ro'),
@@ -6237,6 +6249,8 @@ insert into public.translations (key, language_code, value) values
   ('import.datesInFile', 'en', 'Dates in the file: {{from}} – {{to}}'),
   ('import.detectedAs', 'en', 'Recognised as: {{provider}}'),
   ('import.dropFile', 'en', 'Drop CSV or PDF here'),
+  ('import.dupHidden', 'en', '{{count}} matching transactions are not visible to you.'),
+  ('import.dupWhere', 'en', '{{count}} existing transactions are dated {{from}} – {{to}} ({{accounts}}).'),
   ('import.duplicatesSkipped', 'en', '{{count}} duplicates skipped'),
   ('import.errorNoTxns', 'en', 'No transactions found'),
   ('import.importAnother', 'en', 'Import another file'),
@@ -6245,6 +6259,7 @@ insert into public.translations (key, language_code, value) values
   ('import.importSuccess', 'en', '{{count}} transactions imported successfully'),
   ('import.importing', 'en', 'Importing…'),
   ('import.noAccount', 'en', 'Create an account first'),
+  ('import.openExisting', 'en', 'Open the existing transaction'),
   ('import.parsing', 'en', 'Parsing...'),
   ('import.pdfNoRowsSub', 'en', 'This layout differs from the supported one. Send the text below (or the file) so it can be added.'),
   ('import.pdfNoRowsTitle', 'en', 'Recognised as {{provider}} but no transactions were read'),
@@ -6285,6 +6300,7 @@ insert into public.translations (key, language_code, value) values
   ('import.topUpTo', 'en', 'To {{name}}'),
   ('import.topUpsFound', 'en', '{{count}} top-ups move money between your own accounts (not income or spending). Other account:'),
   ('import.tryAnother', 'en', 'Choose another file'),
+  ('import.viewExisting', 'en', 'See the existing transactions'),
   ('import.viewImported', 'en', 'See the imported transactions'),
   ('import.warnings', 'en', 'warnings'),
   ('join.accept', 'en', 'Join'),
@@ -6579,14 +6595,14 @@ insert into public.translations (key, language_code, value) values
   ('login.resetLinkInvalid', 'en', 'The reset link has expired or was already used. Please request a new one.'),
   ('login.resetSent', 'en', 'Password reset email sent'),
   ('login.resetSentTo', 'en', 'Sent a password reset email to {{email}}. Open the link in it to set a new password.'),
-  ('login.resetSub', 'en', 'Enter a new password for {{email}}'),
-  ('login.resetSubmit', 'en', 'Save new password'),
-  ('login.resetTitle', 'en', 'Reset password'),
-  ('login.resetWaiting', 'en', 'Checking the link…'),
-  ('login.signupSubmit', 'en', 'Create account')
+  ('login.resetSub', 'en', 'Enter a new password for {{email}}')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('login.resetSubmit', 'en', 'Save new password'),
+  ('login.resetTitle', 'en', 'Reset password'),
+  ('login.resetWaiting', 'en', 'Checking the link…'),
+  ('login.signupSubmit', 'en', 'Create account'),
   ('login.signupSubtitle', 'en', 'Create a new account'),
   ('login.signupSuccess', 'en', 'We sent a confirmation email. Open the link to continue.'),
   ('login.signupWithEmail', 'en', 'Sign up with this email'),
@@ -6982,14 +6998,14 @@ insert into public.translations (key, language_code, value) values
   ('settings.security.mfaLabel', 'en', 'Two-factor authentication (MFA)'),
   ('settings.security.mfaStatus', 'en', 'MFA is currently {status}'),
   ('settings.security.mfaSub', 'en', 'Add an extra layer of security to your account.'),
-  ('settings.security.mfaTitle', 'en', 'Two-factor Auth'),
-  ('settings.security.moderateRisk', 'en', 'Moderate Risk'),
-  ('settings.security.passkeysLabel', 'en', 'Passkeys'),
-  ('settings.security.password', 'en', 'Password'),
-  ('settings.security.recoveryLabel', 'en', 'Recovery methods')
+  ('settings.security.mfaTitle', 'en', 'Two-factor Auth')
 on conflict (key, language_code) do nothing;
 
 insert into public.translations (key, language_code, value) values
+  ('settings.security.moderateRisk', 'en', 'Moderate Risk'),
+  ('settings.security.passkeysLabel', 'en', 'Passkeys'),
+  ('settings.security.password', 'en', 'Password'),
+  ('settings.security.recoveryLabel', 'en', 'Recovery methods'),
   ('settings.security.revokeSession', 'en', 'Revoke session'),
   ('settings.security.riskHigh', 'en', 'HIGH'),
   ('settings.security.riskLevel', 'en', 'Risk Level'),
